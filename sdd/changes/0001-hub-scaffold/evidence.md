@@ -108,8 +108,19 @@ git status --porcelain
 git log --oneline --decorate
 ```
 
-Result: clean tree after the evidence commit; three conventional commits on `main` (scaffold,
-evidence and isolation correction).
+Result: clean tree after the evidence commit; conventional commits on `main` (scaffold, evidence,
+isolation correction and clean-clone evidence).
+
+### 8. Clean-clone verification
+
+```bash
+git clone /home/ubuntu/github/handbooks-hub /tmp/opencode/hub-clone
+cd /tmp/opencode/hub-clone
+make full
+```
+
+Result: **PASS**; 42 tests, 4 fast validations and 5 full validations, all with 0 problems. The clone
+remained clean, proving the committed tree is self-contained.
 
 ## Negative cases covered by tests
 
