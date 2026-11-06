@@ -3,7 +3,7 @@
 **Change:** `0003-cli-docs-and-wheel-ci`
 **Status:** Implemented, pending independent review
 **Date:** 2026-11-06
-**Fix commit:** `3fc6ac8e86af123fe54d13b237f45cccb3ed5dac`
+**Fix commits:** `3fc6ac8e86af123fe54d13b237f45cccb3ed5dac` (initial), `1b875ead2714b48157d358fd8eac7cad0284697b` (module-invocation examples)
 **Starting point reviewed:** `05c73ba50488656cde7cb86e2eac6e0dabb8c2a4`
 
 ## Environment
@@ -26,8 +26,8 @@ its runtime behavior is for the reviewer/CI to confirm.
 
 | Area | Change |
 | --- | --- |
-| CLI examples | Moved the global `--root` option before `verify` in `tools/README.md` and `docs/implementation-plan.md` |
-| Regression | `tools/tests/test_docs_commands.py` parses fenced and table examples with the real parser |
+| CLI examples | Moved the global `--root` option before `verify` in `tools/README.md`, `README.md` and `docs/implementation-plan.md`; covered both the console script and `python3 -m handbook_toolkit` forms |
+| Regression | `tools/tests/test_docs_commands.py` parses fenced and table examples with the real parser, including module invocation |
 | CI | Added the `wheel-install` job: build wheel, assert packaged schemas, isolated venv install, validate an independent book |
 | Status | `STATUS.md` records the CI job as not executed locally |
 | Changelog | Records the CLI-doc fix and the new CI boundary job |
@@ -66,7 +66,8 @@ PYTHONPATH=tools/src python3 -m unittest discover -s tools/tests -p 'test_docs_c
 
 Result: **PASS**, 2 tests.
 
-- `test_documented_cli_examples_are_parseable` extracts fenced and table-cell examples and runs
+- `test_documented_cli_examples_are_parseable` extracts fenced and table-cell examples, normalizes
+  both `handbook-toolkit` and `python3 -m handbook_toolkit` forms, and runs
   `build_parser().parse_args()` on current commands.
 - `test_global_options_are_rejected_after_the_subcommand` proves that
   `handbook-toolkit verify --root .` raises `SystemExit`.
@@ -91,8 +92,8 @@ Result: **PASS**; YAML parsed and all shell blocks passed syntax checking.
 ### 6. Clean clone
 
 ```bash
-git clone /home/ubuntu/github/handbooks-hub /tmp/opencode/hub-clone-0003
-cd /tmp/opencode/hub-clone-0003
+git clone /home/ubuntu/github/handbooks-hub /tmp/opencode/hub-clone-0003b
+cd /tmp/opencode/hub-clone-0003b
 make full
 ```
 
@@ -129,7 +130,7 @@ This is a packaging-boundary check, not a release or publication step.
 
 ## Review handoff
 
-Review the fix commit recorded above, then:
+Review the fix commits recorded above, then:
 
 1. Re-run `make check` and `make full`.
 2. Inspect `tools/tests/test_docs_commands.py` and confirm the old order fails.
