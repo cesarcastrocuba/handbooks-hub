@@ -19,7 +19,7 @@ chapter validation. Pilot approval, publication and release are **not** authoriz
 | GitHub repositories | [hub](https://github.com/cesarcastrocuba/handbooks-hub) and [sample](https://github.com/cesarcastrocuba/handbook-sample-01), both public |
 | Reference handbook | Read-only at `6a15cc211f65e148afdaa75c71a063a8084d1910` |
 | Sample repository | Branch `feat/pinned-toolkit-integration`; separate lane; no writes from this session |
-| Toolkit | `0.2.0`, 83 unit tests; manuscript, catalog, profile and book validators; bundled schemas |
+| Toolkit | `0.3.0`, build and manuscript validators; manuscript, catalog, profile and book validators; bundled schemas |
 | CI | Hub `ci` passed on integrated `main` at `80c90dc`; branch CI is reported for the manuscript branch after push |
 | Standard profile | `0.2.0`, **Approved** 2026-11-06 |
 | Licensing | CC BY-SA 4.0 content, MIT code; approved 2026-11-06 |

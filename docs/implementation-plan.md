@@ -145,7 +145,7 @@ book repository (independent)
 | Editorial profile | `profile.yaml` | Profile `0.2.0` | Toolkit, reviewers, books |
 | Catalog | `catalog/catalog.json` | Schema `1.0` | Portal, reviewers |
 | Publication manifest | `publication-manifest.json` (Phase 4) | Schema `1.0` (planned) | Toolkit, catalog, auditors |
-| Toolkit CLI | `handbook-toolkit` | Semver `0.2.0` | Books, CI, portal |
+| Toolkit CLI | `handbook-toolkit` | Semver `0.3.0` | Books, CI, portal |
 
 A book pins the toolkit and profile versions it was written and verified against. The toolkit never
 silently upgrades a book's profile.
@@ -208,7 +208,7 @@ scaffold before building the full toolkit or writing the sample book.
 - `tools/src/handbook_toolkit/schemas/profile.schema.json`, `book.schema.json`, `catalog.schema.json`.
 - `template/book/` minimal book descriptor and manuscript reading order.
 - `catalog/catalog.json` empty and valid.
-- `tools/` package `handbook-toolkit` 0.2.0 with CLI, validators and `unittest` tests.
+- `tools/` package `handbook-toolkit` 0.3.0 with CLI, validators and `unittest` tests.
 - `.github/workflows/ci.yml` and `.github/pull_request_template.md`.
 - `sdd/changes/0001-hub-scaffold/` proposal, spec, tasks and evidence.
 
@@ -645,7 +645,7 @@ Rules:
 | --- | --- | --- |
 | Independent book repositories own canonical sources | `docs/architecture.md`, `HUB-DEC-001`, template | Contract defined; sample lane separate |
 | Hub owns static portal | `docs/catalog-contract.md`, `catalog/`, planned portal | Phase 4 |
-| Shared versioned toolkit under `tools/` | `tools/`, `handbook-toolkit` 0.2.0 | Validators implemented |
+| Shared versioned toolkit under `tools/` | `tools/`, `handbook-toolkit` 0.3.0 | Validators implemented |
 | Schemas | `tools/src/handbook_toolkit/schemas/*.json` | Book, profile, catalog |
 | Common profiles | `profiles/standard/profile.yaml` | Approved `0.2.0` |
 | Template | `template/book/` | Minimal; Phase 2 completes |

@@ -9,6 +9,7 @@ from typing import Any
 
 from . import __version__
 from .books import validate_book
+from .build import BuildError, build_book
 from .catalog import validate_catalog
 from .manuscript import validate_manuscript
 from .profiles import validate_profile
@@ -119,6 +120,29 @@ def command_manuscript(args: argparse.Namespace) -> int:
     return 0 if result.ok else 1
 
 
+def command_build(args: argparse.Namespace) -> int:
+    try:
+        result = build_book(
+            Path(args.repo),
+            args.commit,
+            Path(args.output),
+            profile=Path(args.profile),
+            version=args.version,
+            epoch=args.epoch,
+            quarto=args.quarto,
+        )
+    except (BuildError, DocumentError, OSError, ValueError) as exc:
+        print(f"BUILD: FAILED: {exc}", file=sys.stderr)
+        return 1
+
+    print(f"{result.output}: OK")
+    print(f"commit: {result.commit}")
+    print(f"version: {result.version}")
+    print(f"epoch: {result.epoch}")
+    print("tool_versions: " + ", ".join(f"{key}={value}" for key, value in sorted(result.tool_versions.items())))
+    return 0
+
+
 def command_version(_args: argparse.Namespace) -> int:
     print(f"handbook-toolkit {__version__}")
     return 0
@@ -178,6 +202,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="profile YAML to validate against; explicit until packaged profile resolution exists",
     )
     manuscript.set_defaults(func=command_manuscript)
+
+    build = subparsers.add_parser(
+        "build-book",
+        help="build a local six-file publication payload set without publishing",
+    )
+    build.add_argument("--repo", required=True, help="book repository path")
+    build.add_argument("--commit", required=True, help="exact clean 40-character source commit")
+    build.add_argument("--output", required=True, help="new external output directory; must not exist")
+    build.add_argument("--profile", required=True, help="explicit reviewed profile YAML")
+    build.add_argument("--version", help="book version; defaults to publishing/metadata.yaml")
+    build.add_argument("--epoch", type=int, help="SOURCE_DATE_EPOCH; defaults to commit timestamp")
+    build.add_argument("--quarto", default="quarto", help="Quarto executable (default: quarto)")
+    build.set_defaults(func=command_build)
 
     version = subparsers.add_parser("version", help="print the toolkit version")
     version.set_defaults(func=command_version)
