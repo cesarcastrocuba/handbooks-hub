@@ -5,43 +5,60 @@ contracts, the versioned Python toolkit, the standard editorial profile, the boo
 catalog and the static portal. Each book repository owns its canonical manuscript and publishes its
 own reading site and release downloads.
 
-Status: **Phase 1 foundation approved; Phase 2 next.** See [`STATUS.md`](STATUS.md) and the
+Status: **Phase 1 integrated on `main`; Phase 2 next.** See [`STATUS.md`](STATUS.md) and the
 [implementation plan](docs/implementation-plan.md).
+
+## Who this is for
+
+| Reader | Installation needed? | Start here |
+| --- | --- | --- |
+| Reader of a published handbook | **No** | Use the book's reading site or release downloads. The hub catalog is empty until a release is approved. |
+| Contributor to this hub | **Yes** — Git, Python 3.11+, pip, venv | [Quick start](#quick-start-hub-contributors) or [`docs/setup.md`](docs/setup.md) |
+| Hub maintainer | **Yes** — the contributor setup plus `make` and CI knowledge | [`docs/setup.md`](docs/setup.md) |
+| Author of an independent book | **Yes** — Python, venv and the pinned toolkit | [`template/book/README.md`](template/book/README.md) |
+
+Current validators need **Python only**. Quarto, Graphviz, PDF and DOCX rendering belong to the
+future publication pipeline and are **not** required to run the checks described here.
+
+## Quick start (hub contributors)
+
+Tested on **Ubuntu 24.04 with Python 3.12**. Native Windows is not tested; see
+[`docs/setup.md`](docs/setup.md) for platform notes.
+
+```bash
+git clone https://github.com/cesarcastrocuba/handbooks-hub.git
+cd handbooks-hub
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements-dev.txt
+make check
+make full
+```
+
+The documented path creates `.venv` **inside the clone**, which `.gitignore` excludes. CI runs this
+exact path; an external temporary venv is a different setup and is not used as proof of this one.
+
+If `make` is unavailable, use the no-make commands in
+[`docs/setup.md`](docs/setup.md#5-no-make-path). For missing `pip`, missing `venv`, platform-specific
+activation and troubleshooting, start with [`docs/setup.md`](docs/setup.md).
 
 ## What exists today
 
 | Path | Purpose |
 | --- | --- |
-| `docs/` | Architecture, contracts, decisions, assumptions and the phased plan |
+| `docs/` | Architecture, contracts, decisions, assumptions, setup guide and phased plan |
 | `profiles/standard/` | Approved standard editorial profile `0.2.0` |
 | `tools/` | Versioned `handbook-toolkit` package with deterministic validators and tests |
 | `tools/src/handbook_toolkit/schemas/` | JSON Schema contracts for books, profiles and the catalog, shipped inside the toolkit package |
-| `template/book/` | Minimal book-repository template, intentionally incomplete until Phase 2 |
+| `template/book/` | Minimal book-repository template with pinned-toolkit installation notes |
 | `catalog/` | Catalog of approved book releases; empty until a release is approved |
 | `sdd/` | Lightweight specification-driven delivery records |
-| `.github/` | Basic CI and the pull-request template |
-
-## Quick start
-
-Requirements: Python 3.11 or newer, `jsonschema` and `PyYAML`. The checks are deterministic and do
-not require Quarto, network access or a GitHub repository.
-
-```bash
-make check        # unit tests + fast validations
-make full         # fast checks + full repository validations
-```
-
-Without `make`:
-
-```bash
-PYTHONPATH=tools/src python3 -m unittest discover -s tools/tests -v
-PYTHONPATH=tools/src python3 -m handbook_toolkit --root . verify
-PYTHONPATH=tools/src python3 -m handbook_toolkit --root . verify --full
-```
+| `.github/` | CI and the pull-request template |
 
 ## Scope and non-goals
 
-The hub and sample repositories now exist on GitHub and their CI has passed. This branch does not
+The hub and sample repositories exist on GitHub and their CI has passed. This repository does not
 merge, deploy a site, publish a release, edit the sample book repository or migrate the existing
 handbook. Pilot approval and any release remain owner-gated steps.
 

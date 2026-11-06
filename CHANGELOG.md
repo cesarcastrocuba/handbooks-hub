@@ -7,6 +7,11 @@ semantic versioning once the toolkit is published.
 
 ### Added
 
+- Hub onboarding guide at `docs/setup.md` and a README quickstart covering reader/contributor/
+  maintainer/book-author paths, tested Linux prerequisites, in-repo `.venv` install, no-make checks
+  and missing-pip/venv troubleshooting.
+- Pinned-toolkit installation instructions and `requirements.txt` for the independent book template,
+  with the future Quarto/publication toolchain kept separate from current validators.
 - Initial hub scaffold: governance, architecture and contract documents, phased implementation plan,
   proposed standard editorial profile, JSON schemas, book template, empty catalog and lightweight SDD
   records.

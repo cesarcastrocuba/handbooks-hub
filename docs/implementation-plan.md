@@ -8,8 +8,9 @@ repositories, Pages, releases and migration are explicitly out of scope. The sam
 scaffolded concurrently by a separate session; this session only reads and records that fact.
 
 > **Current state (2026-11-06):** Phase 1 foundation, the dual-license defaults and standard profile
-> `0.2.0` are owner-approved. The hub and sample GitHub repositories exist, and their CI has passed.
-> Pilot approval and release are not authorized. See [`STATUS.md`](../STATUS.md) for live state and
+> `0.2.0` are integrated on `main` at `8ee28a0`. The `docs/hub-setup` branch adds onboarding and
+> pinned-toolkit setup instructions. Pilot approval and release are not authorized. See
+> [`STATUS.md`](../STATUS.md) for live state and
 > [the approval record](../sdd/changes/0005-owner-approvals/approval.md).
 
 This plan turns `IMPLEMENTATION-HANDOFF.md` and the Engram handoff summary #6795 into reviewable work.

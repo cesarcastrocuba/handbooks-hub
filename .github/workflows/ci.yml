@@ -26,6 +26,52 @@ jobs:
       - name: Full checks
         run: make full
 
+  quickstart:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Create the documented in-repo venv and install
+        run: |
+          python3 -m venv .venv
+          . .venv/bin/activate
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements-dev.txt
+      - name: Run the documented make checks
+        run: |
+          . .venv/bin/activate
+          make check
+          make full
+      - name: Run the documented no-make checks
+        run: |
+          . .venv/bin/activate
+          PYTHONPATH=tools/src python3 -m unittest discover -s tools/tests -v
+          PYTHONPATH=tools/src python3 -m handbook_toolkit --root . verify
+          PYTHONPATH=tools/src python3 -m handbook_toolkit --root . verify --full
+
+  template-install:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the pinned toolkit in an independent book copy
+        run: |
+          book="$RUNNER_TEMP/book-template"
+          cp -a template/book "$book"
+          mkdir -p "$book/schemas"
+          printf '%s\n' '{"type": "object", "required": ["decoy-must-never-be-used"]}' \
+            > "$book/schemas/book.schema.json"
+          cd "$book"
+          python3 -m venv .venv
+          . .venv/bin/activate
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements.txt
+          handbook-toolkit --root . validate-book
+
   wheel-install:
     runs-on: ubuntu-24.04
     steps:

@@ -4,14 +4,20 @@ Read [`AGENTS.md`](AGENTS.md) first. It applies to people and AI agents alike.
 
 ## Local setup
 
+See [`docs/setup.md`](docs/setup.md) for supported platforms, prerequisites, troubleshooting and the
+independent-book toolkit install.
+
 ```bash
+git clone https://github.com/cesarcastrocuba/handbooks-hub.git
+cd handbooks-hub
 python3 -m venv .venv
-. .venv/bin/activate
+source .venv/bin/activate
+python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements-dev.txt
 ```
 
 The current checks need only Python, `jsonschema` and `PyYAML`. Quarto and Graphviz are not needed
-until the template and publication phases.
+until the future publication setup.
 
 ## Checks
 

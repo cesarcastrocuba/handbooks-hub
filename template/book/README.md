@@ -4,21 +4,57 @@ A starting point for an independent handbook repository. Copy this directory int
 then replace the identifiers and content. The copy is owned by the book; the hub does not update it
 in place.
 
-This template is intentionally minimal in Phase 1. Phase 2 adds the working Quarto configuration, the
-pinned toolkit installation, the full chapter skeleton and the template's own checks.
+This template is intentionally minimal. The publishing setup (Quarto, Pandoc, Graphviz, PDF/DOCX,
+manifests and checksums) is future work and is **not** part of the toolkit installation below.
+
+## Install the pinned toolkit
+
+The book installs `handbook-toolkit` from a full hub commit, not from a parent checkout and not from
+copied hub files. `requirements.txt` contains the pin:
+
+```text
+handbook-toolkit @ git+https://github.com/cesarcastrocuba/handbooks-hub.git@<FULL_HUB_COMMIT_SHA>#subdirectory=tools
+```
+
+Create a venv inside the book clone and install it:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
+handbook-toolkit --root . validate-book
+```
+
+Tested on Linux (Ubuntu 24.04) with Python 3.12. Native Windows commands are not tested; see the
+hub's [`docs/setup.md`](https://github.com/cesarcastrocuba/handbooks-hub/blob/main/docs/setup.md) for
+prerequisites, no-make guidance and troubleshooting.
+The `.venv` lives inside the book clone and must be ignored by the book's `.gitignore`.
+
+`validate-book` is the fast descriptor, profile/book-schema and reading-order check. After the
+reading order exists and the pilot is authorized, run:
+
+```bash
+handbook-toolkit --root . validate-book --full
+```
+
+The current toolkit does **not** validate manuscript content, profile conformance or rendered
+artifacts. Quarto and the publication toolchain are a separate future setup.
 
 ## Before the first commit
 
 1. Replace `id`, `title`, `catalog.slug` and `catalog.summary` in `book.yaml`.
-2. Keep `toolkit` and `profile.version` at exact versions; never use a range.
-3. Replace `01-example.qmd` with the approved brief and outline.
-4. Add `LICENSE`, `LICENSE-CODE` and `NOTICE.md`.
-5. Add the book's own `AGENTS.md` rules without copying hub source code.
-6. Run `handbook-toolkit validate-book book.yaml --full` and the book's own checks.
+2. Keep the `toolkit` and `profile.version` pins exact; never use a range.
+3. Replace the hub commit SHA in `requirements.txt` with the reviewed commit.
+4. Replace `01-example.qmd` with the approved brief and outline.
+5. Add `LICENSE`, `LICENSE-CODE` and `NOTICE.md`.
+6. Add the book's own `AGENTS.md` rules without copying hub source code.
+7. Run `handbook-toolkit --root . validate-book` and the book's own checks.
 
 ## Rules
 
 - Canonical content lives in `manuscript/`.
 - Generated artifacts are never committed.
-- The book pins the toolkit; it does not import a parent checkout or copy `tools/`.
+- The book pins the toolkit; it does not import a parent checkout or copy `tools/`, schemas or
+  shared scripts.
 - The book requests catalog listing only after an approved release.

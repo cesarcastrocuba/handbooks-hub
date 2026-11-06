@@ -27,12 +27,14 @@ REQUIRED_FILES = (
     "docs/decisions.md",
     "docs/assumptions.md",
     "docs/implementation-plan.md",
+    "docs/setup.md",
     "profiles/standard/profile.yaml",
     "tools/src/handbook_toolkit/schemas/book.schema.json",
     "tools/src/handbook_toolkit/schemas/catalog.schema.json",
     "tools/src/handbook_toolkit/schemas/profile.schema.json",
     "catalog/catalog.json",
     "template/book/book.yaml",
+    "template/book/requirements.txt",
 )
 
 DOC_FILES = (
