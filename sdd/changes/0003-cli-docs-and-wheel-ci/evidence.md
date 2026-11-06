@@ -3,7 +3,7 @@
 **Change:** `0003-cli-docs-and-wheel-ci`
 **Status:** Implemented, pending independent review
 **Date:** 2026-11-06
-**Fix commit:** pending (recorded by the follow-up evidence commit)
+**Fix commit:** `3fc6ac8e86af123fe54d13b237f45cccb3ed5dac`
 **Starting point reviewed:** `05c73ba50488656cde7cb86e2eac6e0dabb8c2a4`
 
 ## Environment
@@ -90,7 +90,13 @@ Result: **PASS**; YAML parsed and all shell blocks passed syntax checking.
 
 ### 6. Clean clone
 
-A clean clone is recorded after the fix commit in the follow-up evidence update.
+```bash
+git clone /home/ubuntu/github/handbooks-hub /tmp/opencode/hub-clone-0003
+cd /tmp/opencode/hub-clone-0003
+make full
+```
+
+Result: **PASS**; 48 tests, 5 fast checks and 6 full checks with 0 problems. The clone remained clean.
 
 ## CI wheel-install job (not executed)
 
