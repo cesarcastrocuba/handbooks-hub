@@ -31,8 +31,8 @@ hub's [`docs/setup.md`](https://github.com/cesarcastrocuba/handbooks-hub/blob/ma
 prerequisites, no-make guidance and troubleshooting.
 The `.venv` lives inside the book clone and must be ignored by the book's `.gitignore`.
 
-`validate-book` is the fast descriptor, profile/book-schema and reading-order check. After the
-reading order exists and the pilot is authorized, run:
+`validate-book` is the fast book-descriptor schema and reading-order check. It does not validate the
+profile file or manuscript content. After the reading order exists and the pilot is authorized, run:
 
 ```bash
 handbook-toolkit --root . validate-book --full
