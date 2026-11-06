@@ -20,6 +20,7 @@
           "summary",
           "categories",
           "status",
+          "reading_url",
           "latest_release"
         ],
         "properties": {
@@ -33,12 +34,14 @@
           },
           "title": { "type": "string", "minLength": 1 },
           "summary": { "type": "string", "minLength": 1, "maxLength": 280 },
+          "reading_url": { "type": "string", "pattern": "^https://[^\\s]+$" },
           "categories": {
             "type": "array",
             "minItems": 1,
             "uniqueItems": true,
             "items": {
               "type": "string",
+              "enum": ["architecture", "authoring", "cloud", "data", "engineering", "governance", "publishing", "security"],
               "pattern": "^[a-z][a-z0-9-]{1,63}$"
             }
           },

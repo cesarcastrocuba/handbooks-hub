@@ -25,4 +25,4 @@ include-package-data = true
 where = ["src"]
 
 [tool.setuptools.package-data]
-handbook_toolkit = ["schemas/*.json", "profile_data/*.yaml"]
+handbook_toolkit = ["schemas/*.json", "profile_data/*.yaml", "render_data/filters/*.lua", "render_data/typst/*.typ"]
