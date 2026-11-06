@@ -217,18 +217,107 @@ def _tool_versions(quarto: str) -> dict[str, str]:
     }
 
 
+def _strip_heading_number(title: str) -> str:
+    return re.sub(r"^\d+(?:\.\d+)*[ .]+", "", title).strip()
+
+
+def _transform_chapter(text: str, chapter_number: int) -> str:
+    """Stage a chapter wrapper and explicit table captions without changing source."""
+
+    front: dict[str, Any] = {}
+    body = text
+    match = re.match(r"^---\s*\n(.*?)\n---\s*\n(.*)$", text, re.DOTALL)
+    if match:
+        try:
+            loaded = yaml.safe_load(match.group(1))
+        except yaml.YAMLError as exc:
+            raise BuildError(f"cannot parse staged chapter front matter: {exc}") from exc
+        if isinstance(loaded, dict):
+            front = loaded
+        body = match.group(2)
+    front.pop("title", None)
+
+    lines = body.splitlines()
+    first = next(
+        (index for index, line in enumerate(lines) if re.match(r"^#{1,3}\s+", line)),
+        None,
+    )
+    if first is None:
+        raise BuildError("staged chapter has no heading to use as the rendered chapter title")
+    heading = lines[first]
+    title = _strip_heading_number(re.sub(r"^#{1,3}\s+", "", heading))
+    if len(re.findall(r"[A-Za-z]", title)) < 3:
+        raise BuildError("staged chapter heading is not meaningful")
+    remaining = lines[:first] + lines[first + 1 :]
+
+    output: list[str] = [f"# {title}", ""]
+    if front:
+        output = ["---", *yaml.safe_dump(front, sort_keys=False).splitlines(), "---", "", *output]
+    table_number = 0
+    previous = ""
+    for line in remaining:
+        heading_match = re.match(r"^(#{1,6})\s+(.*)$", line)
+        if heading_match:
+            line = f"{heading_match.group(1)} {_strip_heading_number(heading_match.group(2))}"
+        caption = re.match(r"^:\s+(.*\S)\s*$", line)
+        if caption and previous.lstrip().startswith("|"):
+            table_number += 1
+            caption_text = re.sub(r"\s*\{[^}]*\}\s*$", "", caption.group(1)).strip()
+            output.extend(["", f"**Table {chapter_number}.{table_number} — {caption_text}**", ""])
+            previous = ""
+            continue
+        output.append(line)
+        if line.strip():
+            previous = line
+    return "\n".join(output).rstrip() + "\n"
+
+
+def _prepare_render(workspace: Path, entries: list[str]) -> list[str]:
+    """Create root index and transformed chapter files for Quarto.
+
+    The first reading-order file becomes ``index.qmd`` so Quarto has a home page without a
+    separate generated chapter. Other chapter/appendix files are transformed in place in the
+    private staging workspace. Canonical source in the commit is untouched.
+    """
+
+    if not entries:
+        raise BuildError("no manuscript entries to render")
+    first = entries[0]
+    first_path = workspace / first
+    try:
+        first_text = first_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise BuildError(f"cannot read staged chapter {first}: {exc}") from exc
+    index_text = _transform_chapter(first_text, 1)
+    (workspace / "index.qmd").write_text(index_text, encoding="utf-8")
+
+    rendered: list[str] = ["index.qmd"]
+    chapter_number = 1
+    for entry in entries[1:]:
+        path = workspace / entry
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            raise BuildError(f"cannot read staged chapter {entry}: {exc}") from exc
+        chapter_number += 1
+        path.write_text(_transform_chapter(text, chapter_number), encoding="utf-8")
+        rendered.append(entry)
+    return rendered
+
+
 def _render_config(book: dict[str, Any], config: dict[str, Any], entries: list[str]) -> dict[str, Any]:
     project = config.setdefault("project", {})
     if not isinstance(project, dict) or project.get("type", "book") != "book":
         raise BuildError("publishing/_quarto.yml must declare a Quarto book project")
     project["type"] = "book"
     project["output-dir"] = "_output"
+    config["number-sections"] = True
 
     book_config = config.setdefault("book", {})
     if not isinstance(book_config, dict):
         raise BuildError("publishing/_quarto.yml book section must be a mapping")
     book_config["title"] = book["title"]
-    book_config["chapters"] = ["index.qmd", *entries]
+    book_config["chapters"] = entries
 
     formats = config.get("format", {})
     if not isinstance(formats, dict):
@@ -383,6 +472,7 @@ def build_book(
         _validate_manuscripts(workspace, book, profile_document, mode)
         book_version = _book_version(workspace, version)
         _require_prerelease_version(book_version, mode, preview)
+        rendered_entries = _prepare_render(workspace, entries)
 
         config_path = workspace / "publishing/_quarto.yml"
         try:
@@ -394,17 +484,12 @@ def build_book(
 
         (workspace / "_quarto.yml").write_text(
             yaml.safe_dump(
-                _render_config(book, config, entries),
+                _render_config(book, config, rendered_entries),
                 sort_keys=True,
                 allow_unicode=True,
             ),
             encoding="utf-8",
         )
-        (workspace / "index.qmd").write_text(
-            f"# {book['title']}\n",
-            encoding="utf-8",
-        )
-
         environment = os.environ.copy()
         environment["SOURCE_DATE_EPOCH"] = str(source_epoch)
         _run(

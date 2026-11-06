@@ -43,6 +43,13 @@ PILOT = """\
 
 **Example.** An illustrative handbook names its reader and its excluded scope.
 
+| Field | Detail |
+| :--- | :--- |
+| Reader | A technical reader |
+| Promise | A bounded outcome |
+
+: Fixture table caption.
+
 ::: {.callout-warning appearance="simple" icon=false title="Common Pitfall"}
 Treating a successful render as editorial approval.
 :::
@@ -230,7 +237,12 @@ class BuildTests(unittest.TestCase):
             self.assertIn("typst", manifest["build"]["tool_versions"])
             with zipfile.ZipFile(output / "book-source.zip") as archive:
                 self.assertEqual(archive.comment.decode("ascii"), commit)
+            with zipfile.ZipFile(output / "book-html.zip") as archive:
+                site = archive.read("index.html").decode("utf-8")
+            self.assertIn("Table 1.1 —", site)
+            self.assertIn("A Pilot Section", site)
             self.assertTrue(verify_publication(output).ok)
+            self.assertIn("**Definition.**", (repo / "manuscript/chapters/pilot.qmd").read_text())
 
     def test_existing_output_is_refused(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

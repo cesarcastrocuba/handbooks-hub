@@ -6,15 +6,16 @@ only in [`docs/decisions.md`](docs/decisions.md); the plan lives in
 
 **Updated:** 2026-11-06
 **Phase:** Phase 1 integrated; Phase 2 manuscript validation integrated; Phase 4 local publication build in progress
-**State:** Phase 1 foundation, dual-license defaults, standard profile `0.2.0`, setup docs and
-structural manuscript validation are integrated on `main`. The `feat/publication-build` branch adds
-a staged, verified local build. Pilot approval, publication and release are **not** authorized.
+**State:** Phase 1 foundation, dual-license defaults, standard profile `0.2.0`, setup docs,
+structural manuscript validation and packaged profile snapshots are integrated on `main`. The
+`feat/publication-build` branch adds a staged, verified local build with exact profile/toolkit pins.
+Pilot approval, publication and release are **not** authorized.
 
 ## Current facts
 
 | Item | State |
 | --- | --- |
-| `main` | `9ef28d7d7c06de7ec8af926ede2083a8ba487a2e`; Phase 1, setup docs and manuscript validation integrated |
+| `main` | `46c9c1e2fa0cebe8cfa027e17534f662cded57fb`; Phase 1, setup docs, manuscript validation, packaged profiles and portal integrated |
 | Publication branch | `feat/publication-build`; local staged build on the publication dependency stack |
 | GitHub repositories | [hub](https://github.com/cesarcastrocuba/handbooks-hub) and [sample](https://github.com/cesarcastrocuba/handbook-sample-01), both public |
 | Reference handbook | Read-only at `6a15cc211f65e148afdaa75c71a063a8084d1910` |

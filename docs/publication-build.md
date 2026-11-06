@@ -56,13 +56,17 @@ The output directory must not exist and must be outside the source repository.
 7. Resolves the reviewed profile and runs the structural validator for every chapter and appendix
    from the staged source before render. Front matter, back matter and references are special groups.
 8. Generates a deterministic Quarto project config, using the book-side `publishing/_quarto.yml`
-   and reading order; renders only HTML, Typst and DOCX with `--no-execute` and
+   and reading order; the first reading-order file becomes the home page so there is no separate
+   empty title chapter. It renders only HTML, Typst and DOCX with `--no-execute` and
    `SOURCE_DATE_EPOCH`.
-9. Packages the HTML site as a ZIP, the PDF and DOCX as files, and the tracked source as a ZIP whose
+9. Stages a render-only heading wrapper for each chapter/appendices file, strips manual heading
+   numbers so Quarto numbers the rendered sections, and converts source table captions into
+   explicit `**Table N.T — Title**` paragraphs below the table. Canonical files are not changed.
+10. Packages the HTML site as a ZIP, the PDF and DOCX as files, and the tracked source as a ZIP whose
    comment is the full source commit.
-10. Inspects every payload with the shared format inspector.
-11. Writes `publication-manifest.json` and `SHA256SUMS.txt`, then runs `verify_publication`.
-12. Atomically renames the complete verified directory to `--output`.
+11. Inspects every payload with the shared format inspector.
+12. Writes `publication-manifest.json` and `SHA256SUMS.txt`, then runs `verify_publication`.
+13. Atomically renames the complete verified directory to `--output`.
 
 No writer staging directory is visible at the final output path. A failed build leaves no final
 output and removes its private staging directory.
@@ -87,3 +91,9 @@ The build verifies presence, structure, links within the HTML archive, checksums
 **not** prove editorial quality, factual accuracy, visual layout, accessibility, PDF pagination or
 reproducible bit-for-bit output across all environments. Human review remains required before any
 publication gate.
+
+Rendered chapter and table numbers come from the reading-order position, not from the manual `N.M`
+text in the canonical headings. A partial pilot is therefore rendered as Chapter 1 with Table 1.1;
+manual cross-reference numbers inside that pilot are not renumbered. The default Typst orange-book
+chapter heading style remains template-owned and must be inspected visually; this assembly does not
+claim font, heading-box, or page-break perfection.
