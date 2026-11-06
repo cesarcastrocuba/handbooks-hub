@@ -17,7 +17,7 @@
 | D8 | Minimal book template | `template/book/` | Done; Phase 2 completes |
 | D9 | Empty catalog | `catalog/catalog.json` | Done |
 | D10 | Toolkit 0.1.0 | `tools/` | Done |
-| D11 | Tests | `tools/tests/` | Done, 42 at scaffold; 46 after `0002`; 48 after `0003` |
+| D11 | Tests | `tools/tests/` | Done, 42 at scaffold; 46 after `0002`; 48 after `0003`; 52 after `0004` |
 | D12 | Basic CI and PR template | `.github/` | Done |
 | D13 | SDD record | `sdd/changes/0001-hub-scaffold/` | This record |
 | D14 | Independent review | Review comments | Pending |
@@ -56,7 +56,7 @@ every `.qmd` file to appear exactly once and at least one chapter.
 
 ## Acceptance criteria
 
-1. `make check` passes: 48 unit tests and five repository validations.
+1. `make check` passes: 52 unit tests and five repository validations.
 2. `make full` passes: adds documentation-link checks.
 3. Negative tests prove rejection of:
    - duplicate catalog id, slug and release URL;

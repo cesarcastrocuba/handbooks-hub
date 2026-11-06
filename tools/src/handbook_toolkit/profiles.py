@@ -102,6 +102,14 @@ def validate_profile(path: Path, schema: dict[str, Any]) -> CheckResult:
                     f"{name} is required but min_per_section is {rule['min_per_section']}",
                 )
             )
+        if not rule["required"] and rule["min_per_section"] > 0:
+            issues.append(
+                Issue(
+                    f"{label}:{name}",
+                    f"{name} is optional but min_per_section is {rule['min_per_section']}; "
+                    "set it to 0 or mark the element required",
+                )
+            )
 
     if data["figure"]["upscale"]:
         issues.append(

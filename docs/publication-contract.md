@@ -49,7 +49,7 @@ does not produce a partial catalog entry.
   "schema_version": "1.0",
   "book": { "id": "example-book", "version": "1.0.0", "commit": "<40-hex>" },
   "toolkit": "0.1.0",
-  "profile": { "id": "standard", "version": "0.1.0" },
+  "profile": { "id": "standard", "version": "0.2.0" },
   "build": {
     "started_at": "<ISO-8601 UTC>",
     "command": "handbook-toolkit book build .",

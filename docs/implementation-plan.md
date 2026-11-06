@@ -136,7 +136,7 @@ book repository (independent)
 | Contract | Artifact | Versioned by | Consumer |
 | --- | --- | --- | --- |
 | Book descriptor | `book.yaml` | Schema `1.0` | Toolkit, catalog, portal |
-| Editorial profile | `profile.yaml` | Profile `0.1.0` | Toolkit, reviewers, books |
+| Editorial profile | `profile.yaml` | Profile `0.2.0` | Toolkit, reviewers, books |
 | Catalog | `catalog/catalog.json` | Schema `1.0` | Portal, reviewers |
 | Publication manifest | `publication-manifest.json` (Phase 4) | Schema `1.0` (planned) | Toolkit, catalog, auditors |
 | Toolkit CLI | `handbook-toolkit` | Semver `0.1.0` | Books, CI, portal |
@@ -276,14 +276,15 @@ not require a parent checkout.
 ### Profile `1.0.0` acceptance
 
 - Chapter-level elements are required by default: `When to Use This Chapter`, `Key Takeaway`, worked
-  example, architecture review checklist and `Further Reading`.
-- Section closure is required by default: figure, captioned table, `Example`, `Common Pitfall`,
-  `Decision & Trade-off`.
+  example, review checklist and `Further Reading`.
+- Section closure is required by default: `Example`, `Common Pitfall`, `Decision & Trade-off`.
+- Figures and captioned tables are optional. A section may omit either when it would not help the
+  reader; absence is not an exception.
 - Unit labels are required in order: `Definition.`, `Purpose.`, `What it includes.`, `Why it is
   needed.`
-- Figure rules: source present, alt text, maximum natural width, no upscaling, minimum effective
-  print size.
-- Table rules: caption below, numbering outside decision callouts, adaptive widths.
+- Figure rules when used: source present, alt text, maximum natural width, no upscaling, minimum
+  effective print size.
+- Table rules when used: caption below, numbering outside decision callouts, adaptive widths.
 - Cross-reference rules: explicit forms only; automatic glossary links off.
 - Exceptions are recorded with owner approval and do not silently disable a rule.
 - Every rule is classified as **automated**, **assisted** or **manual review**. The profile must not

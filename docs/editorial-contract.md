@@ -4,7 +4,7 @@ The machine-readable contract is [`profiles/standard/profile.yaml`](../profiles/
 and [`profile.schema.json`](../tools/src/handbook_toolkit/schemas/profile.schema.json). This document
 explains the intent; the profile is authoritative when the two differ.
 
-The profile is **Proposed**. Owner approval at Gate 1 makes `0.1.0` the default for new books.
+The profile is **Proposed**. Owner approval at Gate 1 makes `0.2.0` the default for new books.
 
 ## Why a profile exists
 
@@ -27,7 +27,7 @@ In order:
 3. A `Key Takeaway` callout.
 4. Numbered sections `N.1 … N.k`.
 5. One worked-example section (the in-practice element).
-6. The `Architecture Review Checklist — <topic>` callout, as the last element of the worked example.
+6. The `Review Checklist — <topic>` callout, as the last element of the worked example.
 7. `## N.k Further Reading` as the last numbered section.
 
 Callouts use this shape:
@@ -73,8 +73,9 @@ numbered steps, a figure or a table.
 
 ## Figures
 
-- At least one figure per section; it must explain a structure, flow, lifecycle, decision or
-  relationship. Decorative images and word clouds are not figures.
+- Use a figure when it explains a structure, flow, lifecycle, decision or relationship that prose
+  would make harder to follow. Decorative images and word clouds are not figures.
+- A section may have no figure. Do not add one for completeness; absence is not an exception.
 - Graphviz is the default source format for diagrams. A rendered figure keeps its source in the book
   repository.
 - Preserve aspect ratio. Do not upscale a small diagram to fill the text column.
@@ -86,7 +87,8 @@ numbered steps, a figure or a table.
 
 ## Tables
 
-- At least one captioned table per section, outside the `Decision & Trade-off` callout.
+- Use a captioned table when readers must compare rows across the same columns. A section may have
+  no table; do not add one for completeness.
 - The caption goes below the table as `: Title`. The build numbers it as `Table N.T — Title`.
 - Tables use adaptive column widths based on visible content, not a fixed equal split.
 - A table is never placed directly after a figure, or vice versa; add explanatory prose between them.
@@ -104,7 +106,7 @@ numbered steps, a figure or a table.
 | Gate | What the owner approves | What the reviewer verifies |
 | --- | --- | --- |
 | Brief | Audience, scope, outcomes, non-goals and length | Brief is testable and consistent with the profile |
-| Outline | Chapter and section structure, figures, tables and checklists | Coverage, dependencies and no duplicate ownership |
+| Outline | Chapter and section structure, optional figures/tables and checklists | Coverage, dependencies and no duplicate ownership |
 | Pilot | One written section | Editorial quality, factual accuracy, figure/table readability, profile conformance |
 | Expansion | Batches of chapters | Cross-references, consistency, licensing and evidence |
 | Publication | Artifact set and release | Exact artifact bytes, manifest, checksums and catalog entry |
@@ -123,6 +125,9 @@ An exception record states:
 
 Record it under `sdd/changes/<id>/profile-exceptions.md` in the book repository. A book-wide
 alternative profile is a new profile version, not an exception list.
+
+Figures and tables are optional under the standard profile. Omitting either because it would not
+help the reader is not an exception; an exception is only for a required element.
 
 ## Mechanical enforcement
 

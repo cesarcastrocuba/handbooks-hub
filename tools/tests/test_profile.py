@@ -71,12 +71,69 @@ class ProfileTests(unittest.TestCase):
         self.assertFalse(result.ok)
         self.assertTrue(any("must end with a period" in issue.message for issue in result.issues))
 
+    def test_standard_profile_is_topic_neutral_and_visuals_are_optional(self) -> None:
+        document = support.profile_document()
+        chapter = {element["id"]: element for element in document["chapter"]["required_elements"]}
+
+        self.assertIn("review-checklist", chapter)
+        self.assertNotIn("architecture-review-checklist", chapter)
+        self.assertEqual(chapter["review-checklist"]["title"], "Review Checklist")
+        self.assertFalse(
+            any("architecture" in element["title"].lower() for element in chapter.values())
+        )
+
+        for required in ("when-to-use", "key-takeaway", "worked-example", "further-reading"):
+            self.assertIn(required, chapter)
+        self.assertEqual(
+            document["unit"]["required_labels"],
+            ["Definition.", "Purpose.", "What it includes.", "Why it is needed."],
+        )
+
+        self.assertFalse(document["figure"]["required"])
+        self.assertEqual(document["figure"]["min_per_section"], 0)
+        self.assertFalse(document["table"]["required"])
+        self.assertEqual(document["table"]["min_per_section"], 0)
+        section_ids = {element["id"] for element in document["section"]["required_elements"]}
+        self.assertNotIn("figure", section_ids)
+        self.assertNotIn("table", section_ids)
+        self.assertTrue({"example", "common-pitfall", "decision-trade-off"} <= section_ids)
+
+        self.assertTrue(document["exceptions"]["allowed"])
+        self.assertTrue(document["exceptions"]["requires_owner_approval"])
+
     def test_required_figure_needs_a_minimum(self) -> None:
         document = support.profile_document()
+        document["figure"]["required"] = True
         document["figure"]["min_per_section"] = 0
         result = self.check(document)
         self.assertFalse(result.ok)
         self.assertTrue(any("figure is required" in issue.message for issue in result.issues))
+
+    def test_optional_figure_cannot_have_a_minimum(self) -> None:
+        document = support.profile_document()
+        document["figure"]["min_per_section"] = 1
+        result = self.check(document)
+        self.assertFalse(result.ok)
+        self.assertTrue(
+            any("figure is optional but min_per_section" in issue.message for issue in result.issues)
+        )
+
+    def test_required_table_needs_a_minimum(self) -> None:
+        document = support.profile_document()
+        document["table"]["required"] = True
+        document["table"]["min_per_section"] = 0
+        result = self.check(document)
+        self.assertFalse(result.ok)
+        self.assertTrue(any("table is required" in issue.message for issue in result.issues))
+
+    def test_optional_table_cannot_have_a_minimum(self) -> None:
+        document = support.profile_document()
+        document["table"]["min_per_section"] = 1
+        result = self.check(document)
+        self.assertFalse(result.ok)
+        self.assertTrue(
+            any("table is optional but min_per_section" in issue.message for issue in result.issues)
+        )
 
     def test_upscaling_is_rejected(self) -> None:
         document = support.profile_document()

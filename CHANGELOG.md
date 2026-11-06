@@ -16,6 +16,13 @@ semantic versioning once the toolkit is published.
   isolated environment and validates a book outside the hub checkout.
 - Dual licensing (`LICENSE`, `LICENSE-CODE`) and attribution notice.
 
+### Changed
+
+- Standard profile `0.2.0`: the mandatory architecture-specific checklist is now a topic-neutral
+  `Review Checklist`; figures and tables are optional when they would not help the reader, and their
+  absence is not an exception. The template pins the new profile version. The profile remains
+  **Proposed**. See `sdd/changes/0004-topic-neutral-profile/`.
+
 ### Fixed
 
 - The toolkit now ships its JSON Schemas as package data and resolves them from the installed package
