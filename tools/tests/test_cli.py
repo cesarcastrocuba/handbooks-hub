@@ -26,7 +26,7 @@ class CliTests(unittest.TestCase):
     def test_version(self) -> None:
         code, stdout, _ = self.run_cli("version")
         self.assertEqual(code, 0)
-        self.assertIn("handbook-toolkit 0.1.0", stdout)
+        self.assertIn("handbook-toolkit 0.2.0", stdout)
 
     def test_verify_fast(self) -> None:
         code, stdout, stderr = self.run_cli("--root", str(support.REPO_ROOT), "verify")
@@ -81,6 +81,50 @@ class CliTests(unittest.TestCase):
         )
         self.assertEqual(code, 1)
         self.assertIn("cannot read", stderr)
+
+    def test_validate_manuscript_section(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "pilot.qmd"
+            path.write_text(
+                "## 2.2 A Pilot\n\n"
+                "**Definition.** A thing.\n\n"
+                "**Purpose.** A decision.\n\n"
+                "**What it includes.** Fields.\n\n"
+                "**Why it is needed.** Evidence.\n\n"
+                "**Example.** A labeled case.\n\n"
+                '::: {.callout-warning title="Common Pitfall"}\nA mistake.\n:::\n\n'
+                '::: {.callout-important title="Decision & Trade-off"}\nA choice.\n:::\n',
+                encoding="utf-8",
+            )
+            code, stdout, stderr = self.run_cli(
+                "--root",
+                temp,
+                "validate-manuscript",
+                "pilot.qmd",
+                "--mode",
+                "section-pilot",
+                "--profile",
+                str(support.REPO_ROOT / "profiles/standard/profile.yaml"),
+            )
+            self.assertEqual(code, 0, stderr)
+            self.assertIn(": OK", stdout)
+
+    def test_validate_manuscript_missing_profile_returns_one(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "pilot.qmd"
+            path.write_text("## 2.2 A Pilot\n", encoding="utf-8")
+            code, _, stderr = self.run_cli(
+                "--root",
+                temp,
+                "validate-manuscript",
+                "pilot.qmd",
+                "--mode",
+                "section-pilot",
+                "--profile",
+                "missing-profile.yaml",
+            )
+            self.assertEqual(code, 1)
+            self.assertIn("cannot read", stderr)
 
 
 if __name__ == "__main__":

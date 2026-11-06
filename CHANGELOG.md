@@ -16,6 +16,8 @@ semantic versioning once the toolkit is published.
   proposed standard editorial profile, JSON schemas, book template, empty catalog and lightweight SDD
   records.
 - `handbook-toolkit` 0.1.0 with deterministic catalog, profile and book validators and unit tests.
+- `handbook-toolkit` 0.2.0 adds `validate-manuscript` for structural section-pilot and chapter
+  validation against an explicit profile, without requiring visuals.
 - Basic CI running the fast and full repository checks.
 - CI `wheel-install` job that builds the wheel, verifies the packaged schemas, installs it in an
   isolated environment and validates a book outside the hub checkout.

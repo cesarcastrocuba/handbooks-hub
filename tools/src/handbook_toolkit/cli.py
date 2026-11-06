@@ -10,9 +10,17 @@ from typing import Any
 from . import __version__
 from .books import validate_book
 from .catalog import validate_catalog
+from .manuscript import validate_manuscript
 from .profiles import validate_profile
 from .repository import verify_repository
-from .validation import CheckResult, DocumentError, Issue, load_schema_source, resolve_document
+from .validation import (
+    CheckResult,
+    DocumentError,
+    Issue,
+    load_document,
+    load_schema_source,
+    resolve_document,
+)
 
 DEFAULT_CATALOG = "catalog/catalog.json"
 DEFAULT_PROFILE = "profiles/standard/profile.yaml"
@@ -86,6 +94,31 @@ def command_book(args: argparse.Namespace) -> int:
     return 0 if result.ok else 1
 
 
+def command_manuscript(args: argparse.Namespace) -> int:
+    root = Path(args.root).resolve()
+    path = resolve_document(root, args.path, args.path)
+    profile_path = resolve_document(root, args.profile, args.profile)
+
+    schema = _load_schema(args, "profile.schema.json")
+    if schema is None:
+        return 1
+
+    profile_result = validate_profile(profile_path, schema)
+    if not profile_result.ok:
+        _print_result(profile_result)
+        return 1
+
+    try:
+        profile = load_document(profile_path)
+    except DocumentError as exc:
+        _print_result(CheckResult(str(profile_path), (Issue(str(profile_path), str(exc)),)))
+        return 1
+
+    result = validate_manuscript(path, profile, args.mode)
+    _print_result(result)
+    return 0 if result.ok else 1
+
+
 def command_version(_args: argparse.Namespace) -> int:
     print(f"handbook-toolkit {__version__}")
     return 0
@@ -127,6 +160,24 @@ def build_parser() -> argparse.ArgumentParser:
     book.add_argument("path", nargs="?", help=f"default: {DEFAULT_BOOK}")
     book.add_argument("--full", action="store_true", help="also check every manuscript file is listed")
     book.set_defaults(func=command_book)
+
+    manuscript = subparsers.add_parser(
+        "validate-manuscript",
+        help="validate a section pilot or chapter against an explicit profile",
+    )
+    manuscript.add_argument("path", help="Markdown/Quarto file to validate")
+    manuscript.add_argument(
+        "--mode",
+        required=True,
+        choices=("section-pilot", "chapter"),
+        help="structural mode: one section pilot or a full chapter",
+    )
+    manuscript.add_argument(
+        "--profile",
+        required=True,
+        help="profile YAML to validate against; explicit until packaged profile resolution exists",
+    )
+    manuscript.set_defaults(func=command_manuscript)
 
     version = subparsers.add_parser("version", help="print the toolkit version")
     version.set_defaults(func=command_version)
