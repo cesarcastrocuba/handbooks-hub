@@ -31,7 +31,7 @@
         "command": {"type": "string", "minLength": 1},
         "source_date_epoch": {"type": "integer", "minimum": 0},
         "tool_versions": {
-          "type": "object", "required": ["quarto", "pandoc", "typst", "python"],
+          "type": "object", "required": ["quarto", "pandoc", "typst", "python", "zlib"],
           "additionalProperties": {"type": "string", "minLength": 1}
         }
       }

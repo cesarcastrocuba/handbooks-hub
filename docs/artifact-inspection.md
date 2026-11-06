@@ -8,10 +8,13 @@ The toolkit's `artifacts` module complements publication byte integrity.
 - HTML site ZIP: root index, ZIP/CRC and local page, fragment and asset targets.
 - Source ZIP: canonical Quarto input, descriptor, licenses/notices and a ZIP comment
   matching the independently expected full source commit (as written by `git archive`).
+  Its declared reading-order file must exist and cover every canonical chapter once.
 
 Archives reject unsafe paths, duplicates and symlinks. The source bundle also
 rejects Git metadata and dependency-cache directories. External URLs are not
 fetched by this offline gate; online checking is a separate review/build step.
+Archives are bounded to 20,000 members, 1 GiB total uncompressed size and 128 MiB
+per member, with a maximum 1000:1 compression ratio. Encrypted members fail.
 
 PDF inspection requires Poppler's `pdfinfo` (`poppler-utils` on Debian/Ubuntu).
 Missing inspection tools are failures, not skipped successes. These structural
@@ -20,6 +23,8 @@ checks do not replace visual review of figures, tables, layout or factual accura
 `archive_tree(source, output, epoch)` writes a fresh ZIP with sorted entries,
 fixed UTC timestamps and normalized permissions. Its output must be outside the
 input tree. Source archives should instead come from the approved Git commit.
+Byte reproducibility is bounded to the pinned Python/zlib toolchain; their exact
+runtime versions belong in the manifest. No cross-toolchain byte identity is claimed.
 
 Verification: `python3 -m unittest discover -s tools/tests -p test_artifacts.py`.
 The runtime harness also inspects actual Quarto-generated PDF/DOCX/HTML and a
