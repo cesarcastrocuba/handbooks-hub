@@ -56,6 +56,16 @@ and unit rules to each ordinary content section; Worked Example and Further Read
 special chapter-level shapes. It does not judge meaning, factual accuracy, prose quality or visual
 usefulness, and it never requires a diagram or table.
 
+Once the book has a clean source commit and a reviewed profile, build a local six-file release
+directory (not a publication):
+
+```bash
+handbook-toolkit build-book --repo . --commit <FULL_SHA> --output /external/release --profile /path/to/reviewed-profile.yaml
+```
+
+The build requires Quarto `1.11.9` and Poppler `pdfinfo`, stages only tracked files, renders once,
+inspects every payload and atomically exposes the verified directory. It does not publish or deploy.
+
 ## Before the first commit
 
 1. Replace `id`, `title`, `catalog.slug` and `catalog.summary` in `book.yaml`.

@@ -51,19 +51,26 @@ does not produce a partial catalog entry.
   "toolkit": "0.3.0",
   "profile": { "id": "standard", "version": "0.2.0" },
   "build": {
-    "started_at": "<ISO-8601 UTC>",
-    "command": "handbook-toolkit book build .",
+    "command": "handbook-toolkit build-book --commit <40-hex>",
     "source_date_epoch": 1761868800,
-    "tool_versions": { "quarto": "1.11.9", "pandoc": "3.10", "python": "3.12" }
+    "tool_versions": {
+      "quarto": "1.11.9",
+      "pandoc": "3.10",
+      "typst": "0.15.1",
+      "python": "3.12",
+      "zlib": "1.3"
+    }
   },
   "artifacts": [
-    { "path": "book.pdf", "sha256": "<64-hex>", "bytes": 123456, "media_type": "application/pdf" }
+    { "role": "pdf", "path": "book.pdf", "sha256": "<64-hex>", "bytes": 123456,
+      "media_type": "application/pdf" }
   ]
 }
 ```
 
-The final schema is introduced in Phase 4 and validated by the toolkit before any release is
-published. The example is illustrative, not a released format.
+The manifest schema and verifier are bundled with the toolkit. The local build writes this identity
+only in a private staging directory and exposes the final directory after verification. The example
+is illustrative, not a released format.
 
 ## Quality gates
 

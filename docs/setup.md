@@ -217,12 +217,14 @@ Worked Example and Further Reading are special sections. The profile is referenc
 but is not yet resolved from the installed package; an explicit `--profile` is required, and prose
 quality, factual accuracy and visual usefulness remain review responsibilities.
 
-### Future publication toolchain (separate)
+### Optional publication build
 
-Quarto, Pandoc, Graphviz, PDF, DOCX, source bundles, manifests and checksums belong to the future
-publication pipeline. They are **not** installed by `requirements-dev.txt` or `requirements.txt` and
-are **not** required for the checks on this page. Do not claim a rendered artifact or publication
-from this setup guide.
+The separate `handbook-toolkit build-book` command renders HTML/Typst/DOCX, creates source and HTML
+ZIPs, inspects payloads, writes the manifest/checksums and atomically exposes a verified six-file
+directory. It requires Quarto `1.11.9`, Poppler `pdfinfo`, a clean source commit and an explicit
+`--profile`; none of that is installed by `requirements-dev.txt` or `requirements.txt` and none is
+required for the checks above. See [`publication-build.md`](publication-build.md). It does not
+publish, deploy or release anything.
 
 ## 8. Where to go next
 

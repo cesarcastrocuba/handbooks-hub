@@ -34,8 +34,6 @@ from .publication import verify_publication, write_manifest
 from .profiles import validate_profile
 from .books import validate_book
 from .validation import (
-    CheckResult,
-    Issue,
     load_document,
     load_packaged_schema,
 )
@@ -359,7 +357,7 @@ def build_book(
                 "version": profile_document["version"],
             },
             "build": {
-                "command": f"handbook-toolkit build-book --repo {repo} --commit {commit}",
+                "command": f"handbook-toolkit build-book --commit {commit}",
                 "source_date_epoch": source_epoch,
                 "tool_versions": tool_versions,
             },
@@ -371,6 +369,8 @@ def build_book(
                 "publication identity verification failed: "
                 + "; ".join(map(str, verification.issues))
             )
+        if output.exists() or output.is_symlink():
+            raise BuildError(f"output appeared during build; refusing to replace: {output}")
 
         os.replace(dist, output)
         return BuildResult(output, commit, book_version, source_epoch, tool_versions)

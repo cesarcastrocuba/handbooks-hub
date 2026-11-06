@@ -53,6 +53,7 @@ activation and troubleshooting, start with [`docs/setup.md`](docs/setup.md).
 | `tools/src/handbook_toolkit/schemas/` | JSON Schema contracts for books, profiles and the catalog, shipped inside the toolkit package |
 | `template/book/` | Minimal book-repository template with pinned-toolkit installation notes |
 | `catalog/` | Catalog of approved book releases; empty until a release is approved |
+| `docs/publication-build.md` | Local six-file build with staging, payload inspection and atomic finalization |
 | `sdd/` | Lightweight specification-driven delivery records |
 | `.github/` | CI and the pull-request template |
 

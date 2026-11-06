@@ -18,6 +18,9 @@ semantic versioning once the toolkit is published.
 - `handbook-toolkit` 0.1.0 with deterministic catalog, profile and book validators and unit tests.
 - `handbook-toolkit` 0.2.0 adds `validate-manuscript` for structural section-pilot and chapter
   validation against an explicit profile, without requiring visuals.
+- `handbook-toolkit` 0.3.0 adds `build-book`: clean-commit archive staging, one Quarto
+  HTML/Typst/DOCX render, payload inspection, manifest/checksum identity and atomic finalization,
+  without publishing.
 - Basic CI running the fast and full repository checks.
 - CI `wheel-install` job that builds the wheel, verifies the packaged schemas, installs it in an
   isolated environment and validates a book outside the hub checkout.
