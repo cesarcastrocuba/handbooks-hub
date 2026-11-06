@@ -20,9 +20,20 @@ schema and portal vocabulary update.
 
 The generator is offline and deterministic. It validates catalog shape/invariants,
 escapes untrusted text and refuses to overwrite an existing output directory.
-Actual release asset existence, approval and byte hashes must verify before an
-entry is accepted and the generated portal is deployed. A successful HTML build
-does not establish those external facts.
+Before generation/deployment, the workflow runs:
+
+```sh
+python3 -m handbook_toolkit.catalog_verification catalog/catalog.json
+```
+
+For each entry this online gate requires a published stable GitHub release,
+resolves its tag to the exact source commit, verifies manifest identity and all
+six assets, checks their formats, and compares every live reading-site file with
+the released HTML archive. Missing/mixed-release assets and changed bytes fail.
+An empty catalog makes no network requests. Payload downloads are limited to
+512 MiB each; API/identity responses to 2 MiB. Public GitHub API rate limits apply.
+Editorial approval remains a human decision recorded before catalog acceptance;
+neither checksums nor a published GitHub release prove that decision.
 
 The Pages workflow is manual and builds from the checked-out catalog. Deployment
 requires Pages configured with the GitHub Actions build type. Reading-site and

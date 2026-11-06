@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 from html import escape
 from pathlib import Path
+import shutil
+import tempfile
 
 from .catalog import validate_catalog
 from .validation import load_document, load_packaged_schema
@@ -83,11 +85,11 @@ def build_portal(catalog: Path, output: Path) -> Path:
     published = sum(book["status"] == "published" for book in books)
     archived = len(books) - published
     if books:
-        buttons = '<button type="button" data-filter="all" aria-pressed="true">All topics</button>'
-        buttons += "".join(f'<button type="button" data-filter="{category}" aria-pressed="false">{category.title()}</button>' for category in categories)
+        buttons = '<button type="button" data-filter="all" aria-controls="book-grid" aria-pressed="true">All topics</button>'
+        buttons += "".join(f'<button type="button" data-filter="{category}" aria-controls="book-grid" aria-pressed="false">{category.title()}</button>' for category in categories)
         content = f'''<div class="toolbar"><div class="filters" role="group" aria-label="Filter by topic">{buttons}</div>
 <label class="sort" for="sort">Sort by <select id="sort"><option value="az">Title A–Z</option><option value="za">Title Z–A</option><option value="latest">Latest release</option></select></label></div>
-<p class="results" id="results" aria-live="polite">Showing {len(books)} of {len(books)} handbooks</p><div class="grid">{''.join(_card(book) for book in books)}</div>'''
+<p class="results" id="results" aria-live="polite">Showing {len(books)} of {len(books)} handbooks</p><div class="grid" id="book-grid">{''.join(_card(book) for book in books)}</div>'''
     else:
         content = '''<div class="empty"><h3>The first handbook is being prepared.</h3><p>Handbooks appear here after an approved release and artifact verification. Each book will have its own reading site, source repository and downloadable editions.</p></div>'''
     planned = sorted(CATEGORIES - set(categories))
@@ -98,10 +100,17 @@ def build_portal(catalog: Path, output: Path) -> Path:
 <body><a class="skip" href="#library">Skip to handbooks</a><nav class="wrap" aria-label="Main navigation"><a class="brand" href="./">Handbook<span>Hub</span></a><a href="https://github.com/cesarcastrocuba/handbooks-hub">Contribute on GitHub</a></nav>
 <header><div class="wrap"><p class="eyebrow">Independent books · Shared standards</p><h1>Knowledge worth keeping.<br>Handbooks worth sharing.</h1><p class="intro">Practical technical knowledge, maintained in public. Read online, download an edition, or contribute to the next release.</p><p class="statusline">{published} published · {archived} archived · Verified release downloads</p></div></header>
 <main id="library" class="wrap"><h2>Explore the library</h2>{content}</main><footer><div class="wrap">Each handbook owns its source, review process and releases. This catalog links to approved editions; it does not mirror manuscript content.<br>Content: CC BY-SA 4.0 · Platform code: MIT · <a href="https://github.com/cesarcastrocuba/handbooks-hub">Source and contribution guide</a></div></footer><script>{SCRIPT}</script></body></html>'''
-    output.mkdir(parents=True, exist_ok=False)
-    destination = output / "index.html"
-    destination.write_text(page, encoding="utf-8")
-    return destination
+    if output.exists() or output.is_symlink():
+        raise FileExistsError(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    staged = Path(tempfile.mkdtemp(prefix=".portal-", dir=output.parent))
+    try:
+        (staged / "index.html").write_text(page, encoding="utf-8")
+        staged.rename(output)
+    finally:
+        if staged.exists():
+            shutil.rmtree(staged)
+    return output / "index.html"
 
 
 def main() -> int:

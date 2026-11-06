@@ -85,6 +85,8 @@ categories; empty categories are explicitly marked as planned facets.
 - The portal is static HTML generated from the catalog and deployed to Pages.
 - The portal never proxies or hosts book downloads; it links to immutable release assets.
 - Broken or missing release assets fail the portal build, not the reader's browser.
+- The deployment workflow runs online release/tag/hash/reading-site verification before generating
+  the static portal. Offline HTML generation alone does not establish those external facts.
 
 ## Non-goals
 

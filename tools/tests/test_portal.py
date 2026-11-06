@@ -4,6 +4,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import support
 from handbook_toolkit.portal import CATEGORIES, SCRIPT, build_portal
@@ -67,7 +68,7 @@ class PortalTests(unittest.TestCase):
         self.assertIn("&lt;script&gt;", page)
 
     def test_invalid_catalog_never_creates_output(self):
-        for change in ("missing-reading", "draft", "unknown-category"):
+        for change in ("missing-reading", "draft", "unknown-category", "branch-reading"):
             with self.subTest(change=change):
                 document = support.catalog_document()
                 book = document["books"][0]
@@ -75,6 +76,8 @@ class PortalTests(unittest.TestCase):
                     del book["reading_url"]
                 elif change == "draft":
                     book["status"] = "draft"
+                elif change == "branch-reading":
+                    book["reading_url"] = "https://github.com/owner/book/tree/main"
                 else:
                     book["categories"] = ["uncontrolled-topic"]
                 with self.assertRaises(ValueError):
@@ -85,6 +88,14 @@ class PortalTests(unittest.TestCase):
         self.build({"schema_version": "1.0", "books": []})
         with self.assertRaises(FileExistsError):
             build_portal(self.catalog, self.output)
+
+    def test_write_failure_never_leaves_a_partial_site(self):
+        support.write_json(self.catalog, {"schema_version": "1.0", "books": []})
+        with patch("handbook_toolkit.portal.Path.write_text", side_effect=OSError("disk failure")):
+            with self.assertRaises(OSError):
+                build_portal(self.catalog, self.output)
+        self.assertFalse(self.output.exists())
+        self.assertEqual(list(self.root.glob(".portal-*")), [])
 
     def test_portal_and_schema_category_vocabulary_agree(self):
         schema = load_packaged_schema("catalog.schema.json")

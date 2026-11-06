@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
+from urllib.parse import urlsplit
 from typing import Any
 
 from .validation import (
@@ -35,6 +36,12 @@ def validate_catalog(path: Path, schema: dict[str, Any]) -> CheckResult:
 
     for index, book in enumerate(books):
         location = f"{label}:books[{index}]"
+        try:
+            reading = urlsplit(book["reading_url"])
+            if not reading.hostname or reading.hostname.lower() in {"github.com", "www.github.com", "gitlab.com", "bitbucket.org"} or reading.hostname.lower().endswith("githubusercontent.com"):
+                issues.append(Issue(f"{location}.reading_url", "use a Pages/custom-domain reading site, not a repository, branch, PR or build URL"))
+        except ValueError:
+            issues.append(Issue(f"{location}.reading_url", "reading URL is malformed"))
         book_id = book["id"]
         slug = book["slug"]
 
