@@ -4,7 +4,7 @@
 **Status:** Approved
 **Date:** 2026-11-06
 **Branch:** `feat/topic-neutral-profile`
-**Approval commit:** pending (recorded by the follow-up evidence commit)
+**Approval commit:** `e50d8a5b454dd5d7f708e965d2120fd6d677be99`
 
 ## Actual repository and CI facts
 
@@ -21,13 +21,21 @@ work is on `feat/pinned-toolkit-integration` and was not merged or modified by t
 
 ## Local checks
 
+At the approval commit:
+
 ```bash
 make check
 make full
 ```
 
-Both are recorded at the approval commit after the follow-up evidence update. The current branch
-contains the profile approval change and the approval record.
+Result: **PASS**
+
+- 52 unit tests; `OK`.
+- `make check`: 5 checks, 0 problems.
+- `make full`: 6 checks, 0 problems, including documentation links.
+
+A clean clone of the branch at the approval commit also passed `make full` with 52 tests and 0
+problems.
 
 ## Scope statement
 
