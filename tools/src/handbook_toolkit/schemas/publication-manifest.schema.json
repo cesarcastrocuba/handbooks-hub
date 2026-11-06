@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://handbooks.example/schemas/publication-manifest.schema.json",
+  "title": "Publication manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "book", "toolkit", "profile", "build", "artifacts"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "book": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "version", "commit"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]+$"},
+        "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[A-Za-z0-9.-]+)?$"},
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+      }
+    },
+    "toolkit": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "profile": {
+      "type": "object", "additionalProperties": false, "required": ["id", "version"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"}
+      }
+    },
+    "build": {
+      "type": "object", "additionalProperties": false,
+      "required": ["command", "source_date_epoch", "tool_versions"],
+      "properties": {
+        "command": {"type": "string", "minLength": 1},
+        "source_date_epoch": {"type": "integer", "minimum": 0},
+        "tool_versions": {
+          "type": "object", "required": ["quarto", "pandoc", "python"],
+          "additionalProperties": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array", "minItems": 4, "maxItems": 4,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["role", "path", "sha256", "bytes", "media_type"],
+        "properties": {
+          "role": {"enum": ["html", "pdf", "docx", "source"]},
+          "path": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "bytes": {"type": "integer", "minimum": 1},
+          "media_type": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}
