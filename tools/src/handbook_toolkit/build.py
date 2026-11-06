@@ -140,9 +140,17 @@ def _validate_manuscripts(
 ) -> None:
     groups = _reading_groups(book, workspace)
     chapters = groups["chapters"]
-    if mode == "section-pilot" and len(chapters) != 1:
-        raise BuildError("section-pilot mode requires exactly one chapter entry in the reading order")
-    for entry in chapters:
+    appendices = groups["appendices"]
+    if mode == "section-pilot":
+        if len(chapters) != 1 or appendices:
+            raise BuildError(
+                "section-pilot mode requires exactly one chapter and no appendices in the reading order"
+            )
+        targets = chapters
+    else:
+        # Front matter, back matter and references are separate special groups.
+        targets = [*chapters, *appendices]
+    for entry in targets:
         path = workspace / entry
         result = validate_manuscript(path, profile, mode)
         if not result.ok:
@@ -165,6 +173,14 @@ def _book_version(repo: Path, requested: str | None) -> str:
     if not isinstance(version, str) or not VERSION.fullmatch(version):
         raise BuildError("book version must be an exact semantic version such as 1.0.0")
     return version
+
+
+def _require_prerelease_version(version: str, mode: str, preview: bool) -> None:
+    if (mode == "section-pilot" or preview) and "-" not in version:
+        raise BuildError(
+            "section-pilot and --preview builds require a prerelease book version "
+            "such as 0.1.0-preview, not a stable release version"
+        )
 
 
 def _epoch(repo: Path, commit: str, requested: int | None) -> int:
@@ -351,6 +367,7 @@ def build_book(
         entries = [entry for group in ("front", "chapters", "back", "appendices", "references") for entry in groups[group]]
         _validate_manuscripts(workspace, book, profile_document, mode)
         book_version = _book_version(workspace, version)
+        _require_prerelease_version(book_version, mode, preview)
 
         config_path = workspace / "publishing/_quarto.yml"
         try:
@@ -403,6 +420,7 @@ def build_book(
             "build": {
                 "command": "handbook-toolkit build-book --commit "
                 + commit
+                + f" --mode {mode}"
                 + (" --preview" if preview else ""),
                 "source_date_epoch": source_epoch,
                 "tool_versions": tool_versions,

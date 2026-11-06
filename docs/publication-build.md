@@ -8,10 +8,13 @@ book commit. It does **not** publish, upload, deploy, tag or release anything.
 - Git and a clean book repository at the exact full commit.
 - Quarto `1.11.9`.
 - Poppler `pdfinfo` for PDF inspection.
-- An explicit reviewed profile YAML. Profile packaging/resolution is not implemented yet.
+- A reviewed profile. Until packaged profile resolution is integrated, pass an explicit YAML; after
+  integration, omit `--profile` to resolve the exact book pin from the installed package.
 - A book-side `publishing/_quarto.yml` and `manuscript/book.yml` reading order.
 - A `book.yaml` toolkit pin exactly equal to the installed builder version. `--preview` is an
   explicit, non-release exception and is recorded in the manifest command.
+- Section-pilot and preview builds require a prerelease book version such as `0.1.0-preview`;
+  stable versions are refused for those modes.
 
 Quarto supplies its bundled Pandoc and Typst. The current validators do not require Quarto; only this
 publication build does.
@@ -27,10 +30,13 @@ Optional arguments:
 - `--version 1.0.0` overrides `publishing/metadata.yaml` for the book version.
 - `--epoch 1761868800` overrides the default commit timestamp / `SOURCE_DATE_EPOCH`.
 - `--quarto /path/to/quarto` selects the executable; it must report `1.11.9`.
-- `--mode chapter` (default) validates every chapter in the reading order. Use
-  `--mode section-pilot` for a partial pilot build; it requires exactly one chapter entry.
+- `--mode chapter` (default) validates every chapter and appendix in the reading order.
+  Front matter, back matter and references remain documented special groups.
+- `--mode section-pilot` validates exactly one chapter and no appendices; it requires a prerelease
+  version such as `0.1.0-preview`.
 - `--preview` allows a `book.yaml` toolkit pin that differs from the builder, only for an explicit
-  non-release preview. The manifest command records `--preview`.
+  non-release preview, and also requires a prerelease version. The manifest command records
+  `--mode` and `--preview`.
 
 The output directory must not exist and must be outside the source repository.
 
@@ -44,8 +50,8 @@ The output directory must not exist and must be outside the source repository.
 5. Reads and validates `book.yaml`, `publishing/metadata.yaml` and the reading order from the staged
    source, not from the mutable working tree.
 6. Checks the book's toolkit pin against the builder version (unless explicit `--preview`).
-7. Runs the structural manuscript validator for every chapter from the staged source with the
-   explicit reviewed profile before render.
+7. Resolves the reviewed profile and runs the structural validator for every chapter and appendix
+   from the staged source before render. Front matter, back matter and references are special groups.
 8. Generates a deterministic Quarto project config, using the book-side `publishing/_quarto.yml`
    and reading order; renders only HTML, Typst and DOCX with `--no-execute` and
    `SOURCE_DATE_EPOCH`.

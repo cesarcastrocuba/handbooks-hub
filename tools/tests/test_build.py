@@ -126,7 +126,7 @@ def commit_all(repo: Path, message: str = "fixture update") -> str:
     return _git(repo, "rev-parse", "HEAD")
 
 
-def make_book(root: Path, *, include_quarto: bool = True, chapter: bool = False) -> tuple[Path, str]:
+def make_book(root: Path, *, include_quarto: bool = True, chapter: bool = False, version: str = "1.0.0-preview") -> tuple[Path, str]:
     repo = root / "book"
     repo.mkdir()
     (repo / "book.yaml").write_text(
@@ -165,7 +165,7 @@ repository:
     )
     (repo / "manuscript/chapters/pilot.qmd").write_text(CHAPTER if chapter else PILOT, encoding="utf-8")
     (repo / "publishing").mkdir()
-    (repo / "publishing/metadata.yaml").write_text("version: '1.0.0'\n", encoding="utf-8")
+    (repo / "publishing/metadata.yaml").write_text(f"version: '{version}'\n", encoding="utf-8")
     if include_quarto:
         (repo / "publishing/_quarto.yml").write_text(
             """\
@@ -202,8 +202,8 @@ format:
     return repo, _git(repo, "rev-parse", "HEAD")
 
 
+@unittest.skipUnless(BUILD_AVAILABLE, "Quarto and pdfinfo are required for the real build")
 class BuildTests(unittest.TestCase):
-    @unittest.skipUnless(BUILD_AVAILABLE, "Quarto and pdfinfo are required for the real build")
     def test_builds_verified_six_file_directory_and_source_comment(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -225,6 +225,7 @@ class BuildTests(unittest.TestCase):
             )
             manifest = json.loads((output / "publication-manifest.json").read_text())
             self.assertEqual(manifest["book"]["commit"], commit)
+            self.assertIn("--mode section-pilot", manifest["build"]["command"])
             self.assertIn("zlib", manifest["build"]["tool_versions"])
             self.assertIn("typst", manifest["build"]["tool_versions"])
             with zipfile.ZipFile(output / "book-source.zip") as archive:
@@ -268,7 +269,7 @@ class BuildTests(unittest.TestCase):
     def test_default_chapter_mode_builds_a_full_chapter(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            repo, commit = make_book(root, chapter=True)
+            repo, commit = make_book(root, chapter=True, version="1.0.0")
             output = root / "dist"
             result = build_book(repo, commit, output, profile=PROFILE)
             self.assertTrue(result.output.is_dir())
@@ -287,6 +288,35 @@ class BuildTests(unittest.TestCase):
             output = root / "dist"
             with self.assertRaises(BuildError):
                 build_book(repo, commit, output, profile=PROFILE, mode="section-pilot")
+            self.assertFalse(output.exists())
+
+    def test_section_pilot_requires_a_prerelease_version(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, commit = make_book(root, version="1.0.0")
+            output = root / "dist"
+            with self.assertRaises(BuildError):
+                build_book(repo, commit, output, profile=PROFILE, mode="section-pilot")
+            self.assertFalse(output.exists())
+
+    def test_chapter_mode_validates_appendices(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, commit = make_book(root, chapter=True, version="1.0.0")
+            appendix = repo / "manuscript/appendices/appendix-a.qmd"
+            appendix.parent.mkdir(exist_ok=True)
+            appendix.write_text("## Appendix A\n\nNo chapter structure.\n", encoding="utf-8")
+            reading = repo / "manuscript/book.yml"
+            reading.write_text(
+                reading.read_text(encoding="utf-8").replace(
+                    "appendices: []", "appendices:\n  - appendices/appendix-a.qmd"
+                ),
+                encoding="utf-8",
+            )
+            commit = commit_all(repo, "invalid appendix")
+            output = root / "dist"
+            with self.assertRaises(BuildError):
+                build_book(repo, commit, output, profile=PROFILE)
             self.assertFalse(output.exists())
 
     def test_preview_mode_is_explicit_and_non_release(self) -> None:
