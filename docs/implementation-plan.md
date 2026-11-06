@@ -1,15 +1,17 @@
 # Implementation plan — reusable handbook platform
 
-**Status:** Phase 1 integrated; Phase 2 manuscript validation integrated; Phase 4 local build in progress.
+**Status:** Phase 1 integrated; Phase 2 profile/template/toolkit closure prepared; Phase 4 local build in progress.
 **Version:** 0.1.0
 **Date:** 2026-11-06
 **Scope of this milestone:** local hub repository only. The sample book repository, GitHub
 repositories, Pages, releases and migration are explicitly out of scope. The sample repository was
 scaffolded concurrently by a separate session; this session only reads and records that fact.
 
-> **Current state (2026-11-06):** Phase 1 foundation, the dual-license defaults, standard profile
-> `0.2.0`, setup docs and structural manuscript validation are integrated on `main` at `477d704`.
-> `feat/publication-build` adds a staged, verified local build on the publication dependency stack.
+> **Current state (2026-11-06):** Phase 1 foundation, the dual-license defaults, profile `0.2.0`,
+> setup docs, structural manuscript validation, reference validation and shared render resources are
+> integrated on `main` at `66d0581`. `feat/phase2-closure` adds standard profile `1.0.0` with per-rule
+> classifications, book template `1.0.0`, toolkit `0.4.0` and the chapter-title PDF fix. Phase 2 is
+> ready for the owner gate; no merge, tag or release is performed by this branch.
 > The portal/catalog work is a separate root-owned branch. Pilot approval, publication and release
 > are not authorized. See [`STATUS.md`](../STATUS.md) and
 > [the approval record](../sdd/changes/0005-owner-approvals/approval.md).
@@ -146,7 +148,7 @@ book repository (independent)
 | Editorial profile | `profile.yaml` | Profile `0.2.0` | Toolkit, reviewers, books |
 | Catalog | `catalog/catalog.json` | Schema `1.0` | Portal, reviewers |
 | Publication manifest | `publication-manifest.json` (Phase 4) | Schema `1.0` (planned) | Toolkit, catalog, auditors |
-| Toolkit CLI | `handbook-toolkit` | Semver `0.3.0` | Books, CI, portal |
+| Toolkit CLI | `handbook-toolkit` | Semver `0.4.0` | Books, CI, portal |
 
 A book pins the toolkit and profile versions it was written and verified against. The toolkit never
 silently upgrades a book's profile.
@@ -164,7 +166,7 @@ silently upgrades a book's profile.
 | Phase | Goal | Primary output | Gate |
 | --- | --- | --- | --- |
 | 1 | Foundation | Local hub scaffold, contracts, plan, basic CI; sample repository scaffold | Independent review + owner Gate 1 |
-| 2 | Shared toolkit, profile and template | Toolkit `0.3.0`, profile `1.0.0`, template `1.0.0`, deterministic validators | Owner approves profile and toolkit contract |
+| 2 | Shared toolkit, profile and template | Toolkit `0.4.0`, profile `1.0.0`, template `1.0.0`, deterministic validators | Owner approves profile and toolkit contract |
 | 3 | Sample book | Approved brief, outline and pilot, then full manuscript | Gate 3a brief, 3b outline, 3c pilot, 3d manuscript |
 | 4 | Catalog and publication | Artifact build, manifest, checksums, catalog, portal, Pages/Releases | Owner authorizes publication; independent artifact review |
 | 5 | Adapters, automation, stabilization | Optional agent adapters, catalog automation, clean-clone matrix, runbook | Clean-clone verification + owner acceptance |
@@ -209,7 +211,7 @@ scaffold before building the full toolkit or writing the sample book.
 - `tools/src/handbook_toolkit/schemas/profile.schema.json`, `book.schema.json`, `catalog.schema.json`.
 - `template/book/` minimal book descriptor and manuscript reading order.
 - `catalog/catalog.json` empty and valid.
-- `tools/` package `handbook-toolkit` 0.3.0 with CLI, validators and `unittest` tests.
+- `tools/` package `handbook-toolkit` 0.4.0 with CLI, validators and `unittest` tests.
 - `.github/workflows/ci.yml` and `.github/pull_request_template.md`.
 - `sdd/changes/0001-hub-scaffold/` proposal, spec, tasks and evidence.
 
@@ -261,7 +263,7 @@ copying hub code.
 | P2-04 | Manuscript validators | P2-02 | Chapter skeleton, unit labels, section closure, figure/table rules, cross-references |
 | P2-05 | Deterministic test suite | P2-01..P2-04 | Positive and negative fixtures for every rule; stable output |
 | P2-06 | CI and clean-clone check | P2-01..P2-05 | Fast and full checks pass on a fresh clone |
-| P2-GATE | Contract approval | All above | Owner approves profile `1.0.0` and toolkit `0.3.0` |
+| P2-GATE | Contract approval | All above | Owner approves profile `1.0.0` and toolkit `0.4.0` |
 
 ### Toolkit responsibilities
 
@@ -312,7 +314,7 @@ not require a parent checkout.
 The owner approves:
 
 - profile `1.0.0` and its automated/manual split;
-- toolkit `0.3.0` public API and versioning policy;
+- toolkit `0.4.0` public API and versioning policy;
 - template `1.0.0` and the book upgrade procedure.
 
 No sample-book chapter expansion starts before this gate.
@@ -324,9 +326,13 @@ make check
 make full
 python3 -m unittest discover -s tools/tests -v
 handbook-toolkit --root . verify --full
-# planned
-handbook-toolkit book check template/book
+python3 -m unittest discover -s tools/tests -p test_template.py -v
 ```
+
+The template test copies `template/book` to a temporary directory, replaces the identifiers, runs the
+template's own `make check` and, when Quarto and `pdfinfo` are installed, performs a real `make build`
+and inspects the six payloads. The Phase 2 closure record is
+[`sdd/changes/0009-phase2-closure/`](../sdd/changes/0009-phase2-closure/).
 
 ---
 
@@ -621,9 +627,9 @@ Rules:
 
 - [x] Hub Git repository initialized on `main`.
 - [x] Governance, contracts, decisions, assumptions and plan written.
-- [x] Standard profile `0.2.0` and schemas added; owner approved.
-- [x] Toolkit 0.3.0 with validators and tests added.
-- [x] Empty catalog and valid book template added.
+- [x] Standard profile `1.0.0` and schemas added; `0.2.0` remains resolvable.
+- [x] Toolkit `0.4.0` with validators, build/reference/render APIs and tests added.
+- [x] Empty catalog and buildable book template `1.0.0` added.
 - [x] Basic CI and pull-request template added.
 - [x] Lightweight SDD record added.
 - [x] This session wrote nothing outside `handbooks-hub`; the reference worktree is clean and the sample lane is independent.
@@ -646,7 +652,7 @@ Rules:
 | --- | --- | --- |
 | Independent book repositories own canonical sources | `docs/architecture.md`, `HUB-DEC-001`, template | Contract defined; sample lane separate |
 | Hub owns static portal | `docs/catalog-contract.md`, `catalog/`, planned portal | Phase 4 |
-| Shared versioned toolkit under `tools/` | `tools/`, `handbook-toolkit` 0.3.0 | Validators implemented |
+| Shared versioned toolkit under `tools/` | `tools/`, `handbook-toolkit` 0.4.0 | Validators implemented |
 | Schemas | `tools/src/handbook_toolkit/schemas/*.json` | Book, profile, catalog |
 | Common profiles | `profiles/standard/profile.yaml` | Approved `0.2.0` |
 | Template | `template/book/` | Minimal; Phase 2 completes |

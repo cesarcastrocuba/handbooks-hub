@@ -142,6 +142,27 @@ class ProfileTests(unittest.TestCase):
         self.assertFalse(result.ok)
         self.assertTrue(any("upscaling" in issue.message for issue in result.issues))
 
+    def test_profile_1_rules_have_complete_classifications(self) -> None:
+        document = support.profile_document()
+        self.assertEqual(document["version"], "1.0.0")
+        rules = document["validation"]["rules"]
+        self.assertEqual(len({rule["id"] for rule in rules}), len(rules))
+        self.assertEqual({rule["classification"] for rule in rules} - {"automated", "assisted", "manual"}, set())
+
+    def test_profile_1_requires_validation_rules(self) -> None:
+        document = support.profile_document()
+        document.pop("validation")
+        result = self.check(document)
+        self.assertFalse(result.ok)
+        self.assertTrue(any("requires rule classifications" in issue.message for issue in result.issues))
+
+    def test_duplicate_rule_ids_are_rejected(self) -> None:
+        document = support.profile_document()
+        document["validation"]["rules"].append(support.copy_document(document["validation"]["rules"][0]))
+        result = self.check(document)
+        self.assertFalse(result.ok)
+        self.assertTrue(any("duplicate rule id" in issue.message for issue in result.issues))
+
     def test_unknown_field_is_rejected_by_schema(self) -> None:
         document = support.profile_document()
         document["chapter"]["unknown"] = True

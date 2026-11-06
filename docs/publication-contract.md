@@ -48,7 +48,7 @@ does not produce a partial catalog entry.
 {
   "schema_version": "1.0",
   "book": { "id": "example-book", "version": "1.0.0", "commit": "<40-hex>" },
-  "toolkit": "0.3.0",
+  "toolkit": "0.4.0",
   "profile": { "id": "standard", "version": "0.2.0" },
   "build": {
     "command": "handbook-toolkit build-book --commit <40-hex>",

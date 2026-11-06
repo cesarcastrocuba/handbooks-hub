@@ -15,19 +15,23 @@ from handbook_toolkit.validation import DocumentError
 
 class ProfileResourceTests(unittest.TestCase):
     def test_exact_profile_is_approved_and_freshly_loaded(self):
-        profile = load_profile("standard", "0.2.0")
+        profile = load_profile("standard", "1.0.0")
         self.assertEqual(profile["status"], "approved")
         profile["title"] = "local mutation"
-        self.assertNotEqual(load_profile("standard", "0.2.0")["title"], "local mutation")
+        self.assertNotEqual(load_profile("standard", "1.0.0")["title"], "local mutation")
 
     def test_packaged_snapshot_matches_canonical_approved_profile(self):
         source = support.REPO_ROOT / "profiles/standard/profile.yaml"
-        packaged = support.SRC / "handbook_toolkit/profile_data/standard-0.2.0.yaml"
+        packaged = support.SRC / "handbook_toolkit/profile_data/standard-1.0.0.yaml"
         self.assertEqual(source.read_bytes(), packaged.read_bytes())
-        self.assertEqual(load_profile("standard", "0.2.0"), support.profile_document())
+        self.assertEqual(load_profile("standard", "1.0.0"), support.profile_document())
+
+    def test_previous_0_2_snapshot_remains_resolvable(self):
+        profile = load_profile("standard", "0.2.0")
+        self.assertEqual((profile["version"], profile["status"]), ("0.2.0", "approved"))
 
     def test_missing_version_ranges_and_traversal_fail_without_fallback(self):
-        for identity, version in (("standard", "9.9.9"), ("standard", ">=0.2.0"),
+        for identity, version in (("standard", "9.9.9"), ("standard", ">=1.0.0"),
                                   ("../standard", "0.2.0"), ("standard", "../../profile")):
             with self.subTest(identity=identity, version=version):
                 with self.assertRaises(DocumentError):
@@ -47,9 +51,9 @@ class ProfileResourceTests(unittest.TestCase):
                 sys.executable, "-c",
                 "import handbook_toolkit; from handbook_toolkit.profile_resources import load_profile; "
                 "assert '.zip/' in handbook_toolkit.__file__; "
-                "p=load_profile('standard','0.2.0'); print(p['id'],p['version'],p['status'])",
+                "p=load_profile('standard','1.0.0'); print(p['id'],p['version'],p['status'])",
             ], cwd=root, env=environment, text=True, timeout=30)
-            self.assertEqual(output.strip(), "standard 0.2.0 approved")
+            self.assertEqual(output.strip(), "standard 1.0.0 approved")
 
 
 if __name__ == "__main__":

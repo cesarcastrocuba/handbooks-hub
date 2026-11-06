@@ -70,31 +70,11 @@ jobs:
           . .venv/bin/activate
           python3 -m pip install --upgrade pip
           python3 -m pip install -r requirements.txt
-          handbook-toolkit --root . validate-book
-          test "$(handbook-toolkit version)" = "handbook-toolkit 0.3.0"
-          cat > manuscript/chapters/pilot.qmd <<'QMD'
-          ## 2.2 A Pilot Section
-
-          **Definition.** A definition.
-
-          **Purpose.** A purpose.
-
-          **What it includes.** Contents.
-
-          **Why it is needed.** Evidence.
-
-          **Example.** A labeled example.
-
-          ::: {.callout-warning title="Common Pitfall"}
-          A mistake.
-          :::
-
-          ::: {.callout-important title="Decision & Trade-off"}
-          A trade-off.
-          :::
-          QMD
-          handbook-toolkit --root . validate-manuscript manuscript/chapters/pilot.qmd \
-            --mode section-pilot --profile "$GITHUB_WORKSPACE/profiles/standard/profile.yaml"
+          handbook-toolkit --root . validate-book --full
+          handbook-toolkit --root . validate-references book.yaml
+          handbook-toolkit --root . validate-manuscript manuscript/chapters/01-example.qmd \
+            --mode chapter --profile "$GITHUB_WORKSPACE/profiles/standard/profile.yaml"
+          test "$(handbook-toolkit version)" = "handbook-toolkit 0.4.0"
 
   publication-build:
     runs-on: ubuntu-24.04
@@ -118,6 +98,8 @@ jobs:
         run: python3 -m unittest discover -s tools/tests -p test_build.py -v
       - name: Run render-resource runtime tests
         run: python3 -m unittest discover -s tools/tests -p test_render_resources.py -v
+      - name: Copy and build the template in a temporary repository
+        run: python3 -m unittest discover -s tools/tests -p test_template.py -v
 
   wheel-install:
     runs-on: ubuntu-24.04
@@ -164,8 +146,10 @@ jobs:
           print(path)
           assert "site-packages" in str(path), path
           from handbook_toolkit.profile_resources import load_profile
-          profile = load_profile("standard", "0.2.0")
-          assert profile["status"] == "approved", profile
+          current = load_profile("standard", "1.0.0")
+          previous = load_profile("standard", "0.2.0")
+          assert current["status"] == "approved", current
+          assert previous["status"] == "approved", previous
           PY
       - name: Validate an independent book outside the checkout
         run: |

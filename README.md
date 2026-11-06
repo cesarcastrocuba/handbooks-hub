@@ -48,12 +48,13 @@ activation and troubleshooting, start with [`docs/setup.md`](docs/setup.md).
 | Path | Purpose |
 | --- | --- |
 | `docs/` | Architecture, contracts, decisions, assumptions, setup guide and phased plan |
-| `profiles/standard/` | Approved standard editorial profile `0.2.0` |
+| `profiles/standard/` | Approved standard editorial profile `1.0.0` with per-rule validation classification |
 | `tools/` | Versioned `handbook-toolkit` package with deterministic validators and tests |
 | `tools/src/handbook_toolkit/schemas/` | JSON Schema contracts for books, profiles and the catalog, shipped inside the toolkit package |
-| `template/book/` | Minimal book-repository template with pinned-toolkit installation notes |
+| `template/book/` | Book template `1.0.0` with publishing config, licenses and `make check`/`build`/`full` |
 | `catalog/` | Catalog of approved book releases; empty until a release is approved |
 | `docs/publication-build.md` | Local six-file build with staging, payload inspection and atomic finalization |
+| `docs/book-upgrade.md` | Supported toolkit/profile upgrade path for an independent book |
 | `sdd/` | Lightweight specification-driven delivery records |
 | `.github/` | CI and the pull-request template |
 

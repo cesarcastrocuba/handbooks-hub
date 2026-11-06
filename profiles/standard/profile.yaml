@@ -1,11 +1,12 @@
-# Standard handbook profile, version 0.2.0.
-# Approved by the owner on 2026-11-06. The profile is the default for new books; alternative
+# Standard handbook profile, version 1.0.0.
+# Approved by the owner on 2026-11-06; 1.0.0 preserves the approved 0.2.0 rules and adds
+# an explicit automated/assisted/manual classification for every rule. The profile is the default for new books; alternative
 # profiles and explicit, owner-approved exceptions remain allowed.
 # The machine-readable schema ships with the toolkit at
 # tools/src/handbook_toolkit/schemas/profile.schema.json.
 schema_version: "1.0"
 id: standard
-version: "0.2.0"
+version: "1.0.0"
 status: approved
 title: Standard handbook profile
 description: >-
@@ -119,3 +120,55 @@ exceptions:
   allowed: true
   requires_owner_approval: true
   record_location: "sdd/changes/<id>/profile-exceptions.md"
+
+
+# Explicit enforcement classification for every profile rule. This does not change the approved
+# 0.2.0 editorial rules; it records which checks are deterministic, which the tool assists, and
+# which remain human review.
+validation:
+  rules:
+    - id: chapter-skeleton
+      description: Required chapter callouts, worked example, review checklist and Further Reading placement.
+      classification: automated
+    - id: section-closing
+      description: Example, Common Pitfall and Decision & Trade-off presence, order and actual forms.
+      classification: automated
+    - id: unit-labels
+      description: Definition/Purpose/What it includes/Why it is needed labels and ordering.
+      classification: automated
+    - id: heading-meaningful
+      description: Section and unit headings carry a real title rather than a placeholder.
+      classification: assisted
+    - id: figure-presence
+      description: Figures are optional; when present they have a caption, source and alt text.
+      classification: assisted
+    - id: figure-readability
+      description: Proportional sizing, no upscaling and at least 10 pt effective print text.
+      classification: manual
+    - id: table-caption
+      description: Captioned tables use Table N.T — Title below the table outside the decision callout.
+      classification: automated
+    - id: table-widths
+      description: Column widths adapt to visible content and remain readable after rendering.
+      classification: manual
+    - id: cross-references
+      description: Explicit @sec/@fig/@tbl labels and local image paths resolve across the reading order.
+      classification: automated
+    - id: glossary-links
+      description: Automatic glossary-term linking stays off; navigation links are deliberate.
+      classification: manual
+    - id: appendix-shape
+      description: Appendices are validated with chapters in chapter mode.
+      classification: automated
+    - id: pilot-prerelease
+      description: Section-pilot and preview builds require a prerelease book version.
+      classification: automated
+    - id: publication-identity
+      description: Manifest/checksum identity, payload inspection and atomic final output.
+      classification: automated
+    - id: licensing
+      description: Content/code licenses, notices, attribution and third-party rights review.
+      classification: manual
+    - id: exceptions
+      description: Required omissions are explicit, reasoned and owner-approved.
+      classification: manual

@@ -184,6 +184,18 @@
         "requires_owner_approval": { "type": "boolean" },
         "record_location": { "type": "string", "minLength": 1 }
       }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rules"],
+      "properties": {
+        "rules": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/rule" }
+        }
+      }
     }
   },
   "$defs": {
@@ -222,6 +234,22 @@
           ]
         },
         "required": { "type": "boolean" }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description", "classification"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{1,63}$"
+        },
+        "description": { "type": "string", "minLength": 1 },
+        "classification": {
+          "type": "string",
+          "enum": ["automated", "assisted", "manual"]
+        }
       }
     }
   }

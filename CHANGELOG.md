@@ -20,8 +20,22 @@ semantic versioning once the toolkit is published.
   validation against an explicit profile, without requiring visuals.
 - `handbook-toolkit` 0.3.0 adds `build-book`: exact toolkit-pin enforcement, staged source/manuscript
   validation, one Quarto HTML/Typst/DOCX render with `--no-execute`, payload inspection,
-  manifest/checksum identity and atomic finalization, without publishing. It also runs the reference/label/image gate and stages the packaged Quarto/Typst render resources. The Typst chapter-title overflow is suppressed with a staged white brand primary and black link color. `--profile` is optional;
-the exact book pin resolves from the installed packaged profile.
+  manifest/checksum identity and atomic finalization, without publishing. It also runs the
+  reference/label/image gate and stages the packaged Quarto/Typst render resources. `--profile` is
+  optional; the exact book pin resolves from the installed packaged profile.
+- `handbook-toolkit` 0.4.0 publishes the assembled build, reference and render-resource APIs as the
+  supported Phase 2 surface. The generated Typst project sets a white brand primary and explicit
+  black link color, which removes the orange-book chapter-title block that overflowed the right page
+  edge while keeping links readable.
+- Standard profile `1.0.0`: every approved `0.2.0` rule is unchanged and each rule now carries an
+  explicit `automated`, `assisted` or `manual` classification. The packaged `0.2.0` snapshot remains
+  resolvable.
+- Book template `1.0.0`: `publishing/_quarto.yml`, publication metadata, `LICENSE`, `LICENSE-CODE`,
+  `NOTICE.md`, and `make check`/`build`/`full` targets against the pinned toolkit. A regression test
+  copies the template outside the hub, replaces identifiers, runs the checks and performs a real
+  six-file build.
+- `docs/book-upgrade.md` records the supported toolkit/profile upgrade procedure, including the
+  `0.3.0` to `0.4.0` and profile `0.2.0` to `1.0.0` path.
 - Basic CI running the fast and full repository checks.
 - CI `wheel-install` job that builds the wheel, verifies the packaged schemas, installs it in an
   isolated environment and validates a book outside the hub checkout.
@@ -29,6 +43,8 @@ the exact book pin resolves from the installed packaged profile.
 
 ### Changed
 
+- The default standard profile is now `1.0.0`; the template pins toolkit `0.4.0` and profile `1.0.0`,
+  and its requirements file points at the reviewed hub commit.
 - Owner approved the Phase 1 foundation, the dual-license defaults, the broad technical/software
   audience and standard profile `0.2.0`, and authorized root integration of the reviewed
   `feat/topic-neutral-profile` branch. Pilot approval and release remain unauthorized. See
