@@ -1,13 +1,12 @@
 # Standard handbook profile, version 0.2.0.
-# Status is "proposed": the owner must approve it at Gate 1/2 before it becomes the default.
-# 0.2.0 makes the review checklist topic-neutral and diagrams/tables optional when they do not
-# help the reader. Explicit profiles and exceptions remain the escape hatch.
+# Approved by the owner on 2026-11-06. The profile is the default for new books; alternative
+# profiles and explicit, owner-approved exceptions remain allowed.
 # The machine-readable schema ships with the toolkit at
 # tools/src/handbook_toolkit/schemas/profile.schema.json.
 schema_version: "1.0"
 id: standard
 version: "0.2.0"
-status: proposed
+status: approved
 title: Standard handbook profile
 description: >-
   Reader-first handbook structure derived from the existing Solutions Architecture Handbook:

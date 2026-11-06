@@ -5,7 +5,7 @@ contracts, the versioned Python toolkit, the standard editorial profile, the boo
 catalog and the static portal. Each book repository owns its canonical manuscript and publishes its
 own reading site and release downloads.
 
-Status: **Phase 1 scaffold, pending independent review.** See [`STATUS.md`](STATUS.md) and the
+Status: **Phase 1 foundation approved; Phase 2 next.** See [`STATUS.md`](STATUS.md) and the
 [implementation plan](docs/implementation-plan.md).
 
 ## What exists today
@@ -13,7 +13,7 @@ Status: **Phase 1 scaffold, pending independent review.** See [`STATUS.md`](STAT
 | Path | Purpose |
 | --- | --- |
 | `docs/` | Architecture, contracts, decisions, assumptions and the phased plan |
-| `profiles/standard/` | Proposed standard editorial profile derived from the existing handbook |
+| `profiles/standard/` | Approved standard editorial profile `0.2.0` |
 | `tools/` | Versioned `handbook-toolkit` package with deterministic validators and tests |
 | `tools/src/handbook_toolkit/schemas/` | JSON Schema contracts for books, profiles and the catalog, shipped inside the toolkit package |
 | `template/book/` | Minimal book-repository template, intentionally incomplete until Phase 2 |
@@ -41,10 +41,9 @@ PYTHONPATH=tools/src python3 -m handbook_toolkit --root . verify --full
 
 ## Scope and non-goals
 
-This milestone does not create GitHub repositories, deploy a site, publish a release, edit the
-sample book repository or migrate the existing handbook. The sample repository is being scaffolded
-concurrently by its own session; this milestone does not edit it. Those are separate, owner-gated
-steps in the plan.
+The hub and sample repositories now exist on GitHub and their CI has passed. This branch does not
+merge, deploy a site, publish a release, edit the sample book repository or migrate the existing
+handbook. Pilot approval and any release remain owner-gated steps.
 
 ## Licensing
 

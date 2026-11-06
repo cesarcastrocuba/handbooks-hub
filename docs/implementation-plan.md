@@ -1,11 +1,16 @@
 # Implementation plan — reusable handbook platform
 
-**Status:** Draft for independent review. Owner approval is required at every gate.
+**Status:** Phase 1 approved; Phase 2 pending.
 **Version:** 0.1.0
 **Date:** 2026-11-06
 **Scope of this milestone:** local hub repository only. The sample book repository, GitHub
 repositories, Pages, releases and migration are explicitly out of scope. The sample repository was
 scaffolded concurrently by a separate session; this session only reads and records that fact.
+
+> **Current state (2026-11-06):** Phase 1 foundation, the dual-license defaults and standard profile
+> `0.2.0` are owner-approved. The hub and sample GitHub repositories exist, and their CI has passed.
+> Pilot approval and release are not authorized. See [`STATUS.md`](../STATUS.md) for live state and
+> [the approval record](../sdd/changes/0005-owner-approvals/approval.md).
 
 This plan turns `IMPLEMENTATION-HANDOFF.md` and the Engram handoff summary #6795 into reviewable work.
 It records what was inspected, the contracts the platform must honour, the phase sequence, the work
@@ -198,7 +203,7 @@ scaffold before building the full toolkit or writing the sample book.
 - `LICENSE` (CC BY-SA 4.0) and `LICENSE-CODE` (MIT).
 - `docs/architecture.md`, `editorial-contract.md`, `publication-contract.md`,
   `catalog-contract.md`, `decisions.md`, `assumptions.md`, `implementation-plan.md`.
-- `profiles/standard/profile.yaml` as a proposed profile.
+- `profiles/standard/profile.yaml` as the approved standard profile (owner approval recorded in `HUB-DEC-015`).
 - `tools/src/handbook_toolkit/schemas/profile.schema.json`, `book.schema.json`, `catalog.schema.json`.
 - `template/book/` minimal book descriptor and manuscript reading order.
 - `catalog/catalog.json` empty and valid.
@@ -220,10 +225,11 @@ scaffold before building the full toolkit or writing the sample book.
 
 ### Gate 1 owner decisions
 
-- Approve the hub/sample split and the separate sample-repository lane.
-- Approve the proposed standard profile direction, or request changes before Phase 2.
-- Confirm the licensing and notice scope.
-- Authorize the next phase; do not authorize deployment or repository creation by implication.
+- Hub/sample split and the separate sample-repository lane: **approved**.
+- Standard profile `0.2.0` and the explicit exceptions model: **approved**.
+- Dual-license and notice scope: **approved**.
+- Integration of the reviewed `feat/topic-neutral-profile` branch: **authorized**; root integrates.
+- Phase 2 may start after integration. Pilot approval, deployment and release remain unauthorized.
 
 ### Evidence
 
@@ -598,40 +604,37 @@ Rules:
 
 | Decision | Gate | Current state |
 | --- | --- | --- |
-| Approve hub/book repository split and the separate sample lane | Gate 1 | Proposed (`HUB-DEC-001`, `HUB-DEC-012`) |
-| Approve standard profile direction and exceptions model | Gate 1/2 | Proposed (`HUB-DEC-004`) |
-| Confirm licensing and attribution scope | Gate 1 | Proposed (`HUB-DEC-009`) |
+| Approve hub/book repository split and the separate sample lane | Gate 1 | **Approved** (`HUB-DEC-001`, `HUB-DEC-012`) |
+| Approve standard profile direction and exceptions model | Gate 1/2 | **Approved** `0.2.0` (`HUB-DEC-004`, `HUB-DEC-015`) |
+| Confirm licensing and attribution scope | Gate 1 | **Approved** (`HUB-DEC-009`, `HUB-DEC-015`) |
 | Approve sample book brief | Gate 3a | Not started |
 | Approve sample book outline | Gate 3b | Not started |
 | Approve pilot section | Gate 3c | Not started |
 | Approve manuscript release candidate | Gate 3d | Not started |
-| Authorize GitHub repositories and Pages | Before Phase 4 | Not requested |
-| Authorize publication and release | Gate 4 | Not requested |
+| Authorize GitHub repositories and Pages | Before Phase 4 | Repositories exist; Pages not authorized |
+| Authorize publication and release | Gate 4 | Not authorized |
 | Decide on migration | Gate 6 | Deferred (`HUB-DEC-012`) |
 
 ## 19. Definition of done for this milestone
 
 - [x] Hub Git repository initialized on `main`.
 - [x] Governance, contracts, decisions, assumptions and plan written.
-- [x] Proposed standard profile and schemas added.
+- [x] Standard profile `0.2.0` and schemas added; owner approved.
 - [x] Toolkit 0.1.0 with validators and tests added.
 - [x] Empty catalog and valid book template added.
 - [x] Basic CI and pull-request template added.
 - [x] Lightweight SDD record added.
 - [x] This session wrote nothing outside `handbooks-hub`; the reference worktree is clean and the sample lane is independent.
-- [x] No GitHub repository, deployment, release, merge or migration performed.
-- [ ] Independent review with classified findings.
-- [ ] Owner Gate 1 approval.
+- [x] At the initial scaffold, no GitHub repository, deployment, release, merge or migration was performed; the GitHub repositories and CI now exist.
+- [ ] Root independent review of the reviewed branch.
+- [x] Owner Phase 1 approval and branch integration authorization.
 
 ## 20. Immediate next actions
 
-1. Independent reviewer checks the scaffold commit and re-runs `make check` and `make full`.
-2. Reviewer verifies that this session wrote nothing outside the hub, that the reference worktree is clean and that the plan matches the handoff.
-3. Owner resolves the open questions in [`assumptions.md`](assumptions.md) and records Gate 1.
-4. Review the sample-repository scaffold produced by the separate session in its own lane; this
-   session does not modify it.
-5. Phase 2 starts only after Gate 1; the first Phase 2 change freezes the toolkit CLI and profile
-   validation rules.
+1. Root independently reviews and integrates the reviewed `feat/topic-neutral-profile` branch.
+2. After integration, start the next scoped Phase 2 task for manuscript validation and the template.
+3. Await explicit owner authorization before pilot approval, publication or release.
+4. Review the sample-repository integration branch in its own lane; this session does not modify it.
 
 ---
 
@@ -643,7 +646,7 @@ Rules:
 | Hub owns static portal | `docs/catalog-contract.md`, `catalog/`, planned portal | Phase 4 |
 | Shared versioned toolkit under `tools/` | `tools/`, `handbook-toolkit` 0.1.0 | Minimal validators implemented |
 | Schemas | `tools/src/handbook_toolkit/schemas/*.json` | Book, profile, catalog |
-| Common profiles | `profiles/standard/profile.yaml` | Proposed |
+| Common profiles | `profiles/standard/profile.yaml` | Approved `0.2.0` |
 | Template | `template/book/` | Minimal; Phase 2 completes |
 | Documentation | `docs/` | Complete for Phase 1 |
 | Agent-neutral editorial instructions | `AGENTS.md`, `docs/editorial-contract.md` | Complete; adapters deferred |
@@ -653,9 +656,9 @@ Rules:
 | Fast vs full verify | `Makefile`, `docs/implementation-plan.md` | Implemented for hub scope |
 | Lightweight SDD | `sdd/`, `HUB-DEC-010` | Scaffolded |
 | Book brief, outline, pilot before expansion | Phase 3 gates | Planned |
-| Standard profile elements | `profiles/standard/profile.yaml`, `docs/editorial-contract.md` | Proposed |
-| Explicit cross-references, no indiscriminate links | `HUB-DEC-005`, profile | Proposed |
-| Proportional readable diagrams, adaptive tables | `HUB-DEC-006`, profile | Proposed; validators in Phase 2 |
+| Standard profile elements | `profiles/standard/profile.yaml`, `docs/editorial-contract.md` | Approved `0.2.0` |
+| Explicit cross-references, no indiscriminate links | `HUB-DEC-005`, profile | Approved |
+| Proportional readable diagrams, adaptive tables | `HUB-DEC-006`, profile | Approved; validators in Phase 2 |
 | HTML, PDF, DOCX, source bundle, manifest, checksums | `docs/publication-contract.md` | Contract defined; pipeline Phase 4 |
 | Build once, publish identical artifacts | `HUB-DEC-007`, publication contract | Proposed |
 | Pages for reading, Releases for downloads | `docs/publication-contract.md` | Phase 4 |

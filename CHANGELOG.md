@@ -18,10 +18,14 @@ semantic versioning once the toolkit is published.
 
 ### Changed
 
+- Owner approved the Phase 1 foundation, the dual-license defaults, the broad technical/software
+  audience and standard profile `0.2.0`, and authorized root integration of the reviewed
+  `feat/topic-neutral-profile` branch. Pilot approval and release remain unauthorized. See
+  `sdd/changes/0005-owner-approvals/`.
 - Standard profile `0.2.0`: the mandatory architecture-specific checklist is now a topic-neutral
   `Review Checklist`; figures and tables are optional when they would not help the reader, and their
-  absence is not an exception. The template pins the new profile version. The profile remains
-  **Proposed**. See `sdd/changes/0004-topic-neutral-profile/`.
+  absence is not an exception. The template pins the new profile version. See
+  `sdd/changes/0004-topic-neutral-profile/`.
 
 ### Fixed
 

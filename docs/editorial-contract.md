@@ -4,7 +4,8 @@ The machine-readable contract is [`profiles/standard/profile.yaml`](../profiles/
 and [`profile.schema.json`](../tools/src/handbook_toolkit/schemas/profile.schema.json). This document
 explains the intent; the profile is authoritative when the two differ.
 
-The profile is **Proposed**. Owner approval at Gate 1 makes `0.2.0` the default for new books.
+The profile is **Approved** (owner decision, 2026-11-06). `0.2.0` is the default for new books.
+Alternative profiles and explicit, owner-approved exceptions remain allowed.
 
 ## Why a profile exists
 
