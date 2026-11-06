@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import zlib
 from pathlib import Path
 import tempfile
 import unittest
@@ -24,7 +25,7 @@ class PublicationTests(unittest.TestCase):
             "book": {"id": "test-book", "version": "1.0.0", "commit": "a" * 40},
             "toolkit": "0.2.0", "profile": {"id": "standard", "version": "0.2.0"},
             "build": {"command": "fixture build", "source_date_epoch": 1,
-                      "tool_versions": {"quarto": "1.11.9", "pandoc": "3.10", "typst": "0.15.1", "python": "3.12"}},
+                      "tool_versions": {"quarto": "1.11.9", "pandoc": "3.10", "typst": "0.15.1", "python": "3.12", "zlib": zlib.ZLIB_RUNTIME_VERSION}},
         }
 
     def publish(self):

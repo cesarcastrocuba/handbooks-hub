@@ -3,7 +3,9 @@
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 from zipfile import ZipFile, ZipInfo
+import yaml
 
 import support  # noqa: F401
 from handbook_toolkit.artifacts import archive_tree, inspect_payload
@@ -77,11 +79,35 @@ class ArtifactTests(unittest.TestCase):
         output = self.root / "source.zip"
         with ZipFile(output, "w") as archive:
             archive.comment = ("a" * 40).encode()
-            for name in ("book.yaml", "LICENSE", "LICENSE-CODE", "NOTICE.md", "manuscript/ch01.qmd"):
+            for name in ("LICENSE", "LICENSE-CODE", "NOTICE.md", "manuscript/ch01.qmd"):
                 archive.writestr(name, "fixture")
+            archive.writestr("book.yaml", yaml.safe_dump(support.book_document()))
+            archive.writestr("manuscript/book.yml", yaml.safe_dump({"chapters": ["ch01.qmd"]}))
         self.assertFalse(inspect_payload(output, "source", source_commit="a" * 40))
         self.assertTrue(inspect_payload(output, "source", source_commit="b" * 40))
         self.assertTrue(inspect_payload(output, "source"))
+
+    def test_source_missing_reading_order_and_unlisted_chapters_fail(self):
+        for entries in ({}, {"chapters": ["missing.qmd"]}):
+            output = self.root / "incomplete.zip"
+            with ZipFile(output, "w") as archive:
+                archive.comment = ("a" * 40).encode()
+                for name in ("LICENSE", "LICENSE-CODE", "NOTICE.md", "manuscript/ch01.qmd"):
+                    archive.writestr(name, "fixture")
+                archive.writestr("book.yaml", yaml.safe_dump(support.book_document()))
+                if entries:
+                    archive.writestr("manuscript/book.yml", yaml.safe_dump(entries))
+            self.assertTrue(inspect_payload(output, "source", source_commit="a" * 40))
+
+    def test_zip_bounds_and_encryption_fail_as_structured_issues(self):
+        output = self.site("a sufficiently long HTML fixture")
+        with patch("handbook_toolkit.artifacts.MAX_MEMBER_BYTES", 8):
+            self.assertTrue(inspect_payload(output, "html"))
+        info = ZipInfo("index.html")
+        info.flag_bits = 1
+        with patch("handbook_toolkit.artifacts.ZipFile.infolist", return_value=[info]):
+            issues = inspect_payload(output, "html")
+            self.assertTrue(any("encrypted" in issue.message for issue in issues))
 
     def test_false_pdf_and_non_zip_document_are_rejected(self):
         output = self.root / "fake.pdf"

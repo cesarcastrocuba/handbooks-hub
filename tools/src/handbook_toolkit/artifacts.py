@@ -11,8 +11,17 @@ import subprocess
 from urllib.parse import unquote, urlsplit
 from xml.etree import ElementTree
 from zipfile import BadZipFile, ZipFile, ZipInfo, ZIP_DEFLATED
+import zlib
 
-from .validation import Issue
+import yaml
+
+from .books import READING_KEYS
+from .validation import Issue, load_packaged_schema, schema_issues
+
+MAX_MEMBERS = 20000
+MAX_TOTAL_BYTES = 1024 * 1024 * 1024
+MAX_MEMBER_BYTES = 128 * 1024 * 1024
+MAX_COMPRESSION_RATIO = 1000
 
 
 def archive_tree(source: Path, output: Path, epoch: int) -> None:
@@ -60,7 +69,16 @@ class _Page(HTMLParser):
 
 def _zip_members(archive: ZipFile) -> set[str]:
     names: set[str] = set()
-    for info in archive.infolist():
+    members = archive.infolist()
+    if len(members) > MAX_MEMBERS or sum(info.file_size for info in members) > MAX_TOTAL_BYTES:
+        raise ValueError("archive exceeds member-count or uncompressed-size limit")
+    for info in members:
+        if info.flag_bits & 1:
+            raise ValueError("encrypted archive members are not supported")
+        if info.file_size > MAX_MEMBER_BYTES or (
+            info.file_size > max(info.compress_size, 1) * MAX_COMPRESSION_RATIO
+        ):
+            raise ValueError("archive member exceeds size or compression-ratio limit")
         name = info.filename
         path = PurePosixPath(name)
         if path.is_absolute() or ".." in path.parts or "\\" in name or ":" in name:
@@ -74,6 +92,48 @@ def _zip_members(archive: ZipFile) -> set[str]:
     if bad:
         raise ValueError(f"archive CRC failure: {bad}")
     return names
+
+
+def _source(archive: ZipFile, names: set[str], commit: str | None) -> None:
+    required = {"book.yaml", "LICENSE", "LICENSE-CODE", "NOTICE.md"}
+    if not required <= names:
+        raise ValueError("source bundle lacks descriptor or licenses/notices")
+    if any(part in {".git", ".venv", "node_modules", ".quarto", "__pycache__", ".pytest_cache"}
+           for name in names for part in PurePosixPath(name).parts):
+        raise ValueError("source bundle contains repository metadata or dependency caches")
+    if not commit or not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise ValueError("source inspection requires the expected full commit SHA")
+    if archive.comment.decode("ascii") != commit:
+        raise ValueError("source archive commit comment differs from expected source commit")
+    descriptor = yaml.safe_load(archive.read("book.yaml"))
+    if schema_issues(descriptor, load_packaged_schema("book.schema.json"), "book.yaml"):
+        raise ValueError("source bundle has an invalid book descriptor")
+    reading_path = posixpath.normpath(descriptor["manuscript"]["reading_order"])
+    if reading_path not in names:
+        raise ValueError("source bundle lacks the declared reading-order file")
+    reading = yaml.safe_load(archive.read(reading_path))
+    if not isinstance(reading, dict) or set(reading) - set(READING_KEYS):
+        raise ValueError("source reading order must contain known manuscript groups")
+    if not isinstance(reading.get("chapters"), list) or not reading["chapters"]:
+        raise ValueError("source reading order must list at least one chapter")
+    root = posixpath.normpath(descriptor["manuscript"]["root"])
+    listed = []
+    for group in READING_KEYS:
+        entries = reading.get(group, [])
+        if entries is None:
+            continue
+        if not isinstance(entries, list):
+            raise ValueError("source reading-order groups must be lists")
+        for entry in entries:
+            if (not isinstance(entry, str) or not entry.endswith(".qmd") or
+                    PurePosixPath(entry).is_absolute() or ".." in PurePosixPath(entry).parts or
+                    "\\" in entry or ":" in entry):
+                raise ValueError("source reading order has an unsafe or non-Quarto path")
+            listed.append(posixpath.normpath(posixpath.join(root, entry)))
+    prefix = "" if root == "." else root + "/"
+    discovered = {name for name in names if name.startswith(prefix) and name.endswith(".qmd")}
+    if len(set(listed)) != len(listed) or set(listed) != discovered:
+        raise ValueError("source reading order must cover every canonical manuscript exactly once")
 
 
 def _html(archive: ZipFile, names: set[str]) -> None:
@@ -133,19 +193,11 @@ def inspect_payload(path: Path, role: str, *, source_commit: str | None = None) 
                     ):
                         raise ValueError("DOCX has no Word document text")
                 else:
-                    required = {"book.yaml", "LICENSE", "LICENSE-CODE", "NOTICE.md"}
-                    if not required <= names or not any(name.endswith(".qmd") for name in names):
-                        raise ValueError("source bundle lacks canonical manuscript, descriptor or notices")
-                    if any(part in {".git", ".venv", "node_modules"}
-                           for name in names for part in PurePosixPath(name).parts):
-                        raise ValueError("source bundle contains repository metadata or dependency caches")
-                    if not source_commit or not re.fullmatch(r"[0-9a-f]{40}", source_commit):
-                        raise ValueError("source inspection requires the expected full commit SHA")
-                    if archive.comment.decode("ascii") != source_commit:
-                        raise ValueError("source archive commit comment differs from expected source commit")
+                    _source(archive, names, source_commit)
         else:
             raise ValueError(f"unknown payload role: {role}")
     except (OSError, UnicodeError, ValueError, BadZipFile, ElementTree.ParseError,
-            subprocess.SubprocessError) as error:
+            subprocess.SubprocessError, RuntimeError, NotImplementedError, zlib.error,
+            yaml.YAMLError) as error:
         return [Issue(str(path), str(error))]
     return []
