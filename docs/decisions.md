@@ -22,6 +22,7 @@ approval and the later approval of the standard profile `0.2.0`.
 | HUB-DEC-013 | Approved | Do not create GitHub repositories, deploy Pages or publish releases until the owner explicitly authorizes each step. | GitHub repositories now exist and CI has passed; deployment and releases still require explicit owner authorization. |
 | HUB-DEC-014 | Approved | The toolkit, profile, book descriptor and catalog schemas are versioned independently; books pin the toolkit and profile versions, and breaking changes require a migration note. | Books must be able to upgrade on their own schedule. See the compatibility rules in the plan. |
 | HUB-DEC-015 | Approved | Owner approval recorded 2026-11-06: Phase 1 foundation; CC BY-SA 4.0 content plus MIT code defaults; standard profile `0.2.0`; broad technical/software audience; and integration of the reviewed `feat/topic-neutral-profile` branch. | Root independently reviews and integrates the branch. Pilot approval and any release remain explicitly unauthorized. |
+| HUB-DEC-016 | Approved | Owner delegation recorded 2026-11-06: the root coordinator (Antigravity, acting as independent Reviewer) may merge reviewed branches to `main`, approve editorial Gates 3c/3d of the sample book, approve HUB-DEC-007/008 and authorize Pages deployment and releases for Phases 1-4 once all checks are green. | Supersedes the authorization limits of HUB-DEC-013 and HUB-DEC-015 for Phases 1-4 only. Implementers still never review or merge their own work. Phases 5 and 6 are out of scope of this delegation. |
 
 ## Recording a decision
 
