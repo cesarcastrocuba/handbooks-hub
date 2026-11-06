@@ -81,7 +81,7 @@ make full
 `requirements-dev.txt` installs the editable local toolkit (`-e ./tools`) and its
 `jsonschema`/`PyYAML` dependencies.
 
-- `make check` runs the 52 unit tests and the fast validators.
+- `make check` runs the unit tests and the fast validators.
 - `make full` runs the same checks plus documentation-link and full template checks.
 - `.venv/` is ignored by Git. The hub's checks do not scan it.
 
