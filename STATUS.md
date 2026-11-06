@@ -5,37 +5,36 @@ only in [`docs/decisions.md`](docs/decisions.md); the plan lives in
 [`docs/implementation-plan.md`](docs/implementation-plan.md).
 
 **Updated:** 2026-11-06
-**Phase:** Phase 1 integrated; Phase 2 closure ready for the owner gate; Phase 4 local publication build in progress
-**State:** Phase 1 foundation, dual-license defaults, setup docs, manuscript/reference validation,
-packaged profiles and shared render resources are integrated on `main`. The `feat/phase2-closure`
-branch adds standard profile `1.0.0`, template `1.0.0`, toolkit `0.4.0` and the Typst chapter-title
-fix. Pilot approval, publication and release are **not** authorized.
+**Phase:** Phases 1, 2, 3 and 4 complete and integrated on `main`. Phases 5 and 6 deferred.
+**State:** Phase 1 foundation, Phase 2 contracts (standard profile `1.0.0`, template `1.0.0`, toolkit `0.4.0`),
+Phase 3 sample book ("Handbook Authoring and Publishing" complete draft, Gates 1–3d approved),
+and Phase 4 publication (release `v0.1.0` published with exact six verified assets on GitHub Releases,
+live reading site deployed on GitHub Pages, catalog entry verified online, and static portal generated)
+are integrated and complete.
 
 ## Current facts
 
 | Item | State |
 | --- | --- |
-| `main` | `66d0581689e1e9c91913da25b5cb4a7723f3ec5c`; Phase 1, setup docs, manuscript validation, packaged profiles, portal, references and shared render resources integrated |
-| Publication branch | `feat/phase2-closure`; Phase 2 profile/template/toolkit closure on top of the integrated build |
-| GitHub repositories | [hub](https://github.com/cesarcastrocuba/handbooks-hub) and [sample](https://github.com/cesarcastrocuba/handbook-sample-01), both public |
+| `main` | Phase 1, Phase 2 (`1.0.0`/`0.4.0`), Phase 4 catalog and portal integrated |
+| GitHub repositories | [hub](https://github.com/cesarcastrocuba/handbooks-hub) and [sample](https://github.com/cesarcastrocuba/handbook-sample-01), both public and active |
 | Reference handbook | Read-only at `6a15cc211f65e148afdaa75c71a063a8084d1910` |
-| Sample repository | Branch `feat/pinned-toolkit-integration`; separate lane; no writes from this session |
+| Sample repository | `v0.1.0` release published on GitHub Releases and Pages; 8 chapters, front/back matter, appendices complete |
 | Toolkit | `0.4.0`, 160 unit tests; build, manuscript, reference, catalog, profile and book validators; bundled schemas and render resources |
-| CI | The branch CI is reported after push; integrated `main` has passed its prior checks |
+| CI | Green on hub and sample repositories |
 | Standard profile | `1.0.0`, **Approved** 2026-11-06; `0.2.0` remains resolvable |
 | Licensing | CC BY-SA 4.0 content, MIT code; approved 2026-11-06 |
-| Catalog | Empty; no approved release exists |
-| Publication | Local build implemented on this branch; no publication, release or deployment authorized |
+| Catalog | 1 approved release: `handbook-authoring-and-publishing` `v0.1.0` verified online |
+| Publication | Published and verified end-to-end; reading site live at https://cesarcastrocuba.github.io/handbook-sample-01/ |
+| Portal | Generated static portal verified; workflow ready for Pages deployment |
 | Migration of existing handbook | Deferred; separate owner decision (`HUB-DEC-012`) |
 
 ## Next actions
 
-1. Root independently reviews `feat/phase2-closure` and the owner approves the Phase 2 gate.
-2. Keep the portal/catalog work in its separate root-owned branch.
-3. Await explicit owner authorization before pilot approval, publication or release.
+1. Phase 5: Agent adapters, automation and stabilization (scheduled for next session).
+2. Phase 6: Migration evaluation of `solutions-architecture-handbook` (deferred to next session).
 
 ## Blockers and open owner decisions
 
-- Pilot approval is not authorized.
-- Release and publication are not authorized.
-- Phase 2 and the Phase 4 build remain on an unmerged branch until the owner gate.
+- None for Phases 1–4. Phases 1–4 are completely fulfilled.
+- Phases 5 and 6 deferred to the next session as requested by owner.

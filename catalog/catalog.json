@@ -1,4 +1,25 @@
 {
   "schema_version": "1.0",
-  "books": []
+  "books": [
+    {
+      "id": "handbook-authoring-and-publishing",
+      "slug": "handbook-authoring-and-publishing",
+      "title": "Handbook Authoring and Publishing",
+      "summary": "A practical guide to planning, writing, reviewing and sustaining a technical handbook.",
+      "reading_url": "https://cesarcastrocuba.github.io/handbook-sample-01/",
+      "categories": [
+        "authoring",
+        "publishing"
+      ],
+      "status": "published",
+      "latest_release": {
+        "version": "0.1.0",
+        "tag": "v0.1.0",
+        "url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/tag/v0.1.0",
+        "published_at": "2026-11-06",
+        "manifest_url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.1.0/publication-manifest.json",
+        "checksums_url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.1.0/SHA256SUMS.txt"
+      }
+    }
+  ]
 }
