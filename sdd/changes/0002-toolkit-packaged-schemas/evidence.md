@@ -3,7 +3,7 @@
 **Change:** `0002-toolkit-packaged-schemas`
 **Status:** Implemented, pending independent review
 **Date:** 2026-11-06
-**Fix commit:** pending (recorded by the follow-up evidence commit)
+**Fix commit:** `f8e30818ec28c99d14290a217ce84678127379fe`
 **Starting point reviewed:** `46b78cc4e5e7e4d82586012526ae604273490cfc`
 
 ## Environment
@@ -78,6 +78,18 @@ directory. Each test places `schemas/{book,catalog,profile}.schema.json` under t
 impossible required field. Passing proves the CLI did not read the book-root schemas. The probe also
 confirms `handbook_toolkit.__file__` resolves inside the isolated package path, not the hub.
 
+A manual repeat of the same shape also passed:
+
+```bash
+cd /tmp/opencode/book-install-test/book
+PYTHONPATH=/tmp/opencode/book-install-test/site python3 -m handbook_toolkit \
+  --root . validate-book --full
+```
+
+Result: `book.yaml: OK`. The package probe resolved to
+`/tmp/opencode/book-install-test/site/handbook_toolkit/__init__.py`, and the book contained a decoy
+`schemas/book.schema.json`.
+
 ### 4. Compilation
 
 ```bash
@@ -120,6 +132,16 @@ handbook-toolkit-0.1.0/src/handbook_toolkit/schemas/profile.schema.json
 Result: **PASS**; the package data declaration includes the schemas in the distribution. A wheel
 could not be built because `bdist_wheel`/the `wheel` module is absent in this environment.
 
+### 8. Clean clone
+
+```bash
+git clone /home/ubuntu/github/handbooks-hub /tmp/opencode/hub-clone-0002
+cd /tmp/opencode/hub-clone-0002
+make full
+```
+
+Result: **PASS**; 46 tests and 6 full checks with 0 problems. The clone remained clean.
+
 ## Negative and boundary coverage
 
 - A book-root `schemas/` directory cannot override the packaged schemas by accident.
@@ -139,7 +161,7 @@ could not be built because `bdist_wheel`/the `wheel` module is absent in this en
 
 ## Review handoff
 
-Review the fix commit (recorded above after the evidence commit), then re-run:
+Review the fix commit recorded above, then re-run:
 
 ```bash
 make check
