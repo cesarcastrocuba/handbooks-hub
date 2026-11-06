@@ -22,7 +22,7 @@ import zipfile
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import support  # noqa: E402
-from handbook_toolkit.build import BuildError, build_book  # noqa: E402
+from handbook_toolkit.build import BuildError, _render_config, build_book  # noqa: E402
 from handbook_toolkit.publication import verify_publication  # noqa: E402
 
 QUARTO = shutil.which("quarto")
@@ -209,6 +209,35 @@ format:
     return repo, _git(repo, "rev-parse", "HEAD")
 
 
+class RenderConfigTests(unittest.TestCase):
+    def test_staged_resources_are_wired(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp)
+            resources = {
+                "filters/table-layout.lua": workspace / ".handbook-render/filters/table-layout.lua",
+                "filters/task-checkbox.lua": workspace / ".handbook-render/filters/task-checkbox.lua",
+                "typst/callout-breakable.typ": workspace / ".handbook-render/typst/callout-breakable.typ",
+            }
+            for path in resources.values():
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("fixture\n", encoding="utf-8")
+            config = _render_config(
+                {"title": "Fixture"},
+                {"project": {"type": "book"}, "book": {}, "format": {}},
+                ["index.qmd"],
+                resources,
+                workspace,
+            )
+            self.assertEqual(
+                [entry["path"] for entry in config["filters"]],
+                [".handbook-render/filters/table-layout.lua", ".handbook-render/filters/task-checkbox.lua"],
+            )
+            self.assertEqual(
+                config["format"]["typst"]["include-before-body"],
+                ".handbook-render/typst/callout-breakable.typ",
+            )
+
+
 @unittest.skipUnless(BUILD_AVAILABLE, "Quarto and pdfinfo are required for the real build")
 class BuildTests(unittest.TestCase):
     def test_builds_verified_six_file_directory_and_source_comment(self) -> None:
@@ -329,6 +358,24 @@ class BuildTests(unittest.TestCase):
             output = root / "dist"
             with self.assertRaises(BuildError):
                 build_book(repo, commit, output, profile=PROFILE)
+            self.assertFalse(output.exists())
+
+    def test_invalid_reference_is_refused_before_render(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, commit = make_book(root)
+            pilot = repo / "manuscript/chapters/pilot.qmd"
+            pilot.write_text(
+                pilot.read_text(encoding="utf-8").replace(
+                    "**Example.**",
+                    "See @tbl-missing.\n\n**Example.**",
+                ),
+                encoding="utf-8",
+            )
+            commit = commit_all(repo, "invalid reference")
+            output = root / "dist"
+            with self.assertRaises(BuildError):
+                build_book(repo, commit, output, profile=PROFILE, mode="section-pilot")
             self.assertFalse(output.exists())
 
     def test_preview_mode_is_explicit_and_non_release(self) -> None:

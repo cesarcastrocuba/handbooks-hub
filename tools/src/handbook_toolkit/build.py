@@ -35,6 +35,8 @@ from .profiles import validate_profile
 from .profile_resources import load_profile
 from .books import validate_book
 from .manuscript import validate_manuscript
+from .references import validate_references
+from .render_resources import stage_render_resources
 from .validation import (
     DocumentError,
     load_document,
@@ -305,7 +307,13 @@ def _prepare_render(workspace: Path, entries: list[str]) -> list[str]:
     return rendered
 
 
-def _render_config(book: dict[str, Any], config: dict[str, Any], entries: list[str]) -> dict[str, Any]:
+def _render_config(
+    book: dict[str, Any],
+    config: dict[str, Any],
+    entries: list[str],
+    resources: dict[str, Path],
+    workspace: Path,
+) -> dict[str, Any]:
     project = config.setdefault("project", {})
     if not isinstance(project, dict) or project.get("type", "book") != "book":
         raise BuildError("publishing/_quarto.yml must declare a Quarto book project")
@@ -323,6 +331,13 @@ def _render_config(book: dict[str, Any], config: dict[str, Any], entries: list[s
     if not isinstance(formats, dict):
         raise BuildError("publishing/_quarto.yml format section must be a mapping")
     config["format"] = {name: formats.get(name, {}) for name in ("html", "typst", "docx")}
+    config["filters"] = [
+        {"at": "pre-ast", "path": (resources["filters/table-layout.lua"]).relative_to(workspace).as_posix()},
+        {"at": "pre-ast", "path": (resources["filters/task-checkbox.lua"]).relative_to(workspace).as_posix()},
+    ]
+    config["format"]["typst"]["include-before-body"] = (
+        resources["typst/callout-breakable.typ"].relative_to(workspace).as_posix()
+    )
     execute = config.setdefault("execute", {})
     if not isinstance(execute, dict):
         raise BuildError("publishing/_quarto.yml execute section must be a mapping")
@@ -467,11 +482,20 @@ def build_book(
                 f"book.yaml toolkit pin {book['toolkit']} does not match builder {__version__}; "
                 "use an explicit --preview build only for a non-release preview"
             )
+        reference_result = validate_references(
+            workspace / "book.yaml", load_packaged_schema("book.schema.json")
+        )
+        if not reference_result.ok:
+            raise BuildError(
+                "reference validation failed: "
+                + "; ".join(map(str, reference_result.issues))
+            )
         groups = _reading_groups(book, workspace)
         entries = [entry for group in ("front", "chapters", "back", "appendices", "references") for entry in groups[group]]
         _validate_manuscripts(workspace, book, profile_document, mode)
         book_version = _book_version(workspace, version)
         _require_prerelease_version(book_version, mode, preview)
+        resources = stage_render_resources(workspace / ".handbook-render")
         rendered_entries = _prepare_render(workspace, entries)
 
         config_path = workspace / "publishing/_quarto.yml"
@@ -484,7 +508,7 @@ def build_book(
 
         (workspace / "_quarto.yml").write_text(
             yaml.safe_dump(
-                _render_config(book, config, rendered_entries),
+                _render_config(book, config, rendered_entries, resources, workspace),
                 sort_keys=True,
                 allow_unicode=True,
             ),

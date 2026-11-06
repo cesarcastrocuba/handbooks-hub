@@ -15,12 +15,12 @@ Pilot approval, publication and release are **not** authorized.
 
 | Item | State |
 | --- | --- |
-| `main` | `46c9c1e2fa0cebe8cfa027e17534f662cded57fb`; Phase 1, setup docs, manuscript validation, packaged profiles and portal integrated |
+| `main` | `477d7042faa385eee677ad2db5198ebcf5dd1fee`; Phase 1, setup docs, manuscript validation, packaged profiles, portal, references and shared render resources integrated |
 | Publication branch | `feat/publication-build`; local staged build on the publication dependency stack |
 | GitHub repositories | [hub](https://github.com/cesarcastrocuba/handbooks-hub) and [sample](https://github.com/cesarcastrocuba/handbook-sample-01), both public |
 | Reference handbook | Read-only at `6a15cc211f65e148afdaa75c71a063a8084d1910` |
 | Sample repository | Branch `feat/pinned-toolkit-integration`; separate lane; no writes from this session |
-| Toolkit | `0.3.0`, 120 unit tests; build, manuscript, catalog, profile and book validators; bundled schemas |
+| Toolkit | `0.3.0`, 153 unit tests; build, manuscript, catalog, profile and book validators; bundled schemas |
 | CI | The branch CI is reported after push; integrated `main` has passed its prior checks |
 | Standard profile | `0.2.0`, **Approved** 2026-11-06 |
 | Licensing | CC BY-SA 4.0 content, MIT code; approved 2026-11-06 |

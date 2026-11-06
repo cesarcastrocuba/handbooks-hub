@@ -116,13 +116,8 @@ jobs:
           python -m pip install -r requirements-dev.txt
       - name: Build a real pilot and verify the six-file identity
         run: python3 -m unittest discover -s tools/tests -p test_build.py -v
-      - name: Run render-resource runtime tests when the reviewed resources are present
-        run: |
-          if [ -f tools/tests/test_render_resources.py ]; then
-            python3 -m unittest discover -s tools/tests -p test_render_resources.py -v
-          else
-            echo "render resources are not merged into this branch yet"
-          fi
+      - name: Run render-resource runtime tests
+        run: python3 -m unittest discover -s tools/tests -p test_render_resources.py -v
 
   wheel-install:
     runs-on: ubuntu-24.04

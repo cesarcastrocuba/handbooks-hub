@@ -53,20 +53,23 @@ The output directory must not exist and must be outside the source repository.
 5. Reads and validates `book.yaml`, `publishing/metadata.yaml` and the reading order from the staged
    source, not from the mutable working tree.
 6. Checks the book's toolkit pin against the builder version (unless explicit `--preview`).
-7. Resolves the reviewed profile and runs the structural validator for every chapter and appendix
-   from the staged source before render. Front matter, back matter and references are special groups.
-8. Generates a deterministic Quarto project config, using the book-side `publishing/_quarto.yml`
+7. Resolves the reviewed profile and runs the structural manuscript gate for every chapter and
+   appendix, plus the reference/label/local-image gate across the full reading order. Front matter,
+   back matter and references are special manuscript groups but are included in reference checks.
+8. Stages the packaged render resources: `table-layout.lua` and `task-checkbox.lua` at `pre-ast`,
+   and `callout-breakable.typ` via Typst `include-before-body`.
+9. Generates a deterministic Quarto project config, using the book-side `publishing/_quarto.yml`
    and reading order; the first reading-order file becomes the home page so there is no separate
    empty title chapter. It renders only HTML, Typst and DOCX with `--no-execute` and
    `SOURCE_DATE_EPOCH`.
-9. Stages a render-only heading wrapper for each chapter/appendices file, strips manual heading
+10. Stages a render-only heading wrapper for each chapter/appendices file, strips manual heading
    numbers so Quarto numbers the rendered sections, and converts source table captions into
    explicit `**Table N.T — Title**` paragraphs below the table. Canonical files are not changed.
-10. Packages the HTML site as a ZIP, the PDF and DOCX as files, and the tracked source as a ZIP whose
+11. Packages the HTML site as a ZIP, the PDF and DOCX as files, and the tracked source as a ZIP whose
    comment is the full source commit.
-11. Inspects every payload with the shared format inspector.
-12. Writes `publication-manifest.json` and `SHA256SUMS.txt`, then runs `verify_publication`.
-13. Atomically renames the complete verified directory to `--output`.
+12. Inspects every payload with the shared format inspector.
+13. Writes `publication-manifest.json` and `SHA256SUMS.txt`, then runs `verify_publication`.
+14. Atomically renames the complete verified directory to `--output`.
 
 No writer staging directory is visible at the final output path. A failed build leaves no final
 output and removes its private staging directory.

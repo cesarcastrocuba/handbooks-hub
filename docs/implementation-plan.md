@@ -8,7 +8,7 @@ repositories, Pages, releases and migration are explicitly out of scope. The sam
 scaffolded concurrently by a separate session; this session only reads and records that fact.
 
 > **Current state (2026-11-06):** Phase 1 foundation, the dual-license defaults, standard profile
-> `0.2.0`, setup docs and structural manuscript validation are integrated on `main` at `46c9c1e`.
+> `0.2.0`, setup docs and structural manuscript validation are integrated on `main` at `477d704`.
 > `feat/publication-build` adds a staged, verified local build on the publication dependency stack.
 > The portal/catalog work is a separate root-owned branch. Pilot approval, publication and release
 > are not authorized. See [`STATUS.md`](../STATUS.md) and
