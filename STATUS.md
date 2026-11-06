@@ -5,22 +5,22 @@ only in [`docs/decisions.md`](docs/decisions.md); the plan lives in
 [`docs/implementation-plan.md`](docs/implementation-plan.md).
 
 **Updated:** 2026-11-06
-**Phase:** Phase 1 integrated on `main`; Phase 2 next
-**State:** Phase 1 foundation, dual-license defaults and standard profile `0.2.0` are integrated on
-`main`. The `docs/hub-setup` branch adds onboarding/setup documentation for review. Pilot approval,
-publication and release are **not** authorized.
+**Phase:** Phase 1 integrated; Phase 2 in progress — manuscript validation
+**State:** Phase 1 foundation, dual-license defaults, standard profile `0.2.0` and the setup docs are
+integrated on `main`. The `feat/manuscript-validation` branch adds structural section-pilot and
+chapter validation. Pilot approval, publication and release are **not** authorized.
 
 ## Current facts
 
 | Item | State |
 | --- | --- |
-| `main` | `8ee28a081399155a250ea8bc45d8492245ab2377`; Phase 1 integrated |
-| Docs branch | `docs/hub-setup`; onboarding and pinned-toolkit setup instructions |
+| `main` | `80c90dccacaedfde59a31bc4ba48fdf351035357`; Phase 1 and setup docs integrated |
+| Manuscript branch | `feat/manuscript-validation`; structural validator `0.2.0` |
 | GitHub repositories | [hub](https://github.com/cesarcastrocuba/handbooks-hub) and [sample](https://github.com/cesarcastrocuba/handbook-sample-01), both public |
 | Reference handbook | Read-only at `6a15cc211f65e148afdaa75c71a063a8084d1910` |
-| Sample repository | Branch `feat/pinned-toolkit-integration` at `e3b7f288`; separate lane; no writes from this session |
-| Toolkit | `0.1.0`, catalog/profile/book validators, bundled schemas, 52 unit tests |
-| CI | Hub `ci` passed on `main` `8ee28a0` (run [42277955794](https://github.com/cesarcastrocuba/handbooks-hub/actions/runs/42277955794)); sample `repository-check` passed at `e3b7f28` |
+| Sample repository | Branch `feat/pinned-toolkit-integration`; separate lane; no writes from this session |
+| Toolkit | `0.2.0`, 83 unit tests; manuscript, catalog, profile and book validators; bundled schemas |
+| CI | Hub `ci` passed on integrated `main` at `80c90dc`; branch CI is reported for the manuscript branch after push |
 | Standard profile | `0.2.0`, **Approved** 2026-11-06 |
 | Licensing | CC BY-SA 4.0 content, MIT code; approved 2026-11-06 |
 | Catalog | Empty; no approved release exists |
@@ -29,12 +29,12 @@ publication and release are **not** authorized.
 
 ## Next actions
 
-1. Root independently reviews and integrates `docs/hub-setup`.
-2. After integration, start the next scoped Phase 2 task.
+1. Root independently reviews and integrates `feat/manuscript-validation`.
+2. Then agree the small Phase 4 publication CLI interfaces with root before implementation.
 3. Await explicit owner authorization before pilot approval, publication or release.
 
 ## Blockers and open owner decisions
 
 - Pilot approval is not authorized.
 - Release and publication are not authorized.
-- Phase 2 implementation has not started.
+- Phase 4 publication interfaces are not yet agreed.

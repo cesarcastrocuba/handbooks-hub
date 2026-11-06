@@ -38,8 +38,23 @@ profile file or manuscript content. After the reading order exists and the pilot
 handbook-toolkit --root . validate-book --full
 ```
 
-The current toolkit does **not** validate manuscript content, profile conformance or rendered
-artifacts. Quarto and the publication toolchain are a separate future setup.
+The toolkit validates structural manuscript form against the explicit profile. It does not judge
+prose, factual accuracy, visual usefulness or rendered artifacts. Quarto and the publication
+toolchain are a separate future setup.
+
+For structural manuscript validation, pass an explicit reviewed profile until packaged profile
+resolution exists. Use an absolute `--profile` path when the profile is outside this book:
+
+```bash
+handbook-toolkit --root . validate-manuscript manuscript/chapters/pilot.qmd --mode section-pilot --profile /path/to/reviewed-profile.yaml
+
+handbook-toolkit --root . validate-manuscript manuscript/chapters/ch01.qmd --mode chapter --profile /path/to/reviewed-profile.yaml
+```
+
+This checks labels, callouts, ordering and placement only. In chapter mode it applies the section
+and unit rules to each ordinary content section; Worked Example and Further Reading keep their
+special chapter-level shapes. It does not judge meaning, factual accuracy, prose quality or visual
+usefulness, and it never requires a diagram or table.
 
 ## Before the first commit
 

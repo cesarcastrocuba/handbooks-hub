@@ -194,9 +194,28 @@ After the reading order and pilot exist, run the full descriptor/reading-order c
 handbook-toolkit --root . validate-book --full
 ```
 
-The toolkit's current scope is descriptor, catalog/profile/book schema and reading-order validation.
-The profile is referenced in `book.yaml` but is not yet resolved from the installed package; profile
-conformance and manuscript content remain review responsibilities.
+Structural manuscript validation requires an explicit reviewed profile until packaged profile
+resolution is implemented:
+
+```bash
+handbook-toolkit --root . validate-manuscript manuscript/chapters/pilot.qmd --mode section-pilot --profile /path/to/standard-profile.yaml
+
+handbook-toolkit --root . validate-manuscript manuscript/chapters/ch01.qmd --mode chapter --profile /path/to/standard-profile.yaml
+```
+
+The validator checks structure only: labels, opening callouts, worked example, review checklist
+placement, closing order, actual paragraph/callout forms, non-empty bodies, duplicates, malformed or
+unclosed callouts, and delimiter-length-aware fenced-code exclusion. In chapter mode it applies the
+section/unit rules to each ordinary content section; Worked Example and Further Reading are exempt. It
+does not judge meaning, factual accuracy, prose quality or visual usefulness, and it never requires a
+diagram or table. The explicit `--profile` path is a current limitation of profile distribution; an absolute path is
+simplest for an independent book. Do not silently substitute a different profile.
+
+The toolkit validates descriptor, catalog/profile/book schema, reading-order and structural
+manuscript form. Chapter mode applies the section/unit rules to each ordinary content section;
+Worked Example and Further Reading are special sections. The profile is referenced in `book.yaml`
+but is not yet resolved from the installed package; an explicit `--profile` is required, and prose
+quality, factual accuracy and visual usefulness remain review responsibilities.
 
 ### Future publication toolchain (separate)
 

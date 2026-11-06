@@ -63,8 +63,8 @@
   change removes compulsion, not quality control.
 - The profile version moves to `0.2.0`; books pinning `0.1.0` must update when they adopt it. No book
   in this repository consumes `0.1.0` except the template, which is updated.
-- The current toolkit does not validate manuscript content. Tests cover the profile contract and
-  its semantics, not the presence of profile elements in a `.qmd` file.
+- At the time of this change the toolkit did not validate manuscript content. `0007` adds structural
+  section-pilot/chapter validation; it still does not judge prose, facts or visual usefulness.
 
 ## Out of scope
 
