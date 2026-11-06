@@ -3,13 +3,14 @@
 import copy
 from pathlib import Path
 import tempfile
+import socket
 import unittest
 from unittest.mock import patch
 from zipfile import ZipFile
 import zlib
 
 import support
-from handbook_toolkit.catalog_verification import verify_catalog_releases
+from handbook_toolkit.catalog_verification import _download, _public_addresses, verify_catalog_releases
 from handbook_toolkit.publication import write_manifest
 
 
@@ -99,6 +100,35 @@ class CatalogVerificationTests(unittest.TestCase):
         support.write_json(self.catalog, {"schema_version": "1.0", "books": []})
         with patch("handbook_toolkit.catalog_verification._download", side_effect=AssertionError("network not expected")):
             self.assertTrue(verify_catalog_releases(self.catalog).ok)
+
+    def test_private_or_mixed_dns_destinations_fail(self):
+        for address in ("127.0.0.1", "10.0.0.1", "169.254.169.254", "::1", "224.0.0.1"):
+            with self.subTest(address=address):
+                records = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (address, 443))]
+                with patch("handbook_toolkit.catalog_verification.socket.getaddrinfo", return_value=records):
+                    with self.assertRaises(ValueError):
+                        _public_addresses("public-looking.example")
+
+    def test_redirect_to_internal_host_or_http_is_rejected_before_fetch(self):
+        public = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))]
+        for target in ("https://127.0.0.1/", "http://example.com/", "https://example.com:8443/"):
+            destination = Path(self.temp.name) / "redirect-body"
+
+            def resolve(host, *args, **kwargs):
+                if host == "127.0.0.1":
+                    return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (host, 443))]
+                return public
+
+            with patch("handbook_toolkit.catalog_verification.socket.getaddrinfo", side_effect=resolve), patch(
+                "handbook_toolkit.catalog_verification._PinnedHTTPSConnection"
+            ) as connection:
+                response = connection.return_value.getresponse.return_value
+                response.status = 302
+                response.getheader.return_value = target
+                with self.assertRaises(ValueError):
+                    _download("https://public.example/", destination, 100)
+                self.assertEqual(connection.call_count, 1)
+                self.assertFalse(destination.exists())
 
 
 if __name__ == "__main__":

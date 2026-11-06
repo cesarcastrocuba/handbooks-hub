@@ -28,12 +28,17 @@ python3 -m handbook_toolkit.catalog_verification catalog/catalog.json
 
 For each entry this online gate requires a published stable GitHub release,
 resolves its tag to the exact source commit, verifies manifest identity and all
-six assets, checks their formats, and compares every live reading-site file with
-the released HTML archive. Missing/mixed-release assets and changed bytes fail.
+six assets, checks their formats, and verifies that every released HTML-site file
+is present and byte-identical live. Extra live files are not enumerated.
+Missing/mixed-release assets and changed bytes fail.
 An empty catalog makes no network requests. Payload downloads are limited to
 512 MiB each; API/identity responses to 2 MiB. Public GitHub API rate limits apply.
 Editorial approval remains a human decision recorded before catalog acceptance;
 neither checksums nor a published GitHub release prove that decision.
+All requests and redirects require HTTPS on port 443 and public unicast IPs.
+Connections are pinned to the checked IP while TLS verifies the original hostname;
+DNS rebinding cannot substitute a second unchecked address during connection.
+Internal, loopback, link-local and reserved destinations fail before fetching.
 
 The Pages workflow is manual and builds from the checked-out catalog. Deployment
 requires Pages configured with the GitHub Actions build type. Reading-site and

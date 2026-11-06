@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import http.client
+import ipaddress
 import json
 from pathlib import Path
 import re
+import socket
+import ssl
 import tempfile
 from urllib.parse import quote, urldefrag, urljoin, urlsplit
-from urllib.request import Request, urlopen
 from zipfile import ZipFile
 
 from .artifacts import inspect_payload
@@ -20,18 +23,81 @@ from .validation import CheckResult, Issue, load_document, load_packaged_schema,
 MAX_DOWNLOAD = 512 * 1024 * 1024
 
 
+def _public_addresses(host: str) -> list[str]:
+    addresses = sorted({entry[4][0] for entry in socket.getaddrinfo(host, 443, type=socket.SOCK_STREAM)})
+    if not addresses:
+        raise ValueError("download host has no resolved addresses")
+    for value in addresses:
+        address = ipaddress.ip_address(value)
+        if not address.is_global or address.is_multicast or address.is_reserved:
+            raise ValueError("download destination must resolve only to public unicast addresses")
+    return addresses
+
+
+class _PinnedHTTPSConnection(http.client.HTTPSConnection):
+    """Connect to a checked IP while verifying the original hostname's certificate."""
+
+    def __init__(self, host: str, address: str):
+        super().__init__(host, port=443, timeout=30, context=ssl.create_default_context())
+        self.address = address
+
+    def connect(self):
+        transport = socket.create_connection((self.address, 443), timeout=self.timeout)
+        try:
+            self.sock = self._context.wrap_socket(transport, server_hostname=self.host)
+        except BaseException:
+            transport.close()
+            raise
+
+
 def _download(url: str, destination: Path, limit: int) -> None:
-    headers = {"User-Agent": "handbook-toolkit-release-verifier"}
-    if urlsplit(url).hostname == "api.github.com":
-        headers.update({"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"})
-    request = Request(url, headers=headers)
-    with urlopen(request, timeout=60) as response, destination.open("xb") as stream:
-        size = 0
-        while chunk := response.read(64 * 1024):
-            size += len(chunk)
-            if size > limit:
-                raise ValueError("remote asset exceeds its allowed byte limit")
-            stream.write(chunk)
+    for _ in range(6):
+        parsed = urlsplit(url)
+        if parsed.scheme != "https" or not parsed.hostname or parsed.port not in (None, 443):
+            raise ValueError("downloads require HTTPS on the standard port")
+        if parsed.username is not None or parsed.password is not None:
+            raise ValueError("download URLs must not contain credentials")
+        host = parsed.hostname.encode("idna").decode("ascii")
+        addresses = _public_addresses(host)
+        connection = None
+        for address in addresses:
+            candidate = _PinnedHTTPSConnection(host, address)
+            try:
+                candidate.connect()
+                connection = candidate
+                break
+            except OSError:
+                candidate.close()
+        if connection is None:
+            raise OSError("cannot connect to a verified public destination")
+        try:
+            headers = {"User-Agent": "handbook-toolkit-release-verifier"}
+            if host == "api.github.com":
+                headers.update({"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"})
+            target = quote(parsed.path or "/", safe="/%:@-._~!$&'()*+,;=")
+            if parsed.query:
+                target += "?" + quote(parsed.query, safe="=&%:+,;/?@-._~")
+            connection.request("GET", target, headers=headers)
+            response = connection.getresponse()
+            if response.status in {301, 302, 303, 307, 308}:
+                location = response.getheader("Location")
+                if not location:
+                    raise ValueError("redirect is missing its destination")
+                url = urljoin(url, location)
+                continue  # the next target is resolved, checked and pinned again
+            if response.status != 200:
+                raise ValueError(f"remote asset returned HTTP {response.status}")
+            with destination.open("xb") as stream:
+                size = 0
+                while chunk := response.read(64 * 1024):
+                    size += len(chunk)
+                    if size > limit:
+                        raise ValueError("remote asset exceeds its allowed byte limit")
+                    stream.write(chunk)
+            return
+        finally:
+            connection.close()
+    raise ValueError("download exceeded the redirect limit")
 
 
 def _json(url: str) -> dict:
@@ -140,7 +206,7 @@ def verify_catalog_releases(catalog: Path) -> CheckResult:
     for book in load_document(catalog)["books"]:
         try:
             _verify_book(book)
-        except (OSError, ValueError, UnicodeError, KeyError, TypeError) as error:
+        except (OSError, ValueError, UnicodeError, KeyError, TypeError, http.client.HTTPException) as error:
             issues.append(Issue(book["id"], str(error)))
     return CheckResult("online catalog release verification", tuple(issues))
 
