@@ -65,7 +65,68 @@ def _git(repo: Path, *args: str) -> str:
     return result.stdout.strip()
 
 
-def make_book(root: Path, *, include_quarto: bool = True) -> tuple[Path, str]:
+CHAPTER = """\
+# 1. A Build Chapter
+
+::: {.callout-note appearance="simple" icon=false title="When to Use This Chapter"}
+- A structural build is required.
+:::
+
+::: {.callout-tip appearance="simple" icon=false title="Key Takeaway"}
+Structure and identity are separate gates.
+:::
+
+## 1.1 A Content Section
+
+**Definition.** A content section is an ordinary chapter section.
+
+**Purpose.** It carries the argument.
+
+**What it includes.** Labels, an example and closing elements.
+
+**Why it is needed.** Without it, the chapter has no reviewed shape.
+
+**Example.** A labeled example.
+
+::: {.callout-warning appearance="simple" icon=false title="Common Pitfall"}
+Skipping the section gate.
+:::
+
+::: {.callout-important appearance="simple" icon=false title="Decision & Trade-off"}
+How much structure is enough? Enough to review the argument.
+:::
+
+## 1.2 Worked Example — Build Identity
+
+An illustrative worked example.
+
+::: {.callout-important appearance="simple" icon=false title="Review Checklist — Build identity"}
+- Check the source commit.
+- Check every payload.
+:::
+
+## 1.3 Further Reading
+
+- A checkable source.
+"""
+
+def commit_all(repo: Path, message: str = "fixture update") -> str:
+    _git(repo, "add", "-A")
+    _git(
+        repo,
+        "-c",
+        "user.name=Fixture",
+        "-c",
+        "user.email=fixture@example.invalid",
+        "commit",
+        "-q",
+        "-m",
+        message,
+    )
+    return _git(repo, "rev-parse", "HEAD")
+
+
+def make_book(root: Path, *, include_quarto: bool = True, chapter: bool = False) -> tuple[Path, str]:
     repo = root / "book"
     repo.mkdir()
     (repo / "book.yaml").write_text(
@@ -102,7 +163,7 @@ repository:
         "front: []\nchapters:\n  - chapters/pilot.qmd\nback: []\nappendices: []\nreferences: []\n",
         encoding="utf-8",
     )
-    (repo / "manuscript/chapters/pilot.qmd").write_text(PILOT, encoding="utf-8")
+    (repo / "manuscript/chapters/pilot.qmd").write_text(CHAPTER if chapter else PILOT, encoding="utf-8")
     (repo / "publishing").mkdir()
     (repo / "publishing/metadata.yaml").write_text("version: '1.0.0'\n", encoding="utf-8")
     if include_quarto:
@@ -148,7 +209,7 @@ class BuildTests(unittest.TestCase):
             root = Path(temp)
             repo, commit = make_book(root)
             output = root / "dist"
-            result = build_book(repo, commit, output, profile=PROFILE)
+            result = build_book(repo, commit, output, profile=PROFILE, mode="section-pilot")
             self.assertEqual(result.commit, commit)
             self.assertFalse(output.is_symlink())
             self.assertEqual(
@@ -202,6 +263,97 @@ class BuildTests(unittest.TestCase):
                 [path for path in root.iterdir() if path.name.startswith(".handbook-build-")],
                 [],
             )
+
+
+    def test_default_chapter_mode_builds_a_full_chapter(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, commit = make_book(root, chapter=True)
+            output = root / "dist"
+            result = build_book(repo, commit, output, profile=PROFILE)
+            self.assertTrue(result.output.is_dir())
+            self.assertTrue(verify_publication(output).ok)
+
+    def test_toolkit_pin_mismatch_is_refused_by_default(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, commit = make_book(root)
+            book = repo / "book.yaml"
+            book.write_text(
+                book.read_text(encoding="utf-8").replace('toolkit: "0.3.0"', 'toolkit: "0.1.0"'),
+                encoding="utf-8",
+            )
+            commit = commit_all(repo, "mismatched toolkit pin")
+            output = root / "dist"
+            with self.assertRaises(BuildError):
+                build_book(repo, commit, output, profile=PROFILE, mode="section-pilot")
+            self.assertFalse(output.exists())
+
+    def test_preview_mode_is_explicit_and_non_release(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, commit = make_book(root)
+            book = repo / "book.yaml"
+            book.write_text(
+                book.read_text(encoding="utf-8").replace('toolkit: "0.3.0"', 'toolkit: "0.1.0"'),
+                encoding="utf-8",
+            )
+            commit = commit_all(repo, "preview toolkit pin")
+            output = root / "dist"
+            result = build_book(
+                repo, commit, output, profile=PROFILE, mode="section-pilot", preview=True
+            )
+            self.assertTrue(result.output.is_dir())
+            manifest = json.loads((output / "publication-manifest.json").read_text())
+            self.assertIn("--preview", manifest["build"]["command"])
+
+    def test_invalid_manuscript_structure_is_refused_before_render(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, commit = make_book(root)
+            pilot = repo / "manuscript/chapters/pilot.qmd"
+            pilot.write_text(
+                pilot.read_text(encoding="utf-8").replace(
+                    "**Purpose.** It proves the renderer and validator path before a full chapter.\n\n",
+                    "",
+                ),
+                encoding="utf-8",
+            )
+            commit = commit_all(repo, "invalid pilot structure")
+            output = root / "dist"
+            with self.assertRaises(BuildError):
+                build_book(repo, commit, output, profile=PROFILE, mode="section-pilot")
+            self.assertFalse(output.exists())
+            self.assertEqual(
+                [path for path in root.iterdir() if path.name.startswith(".handbook-build-")],
+                [],
+            )
+
+    def test_dangling_output_symlink_is_refused_without_touching_target(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, commit = make_book(root)
+            output = root / "dist"
+            target = root / "missing-target"
+            output.symlink_to(target)
+            with self.assertRaises(BuildError):
+                build_book(repo, commit, output, profile=PROFILE, mode="section-pilot")
+            self.assertFalse(target.exists())
+            self.assertTrue(output.is_symlink())
+
+    def test_build_reads_book_and_reading_order_from_the_commit(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, commit = make_book(root)
+            book = repo / "book.yaml"
+            book.write_text(
+                book.read_text(encoding="utf-8").replace('toolkit: "0.3.0"', 'toolkit: "0.1.0"'),
+                encoding="utf-8",
+            )
+            _git(repo, "update-index", "--assume-unchanged", "book.yaml")
+            output = root / "dist"
+            result = build_book(repo, commit, output, profile=PROFILE, mode="section-pilot")
+            self.assertTrue(result.output.is_dir())
 
 
 if __name__ == "__main__":

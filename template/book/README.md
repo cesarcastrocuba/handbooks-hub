@@ -60,7 +60,7 @@ Once the book has a clean source commit and a reviewed profile, build a local si
 directory (not a publication):
 
 ```bash
-handbook-toolkit build-book --repo . --commit <FULL_SHA> --output /external/release --profile /path/to/reviewed-profile.yaml
+handbook-toolkit build-book --repo . --commit <FULL_SHA> --output /external/release --profile /path/to/reviewed-profile.yaml --mode section-pilot
 ```
 
 The build requires Quarto `1.11.9` and Poppler `pdfinfo`, stages only tracked files, renders once,

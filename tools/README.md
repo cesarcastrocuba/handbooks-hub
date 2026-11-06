@@ -27,7 +27,7 @@ handbook-toolkit validate-book --full
 # from the hub checkout:
 handbook-toolkit validate-book template/book/book.yaml --full
 # local publication build; does not publish
-handbook-toolkit build-book --repo /path/to/book --commit <FULL_SHA> --output /external/release --profile /path/to/profile.yaml
+handbook-toolkit build-book --repo /path/to/book --commit <FULL_SHA> --output /external/release --profile /path/to/profile.yaml --mode chapter
 ```
 
 `validate-book` defaults to `book.yaml` in the repository root, so a book can run it with no path.
@@ -58,7 +58,7 @@ Version `0.3.0` validates:
 - repository-required files and, in full mode, relative documentation links.
 
 The manuscript validator checks **structure only**. It does not judge meaning, factual accuracy, prose
-quality or whether a diagram/table is useful, and it never requires visuals. The local publication build uses the shared publication/artifact modules; it stages only tracked files from an exact clean commit, renders HTML/Typst/DOCX once, inspects all payloads, writes and verifies the manifest/checksums, then atomically exposes the final directory. It does not publish. See [`docs/publication-build.md`](../docs/publication-build.md). The reference resolver and portal generator remain separate work.
+quality or whether a diagram/table is useful, and it never requires visuals. The local publication build requires the book toolkit pin to match the builder (use `--preview` only for an explicit non-release preview), validates staged manuscript structure with the explicit profile, renders only HTML/Typst/DOCX with `--no-execute`, and uses the shared publication/artifact modules. It stages only tracked files from an exact clean commit, renders HTML/Typst/DOCX once, inspects all payloads, writes and verifies the manifest/checksums, then atomically exposes the final directory. It does not publish. See [`docs/publication-build.md`](../docs/publication-build.md). The reference resolver and portal generator remain separate work.
 
 ## Tests
 

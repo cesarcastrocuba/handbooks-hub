@@ -33,6 +33,7 @@ from .artifacts import archive_tree, inspect_payload
 from .publication import verify_publication, write_manifest
 from .profiles import validate_profile
 from .books import validate_book
+from .manuscript import validate_manuscript
 from .validation import (
     load_document,
     load_packaged_schema,
@@ -98,7 +99,7 @@ def _require_clean_commit(repo: Path, commit: str) -> None:
         raise BuildError("source repository must be clean before building")
 
 
-def _reading_order(book: dict[str, Any], repo: Path) -> list[str]:
+def _reading_groups(book: dict[str, Any], repo: Path) -> dict[str, list[str]]:
     manuscript = book["manuscript"]
     root = repo / manuscript["root"]
     path = repo / manuscript["reading_order"]
@@ -108,11 +109,12 @@ def _reading_order(book: dict[str, Any], repo: Path) -> list[str]:
         raise BuildError(f"cannot read reading order {path}: {exc}") from exc
     if not isinstance(document, dict):
         raise BuildError("reading order must be a YAML mapping")
-    entries: list[str] = []
+    groups: dict[str, list[str]] = {}
     for group in ("front", "chapters", "back", "appendices", "references"):
         values = document.get(group, []) or []
         if not isinstance(values, list):
             raise BuildError(f"reading order group {group} must be a list")
+        checked: list[str] = []
         for value in values:
             if not isinstance(value, str) or not value.endswith(".qmd"):
                 raise BuildError(f"reading order entry is not a .qmd path: {value!r}")
@@ -123,10 +125,31 @@ def _reading_order(book: dict[str, Any], repo: Path) -> list[str]:
                 raise BuildError(f"reading order entry escapes manuscript root: {value}") from exc
             if not candidate.is_file():
                 raise BuildError(f"reading order entry does not exist: {value}")
-            entries.append(f"{manuscript['root']}/{value}")
-    if not entries:
-        raise BuildError("reading order contains no manuscript entries")
-    return entries
+            checked.append(f"{manuscript['root']}/{value}")
+        groups[group] = checked
+    if not groups["chapters"]:
+        raise BuildError("reading order contains no chapters")
+    return groups
+
+
+def _validate_manuscripts(
+    workspace: Path,
+    book: dict[str, Any],
+    profile: dict[str, Any],
+    mode: str,
+) -> None:
+    groups = _reading_groups(book, workspace)
+    chapters = groups["chapters"]
+    if mode == "section-pilot" and len(chapters) != 1:
+        raise BuildError("section-pilot mode requires exactly one chapter entry in the reading order")
+    for entry in chapters:
+        path = workspace / entry
+        result = validate_manuscript(path, profile, mode)
+        if not result.ok:
+            raise BuildError(
+                f"manuscript validation failed for {entry}: "
+                + "; ".join(map(str, result.issues))
+            )
 
 
 def _book_version(repo: Path, requested: str | None) -> str:
@@ -189,11 +212,14 @@ def _render_config(book: dict[str, Any], config: dict[str, Any], entries: list[s
     book_config["title"] = book["title"]
     book_config["chapters"] = ["index.qmd", *entries]
 
-    formats = config.setdefault("format", {})
+    formats = config.get("format", {})
     if not isinstance(formats, dict):
         raise BuildError("publishing/_quarto.yml format section must be a mapping")
-    for name in ("html", "typst", "docx"):
-        formats.setdefault(name, {})
+    config["format"] = {name: formats.get(name, {}) for name in ("html", "typst", "docx")}
+    execute = config.setdefault("execute", {})
+    if not isinstance(execute, dict):
+        raise BuildError("publishing/_quarto.yml execute section must be a mapping")
+    execute["enabled"] = False
     return config
 
 
@@ -254,6 +280,8 @@ def build_book(
     version: str | None = None,
     epoch: int | None = None,
     quarto: str = "quarto",
+    mode: str = "chapter",
+    preview: bool = False,
 ) -> BuildResult:
     """Build a verified six-file publication directory at *output*.
 
@@ -263,10 +291,15 @@ def build_book(
     """
 
     repo = Path(repo).resolve()
-    output = Path(output).resolve()
+    raw_output = Path(output)
     profile = Path(profile).resolve()
+    if mode not in {"chapter", "section-pilot"}:
+        raise BuildError('mode must be "chapter" or "section-pilot"')
 
     _require_clean_commit(repo, commit)
+    if raw_output.is_symlink() or raw_output.exists():
+        raise BuildError(f"output already exists: {raw_output}")
+    output = raw_output.resolve()
     if output.exists() or output.is_symlink():
         raise BuildError(f"output already exists: {output}")
     try:
@@ -277,22 +310,11 @@ def build_book(
         raise BuildError("output must be outside the source repository")
     output.parent.mkdir(parents=True, exist_ok=True)
 
-    book_path = repo / "book.yaml"
-    book_result = validate_book(book_path, load_packaged_schema("book.schema.json"))
-    if not book_result.ok:
-        raise BuildError("invalid book descriptor: " + "; ".join(map(str, book_result.issues)))
-
     profile_result = validate_profile(profile, load_packaged_schema("profile.schema.json"))
     if not profile_result.ok:
         raise BuildError("invalid profile: " + "; ".join(map(str, profile_result.issues)))
-
-    book = load_document(book_path)
     profile_document = load_document(profile)
-    if book["profile"]["id"] != profile_document["id"] or book["profile"]["version"] != profile_document["version"]:
-        raise BuildError("book.yaml profile pin does not match the explicit --profile")
 
-    entries = _reading_order(book, repo)
-    book_version = _book_version(repo, version)
     source_epoch = _epoch(repo, commit, epoch)
     tool_versions = _tool_versions(quarto)
 
@@ -306,7 +328,29 @@ def build_book(
         with zipfile.ZipFile(source_zip) as archive:
             if archive.comment.decode("ascii", errors="replace") != commit:
                 raise BuildError("git archive did not record the exact source commit")
+        source_issues = inspect_payload(source_zip, "source", source_commit=commit)
+        if source_issues:
+            raise BuildError(
+                "source inspection failed: " + "; ".join(map(str, source_issues))
+            )
         _extract_source(source_zip, workspace)
+
+        book_path = workspace / "book.yaml"
+        book_result = validate_book(book_path, load_packaged_schema("book.schema.json"))
+        if not book_result.ok:
+            raise BuildError("invalid book descriptor: " + "; ".join(map(str, book_result.issues)))
+        book = load_document(book_path)
+        if book["profile"]["id"] != profile_document["id"] or book["profile"]["version"] != profile_document["version"]:
+            raise BuildError("book.yaml profile pin does not match the explicit --profile")
+        if book["toolkit"] != __version__ and not preview:
+            raise BuildError(
+                f"book.yaml toolkit pin {book['toolkit']} does not match builder {__version__}; "
+                "use an explicit --preview build only for a non-release preview"
+            )
+        groups = _reading_groups(book, workspace)
+        entries = [entry for group in ("front", "chapters", "back", "appendices", "references") for entry in groups[group]]
+        _validate_manuscripts(workspace, book, profile_document, mode)
+        book_version = _book_version(workspace, version)
 
         config_path = workspace / "publishing/_quarto.yml"
         try:
@@ -332,7 +376,7 @@ def build_book(
         environment = os.environ.copy()
         environment["SOURCE_DATE_EPOCH"] = str(source_epoch)
         _run(
-            [quarto, "render", "."],
+            [quarto, "render", ".", "--no-execute"],
             cwd=workspace,
             env=environment,
         )
@@ -357,7 +401,9 @@ def build_book(
                 "version": profile_document["version"],
             },
             "build": {
-                "command": f"handbook-toolkit build-book --commit {commit}",
+                "command": "handbook-toolkit build-book --commit "
+                + commit
+                + (" --preview" if preview else ""),
                 "source_date_epoch": source_epoch,
                 "tool_versions": tool_versions,
             },

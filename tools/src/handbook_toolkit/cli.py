@@ -130,6 +130,8 @@ def command_build(args: argparse.Namespace) -> int:
             version=args.version,
             epoch=args.epoch,
             quarto=args.quarto,
+            mode=args.mode,
+            preview=args.preview,
         )
     except (BuildError, DocumentError, OSError, ValueError) as exc:
         print(f"BUILD: FAILED: {exc}", file=sys.stderr)
@@ -214,6 +216,17 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument("--version", help="book version; defaults to publishing/metadata.yaml")
     build.add_argument("--epoch", type=int, help="SOURCE_DATE_EPOCH; defaults to commit timestamp")
     build.add_argument("--quarto", default="quarto", help="Quarto executable (default: quarto)")
+    build.add_argument(
+        "--mode",
+        default="chapter",
+        choices=("chapter", "section-pilot"),
+        help="structural manuscript gate; section-pilot is for a partial pilot build (default: chapter)",
+    )
+    build.add_argument(
+        "--preview",
+        action="store_true",
+        help="explicit non-release preview: allow a book.yaml toolkit pin that differs from the builder",
+    )
     build.set_defaults(func=command_build)
 
     version = subparsers.add_parser("version", help="print the toolkit version")
