@@ -41,6 +41,7 @@ def catalog_document() -> dict:
                 "summary": "An example book used by the toolkit tests.",
                 "categories": ["authoring"],
                 "status": "published",
+                "reading_url": "https://example.github.io/example-book/",
                 "latest_release": {
                     "version": "1.0.0",
                     "tag": "v1.0.0",

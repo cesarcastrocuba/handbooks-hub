@@ -20,6 +20,7 @@ Machine-readable contract: [`catalog/catalog.json`](../catalog/catalog.json) and
       "summary": "A practical guide to writing, reviewing and publishing a handbook.",
       "categories": ["authoring", "publishing"],
       "status": "published",
+      "reading_url": "https://OWNER.github.io/REPO/",
       "latest_release": {
         "version": "1.0.0",
         "tag": "v1.0.0",
@@ -47,7 +48,8 @@ The toolkit enforces these deterministically:
 | `tag` is exactly `v` + `version` | One naming rule across books |
 | Release, manifest and checksums URLs are HTTPS and share the same tag | No mutable or mixed-release links |
 | `published_at` is an ISO date (`YYYY-MM-DD`) | Deterministic rendering |
-| Categories are unique lowercase slugs | Stable portal grouping |
+| Categories are unique controlled lowercase slugs | Stable portal grouping |
+| `reading_url` is explicit HTTPS | Reading sites may use custom domains and cannot be inferred from release URLs |
 | The JSON document is valid against the catalog schema | One validated interface |
 
 A catalog entry is rejected if it points to a branch, a pull request, a draft release or a build
@@ -72,8 +74,8 @@ extend it only when a book cannot be described by the existing values:
 
 `architecture`, `authoring`, `cloud`, `data`, `engineering`, `governance`, `publishing`, `security`.
 
-The catalog schema currently accepts lowercase slugs; Phase 4 adds a vocabulary check and a portal
-test that every category has at least one book or is explicitly marked as a planned facet.
+The catalog schema enforces this vocabulary. The portal exposes filters only for populated
+categories; empty categories are explicitly marked as planned facets.
 
 ## Portal behavior
 
