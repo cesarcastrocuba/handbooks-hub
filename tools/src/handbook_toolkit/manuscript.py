@@ -669,14 +669,14 @@ def _check_chapter(
         )
         section_slice = _slice(manuscript, section.line, next_h2)
         units = [heading for heading in section_slice.headings if heading.level == 3]
-        _check_heading(
-            path,
-            section,
-            issues,
-            allowed_levels=(2,),
-            label="content section",
-        )
         if units:
+            _check_heading(
+                path,
+                section,
+                issues,
+                allowed_levels=(2,),
+                label="content section",
+            )
             if profile["section"].get("forbid_single_unit", False) and len(units) == 1:
                 issues.append(
                     Issue(
