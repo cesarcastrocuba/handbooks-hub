@@ -16,8 +16,8 @@ source.
 
 ```bash
 handbook-toolkit version
-handbook-toolkit verify --root .
-handbook-toolkit verify --root . --full
+handbook-toolkit --root . verify
+handbook-toolkit --root . verify --full
 handbook-toolkit validate-catalog catalog/catalog.json
 handbook-toolkit validate-profile profiles/standard/profile.yaml
 # from a book repository root:
@@ -51,4 +51,10 @@ Phase 4 work. This package does not claim to validate them yet.
 python3 -m unittest discover -s tools/tests -v
 ```
 
-Tests use only the standard library runner and cover both accepted and rejected input.
+Tests use only the standard library runner and cover both accepted and rejected input. They also
+parse every documented `handbook-toolkit` example, so a doc example with global options after the
+subcommand fails the suite.
+
+GitHub Actions additionally builds a wheel, verifies that the three schemas are inside it, installs
+the wheel in an isolated virtual environment and validates a copy of the template book outside the
+hub checkout. That job is not a publication step.

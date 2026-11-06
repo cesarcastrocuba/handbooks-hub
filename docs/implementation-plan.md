@@ -314,7 +314,7 @@ No sample-book chapter expansion starts before this gate.
 make check
 make full
 python3 -m unittest discover -s tools/tests -v
-handbook-toolkit verify --root . --full
+handbook-toolkit --root . verify --full
 # planned
 handbook-toolkit book check template/book
 ```
@@ -527,8 +527,8 @@ book consumes it.
 | --- | --- | --- |
 | `make check` | Fast | Runs toolkit unit tests and the catalog/profile/book validators |
 | `make full` | Full (current scope) | Runs `check` plus repository-contract and template reading-order checks |
-| `handbook-toolkit verify --root .` | Fast | Validates catalog, profile and template descriptor |
-| `handbook-toolkit verify --root . --full` | Full | Adds required repository files and manuscript path checks |
+| `handbook-toolkit --root . verify` | Fast | Validates catalog, profile and template descriptor |
+| `handbook-toolkit --root . verify --full` | Full | Adds required repository files and manuscript path checks |
 
 ### Planned book commands (Phase 2–4)
 
@@ -542,6 +542,12 @@ book consumes it.
 
 The distinction is deliberate: fast checks are suitable for every commit; full checks include
 artifacts and are required before a release.
+
+GitHub Actions also runs a `wheel-install` job: it builds the toolkit wheel, checks that the three
+schemas are packaged, installs the wheel in a fresh virtual environment and validates an independent
+copy of the template book outside the hub checkout, with a decoy `schemas/` directory. This is a
+packaging-boundary check, not a publication or release step. Local environments without wheel
+tooling cannot run it.
 
 ### Green definition
 

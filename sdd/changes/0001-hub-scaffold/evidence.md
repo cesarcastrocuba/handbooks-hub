@@ -6,7 +6,7 @@
 **Scaffold commit:** `8162e916781670d32e1f927b1849911781d976f2`
 **Follow-up:** schema packaging and install isolation were fixed after review in
 `sdd/changes/0002-toolkit-packaged-schemas/`. The 42-test count below is the historical scaffold run;
-the current suite has 46 tests.
+the current suite has 48 tests.
 
 ## Environment
 

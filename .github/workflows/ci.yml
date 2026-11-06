@@ -26,5 +26,62 @@ jobs:
       - name: Full checks
         run: make full
 
-# The artifact build and portal checks are added in Phase 4. Until then, "full" means every check the
-# hub currently owns; it is not a substitute for the future publication gate.
+  wheel-install:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build the toolkit wheel
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build --wheel --outdir "$RUNNER_TEMP/wheelhouse" tools
+      - name: Verify the wheel contains the packaged schemas
+        run: |
+          python - "$RUNNER_TEMP" <<'PY'
+          import glob
+          import os
+          import sys
+          import zipfile
+
+          wheels = glob.glob(os.path.join(sys.argv[1], "wheelhouse", "*.whl"))
+          assert len(wheels) == 1, wheels
+          required = {
+              "handbook_toolkit/schemas/book.schema.json",
+              "handbook_toolkit/schemas/catalog.schema.json",
+              "handbook_toolkit/schemas/profile.schema.json",
+          }
+          with zipfile.ZipFile(wheels[0]) as archive:
+              names = set(archive.namelist())
+          missing = sorted(required - names)
+          assert not missing, f"wheel is missing packaged schemas: {missing}"
+          print(f"wheel contains {len(required)} schemas")
+          PY
+      - name: Install the wheel in an isolated environment
+        run: |
+          python -m venv "$RUNNER_TEMP/toolkit-venv"
+          "$RUNNER_TEMP/toolkit-venv/bin/python" -m pip install --upgrade pip
+          "$RUNNER_TEMP/toolkit-venv/bin/python" -m pip install "$RUNNER_TEMP"/wheelhouse/*.whl
+          "$RUNNER_TEMP/toolkit-venv/bin/python" - <<'PY'
+          import pathlib
+          import handbook_toolkit
+
+          path = pathlib.Path(handbook_toolkit.__file__).resolve()
+          print(path)
+          assert "site-packages" in str(path), path
+          PY
+      - name: Validate an independent book outside the checkout
+        run: |
+          book="$RUNNER_TEMP/independent-book"
+          cp -a template/book "$book"
+          mkdir -p "$book/schemas"
+          for schema in book catalog profile; do
+            printf '%s\n' '{"type": "object", "required": ["decoy-must-never-be-used"]}' \
+              > "$book/schemas/$schema.schema.json"
+          done
+          cd "$book"
+          "$RUNNER_TEMP/toolkit-venv/bin/handbook-toolkit" --root . validate-book --full
+
+# The artifact build and portal checks are added in Phase 4. The wheel-install job checks the
+# installed-package boundary now; it is not a publication or release step.

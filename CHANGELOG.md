@@ -12,6 +12,8 @@ semantic versioning once the toolkit is published.
   records.
 - `handbook-toolkit` 0.1.0 with deterministic catalog, profile and book validators and unit tests.
 - Basic CI running the fast and full repository checks.
+- CI `wheel-install` job that builds the wheel, verifies the packaged schemas, installs it in an
+  isolated environment and validates a book outside the hub checkout.
 - Dual licensing (`LICENSE`, `LICENSE-CODE`) and attribution notice.
 
 ### Fixed
@@ -20,6 +22,9 @@ semantic versioning once the toolkit is published.
   by default. An independent book can validate without a hub checkout or a vendored `schemas/`
   directory. `--schemas` remains an explicit override. See
   `sdd/changes/0002-toolkit-packaged-schemas/`.
+- Documented CLI examples now put global `--root` and `--schemas` options before the subcommand, and a
+  regression test parses every documented example. See
+  `sdd/changes/0003-cli-docs-and-wheel-ci/`.
 
 ### Notes
 

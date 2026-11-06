@@ -16,7 +16,8 @@ deployment or GitHub repository creation.
 | Local hub repository | Initialized on branch `main` |
 | Reference handbook | Inspected read-only at `6a15cc211f65e148afdaa75c71a063a8084d1910` (branch `release/v2.1-rc5`) |
 | Sample repository | Empty at initial inspection (15:32); populated concurrently by a separate session (observed HEAD `bbcba3ef6fd2a3495de33dfcb1eac4ca5a697aa7`). This session made no writes to it. |
-| Toolkit | `0.1.0`, catalog/profile/book validators, bundled schemas, 46 unit tests |
+| Toolkit | `0.1.0`, catalog/profile/book validators, bundled schemas, 48 unit tests |
+| CI | Fast/full checks plus a wheel-build and isolated-install boundary job; not executed locally |
 | Standard profile | `0.1.0`, **Proposed**; owner approval required |
 | Catalog | Empty; no approved release exists |
 | Publication | Not implemented; planned for Phase 4 |
