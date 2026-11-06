@@ -1,0 +1,7 @@
+# Reading order for the book. Every manuscript/*.qmd file must appear exactly once.
+front: []
+chapters:
+  - chapters/01-example.qmd
+back: []
+appendices: []
+references: []

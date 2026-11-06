@@ -1,0 +1,11 @@
+# 1. Example Chapter
+
+This placeholder is replaced by the approved brief, outline and pilot. It exists so the template's
+reading order and validator checks resolve.
+
+A conforming chapter follows the standard profile: open with the `When to Use This Chapter` and
+`Key Takeaway` callouts, number the sections, close each section with an example, a common pitfall
+and a decision trade-off, finish the worked example with the architecture review checklist, and end
+with `Further Reading`.
+
+Do not publish this placeholder.

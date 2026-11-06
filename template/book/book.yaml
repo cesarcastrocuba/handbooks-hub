@@ -1,0 +1,37 @@
+# Book descriptor. Replace the identifiers and summary before the first commit.
+# Keep toolkit and profile versions exact: ranges are rejected by the schema.
+schema_version: "1.0"
+id: template-book
+title: Handbook template
+status: draft
+
+profile:
+  id: standard
+  version: "0.1.0"
+
+toolkit: "0.1.0"
+
+license:
+  content: CC-BY-SA-4.0
+  code: MIT
+
+manuscript:
+  root: manuscript
+  reading_order: manuscript/book.yml
+
+publication:
+  formats:
+    - html
+    - pdf
+    - docx
+  manifest: publication-manifest.json
+
+catalog:
+  slug: template-book
+  categories:
+    - authoring
+  summary: Replace this summary before the book is listed in the hub catalog.
+
+repository:
+  url: null
+  default_branch: main

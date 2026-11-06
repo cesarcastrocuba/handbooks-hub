@@ -1,0 +1,39 @@
+# Status
+
+**This file is the single source of current status for the hub.** Decisions and their rationale live
+only in [`docs/decisions.md`](docs/decisions.md); the plan lives in
+[`docs/implementation-plan.md`](docs/implementation-plan.md).
+
+**Updated:** 2026-11-06
+**Phase:** 1 — Foundation (hub portion)
+**State:** Scaffold complete; independent review pending; no release, deployment or GitHub repository
+creation.
+
+## Current facts
+
+| Item | State |
+| --- | --- |
+| Local hub repository | Initialized on branch `main` |
+| Reference handbook | Inspected read-only at `6a15cc211f65e148afdaa75c71a063a8084d1910` (branch `release/v2.1-rc5`) |
+| Sample repository | Exists as an empty local directory; not modified in this milestone |
+| Toolkit | `0.1.0`, catalog/profile/book validators, unit tests |
+| Standard profile | `0.1.0`, **Proposed**; owner approval required |
+| Catalog | Empty; no approved release exists |
+| Publication | Not implemented; planned for Phase 4 |
+| Migration of existing handbook | Deferred; separate owner decision (`DEC-009`) |
+
+## Next actions
+
+1. Independent reviewer checks the exact commit, re-runs `make full` and posts classified findings.
+2. Owner reviews the plan, the proposed standard profile and the licensing/notice scope.
+3. After Gate 1, scaffold the sample repository in a separate session with a non-overlapping write
+   set.
+4. Start Phase 2 (toolkit, profile and template) only after Gate 1 approval.
+
+## Blockers and open owner decisions
+
+- Approval of the proposed standard editorial profile.
+- Confirmation of the dual-license scope in `NOTICE.md`.
+- Approval of the Phase 1 gate and the revised sequencing (sample-repository scaffold deferred to a
+  separate session).
+- Approval to create GitHub repositories at a later, explicitly authorized step.

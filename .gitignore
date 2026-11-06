@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# Toolkit and validator caches
+.cache/
+.tmp/
+
+# Generated publication artifacts
+# Never commit build outputs, release bundles or downloaded dependencies.
+_build/
+_output/
+site/
+artifacts/
+*.zip
+*.pdf
+*.docx
+
+# Keep intentionally tracked fixtures if one is ever required.
+!tools/tests/fixtures/**/*.pdf
+!tools/tests/fixtures/**/*.docx
+
+# Local environment and editor files
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log

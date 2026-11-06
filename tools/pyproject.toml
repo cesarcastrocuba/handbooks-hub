@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "handbook-toolkit"
+version = "0.1.0"
+description = "Shared deterministic validators for the handbook platform"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+  "jsonschema>=4.10,<5",
+  "PyYAML>=6.0,<7",
+]
+
+[project.scripts]
+handbook-toolkit = "handbook_toolkit.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]

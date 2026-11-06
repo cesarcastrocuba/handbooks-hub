@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://handbooks.example/schemas/profile.schema.json",
+  "title": "Handbook editorial profile",
+  "description": "Versioned editorial contract for a handbook repository.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "version",
+    "status",
+    "title",
+    "description",
+    "chapter",
+    "section",
+    "unit",
+    "figure",
+    "table",
+    "cross_references",
+    "licensing",
+    "exceptions"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,63}$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["proposed", "approved", "deprecated"]
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "derived_from": { "type": "string", "minLength": 1 },
+        "references": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "chapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required_elements"],
+      "properties": {
+        "required_elements": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/element" }
+        }
+      }
+    },
+    "section": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required_elements", "forbid_single_unit", "closing_order"],
+      "properties": {
+        "required_elements": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/element" }
+        },
+        "forbid_single_unit": { "type": "boolean" },
+        "closing_order": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "unit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required_labels", "label_style", "min_words", "max_words"],
+      "properties": {
+        "required_labels": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "label_style": {
+          "type": "string",
+          "enum": ["bold-period"]
+        },
+        "min_words": { "type": "integer", "minimum": 1 },
+        "max_words": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "figure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "min_per_section",
+        "source_format",
+        "alt_text_required",
+        "max_natural_width_px",
+        "min_effective_font_pt",
+        "preserve_aspect_ratio",
+        "upscale"
+      ],
+      "properties": {
+        "required": { "type": "boolean" },
+        "min_per_section": { "type": "integer", "minimum": 0 },
+        "source_format": {
+          "type": "string",
+          "enum": ["dot", "svg", "other"]
+        },
+        "alt_text_required": { "type": "boolean" },
+        "max_natural_width_px": { "type": "integer", "minimum": 1 },
+        "min_effective_font_pt": { "type": "number", "exclusiveMinimum": 0 },
+        "preserve_aspect_ratio": { "type": "boolean" },
+        "upscale": { "type": "boolean" }
+      }
+    },
+    "table": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "min_per_section",
+        "caption_position",
+        "caption_prefix",
+        "number_in_decision_callout",
+        "adaptive_widths"
+      ],
+      "properties": {
+        "required": { "type": "boolean" },
+        "min_per_section": { "type": "integer", "minimum": 0 },
+        "caption_position": {
+          "type": "string",
+          "enum": ["above", "below"]
+        },
+        "caption_prefix": { "type": "string", "minLength": 1 },
+        "number_in_decision_callout": { "type": "boolean" },
+        "adaptive_widths": { "type": "boolean" }
+      }
+    },
+    "cross_references": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["style", "automatic_glossary_links"],
+      "properties": {
+        "style": {
+          "type": "string",
+          "enum": ["explicit"]
+        },
+        "automatic_glossary_links": { "type": "boolean" }
+      }
+    },
+    "licensing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["content", "code", "notice_required", "third_party_review"],
+      "properties": {
+        "content": { "type": "string", "minLength": 1 },
+        "code": { "type": "string", "minLength": 1 },
+        "notice_required": { "type": "boolean" },
+        "third_party_review": {
+          "type": "string",
+          "enum": ["required", "not_required"]
+        }
+      }
+    },
+    "exceptions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed", "requires_owner_approval", "record_location"],
+      "properties": {
+        "allowed": { "type": "boolean" },
+        "requires_owner_approval": { "type": "boolean" },
+        "record_location": { "type": "string", "minLength": 1 }
+      }
+    }
+  },
+  "$defs": {
+    "element": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "kind", "placement", "required"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{1,63}$"
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "callout",
+            "section",
+            "checklist-callout",
+            "numbered-section",
+            "paragraph",
+            "figure",
+            "table"
+          ]
+        },
+        "placement": {
+          "type": "string",
+          "enum": [
+            "before-first-section",
+            "last-section",
+            "end-of-worked-example",
+            "last-numbered-section",
+            "section-closing",
+            "unit-opening",
+            "anywhere"
+          ]
+        },
+        "required": { "type": "boolean" }
+      }
+    }
+  }
+}

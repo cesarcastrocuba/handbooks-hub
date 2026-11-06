@@ -1,0 +1,125 @@
+"""Command-line interface for the handbook toolkit."""
+
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+import sys
+
+from . import __version__
+from .books import validate_book
+from .catalog import validate_catalog
+from .profiles import validate_profile
+from .repository import verify_repository
+from .validation import CheckResult, resolve_document
+
+DEFAULT_CATALOG = "catalog/catalog.json"
+DEFAULT_PROFILE = "profiles/standard/profile.yaml"
+DEFAULT_BOOK = "template/book/book.yaml"
+
+
+def _print_result(result: CheckResult) -> None:
+    status = "OK" if result.ok else f"{len(result.issues)} problem(s)"
+    print(f"{result.label}: {status}")
+    for issue in result.issues:
+        print(f"  {issue}", file=sys.stderr)
+
+
+def _summary(name: str, results: list[CheckResult]) -> int:
+    problems = sum(len(result.issues) for result in results)
+    print(f"{name}: {len(results)} check(s), {problems} problem(s)")
+    return 0 if problems == 0 else 1
+
+
+def _schemas(args: argparse.Namespace) -> Path:
+    root = Path(args.root).resolve()
+    return Path(args.schemas).resolve() if args.schemas else root / "schemas"
+
+
+def command_verify(args: argparse.Namespace) -> int:
+    results = verify_repository(Path(args.root), full=args.full)
+    for result in results:
+        _print_result(result)
+    return _summary("VERIFY (full)" if args.full else "VERIFY", results)
+
+
+def command_catalog(args: argparse.Namespace) -> int:
+    root = Path(args.root).resolve()
+    path = resolve_document(root, args.path, DEFAULT_CATALOG)
+    result = validate_catalog(path, _schemas(args) / "catalog.schema.json")
+    _print_result(result)
+    return 0 if result.ok else 1
+
+
+def command_profile(args: argparse.Namespace) -> int:
+    root = Path(args.root).resolve()
+    path = resolve_document(root, args.path, DEFAULT_PROFILE)
+    result = validate_profile(path, _schemas(args) / "profile.schema.json")
+    _print_result(result)
+    return 0 if result.ok else 1
+
+
+def command_book(args: argparse.Namespace) -> int:
+    root = Path(args.root).resolve()
+    path = resolve_document(root, args.path, DEFAULT_BOOK)
+    result = validate_book(path, _schemas(args) / "book.schema.json", full=args.full)
+    _print_result(result)
+    return 0 if result.ok else 1
+
+
+def command_version(_args: argparse.Namespace) -> int:
+    print(f"handbook-toolkit {__version__}")
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="handbook-toolkit",
+        description="Deterministic validators and shared tooling for handbook repositories.",
+    )
+    parser.add_argument(
+        "--root",
+        default=".",
+        help="repository root (default: current directory)",
+    )
+    parser.add_argument(
+        "--schemas",
+        help="schema directory override (default: <root>/schemas)",
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    verify = subparsers.add_parser("verify", help="run all repository validations")
+    verify.add_argument(
+        "--full",
+        action="store_true",
+        help="add documentation-link and template completeness checks",
+    )
+    verify.set_defaults(func=command_verify)
+
+    catalog = subparsers.add_parser("validate-catalog", help="validate a catalog document")
+    catalog.add_argument("path", nargs="?", help=f"default: {DEFAULT_CATALOG}")
+    catalog.set_defaults(func=command_catalog)
+
+    profile = subparsers.add_parser("validate-profile", help="validate an editorial profile")
+    profile.add_argument("path", nargs="?", help=f"default: {DEFAULT_PROFILE}")
+    profile.set_defaults(func=command_profile)
+
+    book = subparsers.add_parser("validate-book", help="validate a book descriptor")
+    book.add_argument("path", nargs="?", help=f"default: {DEFAULT_BOOK}")
+    book.add_argument("--full", action="store_true", help="also check every manuscript file is listed")
+    book.set_defaults(func=command_book)
+
+    version = subparsers.add_parser("version", help="print the toolkit version")
+    version.set_defaults(func=command_version)
+
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    return int(args.func(args))
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())

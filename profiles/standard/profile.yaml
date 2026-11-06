@@ -1,0 +1,126 @@
+# Standard handbook profile, version 0.1.0.
+# Status is "proposed": the owner must approve it at Gate 1/2 before it becomes the default.
+# The machine-readable schema is ../../schemas/profile.schema.json.
+schema_version: "1.0"
+id: standard
+version: "0.1.0"
+status: proposed
+title: Standard handbook profile
+description: >-
+  Reader-first handbook structure derived from the existing Solutions Architecture Handbook:
+  every chapter explains when to use it and what to remember, every section ends with a concrete
+  example, a pitfall and a real trade-off, and every unit answers definition, purpose, scope and
+  need. Profiles and exceptions are explicit and versioned.
+
+provenance:
+  derived_from: "solutions-architecture-handbook@6a15cc211f65e148afdaa75c71a063a8084d1910 (read-only inspection)"
+  references:
+    - "sdd/specs/rc3/STYLE.md"
+    - "sdd/specs/phase-3/PLAN.md"
+    - "docs/project/MASTER_PROMPT.md"
+    - "AGENTS.md"
+    - "DECISIONS.md"
+
+chapter:
+  required_elements:
+    - id: when-to-use
+      title: When to Use This Chapter
+      kind: callout
+      placement: before-first-section
+      required: true
+    - id: key-takeaway
+      title: Key Takeaway
+      kind: callout
+      placement: before-first-section
+      required: true
+    - id: worked-example
+      title: Worked Example
+      kind: section
+      placement: last-section
+      required: true
+    - id: architecture-review-checklist
+      title: Architecture Review Checklist
+      kind: checklist-callout
+      placement: end-of-worked-example
+      required: true
+    - id: further-reading
+      title: Further Reading
+      kind: numbered-section
+      placement: last-numbered-section
+      required: true
+
+section:
+  required_elements:
+    - id: figure
+      title: Figure
+      kind: figure
+      placement: anywhere
+      required: true
+    - id: table
+      title: Captioned Table
+      kind: table
+      placement: anywhere
+      required: true
+    - id: example
+      title: Example
+      kind: paragraph
+      placement: section-closing
+      required: true
+    - id: common-pitfall
+      title: Common Pitfall
+      kind: callout
+      placement: section-closing
+      required: true
+    - id: decision-trade-off
+      title: Decision & Trade-off
+      kind: callout
+      placement: section-closing
+      required: true
+  forbid_single_unit: true
+  closing_order:
+    - example
+    - common-pitfall
+    - decision-trade-off
+
+unit:
+  required_labels:
+    - "Definition."
+    - "Purpose."
+    - "What it includes."
+    - "Why it is needed."
+  label_style: bold-period
+  min_words: 150
+  max_words: 350
+
+figure:
+  required: true
+  min_per_section: 1
+  source_format: dot
+  alt_text_required: true
+  max_natural_width_px: 2000
+  min_effective_font_pt: 10
+  preserve_aspect_ratio: true
+  upscale: false
+
+table:
+  required: true
+  min_per_section: 1
+  caption_position: below
+  caption_prefix: ": "
+  number_in_decision_callout: false
+  adaptive_widths: true
+
+cross_references:
+  style: explicit
+  automatic_glossary_links: false
+
+licensing:
+  content: CC-BY-SA-4.0
+  code: MIT
+  notice_required: true
+  third_party_review: required
+
+exceptions:
+  allowed: true
+  requires_owner_approval: true
+  record_location: "sdd/changes/<id>/profile-exceptions.md"
