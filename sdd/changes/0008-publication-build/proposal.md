@@ -34,6 +34,7 @@ handbook-toolkit build-book --repo PATH --commit FULL_SHA --output NEW_EXTERNAL_
 - Write manifest/checksums, verify the complete six-file directory, then atomically rename staging to
   output. A failure leaves no final output and no private staging directory.
 - Run the reference/label/local-image gate before render and stage the packaged table, checkbox and callout render resources.
+- Suppress the orange-book chapter-title overflow with a staged brand primary and explicit link color.
 - Record Quarto/Pandoc/Typst/Python/zlib runtime versions, profile, mode, preview marker and epoch.
 - Never publish, upload, deploy or release.
 

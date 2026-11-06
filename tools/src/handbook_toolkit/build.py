@@ -338,6 +338,9 @@ def _render_config(
     config["format"]["typst"]["include-before-body"] = (
         resources["typst/callout-breakable.typ"].relative_to(workspace).as_posix()
     )
+    # The orange-book chapter heading uses brand primary as a full-width stroke. A white primary
+    # removes the overflowing decorative block while explicit linkcolor keeps links readable.
+    config["format"]["typst"]["linkcolor"] = "black"
     execute = config.setdefault("execute", {})
     if not isinstance(execute, dict):
         raise BuildError("publishing/_quarto.yml execute section must be a mapping")
@@ -496,6 +499,9 @@ def build_book(
         book_version = _book_version(workspace, version)
         _require_prerelease_version(book_version, mode, preview)
         resources = stage_render_resources(workspace / ".handbook-render")
+        (workspace / "_brand.yml").write_text(
+            'color:\n  primary: "#FFFFFF"\n', encoding="utf-8"
+        )
         rendered_entries = _prepare_render(workspace, entries)
 
         config_path = workspace / "publishing/_quarto.yml"

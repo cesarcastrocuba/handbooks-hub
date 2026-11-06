@@ -97,6 +97,7 @@ publication gate.
 
 Rendered chapter and table numbers come from the reading-order position, not from the manual `N.M`
 text in the canonical headings. A partial pilot is therefore rendered as Chapter 1 with Table 1.1;
-manual cross-reference numbers inside that pilot are not renumbered. The default Typst orange-book
-chapter heading style remains template-owned and must be inspected visually; this assembly does not
-claim font, heading-box, or page-break perfection.
+manual cross-reference numbers inside that pilot are not renumbered. The staged Typst project sets a
+white brand primary and explicit black link color, which suppresses the overflowing orange-book
+chapter-title block without hiding links. Table column widths and callout pagination remain shared
+renderer responsibilities and require visual review.
