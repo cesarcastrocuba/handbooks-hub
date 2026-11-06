@@ -71,7 +71,7 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install -r requirements.txt
           handbook-toolkit --root . validate-book
-          test "$(handbook-toolkit version)" = "handbook-toolkit 0.2.0"
+          test "$(handbook-toolkit version)" = "handbook-toolkit 0.3.0"
           cat > manuscript/chapters/pilot.qmd <<'QMD'
           ## 2.2 A Pilot Section
 
