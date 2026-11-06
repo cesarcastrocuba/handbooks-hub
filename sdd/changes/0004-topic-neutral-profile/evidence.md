@@ -5,7 +5,7 @@
 **Date:** 2026-11-06
 **Branch:** `feat/topic-neutral-profile`
 **Starting HEAD:** `0e8d897acae67d55eb09bf06a6e890d07d187779`
-**Commit:** pending (recorded by the follow-up evidence commit)
+**Commit:** `5e626375c11b516052424be4e9cbc4f8f4beb357`
 
 ## Environment
 
@@ -78,7 +78,14 @@ Result: **PASS** (exit 0).
 
 ### 5. Clean clone
 
-Recorded after the fix commit in the follow-up evidence update.
+```bash
+git clone --branch feat/topic-neutral-profile /home/ubuntu/github/handbooks-hub /tmp/opencode/hub-clone-0004
+cd /tmp/opencode/hub-clone-0004
+make full
+```
+
+Result: **PASS**; 52 tests, 5 fast checks and 6 full checks with 0 problems. The clone remained
+clean.
 
 ## Tests added
 
