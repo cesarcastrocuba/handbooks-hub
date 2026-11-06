@@ -2,9 +2,11 @@
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import support  # noqa: F401 -- establishes the toolkit source path
 from handbook_toolkit.publication import CHECKSUMS, MANIFEST, verify_publication, write_manifest
@@ -15,14 +17,14 @@ class PublicationTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        self.artifacts = {role: role + ".bin" for role in ("html", "pdf", "docx", "source")}
+        self.artifacts = {"html": "site.zip", "pdf": "book.pdf", "docx": "book.docx", "source": "source.zip"}
         for role, name in self.artifacts.items():
             (self.root / name).write_bytes((role + " fixture").encode())
         self.metadata = {
             "book": {"id": "test-book", "version": "1.0.0", "commit": "a" * 40},
             "toolkit": "0.2.0", "profile": {"id": "standard", "version": "0.2.0"},
             "build": {"command": "fixture build", "source_date_epoch": 1,
-                      "tool_versions": {"quarto": "1.11.9", "pandoc": "3.10", "python": "3.12"}},
+                      "tool_versions": {"quarto": "1.11.9", "pandoc": "3.10", "typst": "0.15.1", "python": "3.12"}},
         }
 
     def publish(self):
@@ -100,6 +102,38 @@ class PublicationTests(unittest.TestCase):
 
     def test_invalid_provenance_fails_before_writing_identity(self):
         self.metadata["book"]["commit"] = "main"
+        with self.assertRaises(ValueError):
+            self.publish()
+        self.assertFalse((self.root / MANIFEST).exists())
+
+    def test_failed_pair_commit_cleans_identity_and_allows_retry(self):
+        link = os.link
+
+        def fail_checksum(source, destination):
+            if Path(destination).name == CHECKSUMS:
+                raise OSError("simulated filesystem failure")
+            return link(source, destination)
+
+        with patch("handbook_toolkit.publication.os.link", side_effect=fail_checksum):
+            with self.assertRaises(OSError):
+                self.publish()
+        self.assertEqual({path.name for path in self.root.iterdir()}, set(self.artifacts.values()))
+        self.publish()
+        self.assertTrue(verify_publication(self.root).ok)
+
+    def test_writer_rejects_dirty_directory_wrong_extensions_and_missing_typst(self):
+        extra = self.root / "unrelated.txt"
+        extra.write_text("not an asset")
+        with self.assertRaises(ValueError):
+            self.publish()
+        extra.unlink()
+        (self.root / "book.pdf").rename(self.root / "book.bin")
+        self.artifacts["pdf"] = "book.bin"
+        with self.assertRaises(ValueError):
+            self.publish()
+        (self.root / "book.bin").rename(self.root / "book.pdf")
+        self.artifacts["pdf"] = "book.pdf"
+        del self.metadata["build"]["tool_versions"]["typst"]
         with self.assertRaises(ValueError):
             self.publish()
         self.assertFalse((self.root / MANIFEST).exists())

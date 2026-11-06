@@ -15,6 +15,14 @@ The fresh output directory contains exactly six release assets: four payloads,
 payloads and the manifest. A checksum file cannot hash itself. Existing identity
 files are not replaced; a new build needs a fresh directory.
 
+The writer rejects directories with unrelated files and enforces `.zip`, `.pdf`
+and `.docx` extensions. Provenance records Typst as well as Quarto, Pandoc and
+Python. Both identity files are staged before exclusive creation; exceptions
+remove any identity files created by this call so a retry remains possible.
+This is not a crash-atomic two-file transaction. The build must use a private
+staging directory and atomically rename the complete verified directory into its
+final location; publication must never observe an in-progress staging directory.
+
 `verify_publication(directory)` returns a `CheckResult`. It rejects schema errors,
 missing/duplicate roles or names, path traversal, symlinks, extra assets, changed
 sizes/hashes, malformed/duplicate checksums and incomplete checksum coverage.

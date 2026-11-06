@@ -9,8 +9,10 @@ from __future__ import annotations
 from copy import deepcopy
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
+import tempfile
 
 from .validation import CheckResult, DocumentError, Issue, load_packaged_schema, schema_issues
 
@@ -21,6 +23,7 @@ MEDIA = {"html": "application/zip", "pdf": "application/pdf",
          "source": "application/zip"}
 SAFE_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\Z")
 SUM_LINE = re.compile(r"([0-9a-f]{64})  ([A-Za-z0-9][A-Za-z0-9._-]*)\Z")
+SUFFIX = {"html": ".zip", "source": ".zip", "pdf": ".pdf", "docx": ".docx"}
 
 
 def _payload(directory: Path, name: str) -> Path:
@@ -50,24 +53,46 @@ def write_manifest(directory: Path, metadata: dict, artifacts: dict[str, str]) -
         raise ValueError("exactly html, pdf, docx and source payloads are required")
     if len(set(artifacts.values())) != 4 or {MANIFEST, CHECKSUMS} & set(artifacts.values()):
         raise ValueError("payload filenames must be distinct and cannot be identity files")
+    if {path.name for path in directory.iterdir()} != set(artifacts.values()):
+        raise ValueError("fresh output directory must contain exactly the four payloads")
     document = deepcopy(metadata)
     document["schema_version"] = "1.0"
     document["artifacts"] = []
     for role, name in sorted(artifacts.items()):
         path = _payload(directory, name)
+        if not name.endswith(SUFFIX[role]):
+            raise ValueError(f"{role} payload must use the {SUFFIX[role]} extension")
         document["artifacts"].append({"role": role, "path": name,
                                       "sha256": _digest(path), "bytes": path.stat().st_size,
                                       "media_type": MEDIA[role]})
     issues = schema_issues(document, load_packaged_schema("publication-manifest.schema.json"), MANIFEST)
     if issues:
         raise ValueError("invalid manifest metadata: " + "; ".join(map(str, issues)))
-    manifest = directory / MANIFEST
-    with manifest.open("x", encoding="utf-8") as stream:
-        stream.write(json.dumps(document, indent=2, sort_keys=True) + "\n")
-    names = sorted([*artifacts.values(), MANIFEST])
-    with (directory / CHECKSUMS).open("x", encoding="utf-8") as stream:
-        stream.writelines(f"{_digest(directory / name)}  {name}\n" for name in names)
-    return manifest
+    encoded = (json.dumps(document, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    digests = {entry["path"]: entry["sha256"] for entry in document["artifacts"]}
+    digests[MANIFEST] = hashlib.sha256(encoded).hexdigest()
+    sums = "".join(f"{digests[name]}  {name}\n" for name in sorted(digests)).encode("utf-8")
+    temporary: list[Path] = []
+    created: list[Path] = []
+    try:
+        for contents in (encoded, sums):
+            with tempfile.NamedTemporaryFile(dir=directory, prefix=".publication-", delete=False) as stream:
+                temporary.append(Path(stream.name))
+                stream.write(contents)
+                stream.flush()
+                os.fsync(stream.fileno())
+        for staged, name in zip(temporary, (MANIFEST, CHECKSUMS)):
+            destination = directory / name
+            os.link(staged, destination)  # exclusive creation; never replace another writer's identity
+            created.append(destination)
+    except BaseException:
+        for path in created:
+            path.unlink(missing_ok=True)
+        raise
+    finally:
+        for path in temporary:
+            path.unlink(missing_ok=True)
+    return directory / MANIFEST
 
 
 def verify_publication(directory: Path) -> CheckResult:
@@ -98,6 +123,8 @@ def verify_publication(directory: Path) -> CheckResult:
                 issues.append(Issue(entry["path"], "payload size or SHA-256 differs from manifest"))
             if entry["media_type"] != MEDIA[entry["role"]]:
                 issues.append(Issue(entry["path"], "media type does not match role"))
+            if not entry["path"].endswith(SUFFIX[entry["role"]]):
+                issues.append(Issue(entry["path"], "file extension does not match role"))
         expected = set(names) | {MANIFEST}
         sums: dict[str, str] = {}
         for line in sums_path.read_text(encoding="utf-8").splitlines():
