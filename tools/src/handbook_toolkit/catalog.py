@@ -38,6 +38,8 @@ def validate_catalog(path: Path, schema: dict[str, Any]) -> CheckResult:
         location = f"{label}:books[{index}]"
         try:
             reading = urlsplit(book["reading_url"])
+            if reading.query or reading.username is not None or reading.password is not None or reading.port not in (None, 443):
+                issues.append(Issue(f"{location}.reading_url", "reading site URLs must use HTTPS/443 without queries or credentials"))
             if not reading.hostname or reading.hostname.lower() in {"github.com", "www.github.com", "gitlab.com", "bitbucket.org"} or reading.hostname.lower().endswith("githubusercontent.com"):
                 issues.append(Issue(f"{location}.reading_url", "use a Pages/custom-domain reading site, not a repository, branch, PR or build URL"))
         except ValueError:

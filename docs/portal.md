@@ -17,6 +17,8 @@ reliably inferred from a release URL or a custom domain. The category vocabulary
 is now enforced by the schema. This tightens the initial, unreleased catalog
 contract; the live catalog is still empty. New categories require a deliberate
 schema and portal vocabulary update.
+Reading URLs use port 443 and contain no query string or credentials; a fragment
+may identify a section of the landing page.
 
 The generator is offline and deterministic. It validates catalog shape/invariants,
 escapes untrusted text and refuses to overwrite an existing output directory.

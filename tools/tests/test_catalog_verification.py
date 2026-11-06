@@ -10,7 +10,7 @@ from zipfile import ZipFile
 import zlib
 
 import support
-from handbook_toolkit.catalog_verification import _download, _public_addresses, verify_catalog_releases
+from handbook_toolkit.catalog_verification import _PinnedHTTPSConnection, _download, _public_addresses, verify_catalog_releases
 from handbook_toolkit.publication import write_manifest
 
 
@@ -129,6 +129,30 @@ class CatalogVerificationTests(unittest.TestCase):
                     _download("https://public.example/", destination, 100)
                 self.assertEqual(connection.call_count, 1)
                 self.assertFalse(destination.exists())
+
+    def test_credentials_and_redirect_ceiling_fail_without_writing(self):
+        destination = Path(self.temp.name) / "not-downloaded"
+        with self.assertRaises(ValueError):
+            _download("https://user:password@example.com/", destination, 100)
+        with patch("handbook_toolkit.catalog_verification._public_addresses", return_value=["93.184.216.34"]), patch(
+            "handbook_toolkit.catalog_verification._PinnedHTTPSConnection"
+        ) as connection:
+            response = connection.return_value.getresponse.return_value
+            response.status = 302
+            response.getheader.return_value = "https://public.example/loop"
+            with self.assertRaises(ValueError):
+                _download("https://public.example/loop", destination, 100)
+            self.assertEqual(connection.call_count, 6)
+            self.assertFalse(destination.exists())
+
+    def test_pinned_connection_preserves_tls_hostname_without_resolving_again(self):
+        connection = _PinnedHTTPSConnection("public.example", "93.184.216.34")
+        with patch("handbook_toolkit.catalog_verification.socket.create_connection") as connect, patch.object(
+            connection, "_context"
+        ) as context, patch("handbook_toolkit.catalog_verification.socket.getaddrinfo", side_effect=AssertionError("no DNS lookup")):
+            connection.connect()
+            connect.assert_called_once_with(("93.184.216.34", 443), timeout=30)
+            context.wrap_socket.assert_called_once_with(connect.return_value, server_hostname="public.example")
 
 
 if __name__ == "__main__":

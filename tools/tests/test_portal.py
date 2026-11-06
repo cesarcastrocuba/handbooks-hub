@@ -68,7 +68,7 @@ class PortalTests(unittest.TestCase):
         self.assertIn("&lt;script&gt;", page)
 
     def test_invalid_catalog_never_creates_output(self):
-        for change in ("missing-reading", "draft", "unknown-category", "branch-reading"):
+        for change in ("missing-reading", "draft", "unknown-category", "branch-reading", "query-reading"):
             with self.subTest(change=change):
                 document = support.catalog_document()
                 book = document["books"][0]
@@ -78,6 +78,8 @@ class PortalTests(unittest.TestCase):
                     book["status"] = "draft"
                 elif change == "branch-reading":
                     book["reading_url"] = "https://github.com/owner/book/tree/main"
+                elif change == "query-reading":
+                    book["reading_url"] = "https://example.github.io/book/?edition=latest"
                 else:
                     book["categories"] = ["uncontrolled-topic"]
                 with self.assertRaises(ValueError):
