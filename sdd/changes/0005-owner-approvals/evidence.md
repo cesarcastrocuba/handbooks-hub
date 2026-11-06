@@ -14,6 +14,7 @@
 | Sample repository | <https://github.com/cesarcastrocuba/handbook-sample-01>, public, default branch `main` |
 | Hub `main` CI | Run [42266553876](https://github.com/cesarcastrocuba/handbooks-hub/actions/runs/42266553876): `ci`, `push`, `0e8d897`, **success** |
 | Hub branch CI | Run [42274376867](https://github.com/cesarcastrocuba/handbooks-hub/actions/runs/42274376867): `ci`, `workflow_dispatch`, `ebdb42e`, branch `feat/topic-neutral-profile`, **success** |
+| Hub approval-branch CI | Run [42277658646](https://github.com/cesarcastrocuba/handbooks-hub/actions/runs/42277658646): `ci`, `workflow_dispatch`, `f09c237`, branch `feat/topic-neutral-profile`, **success**; both `checks` and `wheel-install` jobs passed |
 | Sample branch CI | Run [42276101707](https://github.com/cesarcastrocuba/handbook-sample-01/actions/runs/42276101707): `repository-check`, `push`, `e3b7f28`, branch `feat/pinned-toolkit-integration`, **success** |
 
 The hub and sample repositories are public. Their default branch is `main`. The sample integration
