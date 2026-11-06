@@ -22,7 +22,7 @@ CROSSREF_PREFIXES = ("sec-", "fig-", "tbl-", "eq-", "lst-")
 
 
 def _strip_inline_code(line: str) -> str:
-    """Remove backtick-delimited spans using the exact opening delimiter."""
+    """Remove exact backtick runs; preserve text after an unmatched opener."""
     output: list[str] = []
     index = 0
     while index < len(line):
@@ -30,15 +30,27 @@ def _strip_inline_code(line: str) -> str:
             output.append(line[index])
             index += 1
             continue
-        end = index
-        while end < len(line) and line[end] == "`":
-            end += 1
-        delimiter = line[index:end]
-        close = line.find(delimiter, end)
+        start = index
+        while index < len(line) and line[index] == "`":
+            index += 1
+        delimiter_length = index - start
+        search = index
+        close = -1
+        while search < len(line):
+            if line[search] != "`":
+                search += 1
+                continue
+            run_start = search
+            while search < len(line) and line[search] == "`":
+                search += 1
+            if search - run_start == delimiter_length:
+                close = search
+                break
         if close < 0:
+            output.append(line[start:])
             break
         output.append(" ")
-        index = close + len(delimiter)
+        index = close
     return "".join(output)
 
 

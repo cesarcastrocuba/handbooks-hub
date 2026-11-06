@@ -100,6 +100,17 @@ See @fig-one, @sec-preface, [local](#fig-one) and [external](https://example.com
         self.assertFalse(result.ok)
         self.assertTrue(any("uses a symlink" in issue.message for issue in result.issues))
 
+    def test_unmatched_backtick_does_not_hide_later_references(self) -> None:
+        one = "# 1. One {#sec-one}\n\nA literal ` then @fig-missing.\n"
+        result = self.check(one, "# 2. Two {#sec-two}\n")
+        self.assertFalse(result.ok)
+        self.assertTrue(any("@fig-missing" in issue.message for issue in result.issues))
+
+    def test_longer_backtick_run_is_not_closed_by_substring(self) -> None:
+        one = "# 1. One {#sec-one}\n\nUse ``literal ` @fig-missing`` here.\n"
+        result = self.check(one, "# 2. Two {#sec-two}\n")
+        self.assertTrue(result.ok, [str(issue) for issue in result.issues])
+
     def test_multiline_comments_and_exact_backtick_spans_are_ignored(self) -> None:
         one = """# 1. One {#sec-one}
 
