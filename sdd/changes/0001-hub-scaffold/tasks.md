@@ -31,7 +31,7 @@
 | Negative input rejected | `tools/tests/test_*.py` |
 | Template valid in full mode | `validate-book template/book/book.yaml --full` |
 | Empty catalog valid | `validate-catalog catalog/catalog.json` |
-| No external edits | `git status` in hub; read-only checks of sample/reference |
+| This session writes only in the hub; reference clean; sample lane separate | `git status` in hub; read-only checks of sample/reference |
 | Clean tree | `git status --porcelain` after the evidence commit |
 | Independent review | Review verdict on the exact commit |
 
@@ -39,7 +39,7 @@
 
 | Task | Reason | Next step |
 | --- | --- | --- |
-| Sample repository scaffold (`handbook-sample-01`) | This session is restricted to the hub | Separate OpenCode session after Gate 1, non-overlapping write set |
+| Sample repository scaffold (`handbook-sample-01`) | This session is restricted to the hub; a separate session scaffolded it concurrently | Review in that lane; this session made no writes |
 | Full manuscript validator | Phase 2 | Freeze profile 1.0.0, then implement |
 | Quarto template build | Phase 2 | Add pinned toolchain and smoke build |
 | Publication manifest and portal | Phase 4 | Schema, build-once pipeline, catalog entry |

@@ -4,7 +4,8 @@
 **Version:** 0.1.0
 **Date:** 2026-11-06
 **Scope of this milestone:** local hub repository only. The sample book repository, GitHub
-repositories, Pages, releases and migration are explicitly out of scope.
+repositories, Pages, releases and migration are explicitly out of scope. The sample repository was
+scaffolded concurrently by a separate session; this session only reads and records that fact.
 
 This plan turns `IMPLEMENTATION-HANDOFF.md` and the Engram handoff summary #6795 into reviewable work.
 It records what was inspected, the contracts the platform must honour, the phase sequence, the work
@@ -39,7 +40,8 @@ The milestone is complete when:
 3. A deterministic toolkit validates the catalog, profile and book descriptor, with tests that cover
    both accepted and rejected input.
 4. `make check` and `make full` pass from a clean checkout of the hub.
-5. The sample repository and the reference repository are unchanged.
+5. This session writes nothing to the sample repository or the reference repository. The sample
+   repository is scaffolded concurrently by a separate session and reviewed in its own lane.
 6. No GitHub repository was created; nothing was deployed, released, merged or published.
 7. An independent reviewer has reviewed the exact commit and posted classified findings.
 
@@ -68,7 +70,8 @@ These are separate phases with their own gates.
 | Reference `.github/workflows/*.yml` | Quarto/Python versions, artifact expectations | Read-only inspection |
 | Reference `NOTICE.md`, `LICENSE`, `LICENSE-CODE` | Licensing split and attribution pattern | Read-only inspection |
 
-The reference repository was not modified. The sample repository was not touched.
+The reference repository was not modified. The sample repository was empty at initial inspection and
+was populated by a separate session during this milestone; this session made no writes to it.
 
 ## 5. Operating model
 
@@ -162,7 +165,8 @@ silently upgrades a book's profile.
 | 6 | Migration evaluation | Read-only assessment, parity plan and cost/benefit | Separate owner decision; no migration by default |
 
 The phase numbers follow the handoff. The first milestone is Phase 1. It is split into a hub portion
-(completed in this session) and a sample-repository portion (deferred to a separate session).
+(completed in this session) and a sample-repository portion handled by a separate session; this
+session does not write to the sample repository.
 
 ---
 
@@ -177,7 +181,7 @@ scaffold before building the full toolkit or writing the sample book.
 
 - Owner supplied the handoff and authorized a local scaffold.
 - Reference handbook available read-only.
-- Sample repository path reserved but empty.
+- Sample repository path existed and may be scaffolded by a separate session concurrently.
 
 ### Work packages
 
@@ -185,7 +189,7 @@ scaffold before building the full toolkit or writing the sample book.
 | --- | --- | --- | --- | --- |
 | P1-HUB-01 | Read-only inventory of the existing handbook and handoff | None (read-only) | Contracts and lessons recorded in docs | Done |
 | P1-HUB-02 | Hub scaffold and plan | `handbooks-hub/**` | Repository, governance, schemas, profile, template, toolkit skeleton, CI, tests | Done, pending review |
-| P1-SAMPLE-01 | Sample repository scaffold | `handbook-sample-01/**` | Independent book repository with AGENTS, SDD and verify command | Deferred to a separate OpenCode session after Gate 1 |
+| P1-SAMPLE-01 | Sample repository scaffold | `handbook-sample-01/**` | Independent book repository with AGENTS, SDD and verify command | Scaffolded by a separate session (observed); review pending in that lane |
 | P1-GATE | Independent review and owner gate | Review comments only | Classified findings and owner decision | Pending |
 
 ### P1-HUB-02 deliverables
@@ -217,7 +221,7 @@ scaffold before building the full toolkit or writing the sample book.
 
 ### Gate 1 owner decisions
 
-- Approve the hub/sample split and the deferred sample scaffold.
+- Approve the hub/sample split and the separate sample-repository lane.
 - Approve the proposed standard profile direction, or request changes before Phase 2.
 - Confirm the licensing and notice scope.
 - Authorize the next phase; do not authorize deployment or repository creation by implication.
@@ -498,7 +502,7 @@ Gate 1
   │
   ├── Phase 2 (hub: toolkit, profile, template) ── Gate 2
   │
-  └── Phase 1 sample scaffold (separate session, after Gate 1)
+  └── Phase 1 sample scaffold (separate session, concurrent)
           │
           └── Phase 3 brief → outline → pilot → expansion → Gate 3
                                       │
@@ -585,7 +589,7 @@ Rules:
 
 | Decision | Gate | Current state |
 | --- | --- | --- |
-| Approve hub/book repository split and the deferred sample scaffold | Gate 1 | Proposed (`HUB-DEC-001`, `HUB-DEC-012`) |
+| Approve hub/book repository split and the separate sample lane | Gate 1 | Proposed (`HUB-DEC-001`, `HUB-DEC-012`) |
 | Approve standard profile direction and exceptions model | Gate 1/2 | Proposed (`HUB-DEC-004`) |
 | Confirm licensing and attribution scope | Gate 1 | Proposed (`HUB-DEC-009`) |
 | Approve sample book brief | Gate 3a | Not started |
@@ -605,7 +609,7 @@ Rules:
 - [x] Empty catalog and valid book template added.
 - [x] Basic CI and pull-request template added.
 - [x] Lightweight SDD record added.
-- [x] Sample and reference repositories left unchanged.
+- [x] This session wrote nothing outside `handbooks-hub`; the reference worktree is clean and the sample lane is independent.
 - [x] No GitHub repository, deployment, release, merge or migration performed.
 - [ ] Independent review with classified findings.
 - [ ] Owner Gate 1 approval.
@@ -613,9 +617,10 @@ Rules:
 ## 20. Immediate next actions
 
 1. Independent reviewer checks the scaffold commit and re-runs `make check` and `make full`.
-2. Reviewer verifies that no sample or reference file changed and that the plan matches the handoff.
+2. Reviewer verifies that this session wrote nothing outside the hub, that the reference worktree is clean and that the plan matches the handoff.
 3. Owner resolves the open questions in [`assumptions.md`](assumptions.md) and records Gate 1.
-4. A separate OpenCode session scaffolds `handbook-sample-01` with a non-overlapping write set.
+4. Review the sample-repository scaffold produced by the separate session in its own lane; this
+   session does not modify it.
 5. Phase 2 starts only after Gate 1; the first Phase 2 change freezes the toolkit CLI and profile
    validation rules.
 
@@ -625,7 +630,7 @@ Rules:
 
 | Handoff requirement | Artifact in this scaffold | Status |
 | --- | --- | --- |
-| Independent book repositories own canonical sources | `docs/architecture.md`, `HUB-DEC-001`, template | Contract defined; sample deferred |
+| Independent book repositories own canonical sources | `docs/architecture.md`, `HUB-DEC-001`, template | Contract defined; sample lane separate |
 | Hub owns static portal | `docs/catalog-contract.md`, `catalog/`, planned portal | Phase 4 |
 | Shared versioned toolkit under `tools/` | `tools/`, `handbook-toolkit` 0.1.0 | Minimal validators implemented |
 | Schemas | `schemas/*.json` | Book, profile, catalog |

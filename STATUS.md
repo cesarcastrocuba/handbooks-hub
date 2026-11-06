@@ -15,7 +15,7 @@ creation.
 | --- | --- |
 | Local hub repository | Initialized on branch `main` |
 | Reference handbook | Inspected read-only at `6a15cc211f65e148afdaa75c71a063a8084d1910` (branch `release/v2.1-rc5`) |
-| Sample repository | Exists as an empty local directory; not modified in this milestone |
+| Sample repository | Empty at initial inspection (15:32); populated concurrently by a separate session (observed HEAD `bbcba3ef6fd2a3495de33dfcb1eac4ca5a697aa7`). This session made no writes to it. |
 | Toolkit | `0.1.0`, catalog/profile/book validators, unit tests |
 | Standard profile | `0.1.0`, **Proposed**; owner approval required |
 | Catalog | Empty; no approved release exists |
@@ -26,8 +26,8 @@ creation.
 
 1. Independent reviewer checks the exact commit, re-runs `make full` and posts classified findings.
 2. Owner reviews the plan, the proposed standard profile and the licensing/notice scope.
-3. After Gate 1, scaffold the sample repository in a separate session with a non-overlapping write
-   set.
+3. After Gate 1, review the sample-repository scaffold produced by the separate session in its own
+   lane; do not treat this hub review as approval of that work.
 4. Start Phase 2 (toolkit, profile and template) only after Gate 1 approval.
 
 ## Blockers and open owner decisions

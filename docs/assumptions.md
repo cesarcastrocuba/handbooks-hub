@@ -9,7 +9,7 @@ both; a reviewer should challenge the assumptions before Gate 1.
 | --- | --- |
 | The reference handbook exists locally and is a Git repository | `/home/ubuntu/github/solutions-architecture-handbook`; `git rev-parse HEAD` |
 | Reference HEAD inspected | `6a15cc211f65e148afdaa75c71a063a8084d1910`, branch `release/v2.1-rc5`, clean worktree |
-| The sample repository directory exists but is empty | `ls -la /home/ubuntu/github/handbook-sample-01` returned no files |
+| The sample repository directory existed and was empty at initial inspection (15:32); a separate session populated it from 15:38 onward. This session only read it. | `ls -la` at 15:32; later read-only `git log` observed `bbcba3e` |
 | The hub directory contained only the handoff | `ls -la /home/ubuntu/github/handbooks-hub` before `git init` |
 | Python is 3.12.3; Git is 2.43.0 | `python3 --version`, `git --version` |
 | `jsonschema` 4.10.3 and `PyYAML` 6.0.1 are available | Import check during scaffold |
@@ -42,8 +42,8 @@ The reference repository was inspected read-only. No file in it was created, mod
    CC BY-SA 4.0 or a permissive documentation license.
 2. Confirm the standard profile direction and the required section closure before Phase 2 freezes
    `1.0.0`.
-3. Confirm whether the sample repository scaffold should be delegated to a separate OpenCode session
-   immediately after Gate 1, as assumed in the plan.
+3. The sample repository was scaffolded by a separate session during this milestone. Confirm that its
+   review and approval are separate from this hub review.
 4. Confirm the GitHub owner/organization and repository names before any catalog URL is written.
 5. Confirm the release cadence and who may authorize a release after the initial owner-gated setup.
 

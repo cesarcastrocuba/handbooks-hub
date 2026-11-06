@@ -42,8 +42,9 @@ PYTHONPATH=tools/src python3 -m handbook_toolkit verify --root . --full
 ## Scope and non-goals
 
 This milestone does not create GitHub repositories, deploy a site, publish a release, edit the
-sample book repository or migrate the existing handbook. Those are separate, owner-gated steps in
-the plan.
+sample book repository or migrate the existing handbook. The sample repository is being scaffolded
+concurrently by its own session; this milestone does not edit it. Those are separate, owner-gated
+steps in the plan.
 
 ## Licensing
 

@@ -16,5 +16,6 @@ semantic versioning once the toolkit is published.
 
 ### Notes
 
-- No GitHub repository was created, no site was deployed, no release was published and no sample-book
-  or reference-handbook content was modified.
+- No GitHub repository was created, no site was deployed, no release was published and this change
+  did not modify the sample-book or reference-handbook content. The sample repository was scaffolded
+  concurrently by its own session.

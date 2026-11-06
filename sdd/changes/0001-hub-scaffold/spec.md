@@ -68,7 +68,8 @@ every `.qmd` file to appear exactly once and at least one chapter.
    - missing reading order, missing chapter, duplicate entries, non-QMD entries, unknown groups,
      unlisted manuscript files and missing publication formats for an active book;
    - broken or escaping documentation links.
-4. No file outside `handbooks-hub` is modified.
+4. This session writes no file outside `handbooks-hub`. The reference worktree remains clean; the
+   sample repository was scaffolded concurrently by a separate session and is out of scope here.
 5. The template validates in full mode.
 6. The catalog is valid while empty.
 7. The repository is clean after the evidence commit.
@@ -88,7 +89,8 @@ every `.qmd` file to appear exactly once and at least one chapter.
 - Manuscript skeleton validation, reference resolution, artifact manifest validation and portal
   generation.
 - A working Quarto build.
-- The sample book and its editorial gates.
+- The sample book and its editorial gates. A separate session has scaffolded the sample repository;
+  this change does not review or modify it.
 - GitHub repository creation, Pages, Releases and migration.
 
 ## Assumptions

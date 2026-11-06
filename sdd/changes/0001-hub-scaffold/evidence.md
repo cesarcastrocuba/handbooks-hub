@@ -95,9 +95,11 @@ git -C /home/ubuntu/github/solutions-architecture-handbook status --porcelain
 ls -la /home/ubuntu/github/handbook-sample-01
 ```
 
-Result: the reference worktree is clean at `6a15cc211f65e148afdaa75c71a063a8084d1910` (branch
-`release/v2.1-rc5`); the sample directory remains empty. The hub commands only read the reference
-and did not write to either repository.
+Result: at initial inspection (15:32) the sample directory was empty. During this session a separate
+session created its Git repository and two commits (observed HEAD
+`bbcba3ef6fd2a3495de33dfcb1eac4ca5a697aa7`). This session only read it and made no writes. The
+reference worktree is clean at `6a15cc211f65e148afdaa75c71a063a8084d1910` (branch
+`release/v2.1-rc5`); the hub commands did not write to it.
 
 ### 7. Git state
 
@@ -106,8 +108,8 @@ git status --porcelain
 git log --oneline --decorate
 ```
 
-Result: clean tree after the evidence commit; two conventional commits on `main` (scaffold and
-evidence).
+Result: clean tree after the evidence commit; three conventional commits on `main` (scaffold,
+evidence and isolation correction).
 
 ## Negative cases covered by tests
 
@@ -141,7 +143,8 @@ The suite proves rejection of:
   until then the toolkit is used from a hub checkout or with `--schemas`.
 - The manuscript skeleton, references, artifact manifest and portal are contracts only.
 - The standard profile is `proposed`, not approved.
-- The sample repository scaffold is deferred to a separate session.
+- The sample repository scaffold was produced by a separate session; its review is separate from
+  this hub review.
 - The reference handbook was not migrated.
 
 ## Review handoff
@@ -153,5 +156,6 @@ make check
 make full
 ```
 
-Verify that the sample and reference repositories are unchanged and that no generated artifact,
-deployment, release or GitHub repository was created.
+Verify that this session wrote nothing outside the hub, that the reference worktree is clean and that
+no generated artifact, deployment, release or GitHub repository was created. Review the sample
+repository in its own lane.

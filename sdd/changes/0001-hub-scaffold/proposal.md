@@ -12,7 +12,8 @@ tooling, an editorial contract, reproducible publication and an agent-neutral wo
 
 The existing `solutions-architecture-handbook` is a released, working book. It is useful as a source
 of editorial and build lessons but must remain read-only until a separate owner decision. The sample
-repository path exists but is empty.
+repository path was empty at initial inspection and was scaffolded concurrently by a separate session
+during this milestone; this session does not write to it.
 
 ## Problem
 
@@ -28,7 +29,7 @@ own rules, and the two repositories would drift before the first release.
 - Provide a proposed standard profile, JSON schemas, a minimal template and an empty catalog.
 - Provide a small, deterministic, tested toolkit slice rather than an untested framework.
 - Define the six phases, work packages, gates, owner decisions and evidence.
-- Keep the sample and reference repositories untouched.
+- Keep the sample and reference repositories read-only for this session.
 
 ## Non-goals
 
@@ -57,7 +58,7 @@ own rules, and the two repositories would drift before the first release.
 
 ## Owner decisions requested
 
-1. Approve the hub/book split and the deferred sample scaffold (`HUB-DEC-001`, `HUB-DEC-012`).
+1. Approve the hub/book split and the separate sample-repository lane (`HUB-DEC-001`, `HUB-DEC-012`).
 2. Approve the proposed standard profile direction and exceptions model (`HUB-DEC-004`).
 3. Confirm the licensing and notice scope (`HUB-DEC-009`).
 4. Authorize Phase 2 after independent review; do not infer authorization for deployment or
