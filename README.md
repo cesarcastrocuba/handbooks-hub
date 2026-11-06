@@ -35,8 +35,8 @@ Without `make`:
 
 ```bash
 PYTHONPATH=tools/src python3 -m unittest discover -s tools/tests -v
-PYTHONPATH=tools/src python3 -m handbook_toolkit verify --root .
-PYTHONPATH=tools/src python3 -m handbook_toolkit verify --root . --full
+PYTHONPATH=tools/src python3 -m handbook_toolkit --root . verify
+PYTHONPATH=tools/src python3 -m handbook_toolkit --root . verify --full
 ```
 
 ## Scope and non-goals

@@ -22,7 +22,21 @@ import support  # noqa: E402
 from handbook_toolkit.cli import build_parser  # noqa: E402
 
 CURRENT_COMMANDS = {"verify", "validate-catalog", "validate-profile", "validate-book", "version"}
-INLINE = re.compile(r"`(handbook-toolkit [^`]+)`")
+INLINE = re.compile(
+    r"`((?:handbook-toolkit|python3? -m handbook_toolkit) [^`]+)`"
+)
+
+
+def _command_text(text: str) -> str | None:
+    text = text.strip()
+    if text.startswith("handbook-toolkit "):
+        return text
+    for marker in ("python3 -m handbook_toolkit ", "python -m handbook_toolkit "):
+        if marker in text:
+            tail = text.split(marker, 1)[1].strip()
+            if tail and not tail.endswith("\\"):
+                return f"handbook-toolkit {tail}"
+    return None
 
 
 def _documentation_files() -> list[Path]:
@@ -57,10 +71,14 @@ def _candidate_commands() -> list[tuple[Path, str]]:
             if in_fence:
                 text = stripped[2:] if stripped.startswith("$ ") else stripped
                 marked_invalid = "invalid" in previous.lower() or "reject" in previous.lower()
-                if text.startswith("handbook-toolkit ") and not marked_invalid:
-                    candidates.append(text)
+                candidate = _command_text(text)
+                if candidate and not marked_invalid:
+                    candidates.append(candidate)
             if line.lstrip().startswith("|"):
-                candidates.extend(match.group(1) for match in INLINE.finditer(line))
+                for match in INLINE.finditer(line):
+                    candidate = _command_text(match.group(1))
+                    if candidate:
+                        candidates.append(candidate)
             for candidate in candidates:
                 found.append((path, candidate.strip()))
             if stripped:
