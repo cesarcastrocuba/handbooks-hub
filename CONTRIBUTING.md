@@ -38,7 +38,7 @@ run, say so in the change record; do not claim it passed.
 
 ## Changing shared contracts
 
-Changes to `schemas/`, `profiles/`, the toolkit CLI or `catalog/` affect every book. Treat them as
+Changes to `tools/src/handbook_toolkit/schemas/`, `profiles/`, the toolkit CLI or `catalog/` affect every book. Treat them as
 versioned API changes:
 
 1. Record a proposal and update the plan or change record.

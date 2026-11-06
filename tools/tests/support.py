@@ -12,7 +12,7 @@ import yaml
 TOOLS_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SRC = TOOLS_ROOT / "src"
-SCHEMAS = REPO_ROOT / "schemas"
+SCHEMAS = TOOLS_ROOT / "src" / "handbook_toolkit" / "schemas"
 
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))

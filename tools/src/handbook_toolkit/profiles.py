@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from .validation import (
     CheckResult,
     DocumentError,
     Issue,
     load_document,
-    load_schema,
     schema_issues,
 )
 
@@ -24,13 +24,12 @@ def _duplicates(values: list[str]) -> list[str]:
     return sorted(repeated)
 
 
-def validate_profile(path: Path, schema_path: Path) -> CheckResult:
+def validate_profile(path: Path, schema: dict[str, Any]) -> CheckResult:
     """Validate an editorial profile against its schema and ordering rules."""
 
     label = str(path)
     try:
         data = load_document(path)
-        schema = load_schema(schema_path)
     except DocumentError as exc:
         return CheckResult(label, (Issue(label, str(exc)),))
 

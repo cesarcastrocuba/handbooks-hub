@@ -4,8 +4,8 @@ The catalog is the only data source for the hub portal. It is deliberately small
 their approved releases; it does not mirror manuscript content.
 
 Machine-readable contract: [`catalog/catalog.json`](../catalog/catalog.json) and
-[`schemas/catalog.schema.json`](../schemas/catalog.schema.json). Current state: **empty**, because no
-book release has been approved.
+[`catalog.schema.json`](../tools/src/handbook_toolkit/schemas/catalog.schema.json). Current state:
+**empty**, because no book release has been approved.
 
 ## Entry model
 

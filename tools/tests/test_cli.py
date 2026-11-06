@@ -5,6 +5,7 @@ from __future__ import annotations
 from contextlib import redirect_stderr, redirect_stdout
 import io
 from pathlib import Path
+import shutil
 import sys
 import tempfile
 import unittest
@@ -39,9 +40,27 @@ class CliTests(unittest.TestCase):
         self.assertIn("VERIFY (full):", stdout)
 
     def test_validate_book_default(self) -> None:
-        code, stdout, stderr = self.run_cli("--root", str(support.REPO_ROOT), "validate-book", "--full")
+        code, stdout, stderr = self.run_cli(
+            "--root", str(support.REPO_ROOT / "template/book"), "validate-book", "--full"
+        )
         self.assertEqual(code, 0, stderr)
         self.assertIn(": OK", stdout)
+
+    def test_schema_directory_override(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            schemas = Path(temp) / "schemas"
+            shutil.copytree(support.SCHEMAS, schemas)
+            code, stdout, stderr = self.run_cli(
+                "--root",
+                str(support.REPO_ROOT),
+                "--schemas",
+                str(schemas),
+                "validate-book",
+                "template/book/book.yaml",
+                "--full",
+            )
+            self.assertEqual(code, 0, stderr)
+            self.assertIn(": OK", stdout)
 
     def test_invalid_catalog_returns_one(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

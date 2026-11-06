@@ -14,8 +14,8 @@ Status: **Phase 1 scaffold, pending independent review.** See [`STATUS.md`](STAT
 | --- | --- |
 | `docs/` | Architecture, contracts, decisions, assumptions and the phased plan |
 | `profiles/standard/` | Proposed standard editorial profile derived from the existing handbook |
-| `schemas/` | JSON Schema contracts for books, profiles and the catalog |
 | `tools/` | Versioned `handbook-toolkit` package with deterministic validators and tests |
+| `tools/src/handbook_toolkit/schemas/` | JSON Schema contracts for books, profiles and the catalog, shipped inside the toolkit package |
 | `template/book/` | Minimal book-repository template, intentionally incomplete until Phase 2 |
 | `catalog/` | Catalog of approved book releases; empty until a release is approved |
 | `sdd/` | Lightweight specification-driven delivery records |

@@ -5,17 +5,18 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 import sys
+from typing import Any
 
 from . import __version__
 from .books import validate_book
 from .catalog import validate_catalog
 from .profiles import validate_profile
 from .repository import verify_repository
-from .validation import CheckResult, resolve_document
+from .validation import CheckResult, DocumentError, Issue, load_schema_source, resolve_document
 
 DEFAULT_CATALOG = "catalog/catalog.json"
 DEFAULT_PROFILE = "profiles/standard/profile.yaml"
-DEFAULT_BOOK = "template/book/book.yaml"
+DEFAULT_BOOK = "book.yaml"
 
 
 def _print_result(result: CheckResult) -> None:
@@ -31,13 +32,22 @@ def _summary(name: str, results: list[CheckResult]) -> int:
     return 0 if problems == 0 else 1
 
 
-def _schemas(args: argparse.Namespace) -> Path:
-    root = Path(args.root).resolve()
-    return Path(args.schemas).resolve() if args.schemas else root / "schemas"
+def _schema_override(args: argparse.Namespace) -> Path | None:
+    return Path(args.schemas).resolve() if args.schemas else None
+
+
+def _load_schema(args: argparse.Namespace, name: str) -> dict[str, Any] | None:
+    try:
+        return load_schema_source(name, _schema_override(args))
+    except DocumentError as exc:
+        _print_result(CheckResult(name, (Issue(name, str(exc)),)))
+        return None
 
 
 def command_verify(args: argparse.Namespace) -> int:
-    results = verify_repository(Path(args.root), full=args.full)
+    results = verify_repository(
+        Path(args.root), full=args.full, schemas=_schema_override(args)
+    )
     for result in results:
         _print_result(result)
     return _summary("VERIFY (full)" if args.full else "VERIFY", results)
@@ -46,7 +56,10 @@ def command_verify(args: argparse.Namespace) -> int:
 def command_catalog(args: argparse.Namespace) -> int:
     root = Path(args.root).resolve()
     path = resolve_document(root, args.path, DEFAULT_CATALOG)
-    result = validate_catalog(path, _schemas(args) / "catalog.schema.json")
+    schema = _load_schema(args, "catalog.schema.json")
+    if schema is None:
+        return 1
+    result = validate_catalog(path, schema)
     _print_result(result)
     return 0 if result.ok else 1
 
@@ -54,7 +67,10 @@ def command_catalog(args: argparse.Namespace) -> int:
 def command_profile(args: argparse.Namespace) -> int:
     root = Path(args.root).resolve()
     path = resolve_document(root, args.path, DEFAULT_PROFILE)
-    result = validate_profile(path, _schemas(args) / "profile.schema.json")
+    schema = _load_schema(args, "profile.schema.json")
+    if schema is None:
+        return 1
+    result = validate_profile(path, schema)
     _print_result(result)
     return 0 if result.ok else 1
 
@@ -62,7 +78,10 @@ def command_profile(args: argparse.Namespace) -> int:
 def command_book(args: argparse.Namespace) -> int:
     root = Path(args.root).resolve()
     path = resolve_document(root, args.path, DEFAULT_BOOK)
-    result = validate_book(path, _schemas(args) / "book.schema.json", full=args.full)
+    schema = _load_schema(args, "book.schema.json")
+    if schema is None:
+        return 1
+    result = validate_book(path, schema, full=args.full)
     _print_result(result)
     return 0 if result.ok else 1
 
@@ -84,7 +103,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--schemas",
-        help="schema directory override (default: <root>/schemas)",
+        help="optional schema directory override (default: schemas bundled with the installed toolkit)",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 

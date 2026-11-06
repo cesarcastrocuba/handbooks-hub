@@ -11,13 +11,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import support  # noqa: E402
 from handbook_toolkit.catalog import validate_catalog  # noqa: E402
+from handbook_toolkit.validation import load_schema  # noqa: E402
 
 
 class CatalogTests(unittest.TestCase):
     def setUp(self) -> None:
         self._temp = tempfile.TemporaryDirectory()
         self.root = Path(self._temp.name)
-        self.schema = support.SCHEMAS / "catalog.schema.json"
+        self.schema = load_schema(support.SCHEMAS / "catalog.schema.json")
 
     def tearDown(self) -> None:
         self._temp.cleanup()

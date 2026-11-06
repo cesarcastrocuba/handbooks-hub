@@ -7,6 +7,7 @@ path and message, and no validation depends on the current time or network acces
 from __future__ import annotations
 
 from dataclasses import dataclass
+from importlib.resources import files as resource_files
 import json
 from pathlib import Path
 from typing import Any, Iterable
@@ -66,7 +67,7 @@ def load_document(path: Path) -> Any:
 
 
 def load_schema(path: Path) -> dict[str, Any]:
-    """Load a JSON Schema document."""
+    """Load a JSON Schema document from a filesystem path."""
 
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -77,6 +78,36 @@ def load_schema(path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise DocumentError(f"schema is not a JSON object: {path}")
     return data
+
+
+def load_packaged_schema(name: str) -> dict[str, Any]:
+    """Load a schema bundled inside the installed toolkit package.
+
+    This is the default. It makes a pinned toolkit self-contained: a book needs neither a hub
+    checkout nor a vendored ``schemas/`` directory. ``importlib.resources`` also works when the
+    package is imported from a zip archive.
+    """
+
+    resource = resource_files("handbook_toolkit").joinpath("schemas", name)
+    try:
+        text = resource.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise DocumentError(f"packaged schema not found or unreadable: {name}") from exc
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise DocumentError(f"cannot parse packaged schema {name}: {exc}") from exc
+    if not isinstance(data, dict):
+        raise DocumentError(f"packaged schema is not a JSON object: {name}")
+    return data
+
+
+def load_schema_source(name: str, override: Path | None = None) -> dict[str, Any]:
+    """Load a schema from an explicit directory or, by default, from the installed package."""
+
+    if override is not None:
+        return load_schema(override / name)
+    return load_packaged_schema(name)
 
 
 def _pointer(parts: Iterable[Any]) -> str:
@@ -108,9 +139,3 @@ def resolve_document(root: Path, value: str | Path | None, default: str) -> Path
 
     candidate = Path(value) if value is not None else Path(default)
     return candidate if candidate.is_absolute() else root / candidate
-
-
-def schema_dir(root: Path) -> Path:
-    """Return the canonical schema directory for a hub checkout."""
-
-    return root / "schemas"

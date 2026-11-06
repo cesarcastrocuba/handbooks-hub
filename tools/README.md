@@ -20,10 +20,16 @@ handbook-toolkit verify --root .
 handbook-toolkit verify --root . --full
 handbook-toolkit validate-catalog catalog/catalog.json
 handbook-toolkit validate-profile profiles/standard/profile.yaml
+# from a book repository root:
+handbook-toolkit validate-book --full
+# from the hub checkout:
 handbook-toolkit validate-book template/book/book.yaml --full
 ```
 
-`--schemas` overrides the schema directory. The default is `<root>/schemas`.
+`validate-book` defaults to `book.yaml` in the repository root, so a book can run it with no path.
+
+Schemas are bundled inside the installed package. `--schemas` optionally overrides them with a
+local directory; a book does not need a hub checkout or a vendored `schemas/` copy.
 
 ## Current scope
 

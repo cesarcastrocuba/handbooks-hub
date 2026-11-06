@@ -1,8 +1,8 @@
 # Editorial contract
 
 The machine-readable contract is [`profiles/standard/profile.yaml`](../profiles/standard/profile.yaml)
-and [`schemas/profile.schema.json`](../schemas/profile.schema.json). This document explains the
-intent; the profile is authoritative when the two differ.
+and [`profile.schema.json`](../tools/src/handbook_toolkit/schemas/profile.schema.json). This document
+explains the intent; the profile is authoritative when the two differ.
 
 The profile is **Proposed**. Owner approval at Gate 1 makes `0.1.0` the default for new books.
 

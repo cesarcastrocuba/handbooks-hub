@@ -4,6 +4,9 @@
 **Status:** Implemented, pending independent review and owner Gate 1
 **Date:** 2026-11-06
 **Scaffold commit:** `8162e916781670d32e1f927b1849911781d976f2`
+**Follow-up:** schema packaging and install isolation were fixed after review in
+`sdd/changes/0002-toolkit-packaged-schemas/`. The 42-test count below is the historical scaffold run;
+the current suite has 46 tests.
 
 ## Environment
 
@@ -26,7 +29,7 @@
 | Contracts | `docs/architecture.md`, `docs/editorial-contract.md`, `docs/publication-contract.md`, `docs/catalog-contract.md`, `docs/decisions.md`, `docs/assumptions.md` |
 | Plan | `docs/implementation-plan.md` |
 | Profile | `profiles/standard/profile.yaml` |
-| Schemas | `schemas/book.schema.json`, `schemas/catalog.schema.json`, `schemas/profile.schema.json` |
+| Schemas | `tools/src/handbook_toolkit/schemas/book.schema.json`, `catalog.schema.json`, `profile.schema.json` |
 | Template | `template/book/README.md`, `AGENTS.md`, `book.yaml`, `manuscript/book.yml`, `manuscript/chapters/01-example.qmd` |
 | Catalog | `catalog/catalog.json` |
 | Toolkit | `tools/pyproject.toml`, `tools/README.md`, `tools/src/handbook_toolkit/*.py` |
@@ -150,8 +153,9 @@ The suite proves rejection of:
 
 ## Known gaps
 
-- Schemas are resolved from `<root>/schemas`. Packaging the schemas inside the wheel is Phase 2 work;
-  until then the toolkit is used from a hub checkout or with `--schemas`.
+- The initial scaffold resolved schemas from `<root>/schemas`; this gap was fixed by
+  `0002-toolkit-packaged-schemas`. Schemas now ship as package data and are resolved from the
+  installed toolkit.
 - The manuscript skeleton, references, artifact manifest and portal are contracts only.
 - The standard profile is `proposed`, not approved.
 - The sample repository scaffold was produced by a separate session; its review is separate from

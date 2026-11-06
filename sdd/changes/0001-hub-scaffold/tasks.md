@@ -11,7 +11,7 @@
 | T2 | Initialize the hub Git repository | `.git/` | T1 | Done |
 | T3 | Governance, status and licensing | root Markdown, `LICENSE*`, `NOTICE.md` | T2 | Done |
 | T4 | Architecture and contracts | `docs/` | T1, T3 | Done |
-| T5 | Proposed profile and schemas | `profiles/`, `schemas/` | T4 | Done |
+| T5 | Proposed profile and schemas | `profiles/`, `tools/src/handbook_toolkit/schemas/` | T4 | Done |
 | T6 | Template and catalog | `template/`, `catalog/` | T5 | Done |
 | T7 | Toolkit 0.1.0 | `tools/src/` | T5 | Done |
 | T8 | Toolkit tests | `tools/tests/` | T7 | Done |

@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from .validation import (
     CheckResult,
     DocumentError,
     Issue,
     load_document,
-    load_schema,
     schema_issues,
 )
 
@@ -107,13 +107,12 @@ def _reading_order_issues(
     return issues
 
 
-def validate_book(path: Path, schema_path: Path, full: bool = False) -> CheckResult:
+def validate_book(path: Path, schema: dict[str, Any], full: bool = False) -> CheckResult:
     """Validate a book descriptor, its reading order and, in full mode, every manuscript file."""
 
     label = str(path)
     try:
         data = load_document(path)
-        schema = load_schema(schema_path)
     except DocumentError as exc:
         return CheckResult(label, (Issue(label, str(exc)),))
 

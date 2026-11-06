@@ -61,13 +61,15 @@ Rules:
    editorial contract.
 4. The catalog schema is the only interface between books and the portal.
 5. The reference handbook is not a dependency. It was inspected read-only and is never imported.
+6. Shared schemas ship as package data inside the installed toolkit. A book does not vendor them and
+   does not read a hub checkout.
 
 ## Repository layout
 
 | Path | Owner | Notes |
 | --- | --- | --- |
 | `docs/` | Hub | Contracts, decisions, plan and assumptions |
-| `schemas/` | Hub | Versioned JSON Schema contracts |
+| `tools/src/handbook_toolkit/schemas/` | Hub | Versioned JSON Schema contracts, shipped as package data |
 | `profiles/` | Hub | Versioned editorial profiles |
 | `tools/` | Hub | Python package, tests and fixtures |
 | `template/` | Hub | Starting point; a book copies it once and then owns its copy |

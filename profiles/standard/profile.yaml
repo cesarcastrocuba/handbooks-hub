@@ -1,6 +1,7 @@
 # Standard handbook profile, version 0.1.0.
 # Status is "proposed": the owner must approve it at Gate 1/2 before it becomes the default.
-# The machine-readable schema is ../../schemas/profile.schema.json.
+# The machine-readable schema ships with the toolkit at
+# tools/src/handbook_toolkit/schemas/profile.schema.json.
 schema_version: "1.0"
 id: standard
 version: "0.1.0"

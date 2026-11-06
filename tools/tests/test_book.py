@@ -13,13 +13,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import support  # noqa: E402
 from handbook_toolkit.books import validate_book  # noqa: E402
+from handbook_toolkit.validation import load_schema  # noqa: E402
 
 
 class BookTests(unittest.TestCase):
     def setUp(self) -> None:
         self._temp = tempfile.TemporaryDirectory()
         self.root = Path(self._temp.name)
-        self.schema = support.SCHEMAS / "book.schema.json"
+        self.schema = load_schema(support.SCHEMAS / "book.schema.json")
 
     def tearDown(self) -> None:
         self._temp.cleanup()

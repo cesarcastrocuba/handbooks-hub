@@ -7,7 +7,7 @@ What changes and why. Link the change record under `sdd/changes/<id>/` and any i
 - Change record:
 - Write set (files/components):
 - Out of scope:
-- Does this change a shared contract (`schemas/`, `profiles/`, toolkit CLI, catalog)? Yes / No
+- Does this change a shared contract (`tools/src/handbook_toolkit/schemas/`, `profiles/`, toolkit CLI, catalog)? Yes / No
 - Does this change licensing or attribution? Yes / No
 
 ## Validation

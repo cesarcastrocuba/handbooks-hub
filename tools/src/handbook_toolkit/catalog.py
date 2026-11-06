@@ -4,24 +4,23 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 from .validation import (
     CheckResult,
     DocumentError,
     Issue,
     load_document,
-    load_schema,
     schema_issues,
 )
 
 
-def validate_catalog(path: Path, schema_path: Path) -> CheckResult:
+def validate_catalog(path: Path, schema: dict[str, Any]) -> CheckResult:
     """Validate a catalog document against its schema and release invariants."""
 
     label = str(path)
     try:
         data = load_document(path)
-        schema = load_schema(schema_path)
     except DocumentError as exc:
         return CheckResult(label, (Issue(label, str(exc)),))
 

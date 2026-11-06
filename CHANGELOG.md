@@ -14,6 +14,13 @@ semantic versioning once the toolkit is published.
 - Basic CI running the fast and full repository checks.
 - Dual licensing (`LICENSE`, `LICENSE-CODE`) and attribution notice.
 
+### Fixed
+
+- The toolkit now ships its JSON Schemas as package data and resolves them from the installed package
+  by default. An independent book can validate without a hub checkout or a vendored `schemas/`
+  directory. `--schemas` remains an explicit override. See
+  `sdd/changes/0002-toolkit-packaged-schemas/`.
+
 ### Notes
 
 - No GitHub repository was created, no site was deployed, no release was published and this change

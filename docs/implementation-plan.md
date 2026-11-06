@@ -116,9 +116,8 @@ A reviewer verdict is valid only for the exact commit reviewed. A later commit r
 ```text
 handbooks-hub
   ├── docs/          contracts, decisions, assumptions, plan
-  ├── schemas/       versioned JSON Schema contracts
   ├── profiles/      versioned editorial profiles
-  ├── tools/         handbook-toolkit package + tests
+  ├── tools/         handbook-toolkit package + tests (schemas are package data)
   ├── template/      starting point for a book repository
   ├── catalog/       approved release entries
   └── sdd/           change proposals, specs, tasks, evidence
@@ -200,7 +199,7 @@ scaffold before building the full toolkit or writing the sample book.
 - `docs/architecture.md`, `editorial-contract.md`, `publication-contract.md`,
   `catalog-contract.md`, `decisions.md`, `assumptions.md`, `implementation-plan.md`.
 - `profiles/standard/profile.yaml` as a proposed profile.
-- `schemas/profile.schema.json`, `book.schema.json`, `catalog.schema.json`.
+- `tools/src/handbook_toolkit/schemas/profile.schema.json`, `book.schema.json`, `catalog.schema.json`.
 - `template/book/` minimal book descriptor and manuscript reading order.
 - `catalog/catalog.json` empty and valid.
 - `tools/` package `handbook-toolkit` 0.1.0 with CLI, validators and `unittest` tests.
@@ -261,7 +260,9 @@ copying hub code.
 The toolkit should provide, in order of implementation:
 
 1. **Document loading** — YAML/JSON parsing with stable error messages.
-2. **Schema validation** — JSON Schema 2020-12 for book, profile, catalog and manifest.
+2. **Schema validation** — JSON Schema 2020-12 for book, profile, catalog and manifest, loaded from
+   package data by default so an installed toolkit is self-contained. A local `--schemas` directory
+   remains available as an explicit override.
 3. **Semantic validation** — uniqueness, exact version pins, path safety, tag/version consistency,
    reading-order completeness.
 4. **Manuscript validation** — profile-driven checks for the chapter skeleton and section closure.
@@ -513,9 +514,10 @@ Gate 1
                                                                                   └── Phase 6 evaluation
 ```
 
-Parallel lanes may run only when they have disjoint write sets. The hub lane owns `docs/`, `schemas/`,
-`profiles/`, `tools/`, `template/` and `catalog/`. The sample-book lane owns only its repository.
-A shared contract change in the hub must land before a book consumes it.
+Parallel lanes may run only when they have disjoint write sets. The hub lane owns `docs/`,
+`tools/src/handbook_toolkit/schemas/`, `profiles/`, `tools/`, `template/` and `catalog/`. The
+sample-book lane owns only its repository. A shared contract change in the hub must land before a
+book consumes it.
 
 ## 15. Quality gates and commands
 
@@ -633,7 +635,7 @@ Rules:
 | Independent book repositories own canonical sources | `docs/architecture.md`, `HUB-DEC-001`, template | Contract defined; sample lane separate |
 | Hub owns static portal | `docs/catalog-contract.md`, `catalog/`, planned portal | Phase 4 |
 | Shared versioned toolkit under `tools/` | `tools/`, `handbook-toolkit` 0.1.0 | Minimal validators implemented |
-| Schemas | `schemas/*.json` | Book, profile, catalog |
+| Schemas | `tools/src/handbook_toolkit/schemas/*.json` | Book, profile, catalog |
 | Common profiles | `profiles/standard/profile.yaml` | Proposed |
 | Template | `template/book/` | Minimal; Phase 2 completes |
 | Documentation | `docs/` | Complete for Phase 1 |
@@ -662,7 +664,7 @@ Rules:
 | Lane | Write set |
 | --- | --- |
 | Hub foundation | `README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `STATUS.md`, `NOTICE.md`, `CHANGELOG.md`, `docs/`, `sdd/changes/0001-hub-scaffold/` |
-| Hub contracts | `schemas/`, `profiles/`, `catalog/` |
+| Hub contracts | `tools/src/handbook_toolkit/schemas/`, `profiles/`, `catalog/` |
 | Hub toolkit | `tools/` |
 | Hub template | `template/` |
 | Hub CI | `.github/` |

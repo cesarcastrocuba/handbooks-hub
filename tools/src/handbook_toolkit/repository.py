@@ -8,7 +8,9 @@ from pathlib import Path
 from .books import validate_book
 from .catalog import validate_catalog
 from .profiles import validate_profile
-from .validation import CheckResult, Issue
+from .validation import CheckResult, DocumentError, Issue, load_schema_source
+
+SCHEMA_NAMES = ("book.schema.json", "catalog.schema.json", "profile.schema.json")
 
 REQUIRED_FILES = (
     "README.md",
@@ -26,9 +28,9 @@ REQUIRED_FILES = (
     "docs/assumptions.md",
     "docs/implementation-plan.md",
     "profiles/standard/profile.yaml",
-    "schemas/book.schema.json",
-    "schemas/catalog.schema.json",
-    "schemas/profile.schema.json",
+    "tools/src/handbook_toolkit/schemas/book.schema.json",
+    "tools/src/handbook_toolkit/schemas/catalog.schema.json",
+    "tools/src/handbook_toolkit/schemas/profile.schema.json",
     "catalog/catalog.json",
     "template/book/book.yaml",
 )
@@ -96,23 +98,36 @@ def check_documentation_links(root: Path) -> CheckResult:
     return CheckResult("documentation links", tuple(issues))
 
 
-def verify_repository(root: Path, full: bool = False) -> list[CheckResult]:
-    """Run the hub's deterministic checks. Full mode adds docs links and manuscript completeness."""
+def verify_repository(
+    root: Path, full: bool = False, schemas: Path | None = None
+) -> list[CheckResult]:
+    """Run the hub's deterministic checks.
+
+    Schemas come from the installed toolkit package unless *schemas* overrides the directory.
+    Full mode adds documentation links and manuscript completeness.
+    """
 
     root = root.resolve()
     results: list[CheckResult] = [CheckResult("repository files", tuple(_required_files(root)))]
 
-    schemas = root / "schemas"
     catalog_path = root / "catalog/catalog.json"
     profile_path = root / "profiles/standard/profile.yaml"
     book_path = root / "template/book/book.yaml"
 
+    try:
+        loaded = {name: load_schema_source(name, schemas) for name in SCHEMA_NAMES}
+    except DocumentError as exc:
+        results.append(CheckResult("packaged schemas", (Issue("packaged schemas", str(exc)),)))
+        return results
+
+    results.append(CheckResult("packaged schemas", ()))
+
     if catalog_path.is_file():
-        results.append(validate_catalog(catalog_path, schemas / "catalog.schema.json"))
+        results.append(validate_catalog(catalog_path, loaded["catalog.schema.json"]))
     if profile_path.is_file():
-        results.append(validate_profile(profile_path, schemas / "profile.schema.json"))
+        results.append(validate_profile(profile_path, loaded["profile.schema.json"]))
     if book_path.is_file():
-        results.append(validate_book(book_path, schemas / "book.schema.json", full=full))
+        results.append(validate_book(book_path, loaded["book.schema.json"], full=full))
 
     if full:
         results.append(check_documentation_links(root))
