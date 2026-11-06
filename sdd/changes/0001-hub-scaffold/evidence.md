@@ -3,7 +3,7 @@
 **Change:** `0001-hub-scaffold`
 **Status:** Implemented, pending independent review and owner Gate 1
 **Date:** 2026-11-06
-**Scaffold commit:** pending (recorded by the evidence commit)
+**Scaffold commit:** `8162e916781670d32e1f927b1849911781d976f2`
 
 ## Environment
 
@@ -146,7 +146,7 @@ The suite proves rejection of:
 
 ## Review handoff
 
-Review the scaffold commit (recorded below after the evidence commit), then re-run:
+Review the scaffold commit recorded above, then re-run:
 
 ```bash
 make check
