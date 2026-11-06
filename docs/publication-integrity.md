@@ -28,3 +28,5 @@ Verification: `python3 -m unittest discover -s tools/tests -p test_publication.p
 Runtime boundary: the API writes and rereads a six-file publication directory;
 the regression suite exercises corruption and provenance failures. Rollback removes
 this module, schema, tests and guide; existing validators are unaffected.
+
+Run the separate [format inspection](artifact-inspection.md) gate before publication.
