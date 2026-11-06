@@ -71,6 +71,30 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install -r requirements.txt
           handbook-toolkit --root . validate-book
+          test "$(handbook-toolkit version)" = "handbook-toolkit 0.2.0"
+          cat > manuscript/chapters/pilot.qmd <<'QMD'
+          ## 2.2 A Pilot Section
+
+          **Definition.** A definition.
+
+          **Purpose.** A purpose.
+
+          **What it includes.** Contents.
+
+          **Why it is needed.** Evidence.
+
+          **Example.** A labeled example.
+
+          ::: {.callout-warning title="Common Pitfall"}
+          A mistake.
+          :::
+
+          ::: {.callout-important title="Decision & Trade-off"}
+          A trade-off.
+          :::
+          QMD
+          handbook-toolkit --root . validate-manuscript manuscript/chapters/pilot.qmd \
+            --mode section-pilot --profile "$GITHUB_WORKSPACE/profiles/standard/profile.yaml"
 
   wheel-install:
     runs-on: ubuntu-24.04
