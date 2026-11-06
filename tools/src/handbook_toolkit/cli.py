@@ -12,6 +12,7 @@ from .books import validate_book
 from .catalog import validate_catalog
 from .manuscript import validate_manuscript
 from .profiles import validate_profile
+from .references import validate_references
 from .repository import verify_repository
 from .validation import (
     CheckResult,
@@ -119,6 +120,17 @@ def command_manuscript(args: argparse.Namespace) -> int:
     return 0 if result.ok else 1
 
 
+def command_references(args: argparse.Namespace) -> int:
+    root = Path(args.root).resolve()
+    path = resolve_document(root, args.path, DEFAULT_BOOK)
+    schema = _load_schema(args, "book.schema.json")
+    if schema is None:
+        return 1
+    result = validate_references(path, schema)
+    _print_result(result)
+    return 0 if result.ok else 1
+
+
 def command_version(_args: argparse.Namespace) -> int:
     print(f"handbook-toolkit {__version__}")
     return 0
@@ -178,6 +190,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="profile YAML to validate against; explicit until packaged profile resolution exists",
     )
     manuscript.set_defaults(func=command_manuscript)
+
+    references = subparsers.add_parser(
+        "validate-references",
+        help="validate explicit labels, cross-references and local images across the reading order",
+    )
+    references.add_argument("path", nargs="?", help=f"default: {DEFAULT_BOOK}")
+    references.set_defaults(func=command_references)
 
     version = subparsers.add_parser("version", help="print the toolkit version")
     version.set_defaults(func=command_version)
