@@ -221,9 +221,9 @@ quality, factual accuracy and visual usefulness remain review responsibilities.
 
 The separate `handbook-toolkit build-book` command renders HTML/Typst/DOCX, creates source and HTML
 ZIPs, inspects payloads, writes the manifest/checksums and atomically exposes a verified six-file
-directory. It requires Quarto `1.11.9`, Poppler `pdfinfo`, a clean source commit and an explicit
-`--profile`; none of that is installed by `requirements-dev.txt` or `requirements.txt` and none is
-required for the checks above. See [`publication-build.md`](publication-build.md). It does not
+directory. It requires Quarto `1.11.9`, Poppler `pdfinfo` and a clean source commit; the profile resolves from
+the installed package by default, with `--profile` as an explicit override. None of that is installed
+by `requirements-dev.txt` or `requirements.txt` and none is required for the checks above. See [`publication-build.md`](publication-build.md). It does not
 publish, deploy or release anything.
 
 ## 8. Where to go next

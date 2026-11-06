@@ -32,9 +32,11 @@ from . import __version__
 from .artifacts import archive_tree, inspect_payload
 from .publication import verify_publication, write_manifest
 from .profiles import validate_profile
+from .profile_resources import load_profile
 from .books import validate_book
 from .manuscript import validate_manuscript
 from .validation import (
+    DocumentError,
     load_document,
     load_packaged_schema,
 )
@@ -292,7 +294,7 @@ def build_book(
     commit: str,
     output: Path,
     *,
-    profile: Path,
+    profile: Path | None = None,
     version: str | None = None,
     epoch: int | None = None,
     quarto: str = "quarto",
@@ -308,7 +310,7 @@ def build_book(
 
     repo = Path(repo).resolve()
     raw_output = Path(output)
-    profile = Path(profile).resolve()
+    profile_path = Path(profile).resolve() if profile is not None else None
     if mode not in {"chapter", "section-pilot"}:
         raise BuildError('mode must be "chapter" or "section-pilot"')
 
@@ -325,11 +327,6 @@ def build_book(
     else:
         raise BuildError("output must be outside the source repository")
     output.parent.mkdir(parents=True, exist_ok=True)
-
-    profile_result = validate_profile(profile, load_packaged_schema("profile.schema.json"))
-    if not profile_result.ok:
-        raise BuildError("invalid profile: " + "; ".join(map(str, profile_result.issues)))
-    profile_document = load_document(profile)
 
     source_epoch = _epoch(repo, commit, epoch)
     tool_versions = _tool_versions(quarto)
@@ -356,8 +353,26 @@ def build_book(
         if not book_result.ok:
             raise BuildError("invalid book descriptor: " + "; ".join(map(str, book_result.issues)))
         book = load_document(book_path)
+        if profile_path is not None:
+            profile_result = validate_profile(
+                profile_path, load_packaged_schema("profile.schema.json")
+            )
+            if not profile_result.ok:
+                raise BuildError(
+                    "invalid profile: " + "; ".join(map(str, profile_result.issues))
+                )
+            profile_document = load_document(profile_path)
+        else:
+            try:
+                profile_document = load_profile(
+                    book["profile"]["id"], book["profile"]["version"]
+                )
+            except DocumentError as exc:
+                raise BuildError(
+                    "cannot resolve the book profile from the installed package: " + str(exc)
+                ) from exc
         if book["profile"]["id"] != profile_document["id"] or book["profile"]["version"] != profile_document["version"]:
-            raise BuildError("book.yaml profile pin does not match the explicit --profile")
+            raise BuildError("book.yaml profile pin does not match the resolved profile")
         if book["toolkit"] != __version__ and not preview:
             raise BuildError(
                 f"book.yaml toolkit pin {book['toolkit']} does not match builder {__version__}; "

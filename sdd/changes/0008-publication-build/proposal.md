@@ -25,7 +25,7 @@ handbook-toolkit build-book --repo PATH --commit FULL_SHA --output NEW_EXTERNAL_
 - Refuse an output path that exists, is a dangling symlink, or is inside the source repository; check before resolving.
 - Create a private staging directory beside the final output.
 - Extract only tracked files from the exact commit with `git archive`; inspect the source ZIP before extraction/render.
-- Read book, metadata and reading order from the staged archive; validate every chapter with the explicit profile before render.
+- Read book, metadata and reading order from the staged archive; resolve the exact book profile pin from the installed package by default, with explicit `--profile` override; validate every chapter and appendix before render.
 - Generate deterministic `_quarto.yml` and `index.qmd`; use the explicit reading order and profile; default mode is chapter, with section-pilot for a partial pilot.
 - Render only HTML, Typst/PDF and DOCX once with Quarto `1.11.9` and `--no-execute`.
 - Package the HTML site, PDF, DOCX and source archive with the required suffixes.

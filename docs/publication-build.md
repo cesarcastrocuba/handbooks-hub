@@ -8,8 +8,9 @@ book commit. It does **not** publish, upload, deploy, tag or release anything.
 - Git and a clean book repository at the exact full commit.
 - Quarto `1.11.9`.
 - Poppler `pdfinfo` for PDF inspection.
-- A reviewed profile. Until packaged profile resolution is integrated, pass an explicit YAML; after
-  integration, omit `--profile` to resolve the exact book pin from the installed package.
+- No profile argument by default: the toolkit resolves the exact `book.yaml` profile pin from its
+  installed `profile_data/`. `--profile PATH` remains an explicit reviewed override; there is no
+  parent-checkout fallback.
 - A book-side `publishing/_quarto.yml` and `manuscript/book.yml` reading order.
 - A `book.yaml` toolkit pin exactly equal to the installed builder version. `--preview` is an
   explicit, non-release exception and is recorded in the manifest command.
@@ -22,7 +23,7 @@ publication build does.
 ## Command
 
 ```bash
-handbook-toolkit build-book --repo /path/to/book --commit 0123456789abcdef0123456789abcdef01234567 --output /external/path/release-1.0.0 --profile /path/to/reviewed-profile.yaml
+handbook-toolkit build-book --repo /path/to/book --commit 0123456789abcdef0123456789abcdef01234567 --output /external/path/release-1.0.0
 ```
 
 Optional arguments:
@@ -30,6 +31,8 @@ Optional arguments:
 - `--version 1.0.0` overrides `publishing/metadata.yaml` for the book version.
 - `--epoch 1761868800` overrides the default commit timestamp / `SOURCE_DATE_EPOCH`.
 - `--quarto /path/to/quarto` selects the executable; it must report `1.11.9`.
+- `--profile PATH` overrides the packaged profile; omit it to resolve the exact book pin from the
+  installed package.
 - `--mode chapter` (default) validates every chapter and appendix in the reading order.
   Front matter, back matter and references remain documented special groups.
 - `--mode section-pilot` validates exactly one chapter and no appendices; it requires a prerelease

@@ -271,7 +271,7 @@ class BuildTests(unittest.TestCase):
             root = Path(temp)
             repo, commit = make_book(root, chapter=True, version="1.0.0")
             output = root / "dist"
-            result = build_book(repo, commit, output, profile=PROFILE)
+            result = build_book(repo, commit, output)
             self.assertTrue(result.output.is_dir())
             self.assertTrue(verify_publication(output).ok)
 

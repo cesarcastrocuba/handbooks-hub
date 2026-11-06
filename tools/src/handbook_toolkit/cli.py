@@ -126,7 +126,7 @@ def command_build(args: argparse.Namespace) -> int:
             Path(args.repo),
             args.commit,
             Path(args.output),
-            profile=Path(args.profile),
+            profile=Path(args.profile) if args.profile else None,
             version=args.version,
             epoch=args.epoch,
             quarto=args.quarto,
@@ -212,7 +212,10 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument("--repo", required=True, help="book repository path")
     build.add_argument("--commit", required=True, help="exact clean 40-character source commit")
     build.add_argument("--output", required=True, help="new external output directory; must not exist")
-    build.add_argument("--profile", required=True, help="explicit reviewed profile YAML")
+    build.add_argument(
+        "--profile",
+        help="optional explicit reviewed profile YAML; default resolves the exact book pin from the installed package",
+    )
     build.add_argument("--version", help="book version; defaults to publishing/metadata.yaml")
     build.add_argument("--epoch", type=int, help="SOURCE_DATE_EPOCH; defaults to commit timestamp")
     build.add_argument("--quarto", default="quarto", help="Quarto executable (default: quarto)")

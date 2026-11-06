@@ -20,7 +20,8 @@ semantic versioning once the toolkit is published.
   validation against an explicit profile, without requiring visuals.
 - `handbook-toolkit` 0.3.0 adds `build-book`: exact toolkit-pin enforcement, staged source/manuscript
   validation, one Quarto HTML/Typst/DOCX render with `--no-execute`, payload inspection,
-  manifest/checksum identity and atomic finalization, without publishing.
+  manifest/checksum identity and atomic finalization, without publishing. `--profile` is optional;
+the exact book pin resolves from the installed packaged profile.
 - Basic CI running the fast and full repository checks.
 - CI `wheel-install` job that builds the wheel, verifies the packaged schemas, installs it in an
   isolated environment and validates a book outside the hub checkout.
