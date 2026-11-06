@@ -161,6 +161,9 @@ jobs:
           path = pathlib.Path(handbook_toolkit.__file__).resolve()
           print(path)
           assert "site-packages" in str(path), path
+          from handbook_toolkit.profile_resources import load_profile
+          profile = load_profile("standard", "0.2.0")
+          assert profile["status"] == "approved", profile
           PY
       - name: Validate an independent book outside the checkout
         run: |
