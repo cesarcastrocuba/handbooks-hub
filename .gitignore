@@ -24,6 +24,7 @@ artifacts/
 # Keep intentionally tracked fixtures if one is ever required.
 !tools/tests/fixtures/**/*.pdf
 !tools/tests/fixtures/**/*.docx
+!tools/src/handbook_toolkit/render_data/**/*.docx
 
 # Local environment and editor files
 .env

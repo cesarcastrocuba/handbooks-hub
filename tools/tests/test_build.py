@@ -217,6 +217,10 @@ class RenderConfigTests(unittest.TestCase):
                 "filters/table-layout.lua": workspace / ".handbook-render/filters/table-layout.lua",
                 "filters/task-checkbox.lua": workspace / ".handbook-render/filters/task-checkbox.lua",
                 "typst/callout-breakable.typ": workspace / ".handbook-render/typst/callout-breakable.typ",
+                "typst/handbook-typst.typ": workspace / ".handbook-render/typst/handbook-typst.typ",
+                "typst/typst-show.typ": workspace / ".handbook-render/typst/typst-show.typ",
+                "docx/reference.docx": workspace / ".handbook-render/docx/reference.docx",
+                "html/handbook.css": workspace / ".handbook-render/html/handbook.css",
             }
             for path in resources.values():
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -234,7 +238,19 @@ class RenderConfigTests(unittest.TestCase):
             )
             self.assertEqual(
                 config["format"]["typst"]["include-before-body"],
-                ".handbook-render/typst/callout-breakable.typ",
+                ".handbook-render/typst/handbook-typst.typ",
+            )
+            self.assertEqual(
+                config["format"]["typst"]["template-partials"],
+                [".handbook-render/typst/typst-show.typ"],
+            )
+            self.assertEqual(
+                config["format"]["docx"]["reference-doc"],
+                ".handbook-render/docx/reference.docx",
+            )
+            self.assertEqual(
+                config["format"]["html"]["css"],
+                [".handbook-render/html/handbook.css"],
             )
 
 

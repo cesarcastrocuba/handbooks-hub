@@ -8,6 +8,10 @@ RESOURCE_NAMES = (
     "filters/table-layout.lua",
     "filters/task-checkbox.lua",
     "typst/callout-breakable.typ",
+    "typst/handbook-typst.typ",
+    "typst/typst-show.typ",
+    "docx/reference.docx",
+    "html/handbook.css",
 )
 
 

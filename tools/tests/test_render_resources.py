@@ -46,7 +46,7 @@ class RenderResourceTests(unittest.TestCase):
                 "assert '.zip/' in handbook_toolkit.__file__; "
                 "print(len(stage_render_resources(Path('staged'))))",
             ], cwd=root, env=dict(os.environ, PYTHONPATH=str(archive)), text=True, timeout=30)
-            self.assertEqual(output.strip(), "3")
+            self.assertEqual(output.strip(), str(len(RESOURCE_NAMES)))
 
     @unittest.skipUnless(shutil.which("quarto"), "real Quarto boundary requires Quarto")
     def test_table_filter_preserves_labels_and_handles_identical_chapters(self):

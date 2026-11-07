@@ -335,12 +335,28 @@ def _render_config(
         {"at": "pre-ast", "path": (resources["filters/table-layout.lua"]).relative_to(workspace).as_posix()},
         {"at": "pre-ast", "path": (resources["filters/task-checkbox.lua"]).relative_to(workspace).as_posix()},
     ]
-    config["format"]["typst"]["include-before-body"] = (
-        resources["typst/callout-breakable.typ"].relative_to(workspace).as_posix()
+    typst_format = config["format"]["typst"]
+    typst_format["include-before-body"] = (
+        resources["typst/handbook-typst.typ"].relative_to(workspace).as_posix()
     )
-    # The orange-book chapter heading uses brand primary as a full-width stroke. A white primary
-    # removes the overflowing decorative block while explicit linkcolor keeps links readable.
-    config["format"]["typst"]["linkcolor"] = "black"
+    if "template-partials" not in typst_format:
+        typst_format["template-partials"] = [
+            resources["typst/typst-show.typ"].relative_to(workspace).as_posix()
+        ]
+    if "margin" not in typst_format:
+        typst_format["margin"] = {"x": "2.2cm", "top": "2.2cm", "bottom": "2.2cm"}
+
+    docx_format = config["format"]["docx"]
+    if "reference-doc" not in docx_format:
+        docx_format["reference-doc"] = (
+            resources["docx/reference.docx"].relative_to(workspace).as_posix()
+        )
+
+    html_format = config["format"]["html"]
+    if "css" not in html_format:
+        html_format["css"] = [
+            resources["html/handbook.css"].relative_to(workspace).as_posix()
+        ]
     execute = config.setdefault("execute", {})
     if not isinstance(execute, dict):
         raise BuildError("publishing/_quarto.yml execute section must be a mapping")
@@ -500,7 +516,7 @@ def build_book(
         _require_prerelease_version(book_version, mode, preview)
         resources = stage_render_resources(workspace / ".handbook-render")
         (workspace / "_brand.yml").write_text(
-            'color:\n  primary: "#FFFFFF"\n', encoding="utf-8"
+            'color:\n  primary: "#1B365D"\n', encoding="utf-8"
         )
         rendered_entries = _prepare_render(workspace, entries)
 

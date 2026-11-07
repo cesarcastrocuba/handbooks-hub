@@ -1,0 +1,71 @@
+/* Solutions Architecture Handbook — HTML Pilot Stylesheet (Phase 1 P1-C) */
+:root {
+  --sah-navy: #1B365D;
+  --sah-teal: #0D6E6E;
+  --sah-slate: #334E68;
+  --sah-border: #D9E2EC;
+  --sah-row-alt: #F8FAFC;
+}
+
+h1, h2, h3, h4 {
+  color: var(--sah-navy);
+}
+
+table.table, main table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem auto 1.25rem auto;
+  font-size: 0.94rem;
+}
+
+table.caption-top, table.table, main table {
+  caption-side: bottom;
+}
+
+table caption {
+  color: var(--sah-slate);
+  font-style: italic;
+  text-align: center;
+  padding: 0.45rem 0 0 0;
+  font-size: 0.9rem;
+}
+
+figure, .quarto-figure, .quarto-float {
+  text-align: center;
+}
+
+main p:has(> a[id^="tbl-"]) {
+  margin: 0;
+  padding: 0;
+  line-height: 0;
+}
+
+table.table thead th, main table thead th {
+  background-color: var(--sah-navy);
+  color: #ffffff;
+  font-weight: 600;
+  border: 1px solid var(--sah-navy);
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+}
+
+table.table tbody td, main table tbody td {
+  border: 1px solid var(--sah-border);
+  padding: 0.5rem 0.75rem;
+  vertical-align: top;
+}
+
+table.table tbody tr:nth-child(even), main table tbody tr:nth-child(even) {
+  background-color: var(--sah-row-alt);
+}
+
+div.callout-note.callout {
+  border-left-color: var(--sah-teal) !important;
+  background-color: #F4F9F9;
+}
+
+figcaption, .figure-caption {
+  color: var(--sah-slate);
+  font-style: italic;
+  text-align: center;
+}
