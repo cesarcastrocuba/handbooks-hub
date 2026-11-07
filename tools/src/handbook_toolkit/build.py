@@ -336,6 +336,12 @@ def _render_config(
         {"at": "pre-ast", "path": (resources["filters/task-checkbox.lua"]).relative_to(workspace).as_posix()},
     ]
     typst_format = config["format"]["typst"]
+    typst_format["mainfont"] = "Selawik"
+    typst_format["monofont"] = "Cascadia Code"
+    typst_format["font-paths"] = [
+        resources["fonts/selawik/selawk.ttf"].parent.relative_to(workspace).as_posix(),
+        resources["fonts/cascadia-code/CascadiaCode-Regular.ttf"].parent.relative_to(workspace).as_posix(),
+    ]
     typst_format["include-before-body"] = (
         resources["typst/handbook-typst.typ"].relative_to(workspace).as_posix()
     )
@@ -516,7 +522,7 @@ def build_book(
         _require_prerelease_version(book_version, mode, preview)
         resources = stage_render_resources(workspace / ".handbook-render")
         (workspace / "_brand.yml").write_text(
-            'color:\n  primary: "#1B365D"\n', encoding="utf-8"
+            'color:\n  primary: "#161616"\n', encoding="utf-8"
         )
         rendered_entries = _prepare_render(workspace, entries)
 

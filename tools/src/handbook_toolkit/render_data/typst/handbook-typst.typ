@@ -52,34 +52,17 @@
 )
 
 // Headings -------------------------------------------------------------------
-#show heading.where(level: 1): it => {
-  pagebreak(to: "odd")
-  v(0.8cm)
-  text(size: 22pt, weight: "bold", fill: rgb("#1b365d"))[
-    #if it.numbering != none [
-      #counter(heading).display(it.numbering) #h(0.3em)
-    ]
-    #it.body
-  ]
-  v(0.5cm)
-}
+#show heading.where(level: 1): set text(size: 21pt, weight: "bold", fill: rgb("#161616"))
+#show heading.where(level: 2): set text(size: 14pt, weight: "bold", fill: rgb("#161616"))
+#show heading.where(level: 3): set text(size: 11.5pt, weight: "bold", fill: rgb("#161616"))
+#show heading.where(level: 4): set text(size: 10.5pt, weight: "bold", fill: rgb("#605E5C"))
 
-#show heading.where(level: 2): it => {
-  v(1.2em)
-  let num = if it.numbering != none {
-    counter(heading).display(it.numbering) + " "
-  } else { "" }
-  block(
-    width: 100%,
-    stroke: (bottom: 0.6pt + rgb("#e1dfdd")),
-    inset: (bottom: 4pt),
-    text(size: 14pt, weight: "bold", fill: rgb("#1b365d"))[#num#it.body]
-  )
-  v(0.6em)
-}
-
-#show heading.where(level: 3): set text(size: 11.5pt, weight: "bold", fill: rgb("#1b365d"))
-#show heading.where(level: 4): set text(size: 10.5pt, weight: "bold", fill: rgb("#1b365d"))
+#show heading.where(level: 1): set block(above: 0pt, below: 12pt)
+#show heading.where(level: 2): set block(
+  above: 17pt, below: 7pt,
+  stroke: (bottom: 0.6pt + rgb("#E1DFDD")),
+  inset: (bottom: 3pt),
+)
 #show heading.where(level: 3): set block(above: 13pt, below: 4pt)
 #show heading.where(level: 4): set block(above: 10pt, below: 3pt)
 

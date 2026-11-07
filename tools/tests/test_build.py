@@ -221,6 +221,8 @@ class RenderConfigTests(unittest.TestCase):
                 "typst/typst-show.typ": workspace / ".handbook-render/typst/typst-show.typ",
                 "docx/reference.docx": workspace / ".handbook-render/docx/reference.docx",
                 "html/handbook.css": workspace / ".handbook-render/html/handbook.css",
+                "fonts/selawik/selawk.ttf": workspace / ".handbook-render/fonts/selawik/selawk.ttf",
+                "fonts/cascadia-code/CascadiaCode-Regular.ttf": workspace / ".handbook-render/fonts/cascadia-code/CascadiaCode-Regular.ttf",
             }
             for path in resources.values():
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -235,6 +237,18 @@ class RenderConfigTests(unittest.TestCase):
             self.assertEqual(
                 [entry["path"] for entry in config["filters"]],
                 [".handbook-render/filters/table-layout.lua", ".handbook-render/filters/task-checkbox.lua"],
+            )
+            self.assertEqual(
+                config["format"]["typst"]["mainfont"],
+                "Selawik",
+            )
+            self.assertEqual(
+                config["format"]["typst"]["monofont"],
+                "Cascadia Code",
+            )
+            self.assertEqual(
+                config["format"]["typst"]["font-paths"],
+                [".handbook-render/fonts/selawik", ".handbook-render/fonts/cascadia-code"],
             )
             self.assertEqual(
                 config["format"]["typst"]["include-before-body"],

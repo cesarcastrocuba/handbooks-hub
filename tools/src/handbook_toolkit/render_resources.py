@@ -12,6 +12,14 @@ RESOURCE_NAMES = (
     "typst/typst-show.typ",
     "docx/reference.docx",
     "html/handbook.css",
+    "fonts/selawik/selawk.ttf",
+    "fonts/selawik/selawkb.ttf",
+    "fonts/selawik/selawksb.ttf",
+    "fonts/selawik/OFL.txt",
+    "fonts/cascadia-code/CascadiaCode-Regular.ttf",
+    "fonts/cascadia-code/CascadiaCode-Bold.ttf",
+    "fonts/cascadia-code/CascadiaCode-Italic.ttf",
+    "fonts/cascadia-code/OFL.txt",
 )
 
 
