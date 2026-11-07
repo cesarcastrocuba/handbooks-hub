@@ -20,7 +20,7 @@ CALLOUT_END = re.compile(r"^:::\s*$")
 TITLE_ATTRIBUTE = re.compile(r"title\s*=\s*(?P<quote>[\"'])(?P<title>.*?)(?P=quote)")
 CLASS_ATTRIBUTE = re.compile(r"\.callout-([A-Za-z0-9_-]+)")
 FENCE = re.compile(r"^(?P<indent>[ \t]*)(?P<marker>`{3,}|~{3,})(?P<rest>.*)$")
-NUMBER_PREFIX = re.compile(r"^\d+(?:\.\d+)*[ .]+")
+NUMBER_PREFIX = re.compile(r"^(?:\d+|[A-Z])(?:\.\d+)*[ .]+")
 TRAILING_ATTRIBUTES = re.compile(r"\s*\{[^}]*\}\s*$")
 PLACEHOLDER_TITLES = {"section", "chapter", "untitled", "todo", "tbd", "example"}
 

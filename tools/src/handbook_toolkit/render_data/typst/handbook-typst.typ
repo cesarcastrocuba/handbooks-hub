@@ -5,7 +5,8 @@
 
 // Typography -----------------------------------------------------------------
 #set text(font: ("Selawik", "Liberation Sans", "DejaVu Sans"), size: 10pt, fill: rgb("#161616"), lang: "en")
-#set par(leading: 0.65em, spacing: 1.05em)
+// Paragraphs are justified and never indented, as in the reference handbook.
+#set par(leading: 0.65em, spacing: 1.05em, first-line-indent: 0pt, justify: true)
 #show raw: set text(font: ("Cascadia Code", "DejaVu Sans Mono"))
 #show raw.where(block: true): set text(size: 8.8pt)
 
@@ -23,16 +24,20 @@
 #show emph: it => text(font: ("Liberation Sans", "DejaVu Sans"), style: "italic", it.body)
 
 // Running headers & footers --------------------------------------------------
+// Defaults (overridden by generated book-data.typ when present)
+#let handbook-title = ""
+#let handbook-license = "CC BY-SA 4.0"
+#let handbook-running-header = "Practitioner reference"
+
 #set page(
-  margin: (x: 2.2cm, top: 2.2cm, bottom: 2.2cm),
   header: context {
     if counter(page).get().first() > 1 [
       #set text(size: 8.5pt, fill: rgb("#605E5C"))
       #grid(
         columns: (1fr, auto),
         align: (left, right),
-        [#document.title],
-        [Practitioner reference]
+        [#handbook-title],
+        [#handbook-running-header]
       )
       #v(-4pt)
       #line(length: 100%, stroke: 0.4pt + rgb("#E1DFDD"))
@@ -45,17 +50,27 @@
     #grid(
       columns: (1fr, auto),
       align: (left, right),
-      [Licensed under CC BY-SA 4.0],
+      [Licensed under #handbook-license],
       [Page #counter(page).display("1 of 1", both: true)]
     )
   ]
 )
 
 // Headings -------------------------------------------------------------------
+// Chapters read "1. Title" and sections "1.1 Title", matching the DOCX and the
+// reference handbook. Front matter, appendices and references arrive from
+// Quarto as unnumbered headings and keep their literal labels. The layout in
+// typst-show.typ passes this function to `article` as its section numbering.
+#let handbook-numbering(..nums) = {
+  let parts = nums.pos()
+  if parts.len() == 1 { numbering("1.", ..parts) } else { numbering("1.1", ..parts) }
+}
+#set heading(numbering: handbook-numbering)
+
 #show heading.where(level: 1): set text(size: 21pt, weight: "bold", fill: rgb("#161616"))
 #show heading.where(level: 2): set text(size: 14pt, weight: "bold", fill: rgb("#161616"))
 #show heading.where(level: 3): set text(size: 11.5pt, weight: "bold", fill: rgb("#161616"))
-#show heading.where(level: 4): set text(size: 10.5pt, weight: "bold", fill: rgb("#605E5C"))
+#show heading.where(level: 4): set text(size: 10.5pt, weight: "bold", fill: rgb("#161616"))
 
 #show heading.where(level: 1): set block(above: 0pt, below: 12pt)
 #show heading.where(level: 2): set block(
@@ -65,6 +80,24 @@
 )
 #show heading.where(level: 3): set block(above: 13pt, below: 4pt)
 #show heading.where(level: 4): set block(above: 10pt, below: 3pt)
+
+// Every front-matter page, chapter and appendix starts on a new page.
+#show heading.where(level: 1): it => {
+  pagebreak(weak: true)
+  it
+}
+
+// Contents -------------------------------------------------------------------
+// Document Control sits on its own page after the Contents and is not listed,
+// as in the reference handbook.
+#show outline.entry: it => {
+  let body = it.element.body
+  if it.element.func() == heading and body.has("text") and body.text == "Document Control" {
+    none
+  } else {
+    it
+  }
+}
 
 // Tables ---------------------------------------------------------------------
 #set table(

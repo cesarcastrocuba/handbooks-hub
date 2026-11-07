@@ -42,6 +42,17 @@ from .validation import (
     load_document,
     load_packaged_schema,
 )
+from .print_layout import (
+    DEFAULT_RUNNING_HEADER,
+    document_control_table,
+    edition_date,
+    edition_fields,
+    inject_document_control,
+    license_label,
+    toc_depth,
+    typst_book_data,
+    typst_front,
+)
 
 QUARTO_VERSION = "1.11.9"
 COMMIT = re.compile(r"[0-9a-f]{40}\Z")
@@ -313,6 +324,9 @@ def _render_config(
     entries: list[str],
     resources: dict[str, Path],
     workspace: Path,
+    *,
+    toc_depth: int | None = None,
+    edition_date: str | None = None,
 ) -> dict[str, Any]:
     project = config.setdefault("project", {})
     if not isinstance(project, dict) or project.get("type", "book") != "book":
@@ -326,6 +340,10 @@ def _render_config(
         raise BuildError("publishing/_quarto.yml book section must be a mapping")
     book_config["title"] = book["title"]
     book_config["chapters"] = entries
+    if edition_date is not None:
+        # The edition date comes from the source commit, never a hand-kept value.
+        book_config["date"] = edition_date
+        config.setdefault("date-format", "MMMM YYYY")
 
     formats = config.get("format", {})
     if not isinstance(formats, dict):
@@ -335,6 +353,10 @@ def _render_config(
         {"at": "pre-ast", "path": (resources["filters/table-layout.lua"]).relative_to(workspace).as_posix()},
         {"at": "pre-ast", "path": (resources["filters/task-checkbox.lua"]).relative_to(workspace).as_posix()},
     ]
+
+    def staged(name: str) -> str:
+        return resources[name].relative_to(workspace).as_posix()
+
     typst_format = config["format"]["typst"]
     typst_format["mainfont"] = "Selawik"
     typst_format["monofont"] = "Cascadia Code"
@@ -342,21 +364,29 @@ def _render_config(
         resources["fonts/selawik/selawk.ttf"].parent.relative_to(workspace).as_posix(),
         resources["fonts/cascadia-code/CascadiaCode-Regular.ttf"].parent.relative_to(workspace).as_posix(),
     ]
-    typst_format["include-before-body"] = (
-        resources["typst/handbook-typst.typ"].relative_to(workspace).as_posix()
-    )
+    # Styles and page furniture are header includes so they apply before the
+    # cover is laid out; the generated cover and Contents open the body.
+    header_includes = [staged("typst/handbook-typst.typ")]
+    if "typst/book-data.typ" in resources:
+        header_includes.append(staged("typst/book-data.typ"))
+    typst_format["include-in-header"] = header_includes
+    if "typst/front.typ" in resources:
+        typst_format["include-before-body"] = staged("typst/front.typ")
+    elif "typst/handbook-typst.typ" in resources:
+        typst_format["include-before-body"] = staged("typst/handbook-typst.typ")
+    # The generated front places the Contents after the cover page.
+    typst_format["toc"] = False
     if "template-partials" not in typst_format:
-        typst_format["template-partials"] = [
-            resources["typst/typst-show.typ"].relative_to(workspace).as_posix()
-        ]
+        typst_format["template-partials"] = [staged("typst/typst-show.typ")]
     if "margin" not in typst_format:
-        typst_format["margin"] = {"x": "2.2cm", "top": "2.2cm", "bottom": "2.2cm"}
+        typst_format["margin"] = {"x": "2.2cm", "y": "2.4cm"}
 
     docx_format = config["format"]["docx"]
     if "reference-doc" not in docx_format:
-        docx_format["reference-doc"] = (
-            resources["docx/reference.docx"].relative_to(workspace).as_posix()
-        )
+        docx_format["reference-doc"] = staged("docx/reference.docx")
+    if toc_depth is not None:
+        for name in ("typst", "docx"):
+            config["format"][name].setdefault("toc-depth", toc_depth)
 
     html_format = config["format"]["html"]
     if "css" not in html_format:
@@ -524,7 +554,15 @@ def build_book(
         (workspace / "_brand.yml").write_text(
             'color:\n  primary: "#161616"\n', encoding="utf-8"
         )
-        rendered_entries = _prepare_render(workspace, entries)
+        metadata_path = workspace / "publishing/metadata.yaml"
+        metadata: dict[str, Any] = {}
+        if metadata_path.is_file():
+            try:
+                loaded_meta = yaml.safe_load(metadata_path.read_text(encoding="utf-8"))
+                if isinstance(loaded_meta, dict):
+                    metadata = loaded_meta
+            except (OSError, yaml.YAMLError) as exc:
+                raise BuildError(f"cannot read publishing/metadata.yaml: {exc}") from exc
 
         config_path = workspace / "publishing/_quarto.yml"
         try:
@@ -534,9 +572,79 @@ def build_book(
         if not isinstance(config, dict):
             raise BuildError("publishing/_quarto.yml must be a YAML mapping")
 
+        author = str(metadata.get("author") or config.get("book", {}).get("author") or "")
+        language = str(metadata.get("language") or config.get("lang") or "en")
+        fields = edition_fields(
+            book,
+            metadata,
+            version=book_version,
+            preview=preview,
+            epoch=source_epoch,
+            profile=profile_document,
+            author=author,
+            language=language,
+        )
+        control_table = document_control_table(fields)
+        for entry in entries:
+            entry_path = workspace / entry
+            content = entry_path.read_text(encoding="utf-8")
+            injected = inject_document_control(content, control_table)
+            if injected is not None:
+                entry_path.write_text(injected, encoding="utf-8")
+                break
+
+        entry_texts = [(workspace / entry).read_text(encoding="utf-8") for entry in entries]
+        depth = toc_depth(entry_texts)
+
+        title = str(book.get("title", ""))
+        licenses = book.get("license", {})
+        license_text = license_label(str(licenses.get("content", "")))
+        running_header = str(metadata.get("series_label") or DEFAULT_RUNNING_HEADER)
+        book_data_file = resources["typst/handbook-typst.typ"].parent / "book-data.typ"
+        book_data_file.write_text(
+            typst_book_data(
+                title=title,
+                license_text=license_text,
+                running_header=running_header,
+            ),
+            encoding="utf-8",
+        )
+        resources["typst/book-data.typ"] = book_data_file
+
+        front_file = resources["typst/handbook-typst.typ"].parent / "front.typ"
+        edition_dt = edition_date(source_epoch)
+        date_str = edition_dt.strftime("%B %Y")
+        version_line = f"Version {book_version}, {date_str}"
+        scope_line = str(metadata.get("scope_banner") or "")
+        series_label = str(metadata.get("series_label") or "")
+        disclaimer = str(metadata.get("disclaimer") or "")
+        front_file.write_text(
+            typst_front(
+                series_label=series_label,
+                version_line=version_line,
+                scope_line=scope_line,
+                author=author,
+                license_text=license_text,
+                disclaimer=disclaimer,
+                depth=depth,
+            ),
+            encoding="utf-8",
+        )
+        resources["typst/front.typ"] = front_file
+
+        rendered_entries = _prepare_render(workspace, entries)
+
         (workspace / "_quarto.yml").write_text(
             yaml.safe_dump(
-                _render_config(book, config, rendered_entries, resources, workspace),
+                _render_config(
+                    book,
+                    config,
+                    rendered_entries,
+                    resources,
+                    workspace,
+                    toc_depth=depth,
+                    edition_date=date_str,
+                ),
                 sort_keys=True,
                 allow_unicode=True,
             ),

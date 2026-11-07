@@ -456,6 +456,53 @@ Not real.
         messages = " ".join(issue.message for issue in result.issues)
         self.assertIn("missing chapter element", messages)
 
+    def test_letter_prefixed_appendix_headings_match_standard_elements(self) -> None:
+        text = """\\
+# Appendix A — Sample Appendix {.unnumbered}
+
+Appendix overview.
+
+::: {.callout-note appearance="simple" icon=false title="When to Use This Chapter"}
+- Use this when testing appendix structure.
+:::
+
+::: {.callout-tip appearance="simple" icon=false title="Key Takeaway"}
+Appendices can have letter-prefixed section numbering.
+:::
+
+## A.1 Overview Section
+
+**Definition.** An overview of the appendix structure.
+
+**Purpose.** Shows how appendix numbering works.
+
+**What it includes.** Standard elements and lettered prefixes.
+
+**Why it is needed.** To prove appendix validation passes.
+
+**Example.** Illustrative example of an appendix section.
+
+::: {.callout-warning appearance="simple" icon=false title="Common Pitfall"}
+Failing to validate appendix sections.
+:::
+
+::: {.callout-important appearance="simple" icon=false title="Decision & Trade-off"}
+Keep appendix numbering consistent with chapters.
+:::
+
+## A.2 Worked Example — Appendix in Action
+
+::: {.callout-important appearance="simple" icon=false title="Review Checklist — Appendix"}
+- Appendix checklist.
+:::
+
+## A.3 Further Reading
+
+- Appendix references.
+"""
+        result = self.check(text)
+        self.assertTrue(result.ok, [str(issue) for issue in result.issues])
+
 
 if __name__ == "__main__":
     unittest.main()

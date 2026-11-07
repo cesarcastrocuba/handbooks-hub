@@ -1,9 +1,26 @@
-#import "@preview/orange-book:0.7.1": book, part, chapter, appendices
+// Handbook print layout: replaces the Quarto orange-book book layout.
+//
+// The reference handbook renders its print edition with Quarto's plain
+// `article` layout: a simple title block, an explicit Contents outline and
+// unindented, justified paragraphs. orange-book adds a framed cover, odd-page
+// chapter breaks, a bracketed outline and first-line paragraph indents, so it
+// is not imported here. Quarto's book filter still emits `part` and
+// `appendices` calls, so compatible definitions are provided below.
 
 #set text(font: ("Selawik", "Liberation Sans", "DejaVu Sans"), size: 10pt, fill: rgb("#161616"), lang: "en")
 #show raw: set text(font: ("Cascadia Code", "DejaVu Sans Mono"))
 
-#show: book.with(
+// A book part is an unnumbered, outlined level-1 heading.
+#let part(title) = heading(level: 1, numbering: none)[#title]
+
+// Appendices keep their own literal labels ("Appendix A — …", "A.1 …"), which
+// Quarto marks as unnumbered; the state is kept for appendix-aware numbering.
+#let appendices(title, hide-parent: false, body) = {
+  state("appendix-state", none).update(title)
+  body
+}
+
+#show: doc => article(
 $if(title)$
   title: [$title$],
 $endif$
@@ -11,52 +28,27 @@ $if(subtitle)$
   subtitle: [$subtitle$],
 $endif$
 $if(by-author)$
-  author: "$for(by-author)$$it.name.literal$$sep$, $endfor$",
+  authors: (
+$for(by-author)$
+$if(it.name.literal)$
+    ( name: [$it.name.literal$],
+      affiliation: [],
+      email: [] ),
+$endif$
+$endfor$
+    ),
 $endif$
 $if(date)$
-  date: "$date$",
+  date: [$date$],
 $endif$
 $if(lang)$
   lang: "$lang$",
 $endif$
-  main-color: rgb("#161616"),
-  margin: (x: 2.2cm, top: 2.2cm, bottom: 2.2cm),
-  heading-style: 0,
-  padded-heading-number: false,
-$if(toc-depth)$
-  outline-depth: $toc-depth$,
-$endif$
-  supplement-chapter: "Chapter",
+  font: ("Selawik", "Liberation Sans", "DejaVu Sans"),
+  fontsize: 10pt,
+  heading-family: ("Selawik", "Liberation Sans", "DejaVu Sans"),
+  codefont: ("Cascadia Code", "DejaVu Sans Mono"),
+  sectionnumbering: handbook-numbering,
+  toc: false,
+  doc,
 )
-
-// Headings matching Solutions Architecture Handbook:
-// Level 1: bold 21pt, #161616 (near-black / negro), no colored boxes
-#show heading.where(level: 1): it => {
-  v(1.5em)
-  text(size: 21pt, weight: "bold", fill: rgb("#161616"))[#it.body]
-  v(1em)
-}
-
-// Level 2: bold 14pt, #161616 (near-black / negro), light gray bottom border #e1dfdd
-#show heading.where(level: 2): it => {
-  v(1.2em)
-  block(
-    width: 100%,
-    stroke: (bottom: 0.6pt + rgb("#e1dfdd")),
-    inset: (bottom: 4pt),
-    text(size: 14pt, weight: "bold", fill: rgb("#161616"))[#it.body]
-  )
-  v(0.6em)
-}
-
-#show heading.where(level: 3): it => {
-  v(1em)
-  text(size: 11.5pt, weight: "bold", fill: rgb("#161616"))[#it.body]
-  v(0.5em)
-}
-
-#show heading.where(level: 4): it => {
-  v(0.8em)
-  text(size: 10.5pt, weight: "bold", fill: rgb("#605e5c"))[#it.body]
-  v(0.4em)
-}
