@@ -1,6 +1,6 @@
 # Evidence — Post-Phase-4 remediation
 
-**Base:** `1635e69`. **Toolkit commit pinned by the template:** `f10636127d1b5f31b22e1483f3b74033fdd8c0ce`.
+**Base:** `1635e69`. **Toolkit commit pinned by the template:** `bad47813b148687b1bfb148244874657e2e445c0`.
 
 ## Commands run on 2026-11-08
 
@@ -23,7 +23,8 @@ does not ratify earlier releases or accept the open license questions.
 ## Independent review
 
 A separate agent reviewed `c0dea57` and requested changes: 2 Major and 6 Minor findings. All were
-addressed in the next commit. A later commit requires a new review.
+addressed in the next commit. A second review of `5a5b6a9` approved the hub with 3 Minor findings,
+all addressed afterwards. A later commit requires a new review.
 
 ## Branch protection
 
