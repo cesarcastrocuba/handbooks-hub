@@ -1,4 +1,4 @@
-// Technical Handbook Platform — Learn-style Typst styling for book publishing
+// Technical Handbook Platform — Typst styling for book publishing
 // Derived from Solutions Architecture Handbook visual language.
 // Clean headings, themed alert boxes with accent borders, visible links,
 // gray-headed tables, and running headers/footers with document title and license.
@@ -18,7 +18,7 @@
   width: 100%,
 )
 
-// Links: Microsoft Learn blue
+// Links: accessible blue
 #show link: set text(fill: rgb("#0065b3"))
 
 #show emph: it => text(font: ("Liberation Sans", "DejaVu Sans"), style: "italic", it.body)

@@ -20,7 +20,25 @@ to CC BY-SA 4.0, state whether you made changes and license your adaptations und
 The standard profile and the plan record editorial lessons observed in the existing
 `Solutions Architecture Handbook` (CC BY-SA 4.0, Franz César Castro Cuba), inspected read-only at
 commit `6a15cc211f65e148afdaa75c71a063a8084d1910`. No manuscript text, diagram or checklist data was
-copied into this repository. The reference repository remains unchanged and is not a dependency.
+copied into this repository. The packaged HTML stylesheet, Typst style and DOCX reference document
+were adapted from that handbook's publishing styles by the same author. The reference repository
+remains unchanged and is not a dependency.
+
+## Bundled render resources
+
+The toolkit ships third-party files under `tools/src/handbook_toolkit/render_data/` so that builds
+are reproducible. They are not covered by this repository's MIT or CC BY-SA licenses.
+
+| Resource | Version and upstream | License |
+| --- | --- | --- |
+| Selawik Regular, Semibold and Bold | 1.01, <https://github.com/microsoft/Selawik/releases/tag/1.01> | SIL Open Font License 1.1, `fonts/selawik/OFL.txt` |
+| Cascadia Code Regular, Italic and Bold | 2407.24, <https://github.com/microsoft/cascadia-code/releases/tag/v2407.24> | SIL Open Font License 1.1, `fonts/cascadia-code/OFL.txt` |
+| `docx/reference.docx` | Derived from the Pandoc default reference document | Under owner review, see `HUB-DEC-020` |
+
+Selawik and Cascadia Code are © Microsoft Corporation, and the names are reserved font names and
+trademarks of their owner. The fonts are used unmodified as typography only and imply no endorsement.
+The review, file hashes and open questions are in
+[`sdd/changes/0010-post-phase4-remediation/rights-review.md`](sdd/changes/0010-post-phase4-remediation/rights-review.md).
 
 ## Not covered
 
@@ -29,6 +47,7 @@ copied into this repository. The reference repository remains unchanged and is n
 - Any future book content is licensed in that book's own repository; the hub licenses only the
   material stored here.
 - Dependencies installed from package indexes keep their own licenses.
+- The bundled render resources listed above keep their own licenses.
 
 ## Planned content license for books
 

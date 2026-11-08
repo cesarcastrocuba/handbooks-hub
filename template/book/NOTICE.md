@@ -25,3 +25,10 @@ material stays under its owner's license and must be attributed in the book itse
 
 The book depends on the pinned `handbook-toolkit` package. That package keeps its own MIT license;
 copying this template does not copy hub source code into the book.
+
+## Fonts in published editions
+
+The toolkit renders PDF editions with the bundled Selawik and Cascadia Code fonts, which are licensed
+under the SIL Open Font License 1.1 and embedded as subsets. The font license does not extend to the
+document that uses them. If a book distributes the font files themselves, it must include the license
+files shipped with the toolkit.
