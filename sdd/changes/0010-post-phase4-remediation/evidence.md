@@ -1,6 +1,6 @@
 # Evidence — Post-Phase-4 remediation
 
-**Base:** `1635e69`. **Toolkit commit pinned by the template:** `caaa3633d967f233f34b60d5b9c6c4c11a192f2a`.
+**Base:** `1635e69`. **Toolkit commit pinned by the template:** `f10636127d1b5f31b22e1483f3b74033fdd8c0ce`.
 
 ## Commands run on 2026-11-08
 
@@ -12,6 +12,18 @@
 | `make full` in the sample book with toolkit `5f96202` | Pass |
 | `curl` on the portal, the reading site, and the `v0.2.0` manifest and checksums | HTTP 200 for all four |
 | `cmp` of bundled fonts against upstream releases | See `rights-review.md` |
+
+## Owner instruction
+
+Given to the implementing session on 2026-11-08, verbatim: "Si por favor y pr9tege la rama main para
+que desde aquí en adelante solo se realicen mejoras en ramas y luego se 8ntegren en main con
+autorización, corrige todo lo antrrior". This is the basis for `HUB-DEC-018` and for this change. It
+does not ratify earlier releases or accept the open license questions.
+
+## Independent review
+
+A separate agent reviewed `c0dea57` and requested changes: 2 Major and 6 Minor findings. All were
+addressed in the next commit. A later commit requires a new review.
 
 ## Branch protection
 
