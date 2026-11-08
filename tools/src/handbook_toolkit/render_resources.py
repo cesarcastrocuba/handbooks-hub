@@ -16,10 +16,15 @@ RESOURCE_NAMES = (
     "fonts/selawik/selawkb.ttf",
     "fonts/selawik/selawksb.ttf",
     "fonts/selawik/OFL.txt",
-    "fonts/cascadia-code/CascadiaCode-Regular.ttf",
-    "fonts/cascadia-code/CascadiaCode-Bold.ttf",
-    "fonts/cascadia-code/CascadiaCode-Italic.ttf",
-    "fonts/cascadia-code/OFL.txt",
+    "fonts/jetbrains-mono/JetBrainsMono-Regular.ttf",
+    "fonts/jetbrains-mono/JetBrainsMono-Bold.ttf",
+    "fonts/jetbrains-mono/JetBrainsMono-Italic.ttf",
+    "fonts/jetbrains-mono/OFL.txt",
+    "fonts/liberation-sans/LiberationSans-Regular.ttf",
+    "fonts/liberation-sans/LiberationSans-Bold.ttf",
+    "fonts/liberation-sans/LiberationSans-Italic.ttf",
+    "fonts/liberation-sans/LiberationSans-BoldItalic.ttf",
+    "fonts/liberation-sans/OFL.txt",
 )
 
 

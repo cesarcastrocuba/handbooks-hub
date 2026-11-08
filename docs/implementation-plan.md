@@ -1,20 +1,15 @@
 # Implementation plan — reusable handbook platform
 
-**Status:** Phase 1 integrated; Phase 2 profile/template/toolkit closure prepared; Phase 4 local build in progress.
+**Status:** Phases 1 to 4 complete; Phases 5 and 6 not started. Current status lives in `STATUS.md`.
 **Version:** 0.1.0
 **Date:** 2026-11-06
 **Scope of this milestone:** local hub repository only. The sample book repository, GitHub
 repositories, Pages, releases and migration are explicitly out of scope. The sample repository was
 scaffolded concurrently by a separate session; this session only reads and records that fact.
 
-> **Current state (2026-11-06):** Phase 1 foundation, the dual-license defaults, profile `0.2.0`,
-> setup docs, structural manuscript validation, reference validation and shared render resources are
-> integrated on `main` at `66d0581`. `feat/phase2-closure` adds standard profile `1.0.0` with per-rule
-> classifications, book template `1.0.0`, toolkit `0.4.0` and the chapter-title PDF fix. Phase 2 is
-> ready for the owner gate; no merge, tag or release is performed by this branch.
-> The portal/catalog work is a separate root-owned branch. Pilot approval, publication and release
-> are not authorized. See [`STATUS.md`](../STATUS.md) and
-> [the approval record](../sdd/changes/0005-owner-approvals/approval.md).
+> **Current state (2026-11-08):** Phases 1 to 4 are complete and the sample book is published at
+> `v0.2.0`. Sections 2, 3, 8 to 11 and 19 describe the plan as it was carried out and are kept as
+> history. Current status lives in [`STATUS.md`](../STATUS.md); section 20 lists the next actions.
 
 This plan turns `IMPLEMENTATION-HANDOFF.md` and the Engram handoff summary #6795 into reviewable work.
 It records what was inspected, the contracts the platform must honour, the phase sequence, the work
@@ -145,10 +140,10 @@ book repository (independent)
 | Contract | Artifact | Versioned by | Consumer |
 | --- | --- | --- | --- |
 | Book descriptor | `book.yaml` | Schema `1.0` | Toolkit, catalog, portal |
-| Editorial profile | `profile.yaml` | Profile `0.2.0` | Toolkit, reviewers, books |
+| Editorial profile | `profile.yaml` | Profile `1.0.0` | Toolkit, reviewers, books |
 | Catalog | `catalog/catalog.json` | Schema `1.0` | Portal, reviewers |
 | Publication manifest | `publication-manifest.json` (Phase 4) | Schema `1.0` (planned) | Toolkit, catalog, auditors |
-| Toolkit CLI | `handbook-toolkit` | Semver `0.4.0` | Books, CI, portal |
+| Toolkit CLI | `handbook-toolkit` | Semver `0.5.0` | Books, CI, portal |
 
 A book pins the toolkit and profile versions it was written and verified against. The toolkit never
 silently upgrades a book's profile.
@@ -615,12 +610,13 @@ Rules:
 | Approve hub/book repository split and the separate sample lane | Gate 1 | **Approved** (`HUB-DEC-001`, `HUB-DEC-012`) |
 | Approve standard profile direction and exceptions model | Gate 1/2 | **Approved** `0.2.0` (`HUB-DEC-004`, `HUB-DEC-015`) |
 | Confirm licensing and attribution scope | Gate 1 | **Approved** (`HUB-DEC-009`, `HUB-DEC-015`) |
-| Approve sample book brief | Gate 3a | Not started |
-| Approve sample book outline | Gate 3b | Not started |
-| Approve pilot section | Gate 3c | Not started |
-| Approve manuscript release candidate | Gate 3d | Not started |
-| Authorize GitHub repositories and Pages | Before Phase 4 | Repositories exist; Pages not authorized |
-| Authorize publication and release | Gate 4 | Not authorized |
+| Approve sample book brief | Gate 3a | **Approved** 2026-11-06 |
+| Approve sample book outline | Gate 3b | **Approved** 2026-11-06 |
+| Approve pilot section | Gate 3c | **Approved** 2026-11-06 under delegation (`HUB-DEC-016`) |
+| Approve manuscript release candidate | Gate 3d | **Approved** 2026-11-06 under delegation (`HUB-DEC-017`) |
+| Authorize GitHub repositories and Pages | Before Phase 4 | **Approved** under delegation (`HUB-DEC-016`) |
+| Authorize publication and release | Gate 4 | **Approved** for `v0.1.0` (`HUB-DEC-017`) and later releases (`HUB-DEC-019`) |
+| Bundled render resources | Rights review | **Approved**: replace those in doubt (`HUB-DEC-020`) |
 | Decide on migration | Gate 6 | Deferred (`HUB-DEC-012`) |
 
 ## 19. Definition of done for this milestone
@@ -639,10 +635,8 @@ Rules:
 
 ## 20. Immediate next actions
 
-1. Root independently reviews and integrates the reviewed `feat/topic-neutral-profile` branch.
-2. After integration, start the next scoped Phase 2 task for manuscript validation and the template.
-3. Await explicit owner authorization before pilot approval, publication or release.
-4. Review the sample-repository integration branch in its own lane; this session does not modify it.
+See [`STATUS.md`](../STATUS.md#next-actions). In summary: close the post-Phase-4 remediation, move the
+sample book to toolkit `0.5.0`, then start Phase 5 with owner authorization.
 
 ---
 

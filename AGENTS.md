@@ -60,9 +60,9 @@ make check    # unit tests and fast validators
 make full     # fast checks plus full repository validators
 ```
 
-The hub has no consumer-facing artifact build yet. Phase 4 adds the portal and publication checks.
-Until then, `make full` is a complete check of everything the hub currently owns; it is not a
-substitute for a future artifact gate.
+`make full` checks what this repository owns. Book artifact builds run in the `publication-build` CI
+job and the portal builds in the `portal-pages` workflow; `make full` does not replace a book's own
+artifact gate.
 
 ## Agent adapters
 

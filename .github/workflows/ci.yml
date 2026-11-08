@@ -74,7 +74,7 @@ jobs:
           handbook-toolkit --root . validate-references book.yaml
           handbook-toolkit --root . validate-manuscript manuscript/chapters/01-example.qmd \
             --mode chapter --profile "$GITHUB_WORKSPACE/profiles/standard/profile.yaml"
-          test "$(handbook-toolkit version)" = "handbook-toolkit 0.4.0"
+          test "$(handbook-toolkit version)" = "handbook-toolkit 0.5.0"
 
   publication-build:
     runs-on: ubuntu-24.04
@@ -163,5 +163,5 @@ jobs:
           cd "$book"
           "$RUNNER_TEMP/toolkit-venv/bin/handbook-toolkit" --root . validate-book --full
 
-# The artifact build and portal checks are added in Phase 4. The wheel-install job checks the
-# installed-package boundary now; it is not a publication or release step.
+# The wheel-install job checks the installed-package boundary; it is not a publication or release
+# step.

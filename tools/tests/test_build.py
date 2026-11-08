@@ -145,7 +145,7 @@ status: draft
 profile:
   id: standard
   version: "1.0.0"
-toolkit: "0.4.0"
+toolkit: "0.5.0"
 license:
   content: CC-BY-SA-4.0
   code: MIT
@@ -222,7 +222,8 @@ class RenderConfigTests(unittest.TestCase):
                 "docx/reference.docx": workspace / ".handbook-render/docx/reference.docx",
                 "html/handbook.css": workspace / ".handbook-render/html/handbook.css",
                 "fonts/selawik/selawk.ttf": workspace / ".handbook-render/fonts/selawik/selawk.ttf",
-                "fonts/cascadia-code/CascadiaCode-Regular.ttf": workspace / ".handbook-render/fonts/cascadia-code/CascadiaCode-Regular.ttf",
+                "fonts/jetbrains-mono/JetBrainsMono-Regular.ttf": workspace / ".handbook-render/fonts/jetbrains-mono/JetBrainsMono-Regular.ttf",
+                "fonts/liberation-sans/LiberationSans-Regular.ttf": workspace / ".handbook-render/fonts/liberation-sans/LiberationSans-Regular.ttf",
             }
             for path in resources.values():
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -244,11 +245,15 @@ class RenderConfigTests(unittest.TestCase):
             )
             self.assertEqual(
                 config["format"]["typst"]["monofont"],
-                "Cascadia Code",
+                "JetBrains Mono",
             )
             self.assertEqual(
                 config["format"]["typst"]["font-paths"],
-                [".handbook-render/fonts/selawik", ".handbook-render/fonts/cascadia-code"],
+                [
+                    ".handbook-render/fonts/selawik",
+                    ".handbook-render/fonts/jetbrains-mono",
+                    ".handbook-render/fonts/liberation-sans",
+                ],
             )
             self.assertEqual(
                 config["format"]["typst"]["include-before-body"],
@@ -352,7 +357,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.4.0"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.5.0"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             commit = commit_all(repo, "mismatched toolkit pin")
@@ -414,7 +419,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.4.0"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.5.0"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             commit = commit_all(repo, "preview toolkit pin")
@@ -466,7 +471,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.4.0"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.5.0"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             _git(repo, "update-index", "--assume-unchanged", "book.yaml")

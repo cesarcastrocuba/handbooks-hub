@@ -5,6 +5,30 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-08
+
+### Added
+
+- Print-layout stage for Typst builds, the packaged HTML stylesheet and the DOCX reference document.
+- Bundled Selawik, JetBrains Mono and Liberation Sans fonts with their license files. See `NOTICE.md`.
+- `tools/scripts/generate_reference_docx.py`, which generates the DOCX reference document without any Pandoc template part.
+
+### Changed
+
+- Toolkit `0.5.0` names the rendering changes integrated after `0.4.0`. Hub commits from `988773c` to
+  `5f96202` carried those changes while still reporting `0.4.0`, so manifests of sample releases
+  `v0.1.1` to `v0.2.0` report `0.4.0` and only their pinned commit identifies the code used.
+- The template pins toolkit `0.5.0`.
+- Packaged style comments no longer name a vendor.
+- The code font is JetBrains Mono instead of Cascadia Code, and styles no longer fall back to fonts from the build environment.
+
+### Fixed
+
+- Typst heading, table-of-contents and print layout, and packaging of the render resources in the wheel.
+- The manuscript validator accepts letter-prefixed appendix numbers such as `A.2`.
+
+## [0.4.0] and earlier
+
 ### Added
 
 - Hub onboarding guide at `docs/setup.md` and a README quickstart covering reader/contributor/

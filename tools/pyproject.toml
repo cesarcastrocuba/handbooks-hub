@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "handbook-toolkit"
-version = "0.4.0"
+version = "0.5.0"
 description = "Shared deterministic validators for the handbook platform"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = { text = "MIT for code; bundled schemas, profiles, fonts and render data keep the licenses in NOTICE.md" }
 dependencies = [
   "jsonschema>=4.10,<5",
   "PyYAML>=6.0,<7",
