@@ -25,7 +25,7 @@
 | Manifest | Commit above, toolkit `0.5.0`, profile `1.0.0` |
 | PDF | 50 pages; `pdffonts` lists only Selawik, JetBrains Mono and Liberation Sans |
 | Reading site, manifest and checksums URLs | HTTP 200 |
-| `python3 -m handbook_toolkit.catalog_verification catalog/catalog.json` | See the pull request |
+| `python3 -m handbook_toolkit.catalog_verification catalog/catalog.json` | `release verification: OK` |
 
 ## Not verified
 
