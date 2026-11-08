@@ -6,7 +6,9 @@
 
 | Command | Result |
 | --- | --- |
-| `make check` after the version bump | Pass, 166 tests, 5 verify checks |
+| `make check` after replacing the resources | Pass, 167 tests, 5 verify checks |
+| `build-book` of the sample book in a temporary clone, toolkit from this branch | Pass; 50-page PDF; `pdffonts` lists only Selawik, JetBrains Mono and Liberation Sans |
+| `cmp` of `reference.docx` parts against the Pandoc 3.10 default | No part identical |
 | `make full` at this change | Pass, 6 verify checks |
 | `sha256sum -c SHA256SUMS.txt` on the `v0.2.0` release assets | Pass, 5 files |
 | `make full` in the sample book with toolkit `5f96202` | Pass |
@@ -18,7 +20,11 @@
 Given to the implementing session on 2026-11-08, verbatim: "Si por favor y pr9tege la rama main para
 que desde aquí en adelante solo se realicen mejoras en ramas y luego se 8ntegren en main con
 autorización, corrige todo lo antrrior". This is the basis for `HUB-DEC-018` and for this change. It
-does not ratify earlier releases or accept the open license questions.
+did not ratify earlier releases or accept the open license questions.
+
+Owner reply on the same date, verbatim: "1. Autorizo,, 2, Si autorizo  3. Podrías buscar alternativas por
+favor, no quiero tener problemas legales". Points 1 to 3 answer `HUB-DEC-019`, the sample-book `DEC-012` to
+`DEC-014`, and `HUB-DEC-020`.
 
 ## Independent review
 
@@ -35,7 +41,8 @@ sample check: `check`.
 ## Not run or not verified
 
 - Independent review: pending.
-- Rendered output of a book built with `0.5.0`: only the copied-template build in the test suite ran.
+- A release built with these resources: only a local test build ran.
 - `wheel-install`, `template-install` and the other CI jobs run on the pull request, not locally.
-- Visual review of the published PDF.
+- Full visual review of the PDF: only sampled pages of a test build were compared with `v0.2.0`.
+- Rendering of the DOCX in Microsoft Word: it was converted with LibreOffice only.
 - Whether the post-Phase-4 commits were reviewed outside GitHub: no record exists.

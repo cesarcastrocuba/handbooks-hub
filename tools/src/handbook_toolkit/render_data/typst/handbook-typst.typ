@@ -4,10 +4,10 @@
 // gray-headed tables, and running headers/footers with document title and license.
 
 // Typography -----------------------------------------------------------------
-#set text(font: ("Selawik", "Liberation Sans", "DejaVu Sans"), size: 10pt, fill: rgb("#161616"), lang: "en")
+#set text(font: ("Selawik", "Liberation Sans"), size: 10pt, fill: rgb("#161616"), lang: "en")
 // Paragraphs are justified and never indented, as in the reference handbook.
 #set par(leading: 0.65em, spacing: 1.05em, first-line-indent: 0pt, justify: true)
-#show raw: set text(font: ("Cascadia Code", "DejaVu Sans Mono"))
+#show raw: set text(font: ("JetBrains Mono",))
 #show raw.where(block: true): set text(size: 8.8pt)
 
 #show raw.where(block: true): set block(
@@ -21,7 +21,7 @@
 // Links: accessible blue
 #show link: set text(fill: rgb("#0065b3"))
 
-#show emph: it => text(font: ("Liberation Sans", "DejaVu Sans"), style: "italic", it.body)
+#show emph: it => text(font: ("Liberation Sans",), style: "italic", it.body)
 
 // Running headers & footers --------------------------------------------------
 // Defaults (overridden by generated book-data.typ when present)
@@ -112,7 +112,7 @@
 
 // Captions -------------------------------------------------------------------
 #show figure.caption: it => align(center)[
-  #text(style: "italic", font: ("Liberation Sans", "DejaVu Sans"), size: 9pt, fill: rgb("#605E5C"))[#it.body]
+  #text(style: "italic", font: ("Liberation Sans",), size: 9pt, fill: rgb("#605E5C"))[#it.body]
 ]
 #show figure.where(kind: "quarto-float-tbl"): set figure.caption(position: bottom)
 #show figure.where(kind: "quarto-float-tbl"): set block(breakable: true)

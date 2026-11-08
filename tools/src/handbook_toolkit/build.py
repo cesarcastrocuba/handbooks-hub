@@ -359,10 +359,11 @@ def _render_config(
 
     typst_format = config["format"]["typst"]
     typst_format["mainfont"] = "Selawik"
-    typst_format["monofont"] = "Cascadia Code"
+    typst_format["monofont"] = "JetBrains Mono"
     typst_format["font-paths"] = [
         resources["fonts/selawik/selawk.ttf"].parent.relative_to(workspace).as_posix(),
-        resources["fonts/cascadia-code/CascadiaCode-Regular.ttf"].parent.relative_to(workspace).as_posix(),
+        resources["fonts/jetbrains-mono/JetBrainsMono-Regular.ttf"].parent.relative_to(workspace).as_posix(),
+        resources["fonts/liberation-sans/LiberationSans-Regular.ttf"].parent.relative_to(workspace).as_posix(),
     ]
     # Styles and page furniture are header includes so they apply before the
     # cover is laid out; the generated cover and Contents open the body.

@@ -10,7 +10,8 @@ semantic versioning once the toolkit is published.
 ### Added
 
 - Print-layout stage for Typst builds, the packaged HTML stylesheet and the DOCX reference document.
-- Bundled Selawik and Cascadia Code fonts with their license files. See `NOTICE.md`.
+- Bundled Selawik, JetBrains Mono and Liberation Sans fonts with their license files. See `NOTICE.md`.
+- `tools/scripts/generate_reference_docx.py`, which writes the DOCX reference document from scratch.
 
 ### Changed
 
@@ -19,6 +20,7 @@ semantic versioning once the toolkit is published.
   `v0.1.1` to `v0.2.0` report `0.4.0` and only their pinned commit identifies the code used.
 - The template pins toolkit `0.5.0`.
 - Packaged style comments no longer name a vendor.
+- The code font is JetBrains Mono instead of Cascadia Code, and styles no longer fall back to fonts from the build environment.
 
 ### Fixed
 

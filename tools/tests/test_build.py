@@ -222,7 +222,8 @@ class RenderConfigTests(unittest.TestCase):
                 "docx/reference.docx": workspace / ".handbook-render/docx/reference.docx",
                 "html/handbook.css": workspace / ".handbook-render/html/handbook.css",
                 "fonts/selawik/selawk.ttf": workspace / ".handbook-render/fonts/selawik/selawk.ttf",
-                "fonts/cascadia-code/CascadiaCode-Regular.ttf": workspace / ".handbook-render/fonts/cascadia-code/CascadiaCode-Regular.ttf",
+                "fonts/jetbrains-mono/JetBrainsMono-Regular.ttf": workspace / ".handbook-render/fonts/jetbrains-mono/JetBrainsMono-Regular.ttf",
+                "fonts/liberation-sans/LiberationSans-Regular.ttf": workspace / ".handbook-render/fonts/liberation-sans/LiberationSans-Regular.ttf",
             }
             for path in resources.values():
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -244,11 +245,15 @@ class RenderConfigTests(unittest.TestCase):
             )
             self.assertEqual(
                 config["format"]["typst"]["monofont"],
-                "Cascadia Code",
+                "JetBrains Mono",
             )
             self.assertEqual(
                 config["format"]["typst"]["font-paths"],
-                [".handbook-render/fonts/selawik", ".handbook-render/fonts/cascadia-code"],
+                [
+                    ".handbook-render/fonts/selawik",
+                    ".handbook-render/fonts/jetbrains-mono",
+                    ".handbook-render/fonts/liberation-sans",
+                ],
             )
             self.assertEqual(
                 config["format"]["typst"]["include-before-body"],

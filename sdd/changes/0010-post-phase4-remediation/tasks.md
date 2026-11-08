@@ -1,11 +1,11 @@
 # Tasks — Post-Phase-4 remediation
 
-**Status:** Proposed
+**Status:** Approved
 
 | ID | Task | Status |
 | --- | --- | --- |
 | T1 | Protect `main` in the hub and the sample book | Done, 2026-11-08 |
-| T2 | Rights review and notices | Done; decisions open in `HUB-DEC-020` |
+| T2 | Rights review, replacement of resources in doubt and notices | Done on this branch |
 | T3 | Toolkit `0.5.0`, template pin | Done on this branch |
 | T4 | Status, plan, changelog and decision log | Done on this branch |
 | T5 | Independent review of the exact pull-request HEAD | Pending |

@@ -28,8 +28,8 @@
 // is not imported here. Quarto's book filter still emits `part` and
 // `appendices` calls, so compatible definitions are provided below.
 
-#set text(font: ("Selawik", "Liberation Sans", "DejaVu Sans"), size: 10pt, fill: rgb("#161616"), lang: "en")
-#show raw: set text(font: ("Cascadia Code", "DejaVu Sans Mono"))
+#set text(font: ("Selawik", "Liberation Sans"), size: 10pt, fill: rgb("#161616"), lang: "en")
+#show raw: set text(font: ("JetBrains Mono",))
 
 // A book part is an unnumbered, outlined level-1 heading.
 #let part(title) = heading(level: 1, numbering: none)[#title]
@@ -65,10 +65,10 @@ $endif$
 $if(lang)$
   lang: "$lang$",
 $endif$
-  font: ("Selawik", "Liberation Sans", "DejaVu Sans"),
+  font: ("Selawik", "Liberation Sans"),
   fontsize: 10pt,
-  heading-family: ("Selawik", "Liberation Sans", "DejaVu Sans"),
-  codefont: ("Cascadia Code", "DejaVu Sans Mono"),
+  heading-family: ("Selawik", "Liberation Sans"),
+  codefont: ("JetBrains Mono",),
   sectionnumbering: handbook-numbering,
   toc: false,
   doc,

@@ -1,6 +1,6 @@
 # Proposal — Post-Phase-4 remediation
 
-**Status:** Proposed
+**Status:** Approved
 **Change:** `0010-post-phase4-remediation`
 **Branch:** `fix/post-phase4-remediation`
 **Base:** `main` at `1635e69`
@@ -13,7 +13,7 @@ toolkit version `0.4.0` while its behavior changed.
 
 ## Scope
 
-- Record a third-party rights review and update the notices.
+- Record a third-party rights review, replace the resources in doubt and update the notices.
 - Remove vendor references from packaged style comments.
 - Release toolkit `0.5.0` and pin the template to it.
 - Bring `STATUS.md`, the plan and the changelog in line with the verified state.
@@ -23,7 +23,7 @@ toolkit version `0.4.0` while its behavior changed.
 
 - No book release and no catalog change.
 - No change to `solutions-architecture-handbook`.
-- No retroactive approval: `HUB-DEC-019` and `HUB-DEC-020` stay Proposed until the owner confirms them.
+- No change to published releases.
 - The sample-book pin moves to `0.5.0` in a later change, after this one lands on `main`.
 
 ## Integration constraint

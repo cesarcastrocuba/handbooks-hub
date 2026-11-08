@@ -615,8 +615,8 @@ Rules:
 | Approve pilot section | Gate 3c | **Approved** 2026-11-06 under delegation (`HUB-DEC-016`) |
 | Approve manuscript release candidate | Gate 3d | **Approved** 2026-11-06 under delegation (`HUB-DEC-017`) |
 | Authorize GitHub repositories and Pages | Before Phase 4 | **Approved** under delegation (`HUB-DEC-016`) |
-| Authorize publication and release | Gate 4 | **Approved** for `v0.1.0` (`HUB-DEC-017`); later releases pending (`HUB-DEC-019`) |
-| Accept bundled render resources | Rights review | Proposed (`HUB-DEC-020`) |
+| Authorize publication and release | Gate 4 | **Approved** for `v0.1.0` (`HUB-DEC-017`) and later releases (`HUB-DEC-019`) |
+| Bundled render resources | Rights review | **Approved**: replace those in doubt (`HUB-DEC-020`) |
 | Decide on migration | Gate 6 | Deferred (`HUB-DEC-012`) |
 
 ## 19. Definition of done for this milestone

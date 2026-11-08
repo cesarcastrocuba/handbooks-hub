@@ -29,8 +29,8 @@ rendered review before requesting approval.
 
 ## Example: toolkit 0.4.0 to 0.5.0
 
-`0.5.0` changes the rendered output: it adds the print-layout stage, bundled fonts, the HTML stylesheet
-and the DOCX reference document. It also lets the manuscript validator accept letter-prefixed appendix numbers such as `A.2`. It changes no command, descriptor field or profile rule. Update the
+`0.5.0` changes the rendered output: it adds the print-layout stage, bundled Selawik, JetBrains Mono and
+Liberation Sans fonts, the HTML stylesheet and a from-scratch DOCX reference document. It also lets the manuscript validator accept letter-prefixed appendix numbers such as `A.2`. It changes no command, descriptor field or profile rule. Update the
 `toolkit` value in `book.yaml` and the commit in `requirements.txt`, run the checks, and inspect a full
 build before release, because the published pages will differ. Builds made from hub commits between
 `988773c` and `5f96202` reported `0.4.0` although their rendering had already changed.

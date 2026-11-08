@@ -32,12 +32,14 @@ are reproducible. They are not covered by this repository's MIT or CC BY-SA lice
 | Resource | Version and upstream | License |
 | --- | --- | --- |
 | Selawik Regular, Semibold and Bold | 1.01, <https://github.com/microsoft/Selawik/releases/tag/1.01> | SIL Open Font License 1.1, `fonts/selawik/OFL.txt` |
-| Cascadia Code Regular, Italic and Bold | 2407.24, <https://github.com/microsoft/cascadia-code/releases/tag/v2407.24> | SIL Open Font License 1.1, `fonts/cascadia-code/OFL.txt` |
-| `docx/reference.docx` | Derived from the Pandoc default reference document | Under owner review, see `HUB-DEC-020` |
+| JetBrains Mono Regular, Bold and Italic | 2.304, <https://github.com/JetBrains/JetBrainsMono/releases/tag/v2.304> | SIL Open Font License 1.1, `fonts/jetbrains-mono/OFL.txt` |
+| Liberation Sans Regular, Bold, Italic and Bold Italic | 2.1.5, <https://github.com/liberationfonts/liberation-fonts/releases/tag/2.1.5> | SIL Open Font License 1.1, `fonts/liberation-sans/OFL.txt` |
 | `typst/typst-show.typ` | Portions adapted from the Quarto `typst-show` partial, © 2020-2024 Posit Software, PBC | MIT, notice kept in the file header |
 
-Selawik and Cascadia Code are © Microsoft Corporation, and the names are reserved font names and
-trademarks of their owner. The fonts are used unmodified as typography only and imply no endorsement.
+Selawik is © Microsoft Corporation and a trademark of its owner; JetBrains Mono is © The JetBrains Mono
+Project Authors; Liberation is © Google Corporation and Red Hat, Inc. The fonts are used unmodified, as
+typography only, and imply no endorsement. `docx/reference.docx` is written from scratch by
+`tools/scripts/generate_reference_docx.py` and contains no third-party template parts.
 The review, file hashes and open questions are in
 [`sdd/changes/0010-post-phase4-remediation/rights-review.md`](sdd/changes/0010-post-phase4-remediation/rights-review.md).
 

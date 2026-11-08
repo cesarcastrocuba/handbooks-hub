@@ -28,11 +28,7 @@ copying this template does not copy hub source code into the book.
 
 ## Fonts in published editions
 
-The toolkit renders PDF editions with the bundled Selawik and Cascadia Code fonts, distributed under
-the SIL Open Font License 1.1 and embedded as subsets. The font license does not extend to the
-document that uses them. If a book distributes the font files themselves, it must include the license
-files shipped with the toolkit.
-
-The toolkit styles also request Liberation Sans, with DejaVu fallbacks. These are not bundled and come
-from the build environment, so review them for your own book. The hub's open questions on these fonts
-and on Cascadia Code's embedded license text are tracked in its `HUB-DEC-020`.
+The toolkit renders PDF editions with the bundled Selawik, JetBrains Mono and Liberation Sans fonts,
+distributed under the SIL Open Font License 1.1 and embedded as subsets. The font license does not
+extend to the document that uses them. If a book distributes the font files themselves, it must
+include the license files shipped with the toolkit.
