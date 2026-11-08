@@ -41,6 +41,9 @@ run, say so in the change record; do not claim it passed.
 - Reviewers post `APPROVE` or `CHANGES_REQUESTED` with findings classified Critical, Major, Minor or
   Optional. The reviewer must differ from the implementer.
 - The owner merges after review. Do not merge your own pull request.
+- `main` is protected (`HUB-DEC-018`): every change arrives through a pull request with passing CI,
+  and direct pushes are rejected, including for administrators.
+- Use a merge commit when a pinned commit lives on the branch; squashing would orphan the pin.
 
 ## Changing shared contracts
 
