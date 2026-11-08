@@ -1,6 +1,6 @@
 # Tasks — Post-Phase-4 remediation
 
-**Status:** Approved
+**Status:** Proposed
 
 | ID | Task | Status |
 | --- | --- | --- |

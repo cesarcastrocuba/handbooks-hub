@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Generate the packaged DOCX reference document from the style table below.
 
-The document is written from scratch so that it carries no third-party template
-parts. Pandoc reads its styles and page setup when building the DOCX edition.
+This replaces the former document derived from the Pandoc default, so no Pandoc
+template part is copied. The style identifiers are the ones Pandoc looks up by
+name, and a few spacing values match its defaults. Pandoc reads these styles and
+the page setup when building the DOCX edition.
 
 Usage: python3 tools/scripts/generate_reference_docx.py [output.docx]
 """

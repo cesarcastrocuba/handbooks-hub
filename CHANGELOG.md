@@ -11,7 +11,7 @@ semantic versioning once the toolkit is published.
 
 - Print-layout stage for Typst builds, the packaged HTML stylesheet and the DOCX reference document.
 - Bundled Selawik, JetBrains Mono and Liberation Sans fonts with their license files. See `NOTICE.md`.
-- `tools/scripts/generate_reference_docx.py`, which writes the DOCX reference document from scratch.
+- `tools/scripts/generate_reference_docx.py`, which generates the DOCX reference document without any Pandoc template part.
 
 ### Changed
 

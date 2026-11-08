@@ -1,6 +1,6 @@
 # Proposal — Post-Phase-4 remediation
 
-**Status:** Approved
+**Status:** Proposed
 **Change:** `0010-post-phase4-remediation`
 **Branch:** `fix/post-phase4-remediation`
 **Base:** `main` at `1635e69`

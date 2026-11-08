@@ -1,4 +1,4 @@
-"""The packaged DOCX reference must match its from-scratch generator."""
+"""The packaged DOCX reference must match its generator."""
 from __future__ import annotations
 
 import importlib.util
