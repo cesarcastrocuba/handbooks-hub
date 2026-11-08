@@ -34,6 +34,7 @@ are reproducible. They are not covered by this repository's MIT or CC BY-SA lice
 | Selawik Regular, Semibold and Bold | 1.01, <https://github.com/microsoft/Selawik/releases/tag/1.01> | SIL Open Font License 1.1, `fonts/selawik/OFL.txt` |
 | Cascadia Code Regular, Italic and Bold | 2407.24, <https://github.com/microsoft/cascadia-code/releases/tag/v2407.24> | SIL Open Font License 1.1, `fonts/cascadia-code/OFL.txt` |
 | `docx/reference.docx` | Derived from the Pandoc default reference document | Under owner review, see `HUB-DEC-020` |
+| `typst/typst-show.typ` | Portions adapted from the Quarto `typst-show` partial, © 2020-2024 Posit Software, PBC | MIT, notice kept in the file header |
 
 Selawik and Cascadia Code are © Microsoft Corporation, and the names are reserved font names and
 trademarks of their owner. The fonts are used unmodified as typography only and imply no endorsement.
