@@ -1,0 +1,168 @@
+name: clean-clone
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * 1"
+  pull_request:
+    paths:
+      - .github/workflows/clean-clone.yml
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    # An explicit shell makes GitHub add `-eo pipefail`, so a piped `tee` cannot hide a failure.
+    shell: bash
+
+env:
+  QUARTO_VERSION: "1.11.9"
+  BOOK_REPOSITORY: cesarcastrocuba/handbook-sample-01
+  BOOK_REF: main
+
+jobs:
+  clean-clone:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      # Each environment reports independently; one failing leg must not cancel the other.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    env:
+      # This job never uses actions/checkout: the sources come from anonymous `git clone`.
+      HUB_REPOSITORY: ${{ github.repository }}
+      HUB_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Choose paths outside any checkout
+        run: |
+          {
+            echo "HUB_DIR=$RUNNER_TEMP/clean-hub"
+            echo "BOOK_DIR=$RUNNER_TEMP/clean-book"
+            echo "BOOK_VENV=$RUNNER_TEMP/clean-book-venv"
+            echo "LOG_DIR=$RUNNER_TEMP/clean-clone-logs"
+          } >> "$GITHUB_ENV"
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - uses: quarto-dev/quarto-actions/setup@8a96df13519ee81fd526f2dfca5962811136661b # v2.2.0
+        with:
+          version: ${{ env.QUARTO_VERSION }}
+      - name: Install pdfinfo and pdftotext (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends poppler-utils
+      - name: Install pdfinfo and pdftotext (macOS)
+        if: runner.os == 'macOS'
+        run: brew install poppler
+      - name: Record the environment
+        run: |
+          mkdir -p "$LOG_DIR"
+          uname -a
+          python3 --version
+          git --version
+          make --version | head -n 1
+          test "$(quarto --version)" = "$QUARTO_VERSION"
+          quarto --version
+          command -v pdfinfo pdftotext
+          pdfinfo -v 2>&1 | head -n 1 || true
+
+      - name: "Hub: clone the commit under test"
+        run: |
+          git clone "https://github.com/$HUB_REPOSITORY.git" "$HUB_DIR"
+          cd "$HUB_DIR"
+          git fetch origin "$HUB_COMMIT"
+          git checkout --detach "$HUB_COMMIT"
+          git rev-parse HEAD
+          test -z "$(git status --porcelain)"
+      - name: "Hub: create a clean environment in the clone"
+        working-directory: ${{ env.HUB_DIR }}
+        run: |
+          python3 -m venv .venv
+          . .venv/bin/activate
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements-dev.txt
+      - name: "Hub: make check"
+        working-directory: ${{ env.HUB_DIR }}
+        run: |
+          . .venv/bin/activate
+          make check 2>&1 | tee "$LOG_DIR/hub-check.log"
+      - name: "Hub: make full"
+        working-directory: ${{ env.HUB_DIR }}
+        run: |
+          . .venv/bin/activate
+          make full 2>&1 | tee "$LOG_DIR/hub-full.log"
+      - name: "Hub: no test may be skipped"
+        run: |
+          for log in hub-check hub-full; do
+            grep -E '^Ran [0-9]+ tests|^OK|^FAILED' "$LOG_DIR/$log.log"
+            if grep -E ' \.\.\. skipped|^OK \(.*skipped=' "$LOG_DIR/$log.log"; then
+              echo "::error::$log reported skipped tests"
+              exit 1
+            fi
+          done
+          echo "No hub test was skipped."
+
+      # The book steps run even when a hub step failed, so that one defect cannot hide another.
+      - name: "Book: remove the hub clone"
+        if: ${{ !cancelled() }}
+        run: |
+          rm -rf "$HUB_DIR"
+          test ! -e "$HUB_DIR"
+      - name: "Book: clone the public sample book"
+        if: ${{ !cancelled() }}
+        run: |
+          git clone --branch "$BOOK_REF" "https://github.com/$BOOK_REPOSITORY.git" "$BOOK_DIR"
+          git -C "$BOOK_DIR" rev-parse HEAD
+      - name: "Book: install the pinned requirements in a clean environment"
+        if: ${{ !cancelled() }}
+        working-directory: ${{ env.BOOK_DIR }}
+        run: |
+          python3 -m venv "$BOOK_VENV"
+          . "$BOOK_VENV/bin/activate"
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements.txt
+          handbook-toolkit version
+          python3 -m pip freeze | grep -i '^handbook-toolkit'
+      - name: "Book: the toolkit comes from the environment, not a checkout"
+        if: ${{ !cancelled() }}
+        working-directory: ${{ env.BOOK_DIR }}
+        run: |
+          . "$BOOK_VENV/bin/activate"
+          test -z "${PYTHONPATH:-}"
+          python3 - <<'PY'
+          import os
+          import pathlib
+
+          import handbook_toolkit
+
+          venv = pathlib.Path(os.environ["BOOK_VENV"]).resolve()
+          location = pathlib.Path(handbook_toolkit.__file__).resolve()
+          print(location)
+          assert venv in location.parents, location
+          assert "site-packages" in location.parts, location
+          PY
+      - name: "Book: make full"
+        if: ${{ !cancelled() }}
+        working-directory: ${{ env.BOOK_DIR }}
+        run: |
+          . "$BOOK_VENV/bin/activate"
+          make full 2>&1 | tee "$LOG_DIR/book-full.log"
+      - name: Summarize test counts and skips
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo "### ${{ matrix.os }}"
+            for log in hub-check hub-full book-full; do
+              if [ -f "$LOG_DIR/$log.log" ]; then
+                counts="$(grep -E '^Ran [0-9]+ tests|^OK|^FAILED' "$LOG_DIR/$log.log" | tr '\n' ' ')"
+                skipped="$(grep -cE ' \.\.\. skipped' "$LOG_DIR/$log.log" || true)"
+                echo "- $log: ${counts:-no test summary}; verbose skip lines: $skipped"
+              else
+                echo "- $log: not run"
+              fi
+            done
+          } | tee -a "$GITHUB_STEP_SUMMARY"
