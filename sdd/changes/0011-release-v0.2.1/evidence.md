@@ -7,7 +7,7 @@
 - "1. actualiza el catálogo con lo nuevo y retira lo antiguo 2. solutions no toques, luego al migrar verémos estos trmas"
 - Merges, answering a question that named the exception to `AGENTS.md`: "Delegar en Claude".
 - Withdrawal, answering a question that warned deletion is irreversible: "Borrar releases, conservar tags".
-- "sobre la integración autorizo 1 y 2"
+- "sobre la integración autorizo 1 y 2", sent with those two answers: 1 is the delegated merges and 2 is the withdrawal.
 
 ## Sequence
 
