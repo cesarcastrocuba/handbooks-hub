@@ -163,5 +163,5 @@ jobs:
           cd "$book"
           "$RUNNER_TEMP/toolkit-venv/bin/handbook-toolkit" --root . validate-book --full
 
-# The artifact build and portal checks are added in Phase 4. The wheel-install job checks the
-# installed-package boundary now; it is not a publication or release step.
+# The wheel-install job checks the installed-package boundary; it is not a publication or release
+# step.

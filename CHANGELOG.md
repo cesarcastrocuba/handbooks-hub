@@ -23,6 +23,7 @@ semantic versioning once the toolkit is published.
 ### Fixed
 
 - Typst heading, table-of-contents and print layout, and packaging of the render resources in the wheel.
+- The manuscript validator accepts letter-prefixed appendix numbers such as `A.2`.
 
 ## [0.4.0] and earlier
 

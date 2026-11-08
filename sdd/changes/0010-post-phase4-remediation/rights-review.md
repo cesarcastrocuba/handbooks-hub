@@ -12,8 +12,10 @@ what the `v0.2.0` sample release carries from them. This is an engineering recor
 | R1 | Selawik 1.01 | The three TTF files are byte-identical to `Selawik_Release.zip` on upstream release `1.01`. `OFL.txt` is byte-identical to upstream `LICENSE.txt`. | No open question. |
 | R2 | Cascadia Code 2407.24 | The three TTF files are byte-identical to `ttf/static/` in upstream `CascadiaCode-2407.24.zip`. `OFL.txt` matches upstream `LICENSE` apart from line endings. | **Open.** See below. |
 | R3 | `docx/reference.docx` | 14 of its 16 package parts are byte-identical to the default of Pandoc 3.10; only `word/document.xml` and `word/styles.xml` differ. | **Open.** See below. |
-| R4 | `html/handbook.css` | Byte-identical to `publishing/styles/handbook.css` in the reference handbook, same author. | No open question; recorded in `NOTICE.md`. |
-| R5 | `v0.2.0` sample artifacts | `pdffonts` shows embedded subsets of Selawik, Cascadia Code and Liberation Sans. `book-html.zip` carries Quarto's `bootstrap-icons.woff`. | Selawik and Cascadia are covered by OFL section 5 for documents. **Liberation Sans is open:** it is not bundled, so it came from the build environment, and its license was not reviewed. |
+| R4 | `html/handbook.css` | Imported byte-identical from `publishing/styles/handbook.css` in the reference handbook, same author. This change edits only its first comment line. | No open question; recorded in `NOTICE.md`. |
+| R6 | `typst/handbook-typst.typ` | Adapted from `publishing/styles/handbook-typst.typ` in the reference handbook, same author; the files differ. | No open question; recorded in `NOTICE.md`. |
+| R7 | `typst/typst-show.typ` | Not in the reference handbook. 54 lines against 109 in Quarto's default partial of the same name, and its own comment describes it as a replacement layout. Origin taken from the commit `5f96202`; no third-party source was identified. | No open question. |
+| R5 | `v0.2.0` sample artifacts | `pdffonts` shows embedded subsets of Selawik, Cascadia Code and Liberation Sans. `book-html.zip` carries Quarto's `bootstrap-icons.woff`. | Selawik and Cascadia are covered by OFL section 5 for documents. **Liberation Sans is open:** `handbook-typst.typ` and `typst-show.typ` request it, it is not bundled, so it came from the build environment, and its license was not reviewed. |
 
 ## Open questions for the owner
 

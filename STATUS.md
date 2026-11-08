@@ -21,7 +21,7 @@ Changes reach `main` only through pull requests (`HUB-DEC-018`).
 | CI | Green on hub and sample `main` at the last runs |
 | Standard profile | `1.0.0`, **Approved** 2026-11-06; `0.2.0` remains resolvable |
 | Licensing | CC BY-SA 4.0 content, MIT code. Bundled third-party render resources are under review (`HUB-DEC-020`) |
-| Catalog | 1 approved release: `handbook-authoring-and-publishing` `v0.2.0` |
+| Catalog | 1 book, listing `v0.2.0`. `v0.1.0` was approved under `HUB-DEC-017`; ratification of `v0.2.0` is pending (`HUB-DEC-019`) |
 | Publication | Reading site live at https://cesarcastrocuba.github.io/handbook-sample-01/ |
 | Portal | Live at https://cesarcastrocuba.github.io/handbooks-hub/ |
 | Migration of existing handbook | Deferred; separate owner decision (`HUB-DEC-012`) |
