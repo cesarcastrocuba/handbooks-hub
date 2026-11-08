@@ -115,7 +115,7 @@ class TemplateTests(unittest.TestCase):
 
     def test_template_pins_are_exact_and_current(self) -> None:
         descriptor = (TEMPLATE / "book.yaml").read_text(encoding="utf-8")
-        self.assertIn('toolkit: "0.4.0"', descriptor)
+        self.assertIn('toolkit: "0.5.0"', descriptor)
         self.assertIn('version: "1.0.0"', descriptor)
         for name in ("LICENSE", "LICENSE-CODE", "NOTICE.md", "Makefile", "publishing/_quarto.yml"):
             self.assertTrue((TEMPLATE / name).is_file(), name)

@@ -26,7 +26,7 @@ class CliTests(unittest.TestCase):
     def test_version(self) -> None:
         code, stdout, _ = self.run_cli("version")
         self.assertEqual(code, 0)
-        self.assertIn("handbook-toolkit 0.4.0", stdout)
+        self.assertIn("handbook-toolkit 0.5.0", stdout)
 
     def test_verify_fast(self) -> None:
         code, stdout, stderr = self.run_cli("--root", str(support.REPO_ROOT), "verify")

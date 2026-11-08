@@ -5,6 +5,27 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-08
+
+### Added
+
+- Print-layout stage for Typst builds, the packaged HTML stylesheet and the DOCX reference document.
+- Bundled Selawik and Cascadia Code fonts with their license files. See `NOTICE.md`.
+
+### Changed
+
+- Toolkit `0.5.0` names the rendering changes integrated after `0.4.0`. Hub commits from `988773c` to
+  `5f96202` carried those changes while still reporting `0.4.0`, so manifests of sample releases
+  `v0.1.1` to `v0.2.0` report `0.4.0` and only their pinned commit identifies the code used.
+- The template pins toolkit `0.5.0`.
+- Packaged style comments no longer name a vendor.
+
+### Fixed
+
+- Typst heading, table-of-contents and print layout, and packaging of the render resources in the wheel.
+
+## [0.4.0] and earlier
+
 ### Added
 
 - Hub onboarding guide at `docs/setup.md` and a README quickstart covering reader/contributor/

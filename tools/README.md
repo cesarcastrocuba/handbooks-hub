@@ -40,7 +40,7 @@ local directory; a book does not need a hub checkout or a vendored `schemas/` co
 
 ## Current scope
 
-Version `0.4.0` validates:
+Version `0.5.0` validates:
 
 - catalog schema, unique ids/slugs, exact tag/version agreement, immutable release URLs and real dates;
 - profile schema, unique element ids, closing-order consistency, label style and figure/table

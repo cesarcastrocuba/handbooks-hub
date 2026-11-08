@@ -27,6 +27,14 @@ profile version change may require manuscript edits. When the changelog marks a 
 incompatible, upgrade in a dedicated branch, update the affected manuscript units, and record a
 rendered review before requesting approval.
 
+## Example: toolkit 0.4.0 to 0.5.0
+
+`0.5.0` changes the rendered output: it adds the print-layout stage, bundled fonts, the HTML stylesheet
+and the DOCX reference document. It changes no command, descriptor field or profile rule. Update the
+`toolkit` value in `book.yaml` and the commit in `requirements.txt`, run the checks, and inspect a full
+build before release, because the published pages will differ. Builds made from hub commits between
+`521d4b6` and `5f96202` reported `0.4.0` although their rendering had already changed.
+
 ## Example: toolkit 0.3.0 to 0.4.0 and profile 0.2.0 to 1.0.0
 
 `0.4.0` adds the public `build-book` assembly path, `validate-references` and the packaged render

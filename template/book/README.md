@@ -4,7 +4,7 @@ A starting point for an independent handbook repository. Copy this directory int
 then replace the identifiers and content. The copy is owned by the book; the hub does not update it
 in place.
 
-The template pins toolkit `0.4.0` and standard profile `1.0.0`. It contains no copied toolkit source
+The template pins toolkit `0.5.0` and standard profile `1.0.0`. It contains no copied toolkit source
 and never imports a parent hub checkout.
 
 ## What is included
