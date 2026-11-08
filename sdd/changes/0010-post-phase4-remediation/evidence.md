@@ -1,6 +1,6 @@
 # Evidence — Post-Phase-4 remediation
 
-**Base:** `1635e69`. **Toolkit commit pinned by the template:** `f9406db9437af583c29c768c70e3ec696dd9f238`.
+**Base:** `1635e69`. **Toolkit commit pinned by the template:** `5455d6ee476558ca5f42d9ef2ea2b392cad6c8b2`.
 
 ## Commands run on 2026-11-08
 
@@ -30,8 +30,8 @@ favor, no quiero tener problemas legales". Points 1 to 3 answer `HUB-DEC-019`, t
 
 A separate agent reviewed `c0dea57` and requested changes: 2 Major and 6 Minor findings. All were
 addressed in the next commit. A second review of `5a5b6a9` approved the hub with 3 Minor findings,
-all addressed afterwards. A third review approved `d58db4d` and the sample book at `87f4341`. The
-resource replacement that followed needs its own review.
+all addressed afterwards. A third review approved `d58db4d` and the sample book at `87f4341`. A fourth
+review of `23fc088` confirmed the replacement and requested wording changes, addressed afterwards.
 
 ## Branch protection
 
