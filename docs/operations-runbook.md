@@ -338,7 +338,7 @@ Use during planned remediation when a verified clean replacement is available:
      - **Verification [Reviewer]**: Re-run `catalog_verification` to ensure live reading assets match
        the released `html.zip` byte-for-byte.
   2. *Persistent outage or corrupted build*:
-     - If the site cannot be restored within 1 hour (proposed runbook policy pending Owner acceptance):
+     - If the site cannot be restored within 1 hour (Owner-accepted runbook policy, HUB-DEC-023):
      - **Action [Implementer & Owner]**: Execute **Order A withdrawal** to remove the book entry from
        `catalog/catalog.json` via PR so portal users do not encounter broken links.
      - Once fixed in the book repository, submit a PR to restore the catalog entry.
@@ -363,7 +363,7 @@ Use during planned remediation when a verified clean replacement is available:
 - **Remediation Sequence**:
   1. **Authorize response [Owner]**: Owner decides between immediate delisting (Order A) or fast
      replacement cutover (Order B).
-  2. **Delist / withdraw [Implementer]**: If no replacement is ready within 30 minutes (proposed runbook policy pending Owner acceptance), withdraw the
+  2. **Delist / withdraw [Implementer]**: If no replacement is ready within 30 minutes (Owner-accepted runbook policy, HUB-DEC-023), withdraw the
      catalog entry via PR (Order A).
   3. **Build clean release [Implementer]**:
      - Check out the approved source commit.
