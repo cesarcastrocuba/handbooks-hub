@@ -13,12 +13,12 @@
       ],
       "status": "published",
       "latest_release": {
-        "version": "0.2.1",
-        "tag": "v0.2.1",
-        "url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/tag/v0.2.1",
-        "published_at": "2026-11-08",
-        "manifest_url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.1/publication-manifest.json",
-        "checksums_url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.1/SHA256SUMS.txt"
+        "version": "0.2.2",
+        "tag": "v0.2.2",
+        "url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/tag/v0.2.2",
+        "published_at": "2026-11-09",
+        "manifest_url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.2/publication-manifest.json",
+        "checksums_url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.2/SHA256SUMS.txt"
       }
     }
   ]
