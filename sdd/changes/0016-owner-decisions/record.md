@@ -11,8 +11,8 @@ On 2026-11-09 the Owner asked for three improvements after the `v0.2.2` release,
    noted it against the tool-neutral roles in `AGENTS.md` (`HUB-DEC-025`).
 3. Decide whether `main` requires branches to be up to date before merge (`HUB-DEC-026`).
 
-The Owner delegated items 2 and 3 to the coordinator's recommendation. Merging this change confirms
-them.
+The Owner delegated items 2 and 3 to the coordinator and asked for them to be settled and completed
+the same night. They are recorded as approved under that delegation; the Owner also merges this change.
 
 ## Alternatives considered
 
@@ -24,8 +24,10 @@ them.
 
 ## Consequences
 
-- The workflow change for `HUB-DEC-024` is change `0015`. Manual dispatch remains the fallback.
-- Reviewers stop reporting the trailer as a finding. The sample book keeps its ban (`CONTRIBUTING.md`).
+- The workflow change for `HUB-DEC-024` is change `0015` (hub PR 11), merged after this record. Until
+  it merges, the portal deploys only by manual dispatch, which remains the fallback afterwards.
+- Reviewers stop reporting the trailer as a finding. The sample book keeps the ban in its own
+  [`CONTRIBUTING.md`](https://github.com/cesarcastrocuba/handbook-sample-01/blob/main/CONTRIBUTING.md).
 - After merge, branch protection in both repositories is switched to `strict=true`, and the result
   is recorded below.
 
