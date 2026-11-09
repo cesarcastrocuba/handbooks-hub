@@ -55,9 +55,9 @@ The hub leg uses `HUB_COMMIT`, which is the pull-request head for a workflow-cha
 
 ## Recorded evidence
 
-Run: <https://github.com/cesarcastrocuba/handbooks-hub/actions/runs/42535908581>
+Branch-head run: <https://github.com/cesarcastrocuba/handbooks-hub/actions/runs/42535908581>
 
-Tested commit: `b030e214981c8e89f27f4e829eab9127896de67f`, the workflow branch head.
+Branch-head commit: `b030e214981c8e89f27f4e829eab9127896de67f`.
 
 | Environment | Result | Hub | Sample book |
 | --- | --- | --- | --- |
@@ -69,6 +69,10 @@ run. The macOS leg first failed because the sample book's Makefile used a GNU-on
 invocation; sample pull request 3 fixed it. That is the kind of cross-platform defect this matrix
 exists to find.
 
+Post-merge run: <https://github.com/cesarcastrocuba/handbooks-hub/actions/runs/42612951277>, at
+`main` commit `ad1f5b89f03a28cd4921a1e7adb6c9b40720253e`. It succeeded on `ubuntu-24.04` and
+`macos-15`, which records the matrix on `main` after the Phase 5 merge.
+
 ## Limits
 
 - **No artifact build runs here.** The hub `make full` and the sample book `make full` are validation
@@ -77,5 +81,5 @@ exists to find.
 - **Windows is not covered.** The matrix has only `ubuntu-24.04` and `macos-15`.
 - **GitHub-hosted runners are not physical workstations.** The result does not cover local
   developer machines, hardware, or network conditions outside the hosted runners.
-- **The commit tested is the workflow branch head**, not a post-merge `main` commit. A clean-clone
-  run on `main` after merge is still to be recorded.
+- **A run proves only the commit it tested.** The post-merge run proves `main` at
+  `ad1f5b89f03a28cd4921a1e7adb6c9b40720253e`; any later `main` commit needs its own run.

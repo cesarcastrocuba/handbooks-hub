@@ -5,6 +5,18 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+### Added
+
+- Catalog update automation: the `catalog-update` workflow validates a published release, updates an
+  existing catalog entry, verifies the result and leaves a branch for review. It is manual-dispatch
+  only and defaults to a dry run.
+- Thin Claude Code and GitHub Copilot adapters, the adapter contract and a drift check that rejects
+  missing, drifting or over-long adapters.
+- Linux and macOS clean-clone matrix for the hub and the public sample book, with a post-merge run on
+  `main` at `ad1f5b8`.
+- Operations runbook covering toolkit/profile upgrade, rollback, release withdrawal and incident
+  response.
+
 ## [0.5.0] - 2026-11-08
 
 ### Added

@@ -1,15 +1,14 @@
 # Implementation plan — reusable handbook platform
 
-**Status:** Phases 1 to 4 complete; Phases 5 and 6 not started. Current status lives in `STATUS.md`.
+**Status:** Current status lives in `STATUS.md`.
 **Version:** 0.1.0
 **Date:** 2026-11-06
 **Scope of this milestone:** local hub repository only. The sample book repository, GitHub
 repositories, Pages, releases and migration are explicitly out of scope. The sample repository was
 scaffolded concurrently by a separate session; this session only reads and records that fact.
 
-> **Current state (2026-11-08):** Phases 1 to 4 are complete and the sample book is published at
-> `v0.2.0`. Sections 2, 3, 8 to 11 and 19 describe the plan as it was carried out and are kept as
-> history. Current status lives in [`STATUS.md`](../STATUS.md); section 20 lists the next actions.
+> Sections 2, 3, 8 to 12 and 19 describe the plan as it was carried out and are kept as history.
+> Current status lives in [`STATUS.md`](../STATUS.md); section 20 lists the next actions.
 
 This plan turns `IMPLEMENTATION-HANDOFF.md` and the Engram handoff summary #6795 into reviewable work.
 It records what was inspected, the contracts the platform must honour, the phase sequence, the work
