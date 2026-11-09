@@ -139,7 +139,7 @@ disruption or requires external defect triggers.
      - Case A (Transient Pages pipeline failure): Re-trigger the deployment action from tag `v0.2.1`.
      - Case B (Persistent failure or corruption): Notify Owner that reading site is down.
   3. *Mitigation [Implementer & Owner]*:
-     - If the site cannot be restored within 1 hour (proposed runbook policy pending Owner acceptance), execute Order A withdrawal in the hub:
+     - If the site cannot be restored within 1 hour (Owner-accepted runbook policy, HUB-DEC-023), execute Order A withdrawal in the hub:
        - Implementer branches `fix/delist-broken-reading-site`.
        - Updates `catalog/catalog.json` to delete the book entry (setting `"status": "archived"` is not used for withdrawal because `portal.py` continues to render reading and download links, which would 404 once assets are deleted; `"status": "archived"` is acceptable only if assets remain live).
        - Reviewer verifies `make full`. Owner merges PR.
