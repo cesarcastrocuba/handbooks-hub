@@ -55,7 +55,7 @@ the hub and book repositories.
      - `e0917f6`: Recorded successful `catalog_verification` evidence.
      - `552c952`: Documented `HUB-DEC-021` in `docs/decisions.md`.
   4. Portal redeployed from the updated catalog pointing to `v0.2.1`.
-  5. The release pages and binary assets of `v0.1.0`, `v0.1.1`, `v0.1.2`, and `v0.2.0` were deleted
+  5. The release pages and binary assets of `v0.1.0`, `v0.1.1`, `v0.1.2`, and `v0.2.0` (`book-html.zip`, `book.pdf`, `book.docx`, `book-source.zip`, `publication-manifest.json`, and `SHA256SUMS.txt`) were deleted
      from GitHub Releases, while their Git tags were preserved in the repository.
   - Evidence recorded in [`sdd/changes/0011-release-v0.2.1/evidence.md`](../0011-release-v0.2.1/evidence.md).
 
@@ -139,9 +139,9 @@ disruption or requires external defect triggers.
      - Case A (Transient Pages pipeline failure): Re-trigger the deployment action from tag `v0.2.1`.
      - Case B (Persistent failure or corruption): Notify Owner that reading site is down.
   3. *Mitigation [Implementer & Owner]*:
-     - If the site cannot be restored within 1 hour, execute Order A withdrawal in the hub:
+     - If the site cannot be restored within 1 hour (proposed runbook policy pending Owner acceptance), execute Order A withdrawal in the hub:
        - Implementer branches `fix/delist-broken-reading-site`.
-       - Updates `catalog/catalog.json` to remove the book entry or set `"status": "archived"`.
+       - Updates `catalog/catalog.json` to delete the book entry (setting `"status": "archived"` is not used for withdrawal because `portal.py` continues to render reading and download links, which would 404 once assets are deleted; `"status": "archived"` is acceptable only if assets remain live).
        - Reviewer verifies `make full`. Owner merges PR.
        - Portal redeploys, preventing reader traffic from reaching dead reading links.
   4. *Recovery [Implementer, Reviewer, Owner]*:
@@ -162,7 +162,7 @@ disruption or requires external defect triggers.
      - Download assets into a fresh temporary directory:
        ```bash
        curl -sLO https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.1/SHA256SUMS.txt
-       curl -sLO https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.1/handbook-authoring-and-publishing.pdf
+       curl -sLO https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.1/book.pdf
        sha256sum -c SHA256SUMS.txt
        ```
      - Confirm failure.
@@ -174,8 +174,8 @@ disruption or requires external defect triggers.
   3. *Remediation [Implementer]*:
      - In the book repository, check out commit `0549762699a95764467ee75cba28d8a791480394`.
      - Identify root cause (e.g., incomplete upload transfer during release action).
-     - Run `handbook-toolkit book build .` in clean environment.
-     - Verify all 6 assets with `handbook-toolkit artifacts verify dist/`.
+     - Run `handbook-toolkit build-book --repo . --commit 0549762699a95764467ee75cba28d8a791480394 --output ../dist --mode chapter` in clean environment.
+     - Verify all 6 assets with the publication verification entry point: `python3 -c "from pathlib import Path; from handbook_toolkit.publication import verify_publication; res = verify_publication(Path('../dist')); print(res); exit(0 if res.ok else 1)"` (automatically verified by `build-book`).
      - Tag a new patch release: `v0.2.2`.
   4. *Restoration [Implementer, Reviewer, Owner]*:
      - Trigger publication workflow on `main` for `v0.2.2`.
@@ -200,7 +200,7 @@ disruption or requires external defect triggers.
   3. *Authoring clean release [Implementer]*:
      - In book repository, branch `fix/licensing-attribution`.
      - Add required attribution to `NOTICE.md` and chapter figure metadata.
-     - Run `make full` and `make build`.
+     - Run `make check` and `make full` (which executes the local artifact build; or `rm -rf ../dist && make build`).
      - Merge to `main` via reviewed PR.
      - Publish release `v0.2.2`.
   4. *Cutover [Implementer & Reviewer]*:
@@ -224,7 +224,7 @@ disruption or requires external defect triggers.
      - Runs `make check`. Validator flags missing summary units across chapters.
      - Authors required chapter summaries to conform to profile `2.0.0`.
   2. *Build & Inspection [Implementer & Reviewer]*:
-     - Runs `make full` and `make build`.
+     - Runs `make check` and `make full` (which executes the local build in books using the template Makefile).
      - Inspects PDF layout and DOCX output for styling consistency.
      - Submits PR with rendered evidence.
      - Reviewer reproduces full build in isolated clean clone and confirms profile compliance.

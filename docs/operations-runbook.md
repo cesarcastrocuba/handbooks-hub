@@ -15,10 +15,11 @@ Every procedure defines who acts and who decides using three distinct roles:
 - **Owner**: Approves editorial gates, licenses, profile changes, releases, and operational
   exceptions. Authorizes pull requests and merges to `main`.
 - **Implementer**: Prepares a scoped change in a dedicated branch, runs local verification checks,
-  and records command evidence. Never reviews or merges their own work.
-- **Reviewer**: A different person or agent. Re-runs verification checks independently on the exact
-  commit or pull-request HEAD, validates evidence, and posts structured review findings. Never
-  merges their own review without Owner delegation.
+  and records command evidence. An implementer must never review or merge their own work.
+- **Reviewer**: A different person or agent. Reviews the exact commit or pull-request HEAD,
+  re-runs verification checks independently, validates evidence, and posts structured review findings.
+  A reviewer may propose a fix but must not silently rewrite the change under review, and never
+  reviews or merges their own work. Merges require explicit Owner approval.
 
 ### Protected `main` branch
 
@@ -35,8 +36,8 @@ Under `HUB-DEC-018`, the `main` branch in both the hub and book repositories is 
 Operations distinguish between two verification gates:
 
 1. **Offline verification (`make check`, `make full`)**:
-   - Executes local unit tests, JSON schema validation, profile checks, descriptor checks, and
-     documentation link resolution.
+   - `make check` executes local unit tests, JSON schema validation, profile checks, and descriptor checks.
+   - `make full` runs all fast checks plus full repository validation; only `make full` resolves and verifies documentation links and template completeness.
    - Requires no network access.
    - **Limitation**: Offline checks validate only syntax, local files, and schema structures. They
      do **not** verify whether external URLs, release tags, download assets, or live Pages sites
@@ -112,8 +113,8 @@ reviewed changes; nothing upgrades automatically.
    ```bash
    make check
    make full
-   make build
    ```
+   *(Note: In books using `template/book/Makefile`, `make full` already invokes `make build` targeting `../dist`. If re-running a build independently, remove the existing output directory first: `rm -rf ../dist && make build`, as `build_book` refuses to overwrite an existing directory.)*
 
 7. **Inspect rendered outputs [Implementer]**:
    Examine generated HTML, PDF, and DOCX files in the staging directory. Verify font rendering
@@ -125,8 +126,9 @@ reviewed changes; nothing upgrades automatically.
    pins, and verification results in the PR description.
 
 9. **Independent review [Reviewer]**:
-   Check out the pull-request branch in an isolated clone. Run `make check`, `make full`, and
-   `make build`. Confirm artifacts meet profile standards. Approve the PR with recorded findings.
+   Check out the pull-request branch in an isolated clone. Run `make check` and `make full`
+   (which executes the local build). Confirm artifacts meet profile standards. Approve the PR with
+   recorded findings.
 
 10. **Authorize and merge [Owner]**:
     Owner verifies that any profile change is intentional, confirms green CI, and merges the pull
@@ -193,20 +195,24 @@ Reverting a catalog entry to a previous release requires extreme caution due to 
 
 #### Case 1: Prior release assets remain published and live
 
-1. **Create branch and revert commit [Implementer]**:
+1. **Authorize catalog rollback [Owner]**:
+   Owner confirms that the prior release assets, manifests, and reading site remain published and live,
+   and explicitly authorizes reverting the catalog entry to the prior release.
+
+2. **Create branch and revert commit [Implementer]**:
    ```bash
    git switch -c fix/revert-catalog-<book-slug>
    git revert <catalog-update-commit> --no-edit
    ```
 
-2. **Execute offline and online verification [Implementer]**:
+3. **Execute offline and online verification [Implementer]**:
    ```bash
    make check
    make full
    PYTHONPATH=tools/src python3 -m handbook_toolkit.catalog_verification catalog/catalog.json
    ```
 
-3. **Review and merge [Reviewer & Owner]**:
+4. **Review and merge [Reviewer & Owner]**:
    Reviewer independently verifies the online release gate pass. Owner merges the PR to `main`.
    The portal redeployment workflow is triggered to rebuild the portal.
 
@@ -254,9 +260,10 @@ Use when an active release must be pulled immediately without a ready replacemen
 1. **Authorize immediate withdrawal [Owner]**:
    Owner decides that a published release must be delisted immediately.
 
-2. **Remove or archive catalog entry [Implementer]**:
+2. **Remove catalog entry [Implementer]**:
    In a new branch in the hub (`fix/withdraw-<book-slug>`):
-   - Either delete the book object from `catalog/catalog.json` or set `"status": "archived"`.
+   - Delete the book entry entirely from `catalog/catalog.json`.
+     *(Note: Setting `"status": "archived"` is NOT sufficient for immediate withdrawal because `portal.py` still renders archived cards with active reading, download, and manifest links. Setting `"status": "archived"` is acceptable only if the published assets and reading site stay live.)*
    - Record the withdrawal reason and decision ID in the active change record.
 
 3. **Verify locally [Implementer]**:
@@ -271,7 +278,7 @@ Use when an active release must be pulled immediately without a ready replacemen
 
 5. **Delete release assets on Git host [Implementer / Owner]**:
    In the book repository on the Git hosting platform:
-   - Delete the release page and all attached assets (`.zip`, `.pdf`, `.docx`, `publication-manifest.json`, `SHA256SUMS.txt`).
+   - Delete the release page and all six required assets (`book-html.zip`, `book.pdf`, `book.docx`, `book-source.zip`, `publication-manifest.json`, and `SHA256SUMS.txt`).
    - **CRITICAL**: **Preserve the Git tag** (e.g., `v1.0.0`). The tag must remain in the repository's
      Git history for cryptographic auditability and commit provenance.
 
@@ -285,8 +292,7 @@ Use during planned remediation when a verified clean replacement is available:
    Owner approves the remediation plan and the replacement release version.
 
 2. **Publish clean release [Implementer & Owner]**:
-   In the book repository, merge fixes to `main`, run the publication build, verify all 6 assets
-   with `handbook-toolkit artifacts verify`, and publish release `vX.Y.Z` with live Pages deployment.
+   In the book repository, merge fixes to `main`, run the publication build (`handbook-toolkit build-book` or CI publication workflow), verify all 6 assets with `handbook_toolkit.publication.verify_publication` (automatically verified by `build-book`), and publish release `vX.Y.Z` with live Pages deployment.
 
 3. **Update catalog entry [Implementer]**:
    In the hub repository, create branch `feat/catalog-<version>`:
@@ -304,7 +310,7 @@ Use during planned remediation when a verified clean replacement is available:
 
 5. **Withdraw obsolete releases [Owner / Delegated Agent]**:
    Once the portal is verified live pointing to the new release:
-   - Delete the release pages and downloadable asset binaries of the superseded releases.
+   - Delete the release pages and downloadable asset binaries of the superseded releases (`book-html.zip`, `book.pdf`, `book.docx`, `book-source.zip`, `publication-manifest.json`, and `SHA256SUMS.txt`).
    - Retain all Git tags in the book repository.
 
 ---
@@ -328,7 +334,7 @@ Use during planned remediation when a verified clean replacement is available:
      - **Verification [Reviewer]**: Re-run `catalog_verification` to ensure live reading assets match
        the released `html.zip` byte-for-byte.
   2. *Persistent outage or corrupted build*:
-     - If the site cannot be restored within 1 hour:
+     - If the site cannot be restored within 1 hour (proposed runbook policy pending Owner acceptance):
      - **Action [Implementer & Owner]**: Execute **Order A withdrawal** to remove the book entry from
        `catalog/catalog.json` via PR so portal users do not encounter broken links.
      - Once fixed in the book repository, submit a PR to restore the catalog entry.
@@ -353,14 +359,14 @@ Use during planned remediation when a verified clean replacement is available:
 - **Remediation Sequence**:
   1. **Authorize response [Owner]**: Owner decides between immediate delisting (Order A) or fast
      replacement cutover (Order B).
-  2. **Delist / withdraw [Implementer]**: If no replacement is ready within 30 minutes, withdraw the
+  2. **Delist / withdraw [Implementer]**: If no replacement is ready within 30 minutes (proposed runbook policy pending Owner acceptance), withdraw the
      catalog entry via PR (Order A).
   3. **Build clean release [Implementer]**:
      - Check out the approved source commit.
      - Build in a clean virtual environment using pinned tools.
-     - Verify generated files:
+     - Verify generated files using the publication verification entry point:
        ```bash
-       handbook-toolkit artifacts verify <build-dir>
+       python3 -c "from pathlib import Path; from handbook_toolkit.publication import verify_publication; res = verify_publication(Path('<build-dir>')); print(res); exit(0 if res.ok else 1)"
        ```
      - Tag a new patch release (e.g., `vX.Y.(Z+1)`).
   4. **Publish and update catalog [Implementer, Reviewer, Owner]**:
