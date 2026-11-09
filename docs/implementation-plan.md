@@ -1,16 +1,14 @@
 # Implementation plan — reusable handbook platform
 
-**Status:** Phases 1 to 4 complete; Phase 5 delivered and awaiting P5-GATE; Phase 6 not started. Current status lives in `STATUS.md`.
+**Status:** Current status lives in `STATUS.md`.
 **Version:** 0.1.0
 **Date:** 2026-11-06
 **Scope of this milestone:** local hub repository only. The sample book repository, GitHub
 repositories, Pages, releases and migration are explicitly out of scope. The sample repository was
 scaffolded concurrently by a separate session; this session only reads and records that fact.
 
-> **Current state (2026-11-09):** Phases 1 to 4 are complete and the sample book is published at
-> `v0.2.1`. Phase 5 is delivered and awaits P5-GATE. Sections 2, 3, 8 to 12 and 19 describe the plan
-> as it was carried out and are kept as history. Current status lives in
-> [`STATUS.md`](../STATUS.md); section 20 lists the next actions.
+> Sections 2, 3, 8 to 12 and 19 describe the plan as it was carried out and are kept as history.
+> Current status lives in [`STATUS.md`](../STATUS.md); section 20 lists the next actions.
 
 This plan turns `IMPLEMENTATION-HANDOFF.md` and the Engram handoff summary #6795 into reviewable work.
 It records what was inspected, the contracts the platform must honour, the phase sequence, the work
@@ -454,14 +452,14 @@ it survives clean clones and routine upgrades.
 
 ### Work packages
 
-| ID | Scope | Acceptance | Status |
-| --- | --- | --- | --- |
-| P5-01 | Adapter contract | Adapters are projections of `AGENTS.md`; no new rules | Done |
-| P5-02 | Optional adapters | At least one adapter loads the neutral instructions and runs the same checks | Done |
-| P5-03 | Catalog automation | Release event or manual dispatch validates and updates the catalog | Done |
-| P5-04 | Clean-clone matrix | Hub and sample book verify on Linux and one additional environment | Done |
-| P5-05 | Operations runbook | Upgrade, rollback, release withdrawal and incident steps are documented and rehearsed | Done |
-| P5-GATE | Stabilization | Owner accepts the runbook and the clean-clone evidence | Pending |
+| ID | Scope | Acceptance |
+| --- | --- | --- |
+| P5-01 | Adapter contract | Adapters are projections of `AGENTS.md`; no new rules |
+| P5-02 | Optional adapters | At least one adapter loads the neutral instructions and runs the same checks |
+| P5-03 | Catalog automation | Release event or manual dispatch validates and updates the catalog |
+| P5-04 | Clean-clone matrix | Hub and sample book verify on Linux and one additional environment |
+| P5-05 | Operations runbook | Upgrade, rollback, release withdrawal and incident steps are documented and rehearsed |
+| P5-GATE | Stabilization | Owner accepts the runbook and the clean-clone evidence |
 
 ### Adapter rules
 

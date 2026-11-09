@@ -15,6 +15,9 @@
 The Owner authorized these merges on 2026-11-09 for these pull requests only. P5-GATE remains the
 Owner's decision.
 
+Reviewer reports, Owner authorizations and the adapter loading check are in
+[`reviews.md`](reviews.md).
+
 ## Post-merge runs
 
 | Run | Commit | Result |
@@ -40,6 +43,7 @@ make full
 
 - The Owner's P5-GATE acceptance.
 - A real catalog update (`dry_run=false`).
+- Copilot loading of its adapter and Codex native reading of `AGENTS.md`.
 - Windows; the matrix covers `ubuntu-24.04` and `macos-15` only.
 - Artifact builds in the clean-clone workflow; those belong to `publication-build` and the book's
   release workflow.
