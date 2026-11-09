@@ -37,6 +37,12 @@ they reached it through `CLAUDE.md` and its `@AGENTS.md` import, and ran `make c
 - `PYTHONPATH=tools/src python3 tools/scripts/update_catalog.py apply catalog/catalog.json handbook-authoring-and-publishing v0.2.1`: Correctly reported idempotent no-op.
 - Live release test against `handbook-sample-01` `v0.2.1` using temporary catalog: Parsed assets, validated against schema, updated release date and artifact URLs accurately.
 
+> **Coordinator note, 2026-11-09.** The two `update_catalog.py` lines above are kept as the reviewer
+> wrote them, but they omit required options and exit 2 as written, so they are not evidence of what
+> they report. `source-repo` with `--catalog`, `--slug` and `--tag` was replayed on `main` at `ad1f5b8`
+> and returned `cesarcastrocuba/handbook-sample-01`. The no-op is evidenced by catalog-update dry run
+> 42613085588 on `main`, which called these subcommands with their full options.
+
 #### Security & Conformance Analysis
 - **Injection Safety**: Workflow `.github/workflows/catalog-update.yml` quotes and exports all inputs to environment variables before script execution; no expression interpolation in shell commands.
 - **Branch Protection & Permissions**: Global permission read-only (`contents: read`). Write permission scoped strictly to `publish` job when `dry_run == false`. Pushes only to `catalog/<slug>-<tag>`, never to `main`. Dispatches `ci.yml` via `gh workflow run` and prints compare URL.
