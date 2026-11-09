@@ -38,13 +38,17 @@ The PDF author is Franz César Castro Cuba. The third-party notices page is at
 - `make check`: 203 tests, 5 repository checks, 0 problems.
 - `make full`: 203 tests, 6 repository checks, documentation links OK.
 
-## Still to happen
+## Completed after merge
 
-1. Merge this catalog branch and run `portal-pages`; confirm the portal shows `v0.2.2`.
-2. Delete the `v0.2.1` release page and assets on GitHub Releases, keeping its Git tag.
+Hub PR 8 merged as `5b7d286` and sample PR 5 as `c7d64ee`; the Owner ran both merges.
+
+| Step | Result |
+| --- | --- |
+| Portal run 42667021558 from `5b7d286` | Success; build and deploy jobs succeeded |
+| Live portal | Shows `v0.2.2`; its release, manifest and checksum links return HTTP 200 |
+| `gh release delete v0.2.1` without tag cleanup | Exit 0; `v0.2.2` is the only release listed |
+| Tag `v0.2.1` | Still present at `0549762699a95764467ee75cba28d8a791480394` |
 
 ## Not run
 
-- The portal deployment for `v0.2.2` has not been run from this change.
-- The `v0.2.1` withdrawal has not been run.
 - No new sample artifact build was run in this catalog change; release run 42621799383 built `v0.2.2`.
