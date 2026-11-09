@@ -11,8 +11,9 @@ On 2026-11-09 the Owner asked for three improvements after the `v0.2.2` release,
    noted it against the tool-neutral roles in `AGENTS.md` (`HUB-DEC-025`).
 3. Decide whether `main` requires branches to be up to date before merge (`HUB-DEC-026`).
 
-The Owner delegated items 2 and 3 to the coordinator and asked for them to be settled and completed
-the same night. They are recorded as approved under that delegation; the Owner also merges this change.
+The Owner asked the coordinator to recommend items 2 and 3 and to complete them the same night. They
+are recorded as **Proposed**; the Owner's merge of this change confirms them, and a follow-up record
+marks them **Approved** when the branch-protection setting is applied.
 
 ## Alternatives considered
 
