@@ -52,9 +52,13 @@ activation and troubleshooting, start with [`docs/setup.md`](docs/setup.md).
 | `tools/` | Versioned `handbook-toolkit` package with deterministic validators and tests |
 | `tools/src/handbook_toolkit/schemas/` | JSON Schema contracts for books, profiles and the catalog, shipped inside the toolkit package |
 | `template/book/` | Book template `1.0.0` with publishing config, licenses and `make check`/`build`/`full` |
-| `catalog/` | Catalog of approved book releases; empty until a release is approved |
+| `catalog/` | Catalog of approved book releases; currently lists `handbook-authoring-and-publishing` `v0.2.1` |
 | `docs/publication-build.md` | Local six-file build with staging, payload inspection and atomic finalization |
 | `docs/book-upgrade.md` | Supported toolkit/profile upgrade path for an independent book |
+| `docs/operations-runbook.md` | Upgrade, rollback, release withdrawal and incident procedures |
+| `docs/catalog-automation.md` | Manual catalog-update workflow, its rules and its limits |
+| `docs/adapter-contract.md` | Agent adapters as thin projections of `AGENTS.md` |
+| `docs/clean-clone.md` | Linux and macOS clean-clone matrix and its evidence |
 | `sdd/` | Lightweight specification-driven delivery records |
 | `.github/` | CI and the pull-request template |
 
