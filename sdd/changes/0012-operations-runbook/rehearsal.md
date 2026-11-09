@@ -200,7 +200,7 @@ disruption or requires external defect triggers.
   3. *Authoring clean release [Implementer]*:
      - In book repository, branch `fix/licensing-attribution`.
      - Add required attribution to `NOTICE.md` and chapter figure metadata.
-     - Run `make check` and `make full` (which executes the local artifact build; or `rm -rf ../dist && make build`).
+     - Run `make check` and `make full`, then `handbook-toolkit build-book`, because this book's `make full` runs no artifact build.
      - Merge to `main` via reviewed PR.
      - Publish release `v0.2.2`.
   4. *Cutover [Implementer & Reviewer]*:

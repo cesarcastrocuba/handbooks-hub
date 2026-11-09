@@ -114,7 +114,11 @@ reviewed changes; nothing upgrades automatically.
    make check
    make full
    ```
-   *(Note: In books using `template/book/Makefile`, `make full` already invokes `make build` targeting `../dist`. If re-running a build independently, remove the existing output directory first: `rm -rf ../dist && make build`, as `build_book` refuses to overwrite an existing directory.)*
+   *(Note: `make full` builds artifacts only in books whose Makefile runs the build, such as those
+   using `template/book/Makefile`, which writes to `$(OUTPUT)`. `build-book` refuses to overwrite
+   existing output, so remove the configured output directory before building again. A book whose
+   `make full` runs no build, such as `handbook-sample-01`, must run `handbook-toolkit build-book`
+   directly before step 7; its publication workflow does the same.)*
 
 7. **Inspect rendered outputs [Implementer]**:
    Examine generated HTML, PDF, and DOCX files in the staging directory. Verify font rendering
@@ -126,8 +130,8 @@ reviewed changes; nothing upgrades automatically.
    pins, and verification results in the PR description.
 
 9. **Independent review [Reviewer]**:
-   Check out the pull-request branch in an isolated clone. Run `make check` and `make full`
-   (which executes the local build). Confirm artifacts meet profile standards. Approve the PR with
+   Check out the pull-request branch in an isolated clone. Run `make check`, `make full` and
+   the book's artifact build as described in step 6. Confirm artifacts meet profile standards. Approve the PR with
    recorded findings.
 
 10. **Authorize and merge [Owner]**:
