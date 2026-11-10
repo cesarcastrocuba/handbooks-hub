@@ -49,6 +49,9 @@ silently rewrite the change under review.
 - Be vendor-neutral and decision-oriented. Name products only as labelled examples.
 - Never invent sources, standards, mappings, build results or validation claims. Report the commands
   actually run and mark everything else as not run.
+- A commit or pull request may name the tool that contributed in a trailer such as
+  `Co-Authored-By`; it records provenance only and assigns no role (`HUB-DEC-025`). Each book
+  repository sets its own policy.
 - Preserve attribution and licensing. Content defaults to CC BY-SA 4.0; code defaults to MIT. A
   third-party rights review is required before importing external material.
 - No secrets, personal data or unlicensed third-party assets.

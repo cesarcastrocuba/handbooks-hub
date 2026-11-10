@@ -42,7 +42,11 @@ run, say so in the change record; do not claim it passed.
   Optional. The reviewer must differ from the implementer.
 - The owner merges after review. Do not merge your own pull request.
 - `main` is protected (`HUB-DEC-018`): every change arrives through a pull request with passing CI,
-  and direct pushes are rejected, including for administrators.
+  and direct pushes are rejected, including for administrators. Once branch protection enforces
+  `HUB-DEC-026`, a branch must be up to date with `main` before merge; update it with
+  `gh pr update-branch` and let CI re-run.
+- A trailer naming the contributing tool, such as `Co-Authored-By`, is allowed and records
+  provenance only (`HUB-DEC-025`).
 - Use a merge commit when a pinned commit lives on the branch; squashing would orphan the pin.
 
 ## Changing shared contracts
