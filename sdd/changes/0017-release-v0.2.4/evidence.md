@@ -25,10 +25,12 @@
 | Catalog dry run 42810626248 | `updated: handbook-authoring-and-publishing v0.2.2 -> v0.2.4 (published 2026-11-10)`; `release verification: OK`; publish skipped |
 | Catalog real run 42810762259 | Success; pushed `catalog/handbook-authoring-and-publishing-v0.2.4` at `fd1a617` |
 
-## Still to happen
+## After merge
 
-- After merge, `portal-pages` should deploy on its own (`HUB-DEC-024`, change `0015`). This is the
-  first catalog change since that trigger landed; the result is recorded after merge.
+- The Owner merged PR 13 as `5373841`. `portal-pages` run 42817600448 started by itself on the `push`
+  event at that commit, and its build and deploy jobs succeeded. This is the first proof on GitHub of
+  the automatic deployment (`HUB-DEC-024`, change `0015`).
+- The live portal shows `v0.2.4`; its release, manifest and checksum links return HTTP 200.
 
 ## Not run
 
