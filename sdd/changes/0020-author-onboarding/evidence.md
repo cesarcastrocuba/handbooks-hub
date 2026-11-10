@@ -37,8 +37,8 @@ All commands ran in this worktree, `/home/ubuntu/github/handbooks-hub.worktrees/
 | Command | Result |
 | --- | --- |
 | `python3 -m unittest tools.tests.test_template tools.tests.test_export_template tools.tests.test_issue_forms tools.tests.test_docs_commands -v` | `Ran 19 tests`, `OK` |
-| `make check` | `Ran 223 tests`, `OK`; `VERIFY: 5 check(s), 0 problem(s)` |
-| `make full` | `Ran 223 tests`, `OK`; `VERIFY (full): 6 check(s), 0 problem(s)` (documentation links included) |
+| `make check` | `Ran 240 tests`, `OK`; `VERIFY: 5 check(s), 0 problem(s)` |
+| `make full` | `Ran 240 tests`, `OK`; `VERIFY (full): 6 check(s), 0 problem(s)` (documentation links included) |
 | `python3 tools/scripts/export_template.py --output /tmp/opencode/template-export` | `exported 18 files`; `diff -r template/book /tmp/opencode/template-export` printed nothing |
 | `actionlint template/book/.github/workflows/*.yml` | No findings (actionlint `1.7.7`) |
 | `bash -n` on every `run:` script extracted from the three template workflows | No syntax errors |
@@ -46,7 +46,8 @@ All commands ran in this worktree, `/home/ubuntu/github/handbooks-hub.worktrees/
 
 The `make check` and `make full` runs include the existing template copy test and the real six-file
 build test. Quarto `1.11.9` and `pdfinfo` are installed in this environment, so the build test was
-executed, not skipped.
+executed, not skipped. The runs reported above were repeated after merging `origin/main` (change
+`0021`, portal library) into the branch, so the 240 tests include that change's tests.
 
 ### What the tests prove
 
