@@ -28,6 +28,7 @@ Under `HUB-DEC-018`, the `main` branch in both the hub and book repositories is 
 - Direct pushes and deletions of `main` are blocked.
 - All changes must arrive via a short-lived branch and pull request.
 - Changes require passing automated continuous integration (CI) checks.
+- Branches must be up to date with main before merge (HUB-DEC-026).
 - Review conversations must be resolved before merge.
 - Merges to `main` require explicit Owner authorization.
 
@@ -218,7 +219,7 @@ Reverting a catalog entry to a previous release requires extreme caution due to 
 
 4. **Review and merge [Reviewer & Owner]**:
    Reviewer independently verifies the online release gate pass. Owner merges the PR to `main`.
-   The portal redeployment workflow is triggered to rebuild the portal.
+   The catalog push triggers `portal-pages`, which rebuilds and deploys automatically (`HUB-DEC-024`).
 
 #### Case 2: Prior release was withdrawn (Roll forward required)
 
@@ -277,8 +278,8 @@ Use when an active release must be pulled immediately without a ready replacemen
    ```
 
 4. **Review and merge [Reviewer & Owner]**:
-   Reviewer confirms schema compliance. Owner merges the PR to `main`. The portal workflow rebuilds
-   and publishes the portal without the delisted release.
+   Reviewer confirms schema compliance. Owner merges the PR to `main`. The catalog push triggers
+   `portal-pages`, which rebuilds and publishes the portal without the delisted release.
 
 5. **Delete release assets on Git host [Implementer / Owner]**:
    In the book repository on the Git hosting platform:
@@ -310,7 +311,7 @@ Use during planned remediation when a verified clean replacement is available:
 
 4. **Independent review and merge [Reviewer & Owner]**:
    Reviewer independently verifies `catalog_verification` output. Owner merges PR to `main`.
-   The portal redeploys, now linking to the clean release.
+   The catalog push triggers `portal-pages`, which redeploys and links to the clean release.
 
 5. **Withdraw obsolete releases [Owner / Delegated Agent]**:
    Once the portal is verified live pointing to the new release:
