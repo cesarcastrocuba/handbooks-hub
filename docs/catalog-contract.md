@@ -5,7 +5,7 @@ their approved releases; it does not mirror manuscript content.
 
 Machine-readable contract: [`catalog/catalog.json`](../catalog/catalog.json) and
 [`catalog.schema.json`](../tools/src/handbook_toolkit/schemas/catalog.schema.json). Current state:
-**empty**, because no book release has been approved.
+one approved book; see [`STATUS.md`](../STATUS.md).
 
 ## Entry model
 
@@ -36,6 +36,25 @@ Machine-readable contract: [`catalog/catalog.json`](../catalog/catalog.json) and
 
 The example is illustrative and is not listed in the catalog.
 
+### Direct download links (schema 1.1)
+
+`latest_release` may carry an optional `assets` object that maps an artifact role to the direct URL
+of that edition. It requires `schema_version` `"1.1"`; a `1.0` catalog without `assets` stays valid.
+
+```json
+"assets": {
+  "pdf": "https://github.com/OWNER/REPO/releases/download/v1.0.0/book.pdf",
+  "html": "https://github.com/OWNER/REPO/releases/download/v1.0.0/book-html.zip",
+  "docx": "https://github.com/OWNER/REPO/releases/download/v1.0.0/book.docx",
+  "markdown": "https://github.com/OWNER/REPO/releases/download/v1.0.0/book.md",
+  "source": "https://github.com/OWNER/REPO/releases/download/v1.0.0/book-source.zip"
+}
+```
+
+Roles are `pdf`, `html`, `docx`, `markdown` and `source`. A release lists only the editions it
+has: a release built before the Markdown edition existed has no `markdown` link. The portal shows
+one button per listed role and `llms.txt` links the Markdown edition when it is listed.
+
 ## Required invariants
 
 The toolkit enforces these deterministically:
@@ -50,6 +69,8 @@ The toolkit enforces these deterministically:
 | `published_at` is an ISO date (`YYYY-MM-DD`) | Deterministic rendering |
 | Categories are unique controlled lowercase slugs | Stable portal grouping |
 | `reading_url` is explicit HTTPS | Reading sites may use custom domains and cannot be inferred from release URLs |
+| Each `assets` URL is the canonical file of its role under the same release as `manifest_url` | No link to another release, host or file |
+| Online verification: each `assets` URL is an artifact of the release manifest with the same role | The link downloads verified bytes |
 | The JSON document is valid against the catalog schema | One validated interface |
 
 A catalog entry is rejected if it points to a branch, a pull request, a draft release or a build
@@ -79,9 +100,11 @@ categories; empty categories are explicitly marked as planned facets.
 
 ## Portal behavior
 
-- One card per book: title, summary, categories, latest version and links to the reading site and
-  release downloads.
-- Filter/sort by category and title; no client-side search in the first vertical slice.
+- One card per book: a generated cover, title, summary, categories, latest version, links to the
+  reading site and release downloads, and one button per edition listed under `assets`.
+- Filter by category, sort by title or release date, and search the text of the cards in the browser.
+- Static guide sections explain the platform, the author path, publishing and withdrawal.
+- `llms.txt` is written next to `index.html` and lists every book for AI tools.
 - The portal is static HTML generated from the catalog and deployed to Pages.
 - The portal never proxies or hosts book downloads; it links to immutable release assets.
 - Broken or missing release assets fail the portal build, not the reader's browser.
@@ -90,7 +113,7 @@ categories; empty categories are explicitly marked as planned facets.
 
 ## Non-goals
 
-- Full-text search across books.
+- Full-text search inside books.
 - Hosting canonical manuscript content in the hub.
 - Automatic ingestion from a branch or a pull request.
 - Ratings, comments or user accounts.
