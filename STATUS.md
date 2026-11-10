@@ -9,7 +9,8 @@ only in [`docs/decisions.md`](docs/decisions.md); the plan lives in
 **State:** The sample book is published at `v0.2.2`, and the catalog and portal list that release.
 `v0.2.1` is withdrawn: its release page and assets were deleted and its tag stays, under
 `HUB-DEC-023`. The Owner accepted P5-GATE on 2026-11-09. Changes reach `main` only through pull
-requests (`HUB-DEC-018`).
+requests (`HUB-DEC-018`), and a branch must be up to date with `main` before merge
+(`HUB-DEC-026`).
 
 ## Current facts
 

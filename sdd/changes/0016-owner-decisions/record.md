@@ -35,4 +35,12 @@ marks them **Approved** when the branch-protection setting is applied.
 ## Verification
 
 - `make full` before review: recorded in the pull request.
-- Branch-protection setting after merge: not yet applied.
+- The Owner merged hub PR 10 as `80e8438` on 2026-11-10, which confirmed `HUB-DEC-025` and
+  `HUB-DEC-026`; both are now **Approved**.
+- Branch protection after merge, by
+  `gh api -X PATCH repos/cesarcastrocuba/<repo>/branches/main/protection/required_status_checks -F strict=true`:
+  the hub returned `strict: true` with `checks`, `quickstart`, `template-install`,
+  `publication-build` and `wheel-install`; the sample returned `strict: true` with `check`.
+- The first use of the rule: hub PR 11 was behind `main` after PR 10 merged, was updated through the
+  `update-branch` API to `3c2febc` (bringing in only PR 10's files) and its five checks passed again.
+  The installed `gh` 2.45.0 has no `gh pr update-branch`, so `CONTRIBUTING.md` names the API call.
