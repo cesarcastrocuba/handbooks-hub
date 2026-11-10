@@ -4,19 +4,20 @@
 only in [`docs/decisions.md`](docs/decisions.md); the plan lives in
 [`docs/implementation-plan.md`](docs/implementation-plan.md).
 
-**Updated:** 2026-11-09
+**Updated:** 2026-11-10
 **Phase:** Phases 1 to 5 complete; Phase 6 not started and needs an owner decision.
 **State:** The sample book is published at `v0.2.4`. This catalog change lists it; the portal shows it
-after this change merges and `portal-pages` deploys.
-`v0.2.3` was published by mistake without the corrections and is withdrawn with its tag kept (sample
-`DEC-019`); `v0.2.1` is withdrawn with its tag kept (`HUB-DEC-023`). The Owner accepted P5-GATE on 2026-11-09. Changes reach `main` only through pull
-requests (`HUB-DEC-018`).
+after this change merges and `portal-pages` deploys. `v0.2.3` was published by mistake without the
+corrections and is withdrawn with its tag kept (sample `DEC-019`); `v0.2.1` is withdrawn with its tag
+kept (`HUB-DEC-023`). The Owner accepted P5-GATE on 2026-11-09. Changes reach `main` only through pull
+requests (`HUB-DEC-018`), and a branch must be up to date with `main` before merge
+(`HUB-DEC-026`).
 
 ## Current facts
 
 | Item | State |
 | --- | --- |
-| `main` | `5b7d28625e5ba474cf25bd53e3653c493688cc16`; protected by pull request and CI, also for administrators (`HUB-DEC-018`). Catalog listing and P5-GATE record merged as PR 8 |
+| `main` | `395b73fe213423982eaaacd391f55c0d921d4957`; protected by pull request and CI, also for administrators (`HUB-DEC-018`), and requires up-to-date branches (`strict=true`, `HUB-DEC-026`). Portal auto-deploy merged as PR 11; `HUB-DEC-025` and `HUB-DEC-026` approved and recorded as PR 12 |
 | GitHub repositories | [hub](https://github.com/cesarcastrocuba/handbooks-hub) and [sample](https://github.com/cesarcastrocuba/handbook-sample-01), both public and active |
 | Reference handbook | Read-only at `6a15cc211f65e148afdaa75c71a063a8084d1910` |
 | Sample repository | `v0.2.4` is the current release; `v0.2.2` stays published as the previous edition. `v0.2.3` is withdrawn and keeps its tag (sample `DEC-019`). `v0.1.0` to `v0.2.0` are withdrawn and keep their tags (`HUB-DEC-021`). `v0.2.1` is withdrawn and keeps its tag (`HUB-DEC-023`). Introduction, 8 chapters, 3 appendices and References |
