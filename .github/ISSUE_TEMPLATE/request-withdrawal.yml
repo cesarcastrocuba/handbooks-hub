@@ -1,0 +1,61 @@
+name: Request release withdrawal
+description: Ask the Owner to withdraw a release or delist a listed handbook.
+title: "Withdrawal request: <book-slug> <version>"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Withdrawal is always a manual catalog pull request reviewed and merged by the Owner. The Git
+        tag is kept even when the release page and its files are deleted, so the commit provenance
+        stays auditable. Read the
+        [author guide](https://github.com/cesarcastrocuba/handbooks-hub/blob/main/docs/author-guide.md)
+        and the
+        [operations runbook](https://github.com/cesarcastrocuba/handbooks-hub/blob/main/docs/operations-runbook.md)
+        before submitting.
+
+  - type: input
+    id: book-slug
+    attributes:
+      label: Book slug
+      description: The slug of the listed book, as shown in the catalog.
+      placeholder: my-handbook
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Exact version to withdraw, for example 1.0.0 or all releases.
+      placeholder: 1.0.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: reason
+    attributes:
+      label: Reason
+      description: Choose the reason that best matches the request.
+      options:
+        - defect
+        - licensing or rights
+        - author request
+        - superseded
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Explain the defect, the rights concern or the replacement release.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: keep-tag
+    attributes:
+      label: Tag handling
+      options:
+        - label: I understand that the Git tag is kept even when the release page and its files are deleted.
+          required: true

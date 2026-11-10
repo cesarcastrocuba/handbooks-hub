@@ -1,8 +1,12 @@
-# Book template 1.0.0
+# Book template 1.1.0
 
 A starting point for an independent handbook repository. Copy this directory into a new repository,
 then replace the identifiers and content. The copy is owned by the book; the hub does not update it
 in place.
+
+**New to the platform? Start with [`docs/AUTHOR_QUICKSTART.md`](docs/AUTHOR_QUICKSTART.md).** It
+covers creating the repository from the template, the one-time repository settings, the Initialize
+book workflow, the first release and the catalog listing request, with no prior knowledge assumed.
 
 The template pins toolkit `0.5.0` and standard profile `1.0.0`. It contains no copied toolkit source
 and never imports a parent hub checkout.
@@ -19,6 +23,10 @@ and never imports a parent hub checkout.
 | `Makefile` | `check`, `build` and `full` targets |
 | `LICENSE`, `LICENSE-CODE`, `NOTICE.md` | Licensing and attribution |
 | `AGENTS.md` | Book-owned contributor rules |
+| `.github/workflows/` | `ci.yml` (fast checks), `release.yml` (guarded release and Pages), `initialize-book.yml` (one-time identity rewrite) |
+| `.github/scripts/initialize_book.py` | Book-owned bootstrap rewrite used by `initialize-book.yml` |
+| `.gitignore` | Ignores build output, Quarto caches, Python caches and virtualenvs |
+| `docs/AUTHOR_QUICKSTART.md` | Step-by-step author onboarding |
 
 ## Install the pinned toolkit
 
@@ -60,7 +68,7 @@ make full
 
 `make build` requires a clean git commit, Quarto `1.11.9` and Poppler `pdfinfo`. It validates every
 chapter against the profile, renders HTML, Typst/PDF and DOCX once with `--no-execute`, inspects the
-payloads and atomically creates a six-file directory in `../dist`:
+payloads and atomically creates a six-file directory in `dist`:
 
 - `book-html.zip`
 - `book.pdf`
@@ -77,12 +85,14 @@ Without `make`, run the same commands directly:
 ```bash
 handbook-toolkit --root . validate-book --full
 handbook-toolkit --root . validate-references book.yaml
-handbook-toolkit build-book --repo . --commit "$(git rev-parse HEAD)" --output ../dist --mode chapter
+handbook-toolkit build-book --repo . --commit "$(git rev-parse HEAD)" --output dist --mode chapter
 ```
 
 ## Before the first commit
 
-1. Replace `id`, `title`, `catalog.slug` and `catalog.summary` in `book.yaml`.
+1. Run the Initialize book workflow, or replace `id`, `title`, `catalog.slug` and `catalog.summary`
+   in `book.yaml` by hand. The workflow also rewrites the Quarto metadata, the notices and the README
+   title.
 2. Replace `publishing/metadata.yaml` with the real version and status.
 3. Keep the `toolkit` and `profile.version` pins exact; never use a range.
 4. Replace the hub commit SHA in `requirements.txt` with the reviewed commit.

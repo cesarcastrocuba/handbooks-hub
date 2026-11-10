@@ -1,0 +1,87 @@
+name: Request catalog listing
+description: Ask the Owner to list a released handbook in the hub catalog.
+title: "Listing request: <book-slug> <version>"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form after the book has a published release and a live reading site. The first
+        listing is always a manual catalog pull request reviewed and merged by the Owner; this issue
+        starts that review. Do not edit the catalog yourself.
+
+        Read the [author guide](https://github.com/cesarcastrocuba/handbooks-hub/blob/main/docs/author-guide.md)
+        before submitting.
+
+  - type: input
+    id: repository
+    attributes:
+      label: Book repository URL
+      description: Public repository created from the template.
+      placeholder: https://github.com/OWNER/REPOSITORY
+    validations:
+      required: true
+
+  - type: input
+    id: release-tag
+    attributes:
+      label: Release tag
+      description: Exact stable tag of the approved release.
+      placeholder: v1.0.0
+    validations:
+      required: true
+
+  - type: input
+    id: release-url
+    attributes:
+      label: Release URL
+      description: Link to the release page that carries every published file.
+      placeholder: https://github.com/OWNER/REPOSITORY/releases/tag/v1.0.0
+    validations:
+      required: true
+
+  - type: input
+    id: reading-site
+    attributes:
+      label: Reading site URL
+      description: Link to the HTML edition deployed from the same release.
+      placeholder: https://OWNER.github.io/REPOSITORY/
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Catalog summary (at most 280 characters)
+      description: One or two sentences that describe the book to a reader.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: categories
+    attributes:
+      label: Categories
+      description: Choose at least one category from the catalog vocabulary.
+      multiple: true
+      options:
+        - architecture
+        - authoring
+        - cloud
+        - data
+        - engineering
+        - governance
+        - publishing
+        - security
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: The book states its content license and its code license.
+          required: true
+        - label: A third-party rights review was completed before importing external material.
+          required: true
+        - label: The release was built by the pinned handbook-toolkit and carries every verified file.
+          required: true

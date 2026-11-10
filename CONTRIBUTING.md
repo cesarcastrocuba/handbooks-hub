@@ -65,6 +65,13 @@ versioned API changes:
 
 ## Adding a book
 
-Books are independent repositories created from `template/book/` (available in Phase 2). They pin an
-exact `handbook-toolkit` version, keep their tests with their content and request catalog listing
-only after an approved release.
+Books are independent public repositories created from `template/book/`. The generated mirror
+`cesarcastrocuba/handbooks-template` provides **Use this template**, and
+[`docs/author-guide.md`](docs/author-guide.md) describes the whole path from creation to listing. The
+template copy is owned by the book: it pins an exact `handbook-toolkit` version, keeps its tests with
+its content, and runs its own `make check` and release workflows.
+
+A book is listed only after an approved release. The first listing and every withdrawal are manual
+catalog pull requests reviewed and merged by the Owner; the `catalog-update` workflow only moves an
+already listed book to a newer release. Do not add a book entry as part of implementing a book
+repository.
