@@ -33,7 +33,7 @@ Changes reach `main` only through pull requests (`HUB-DEC-018`), and a branch mu
 
 ## Next actions
 
-1. Phases A to D of the plan recorded in change `0018`: Markdown edition, author onboarding and library portal, under the delegation in `HUB-DEC-027`. Phase 0 (withdrawal of `v0.2.2`) is authorized and awaits the release deletion.
+1. Phases A to D of the plan recorded in change `0018`: Markdown edition (`HUB-DEC-028`, change `0019`), author onboarding (`HUB-DEC-029`, change `0020`) and library portal (`HUB-DEC-030`, change `0021`). The three decisions are **Proposed**; each is approved by the Owner's merge. Phase 0 (withdrawal of `v0.2.2`) is authorized and awaits the release deletion.
 2. Phase 6: migration evaluation of `solutions-architecture-handbook`, including its copies of the replaced fonts and DOCX reference; needs an owner decision.
 
 ## Blockers and open owner decisions
