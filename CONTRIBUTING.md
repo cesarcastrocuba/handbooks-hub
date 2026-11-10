@@ -44,8 +44,8 @@ run, say so in the change record; do not claim it passed.
 - `main` is protected (`HUB-DEC-018`): every change arrives through a pull request with passing CI,
   and direct pushes are rejected, including for administrators. Branch protection enforces
   `HUB-DEC-026`: a branch must be up to date with `main` before merge; update it with
-  `gh api -X PUT repos/<owner>/<repo>/pulls/<number>/update-branch` (or `gh pr update-branch` on
-  `gh` 2.46 and later) and let CI re-run. The update changes the head commit, so the merge command
+  `gh api -X PUT repos/<owner>/<repo>/pulls/<number>/update-branch` (or `gh pr update-branch`
+  where the installed `gh` provides it) and let CI re-run. The update changes the head commit, so the merge command
   must name the new head.
 - A trailer naming the contributing tool, such as `Co-Authored-By`, is allowed and records
   provenance only (`HUB-DEC-025`).
