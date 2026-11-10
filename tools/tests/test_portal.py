@@ -2,12 +2,14 @@
 
 from html.parser import HTMLParser
 from pathlib import Path
+import shutil
 import tempfile
 import unittest
 from unittest.mock import patch
 
 import support
-from handbook_toolkit.portal import CATEGORIES, SCRIPT, build_portal
+from handbook_toolkit.catalog import ASSET_FILES
+from handbook_toolkit.portal import CATEGORIES, FORMATS, SCRIPT, build_portal
 from handbook_toolkit.validation import load_packaged_schema
 
 
@@ -98,6 +100,73 @@ class PortalTests(unittest.TestCase):
                 build_portal(self.catalog, self.output)
         self.assertFalse(self.output.exists())
         self.assertEqual(list(self.root.glob(".portal-*")), [])
+
+    def with_assets(self):
+        document = support.catalog_document()
+        document["schema_version"] = "1.1"
+        release = document["books"][0]["latest_release"]
+        base = release["manifest_url"].rsplit("/", 1)[0] + "/"
+        release["assets"] = {role: base + name for role, name in ASSET_FILES.items()}
+        return document
+
+    def test_format_buttons_link_only_to_declared_assets(self):
+        document = self.with_assets()
+        del document["books"][0]["latest_release"]["assets"]["markdown"]
+        page = self.build(document)
+        parsed = Page(page)
+        assets = document["books"][0]["latest_release"]["assets"]
+        for url in assets.values():
+            self.assertIn(url, parsed.links)
+        self.assertFalse(any(str(link).endswith("/book.md") for link in parsed.links))
+        self.assertIn(">PDF</a>", page)
+        self.assertNotIn(">Markdown</a>", page)
+
+    def test_release_without_assets_has_no_format_buttons(self):
+        page = self.build(support.catalog_document())
+        self.assertNotIn('class="fmt"', page)
+        self.assertIn("Release downloads", page)
+
+    def test_guide_sections_and_navigation_are_present(self):
+        for document in (support.catalog_document(), {"schema_version": "1.0", "books": []}):
+            with self.subTest(books=len(document["books"])):
+                page = self.build(document)
+                for anchor in ("library", "how-it-works", "create", "publishing", "contribute", "faq"):
+                    self.assertIn(f'<section id="{anchor}"', page)
+                for anchor in ("library", "how-it-works", "create", "publishing", "faq"):
+                    self.assertIn(f'href="#{anchor}"', page)
+                self.assertIn("handbooks-template", page)
+                self.assertIn("request-listing.yml", page)
+                self.assertIn("request-withdrawal.yml", page)
+                self.assertNotIn("<script src", page)
+                self.assertNotIn("<link", page)
+                shutil.rmtree(self.output)
+
+    def test_llms_txt_links_markdown_edition_or_reading_site(self):
+        document = self.with_assets()
+        self.build(document)
+        book = document["books"][0]
+        text = (self.output / "llms.txt").read_text(encoding="utf-8")
+        self.assertTrue(text.startswith("# Handbook Hub\n"))
+        self.assertIn(f"- [Example Book]({book['latest_release']['assets']['markdown']}):", text)
+        shutil.rmtree(self.output)
+        self.build(support.catalog_document())
+        text = (self.output / "llms.txt").read_text(encoding="utf-8")
+        self.assertIn(f"- [Example Book]({book['reading_url']}):", text)
+        self.assertNotIn("book.md", text)
+
+    def test_llms_txt_keeps_catalog_prose_on_one_safe_line(self):
+        document = support.catalog_document()
+        document["books"][0]["title"] = "A [bracketed]\ntitle"
+        self.build(document)
+        text = (self.output / "llms.txt").read_text(encoding="utf-8")
+        self.assertIn("- [A (bracketed) title](", text)
+
+    def test_empty_catalog_writes_an_honest_llms_txt(self):
+        self.build({"schema_version": "1.0", "books": []})
+        self.assertIn("No handbook is listed yet.", (self.output / "llms.txt").read_text(encoding="utf-8"))
+
+    def test_format_labels_cover_every_asset_role(self):
+        self.assertEqual(set(FORMATS), set(ASSET_FILES))
 
     def test_portal_and_schema_category_vocabulary_agree(self):
         schema = load_packaged_schema("catalog.schema.json")

@@ -10,7 +10,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import support  # noqa: E402
-from handbook_toolkit.catalog import validate_catalog  # noqa: E402
+from handbook_toolkit.catalog import ASSET_FILES, validate_catalog  # noqa: E402
 from handbook_toolkit.validation import load_schema  # noqa: E402
 
 
@@ -34,6 +34,46 @@ class CatalogTests(unittest.TestCase):
     def test_valid_catalog_entry(self) -> None:
         result = self.check(support.catalog_document())
         self.assertTrue(result.ok, [str(issue) for issue in result.issues])
+
+    def with_assets(self) -> dict:
+        document = support.catalog_document()
+        document["schema_version"] = "1.1"
+        release = document["books"][0]["latest_release"]
+        base = release["manifest_url"].rsplit("/", 1)[0] + "/"
+        release["assets"] = {role: base + name for role, name in ASSET_FILES.items()}
+        return document
+
+    def test_direct_download_links_are_valid_in_schema_1_1(self) -> None:
+        result = self.check(self.with_assets())
+        self.assertTrue(result.ok, [str(issue) for issue in result.issues])
+
+    def test_direct_download_links_require_schema_1_1(self) -> None:
+        document = self.with_assets()
+        document["schema_version"] = "1.0"
+        result = self.check(document)
+        self.assertTrue(any("schema_version 1.1" in issue.message for issue in result.issues))
+
+    def test_direct_download_links_must_be_the_release_own_canonical_files(self) -> None:
+        for change in ("other-tag", "other-name", "other-host"):
+            with self.subTest(change=change):
+                document = self.with_assets()
+                assets = document["books"][0]["latest_release"]["assets"]
+                if change == "other-tag":
+                    assets["pdf"] = assets["pdf"].replace("v1.0.0", "v0.9.0")
+                elif change == "other-name":
+                    assets["pdf"] = assets["pdf"].replace("book.pdf", "draft.pdf")
+                else:
+                    assets["pdf"] = "https://example.org/book.pdf"
+                result = self.check(document)
+                self.assertTrue(any("release's own book.pdf" in issue.message for issue in result.issues))
+
+    def test_unknown_download_role_and_empty_assets_are_rejected(self) -> None:
+        document = self.with_assets()
+        document["books"][0]["latest_release"]["assets"]["epub"] = "https://example.org/book.epub"
+        self.assertFalse(self.check(document).ok)
+        document = self.with_assets()
+        document["books"][0]["latest_release"]["assets"] = {}
+        self.assertFalse(self.check(document).ok)
 
     def test_duplicate_slug_is_rejected(self) -> None:
         document = support.catalog_document()

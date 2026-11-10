@@ -20,7 +20,7 @@ import support  # noqa: E402
 sys.path.insert(0, str(support.TOOLS_ROOT / "scripts"))
 
 import update_catalog  # noqa: E402
-from update_catalog import CatalogUpdateError, plan_update, published_date  # noqa: E402
+from update_catalog import CatalogUpdateError, plan_update, published_date, release_roles  # noqa: E402
 
 SLUG = "example-book"
 REPO = "example/example-book"
@@ -62,6 +62,24 @@ class PlanUpdateTests(unittest.TestCase):
             "checksums_url": "https://github.com/example/example-book/releases/download/v1.1.0/SHA256SUMS.txt",
         }
         self.assertEqual(plan.document, expected)
+
+    def test_new_release_lists_direct_downloads_for_the_given_roles(self) -> None:
+        plan = plan_update(self.document, SLUG, REPO, "v1.1.0", "2026-12-15", ("markdown", "pdf"))
+        base = "https://github.com/example/example-book/releases/download/v1.1.0/"
+        self.assertEqual(plan.document["schema_version"], "1.1")
+        self.assertEqual(
+            list(plan.document["books"][0]["latest_release"]["assets"].items()),
+            [("pdf", base + "book.pdf"), ("markdown", base + "book.md")],
+        )
+        self.assertEqual(self.document["schema_version"], "1.0", "the input document must not be modified")
+
+    def test_listed_release_never_gains_or_changes_download_links(self) -> None:
+        plan = plan_update(self.document, SLUG, REPO, "v1.0.0", "2026-12-01", ("pdf",))
+        self.assertFalse(plan.changed)
+        self.assertNotIn("assets", plan.document["books"][0]["latest_release"])
+        listed = plan_update(self.document, SLUG, REPO, "v1.1.0", "2026-12-15", ("pdf", "docx")).document
+        self.assertFalse(plan_update(listed, SLUG, REPO, "v1.1.0", "2026-12-15", ("pdf", "docx")).changed)
+        self.rejected("must not change", SLUG, REPO, "v1.1.0", "2026-12-15", ("pdf",), document=listed)
 
     def test_versions_compare_numerically(self) -> None:
         self.document["books"][0] = plan_update(self.document, SLUG, REPO, "v1.9.0", "2026-12-15").document["books"][0]
@@ -120,6 +138,29 @@ class PlanUpdateTests(unittest.TestCase):
         self.assertEqual(update_catalog.serialize(json.loads(text)), text)
 
 
+class ReleaseRolesTests(unittest.TestCase):
+    PREFIX = "https://github.com/example/example-book/releases/download/v1.1.0/"
+
+    def asset(self, name: str, **changes) -> dict:
+        return {"name": name, "state": "uploaded", "browser_download_url": self.PREFIX + name, **changes}
+
+    def test_roles_follow_uploaded_canonical_files_in_display_order(self) -> None:
+        release = {"assets": [self.asset(name) for name in ("book.md", "SHA256SUMS.txt", "book.pdf", "notes.txt")]}
+        self.assertEqual(release_roles(release, REPO, "v1.1.0"), ("pdf", "markdown"))
+
+    def test_incomplete_foreign_or_missing_assets_give_no_role(self) -> None:
+        cases = (
+            {},
+            {"assets": "book.pdf"},
+            {"assets": [self.asset("book.pdf", state="starter")]},
+            {"assets": [self.asset("book.pdf", browser_download_url="https://example.org/book.pdf")]},
+            {"assets": ["book.pdf", None]},
+        )
+        for release in cases:
+            with self.subTest(release=release):
+                self.assertEqual(release_roles(release, REPO, "v1.1.0"), ())
+
+
 class PublishedDateTests(unittest.TestCase):
     def release(self, **changes) -> dict:
         return {"tag_name": "v1.1.0", "draft": False, "prerelease": False, "published_at": "2026-12-15T22:42:34Z", **changes}
@@ -176,6 +217,15 @@ class CommandLineTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("updated:", out)
         self.assertEqual(json.loads(self.catalog.read_text(encoding="utf-8"))["books"][0]["latest_release"]["tag"], "v1.1.0")
+
+    def test_apply_lists_the_uploaded_editions(self) -> None:
+        prefix = "https://github.com/example/example-book/releases/download/v1.1.0/"
+        assets = [{"name": name, "state": "uploaded", "browser_download_url": prefix + name} for name in ("book.pdf", "book.md")]
+        code, _, err = self.apply("v1.1.0", assets=assets)
+        self.assertEqual((code, err), (0, ""))
+        document = json.loads(self.catalog.read_text(encoding="utf-8"))
+        self.assertEqual(document["schema_version"], "1.1")
+        self.assertEqual(document["books"][0]["latest_release"]["assets"], {"pdf": prefix + "book.pdf", "markdown": prefix + "book.md"})
 
     def test_apply_no_op_leaves_the_file_untouched(self) -> None:
         before = self.catalog.read_bytes()

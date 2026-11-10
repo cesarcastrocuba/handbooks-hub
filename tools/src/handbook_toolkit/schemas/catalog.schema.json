@@ -7,7 +7,7 @@
   "additionalProperties": false,
   "required": ["schema_version", "books"],
   "properties": {
-    "schema_version": { "const": "1.0" },
+    "schema_version": { "enum": ["1.0", "1.1"] },
     "books": {
       "type": "array",
       "items": {
@@ -84,6 +84,19 @@
               "checksums_url": {
                 "type": "string",
                 "pattern": "^https://[^\\s]+$"
+              },
+              "assets": {
+                "description": "Optional direct download URLs by artifact role (schema_version 1.1).",
+                "type": "object",
+                "additionalProperties": false,
+                "minProperties": 1,
+                "properties": {
+                  "pdf": { "type": "string", "pattern": "^https://[^\\s]+$" },
+                  "html": { "type": "string", "pattern": "^https://[^\\s]+$" },
+                  "docx": { "type": "string", "pattern": "^https://[^\\s]+$" },
+                  "markdown": { "type": "string", "pattern": "^https://[^\\s]+$" },
+                  "source": { "type": "string", "pattern": "^https://[^\\s]+$" }
+                }
               }
             }
           }
