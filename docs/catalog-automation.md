@@ -75,7 +75,14 @@ The toolkit's catalog validator runs on the catalog before and after the change.
 1. Open the pull request from the compare URL in the job summary and confirm the required checks
    passed on its commit.
 2. A reviewer who did not make the change verifies the links and the release evidence.
-3. The owner merges. The portal rebuilds only when the owner runs the `portal-pages` workflow.
+3. The owner merges. A push to `main` that changes `catalog/**` triggers `portal-pages` and deploys
+   automatically (`HUB-DEC-024`).
+
+## Portal deployment
+
+A merge to `main` that touches `catalog/**` triggers `portal-pages` and deploys the generated site.
+Manual dispatch remains the fallback and the rollback path: dispatch from `main` with `deploy: true`
+to deploy, or from any ref with `deploy: false` to build only.
 
 ## Recovery
 
