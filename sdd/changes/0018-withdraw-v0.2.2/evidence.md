@@ -49,10 +49,26 @@ condition the withdrawal order in the publication contract and the runbook Order
 
 ## Withdrawal evidence
 
-pending: recorded after the deletion
+Recorded 2026-11-10, after hub PR 15 (`4c37598`) and sample PR 11 (`e4e3f82`) merged. Both were
+implemented by a worker agent and reviewed by the coordinator on the pull-request HEAD.
+
+| Step | Result |
+| --- | --- |
+| `gh release delete v0.2.2 -R cesarcastrocuba/handbook-sample-01 --yes` (no `--cleanup-tag`) | Release page and six assets deleted |
+| `gh release list -R cesarcastrocuba/handbook-sample-01` | Only `v0.2.4`, marked **Latest** |
+| `gh api repos/cesarcastrocuba/handbook-sample-01/git/ref/tags/v0.2.2` | `refs/tags/v0.2.2` still resolves to `c1485183ca1c52e28bdbd28c92c1f382b6603d55` |
+| `python3 -m handbook_toolkit.catalog_verification catalog/catalog.json` | `release verification: OK` |
+| `curl` of the portal URL | HTTP 200 |
+| `curl -L` of the former `v0.2.2/book.pdf` asset URL | HTTP 404 |
+
+## Process notes
+
+- The plan file named at the top of this record is a local working file and is not part of the
+  repository; the phase list above is the durable summary.
+- The coordinator's first two merge attempts were refused by its tool permission layer. The Owner
+  then wrote "autorizo a que fusiones" and "autorizo a todo lo que tengas que implementar relativo a
+  este plan de acción" (2026-11-10), and the merges proceeded under `HUB-DEC-027` (b).
 
 ## Not run
 
-- No release deletion was performed in this change; the change only records the decision and the
-  preconditions.
-- No sample artifact build was run, and no toolkit, template or portal code was changed.
+- No sample artifact build was run, and no toolkit, template or portal code was changed by Phase 0.
