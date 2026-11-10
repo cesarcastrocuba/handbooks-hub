@@ -7,6 +7,15 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from typing import Any
 
+# Canonical payload file name of each downloadable artifact role, in display order.
+ASSET_FILES = {
+    "pdf": "book.pdf",
+    "html": "book-html.zip",
+    "docx": "book.docx",
+    "markdown": "book.md",
+    "source": "book-source.zip",
+}
+
 from .validation import (
     CheckResult,
     DocumentError,
@@ -94,6 +103,20 @@ def validate_catalog(path: Path, schema: dict[str, Any]) -> CheckResult:
                         f"asset URL must contain the immutable tag segment /{tag}/",
                     )
                 )
+
+        assets = release.get("assets")
+        if assets is not None:
+            if data["schema_version"] == "1.0":
+                issues.append(Issue(f"{location}.latest_release.assets", "assets require catalog schema_version 1.1"))
+            base = release["manifest_url"].rsplit("/", 1)[0] + "/"
+            for role, url in assets.items():
+                if url != base + ASSET_FILES[role]:
+                    issues.append(
+                        Issue(
+                            f"{location}.latest_release.assets.{role}",
+                            f"asset URL must be the release's own {ASSET_FILES[role]}",
+                        )
+                    )
 
         try:
             date.fromisoformat(release["published_at"])
