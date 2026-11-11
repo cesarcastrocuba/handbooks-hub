@@ -21,7 +21,8 @@ review fix and the merge of PR 17. **Recorded:** 2026-11-10.
   code spans are documentation and may show any markup. Paths such as `/tmp/`, `/home/`, `/Users/`
   and `file://` are legitimate book content and are not inspected.
 - `build.py` fails before writing `book.md` when the text leaks one of this build's own absolute
-  paths: the staging workspace, the output parent, the source repository and the home directory.
+  paths: the staging workspace, the output directory, the source repository and the home directory.
+  A path with fewer than three components (`/tmp`, `/home`) is never used as a needle.
 - `catalog_verification.py`: the expected asset count is `len(payloads) + 2` from the manifest
   (6 for `1.0`, 7 for `1.1`), kept together with the catalog download-link check merged from PR 17.
 - Version `0.6.0` in `tools/pyproject.toml` and `handbook_toolkit.__version__`; template pin and
@@ -120,7 +121,8 @@ in an HTML code sample, would fail its own build and its catalog verification. F
 - `artifacts.py` no longer scans for local paths. The prose script check skips fenced code blocks
   (backtick or tilde) and inline code spans, so only markup that would render as HTML fails.
 - `build.py` gained `_reject_local_paths`, called before `book.md` is written, with the real paths
-  of this build: repository, staging workspace, output, output parent and home directory.
+  of this build: repository, staging workspace, output and home directory. It ignores paths with
+  fewer than three components, so an output such as `/tmp/dist` cannot make `/tmp/demo` fail.
 - Tests cover both directions: passing content with paths and code markup, failing prose script, and
   a real build failing when its manuscript contains the repository path.
 

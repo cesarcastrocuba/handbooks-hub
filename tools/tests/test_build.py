@@ -330,6 +330,13 @@ class MarkdownEditionTests(unittest.TestCase):
             with self.assertRaises(BuildError):
                 _reject_local_paths(f"Home is {Path.home()}.", [Path.home()])
 
+    def test_local_path_guard_ignores_short_system_directories(self):
+        for value in ("/tmp", "/home", "/var", "/opt"):
+            with self.subTest(path=value):
+                _reject_local_paths("The demo writes to /tmp/demo.", [Path(value)])
+        self.assertEqual(len(Path("/tmp").parts), 2)
+        self.assertEqual(len(Path("/home").parts), 2)
+
     def test_header_carries_document_control_fields_and_commit(self):
         fields = [("Title", "Fixture"), ("Version", "1.0.0"),
                   ("Content license", "CC BY-SA 4.0")]

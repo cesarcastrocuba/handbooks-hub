@@ -38,9 +38,10 @@ Git source archive. Rollback removes this module, its tests and this guide witho
 changing publication identity or existing validators.
 
 The Markdown edition is not checked for portable text by the shared inspector. The build
-itself rejects a leak of its own absolute paths (the staging workspace, the output parent,
+itself rejects a leak of its own absolute paths (the staging workspace, the output directory,
 the source repository and the home directory) before writing `book.md`, which catches the
-real defect without rejecting content. The online release gate still passes the source
+real defect without rejecting content. Paths with fewer than three components (`/tmp`,
+`/home`) are never used as needles, so a shared system directory cannot reject a book. The online release gate still passes the source
 commit, so a changed header fails.
 
 The local runtime proof passed for Quarto 1.11.9 / Pandoc 3.10 / Typst 0.15.1

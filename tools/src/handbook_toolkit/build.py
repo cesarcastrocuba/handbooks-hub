@@ -561,11 +561,14 @@ def _reject_local_paths(text: str, paths: list[Path]) -> None:
     """Fail the build when the Markdown edition leaks one of this build's absolute paths.
 
     Book content may legitimately mention a path such as ``/tmp/demo`` or ``file://``.
-    The leak that matters is the private staging workspace, the output parent or the
-    source repository of this build, including the home directory.
+    The leak that matters is the private staging workspace, the output directory or the
+    source repository of this build, including the home directory. A path with fewer than
+    three components, such as ``/tmp`` or ``/home``, is a shared system directory and is
+    never used as a needle: an output directly under it would otherwise reject ordinary
+    content.
     """
 
-    leaked = sorted({str(path) for path in paths if str(path) not in {"", "/", "."}})
+    leaked = sorted({str(path) for path in paths if len(path.parts) >= 3})
     for value in leaked:
         if value in text:
             raise BuildError(f"the Markdown edition leaks the local path {value}")
@@ -822,7 +825,7 @@ def build_book(
         )
         _reject_local_paths(
             markdown_text,
-            [repo, workspace, staging, output, output.parent, Path.home()],
+            [repo, workspace, staging, output, Path.home()],
         )
         markdown_path = dist / PAYLOADS["markdown"]
         markdown_path.write_text(markdown_text, encoding="utf-8")
