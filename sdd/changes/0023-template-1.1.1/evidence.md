@@ -86,3 +86,21 @@ from this worktree.
 - `docs/template-distribution.md`
 - `tools/tests/test_template.py`
 - `sdd/changes/0023-template-1.1.1/evidence.md`
+
+## End-to-end run from the template-v1.1.1 tree (2026-11-11)
+
+The missing end-to-end check was completed later in the throwaway repository
+`cesarcastrocuba/handbook-template-dryrun-delete-me`:
+
+- `main` was reset to the exact `template-v1.1.1` tree: commit `f0e264afda43ee6cdb9afbcb9bb9884ca4ae385e`,
+  whose tree is identical to the tree of tag `template-v1.1.1` (`f07a7af`); the file list matches.
+- `initialize-book` run 43114371187 succeeded on `main` with the title
+  `Field Notes: "Day 2" Operations # Draft`, id `field-notes` and author `Ana Ñandú`.
+- Branch `init/field-notes` changed six files: `book.yaml` +6 −6, `publishing/_quarto.yml` +2 −2,
+  `publishing/metadata.yaml` +2 −2, `NOTICE.md` +2 −2, `LICENSE-CODE` +1 −1 and `README.md` +1 −2.
+  `book.yaml` kept its header comments and the quoting of the untouched values.
+- Its pull request passed the template `ci` check (run 43114478414) and was merged.
+- Release run 43114575628 succeeded (build, verify and publish; deploy the HTML edition) and published
+  `v0.2.0` with seven assets; `sha256sum -c SHA256SUMS.txt` is OK for the six listed files. `book.md`
+  opens with version `0.2.0` and the title, and the Pages site shows the title with its quotes and `#`.
+- Not done: nothing else. The throwaway repository still awaits the Owner's deletion.

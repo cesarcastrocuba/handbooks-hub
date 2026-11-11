@@ -94,6 +94,9 @@ is illustrative, not a released format. Schema `1.1` requires the five payloads;
 - Keep the manifest and checksums with the release so a later audit can verify the bytes.
 - If a published artifact is wrong, withdraw the catalog entry first, then publish a corrected
   version. Never silently replace assets.
+- A newer approved release does not withdraw the previous one: published releases stay published as
+  previous editions, and a release is withdrawn only for a recorded reason and by an explicit Owner
+  decision (`HUB-DEC-031`).
 - Pages is a projection of an approved release. A failed Pages deployment leaves the previous
   approved site in place.
 
