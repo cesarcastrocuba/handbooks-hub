@@ -1,0 +1,154 @@
+name: initialize-book
+
+# Manual only. Replaces the template identifiers once, commits the result and pushes branch
+# `init/<id>`. It does not open a pull request and does not change anything under `.github/`:
+# the default token of a new repository can do neither.
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: Book title
+        required: true
+        type: string
+      id:
+        description: Book identifier (lower-case slug, for example my-handbook)
+        required: true
+        type: string
+      author:
+        description: Author or copyright holder
+        required: true
+        type: string
+      summary:
+        description: Catalog summary, at most 280 characters
+        required: true
+        type: string
+      category:
+        description: Primary catalog category
+        required: true
+        type: choice
+        options:
+          - architecture
+          - authoring
+          - cloud
+          - data
+          - engineering
+          - governance
+          - publishing
+          - security
+
+permissions:
+  contents: read
+
+concurrency:
+  group: initialize-book
+  cancel-in-progress: false
+
+jobs:
+  initialize:
+    name: Replace the template identity
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # push the init/<id> branch
+    env:
+      BOOK_TITLE: ${{ inputs.title }}
+      BOOK_ID: ${{ inputs.id }}
+      BOOK_AUTHOR: ${{ inputs.author }}
+      BOOK_SUMMARY: ${{ inputs.summary }}
+      BOOK_CATEGORY: ${{ inputs.category }}
+      REPOSITORY: ${{ github.repository }}
+      DEFAULT_REF: refs/heads/${{ github.event.repository.default_branch }}
+    steps:
+      - name: Check out the default branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+
+      - name: Install the pinned toolkit
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Validate the request
+        run: |
+          set -euo pipefail
+
+          fail() {
+            echo "::error::$1"
+            exit 1
+          }
+
+          if [ "$GITHUB_REF" != "$DEFAULT_REF" ]; then
+            fail "run this workflow from $DEFAULT_REF, not $GITHUB_REF"
+          fi
+          if [ -z "$BOOK_TITLE" ]; then
+            fail "title must not be empty"
+          fi
+          if [ -z "$BOOK_AUTHOR" ]; then
+            fail "author must not be empty"
+          fi
+          if ! printf '%s' "$BOOK_ID" | grep -Eq '^[a-z][a-z0-9-]{1,63}$'; then
+            fail "id must match ^[a-z][a-z0-9-]{1,63}$"
+          fi
+          summary_length="$(printf '%s' "$BOOK_SUMMARY" | wc -m)"
+          if [ "$summary_length" -lt 1 ] || [ "$summary_length" -gt 280 ]; then
+            fail "summary must contain between 1 and 280 characters"
+          fi
+          case "$BOOK_CATEGORY" in
+            architecture|authoring|cloud|data|engineering|governance|publishing|security) ;;
+            *) fail "category is not in the catalog vocabulary" ;;
+          esac
+
+      - name: Refuse an already initialized book
+        run: |
+          book_id="$(python3 -c 'import yaml; print(yaml.safe_load(open("book.yaml"))["id"])')"
+          if [ "$book_id" != "template-book" ]; then
+            echo "::error::book.yaml id is $book_id, not template-book; this workflow runs once"
+            exit 1
+          fi
+
+      - name: Rewrite the book identity
+        run: |
+          python3 .github/scripts/initialize_book.py \
+            --root . \
+            --id "$BOOK_ID" \
+            --title "$BOOK_TITLE" \
+            --author "$BOOK_AUTHOR" \
+            --summary "$BOOK_SUMMARY" \
+            --category "$BOOK_CATEGORY" \
+            --repository-url "https://github.com/$REPOSITORY"
+
+      - name: Run the fast checks
+        run: make check
+
+      - name: Commit and push the initialization branch
+        run: |
+          set -euo pipefail
+
+          branch="init/$BOOK_ID"
+          default_branch="${DEFAULT_REF#refs/heads/}"
+          compare_url="$GITHUB_SERVER_URL/$REPOSITORY/compare/$default_branch...$branch?expand=1"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898583+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add book.yaml publishing/_quarto.yml publishing/metadata.yaml NOTICE.md LICENSE-CODE README.md
+          if git diff --cached --quiet; then
+            echo "::error::the rewrite produced no changes"
+            exit 1
+          fi
+          git commit -m "chore(book): initialize $BOOK_ID"
+          git push origin "HEAD:refs/heads/$branch"
+
+          {
+            echo "### Book initialized"
+            echo ""
+            echo "Branch: \`$branch\`"
+            echo ""
+            echo "Open the pull request: $compare_url"
+            echo ""
+            echo "This workflow does not open a pull request. Review the branch, then open and merge it yourself."
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,197 @@
+name: release
+
+# Manual only. Builds one verified payload set from the exact commit, publishes every file in
+# that directory as release assets, and deploys the HTML edition to GitHub Pages from the same
+# bytes. It never publishes on push or pull_request.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Book version, exact X.Y.Z without a leading v
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build, verify and publish
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # create the release and its tag
+      pages: read # configure and upload the Pages artifact
+    env:
+      VERSION: ${{ inputs.version }}
+      TAG: v${{ inputs.version }}
+      DEFAULT_REF: refs/heads/${{ github.event.repository.default_branch }}
+    steps:
+      - name: Check out the exact commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate the request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::version must be X.Y.Z, got: $VERSION"
+            exit 1
+          fi
+          if [ "$GITHUB_REF" != "$DEFAULT_REF" ]; then
+            echo "::error::a release must be dispatched from $DEFAULT_REF, not $GITHUB_REF"
+            exit 1
+          fi
+          git fetch --tags --force origin
+          if git rev-parse -q --verify "refs/tags/$TAG" > /dev/null; then
+            echo "::error::tag $TAG already exists"
+            exit 1
+          fi
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "::error::release $TAG already exists"
+            exit 1
+          fi
+          SOURCE_COMMIT="$(git rev-parse HEAD)"
+          test "$SOURCE_COMMIT" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain)"
+          echo "SOURCE_COMMIT=$SOURCE_COMMIT" >> "$GITHUB_ENV"
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+
+      - name: Install Quarto
+        uses: quarto-dev/quarto-actions/setup@8a96df13519ee81fd526f2dfca5962811136661b # v2.2.0
+        with:
+          version: "1.11.9"
+
+      - name: Install system inspection dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends poppler-utils
+
+      - name: Verify the Quarto version
+        run: test "$(quarto --version)" = "1.11.9"
+
+      - name: Install the pinned toolkit
+        run: |
+          python3 -m venv "$RUNNER_TEMP/toolkit-venv"
+          "$RUNNER_TEMP/toolkit-venv/bin/python" -m pip install --upgrade pip
+          "$RUNNER_TEMP/toolkit-venv/bin/python" -m pip install -r requirements.txt
+          "$RUNNER_TEMP/toolkit-venv/bin/handbook-toolkit" version
+
+      - name: Refuse an uninitialized template book
+        run: |
+          book_id="$("$RUNNER_TEMP/toolkit-venv/bin/python" -c 'import yaml; print(yaml.safe_load(open("book.yaml"))["id"])')"
+          if [ "$book_id" = "template-book" ]; then
+            echo "::error::book.yaml id is still template-book; run the Initialize book workflow first"
+            exit 1
+          fi
+
+      - name: Run the fast checks
+        run: |
+          export PATH="$RUNNER_TEMP/toolkit-venv/bin:$PATH"
+          make check
+
+      - name: Build the release once
+        env:
+          RELEASE_DIR: ${{ runner.temp }}/release
+        run: |
+          test -z "$(git status --porcelain)"
+          "$RUNNER_TEMP/toolkit-venv/bin/handbook-toolkit" build-book \
+            --repo "$GITHUB_WORKSPACE" \
+            --commit "$SOURCE_COMMIT" \
+            --output "$RELEASE_DIR" \
+            --version "$VERSION" \
+            --quarto "$(command -v quarto)"
+
+      - name: Verify every byte in the release directory
+        env:
+          RELEASE_DIR: ${{ runner.temp }}/release
+        run: |
+          cd "$RELEASE_DIR"
+          sha256sum --check SHA256SUMS.txt
+          test -f publication-manifest.json
+          test -f book-html.zip
+          "$RUNNER_TEMP/toolkit-venv/bin/python" - <<'PY'
+          import json
+          import os
+          import zipfile
+          from pathlib import Path
+
+          root = Path.cwd()
+          manifest = json.loads((root / "publication-manifest.json").read_text(encoding="utf-8"))
+          if manifest["book"]["commit"] != os.environ["SOURCE_COMMIT"]:
+              raise SystemExit("manifest commit does not match the checked-out commit")
+          if manifest["book"]["version"] != os.environ["VERSION"]:
+              raise SystemExit("manifest version does not match the requested version")
+          with zipfile.ZipFile(root / "book-html.zip") as archive:
+              if "index.html" not in archive.namelist():
+                  raise SystemExit("HTML ZIP has no index.html")
+          print(f"verified {len(list(root.iterdir()))} release files")
+          PY
+
+      - name: Extract the verified HTML edition
+        env:
+          RELEASE_DIR: ${{ runner.temp }}/release
+          PAGES_DIR: ${{ runner.temp }}/pages
+        run: |
+          mkdir -p "$PAGES_DIR"
+          unzip -q "$RELEASE_DIR/book-html.zip" -d "$PAGES_DIR"
+          test -f "$PAGES_DIR/index.html"
+
+      - name: Configure Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Upload the Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ${{ runner.temp }}/pages
+
+      - name: Publish every verified file to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_DIR: ${{ runner.temp }}/release
+        run: |
+          notes="$RUNNER_TEMP/release-notes.md"
+          cat > "$notes" <<EOF
+          Release $TAG.
+
+          - Source commit: $SOURCE_COMMIT
+          - Toolkit build: recorded in publication-manifest.json
+          - Assets: every file in the verified build directory
+          - The HTML edition is deployed to GitHub Pages from the same bytes.
+
+          This release was built once from the listed commit and verified before publication.
+          EOF
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$SOURCE_COMMIT" \
+            --title "$TAG" \
+            --notes-file "$notes" \
+            "$RELEASE_DIR"/*
+
+  deploy:
+    name: Deploy the HTML edition
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
