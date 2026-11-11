@@ -4,7 +4,7 @@ A starting point for an independent handbook repository. Copy this directory int
 then replace the identifiers and content. The copy is owned by the book; the hub does not update it
 in place.
 
-The template pins toolkit `0.5.0` and standard profile `1.0.0`. It contains no copied toolkit source
+The template pins toolkit `0.6.0` and standard profile `1.0.0`. It contains no copied toolkit source
 and never imports a parent hub checkout.
 
 ## What is included
@@ -59,12 +59,14 @@ make full
 ```
 
 `make build` requires a clean git commit, Quarto `1.11.9` and Poppler `pdfinfo`. It validates every
-chapter against the profile, renders HTML, Typst/PDF and DOCX once with `--no-execute`, inspects the
-payloads and atomically creates a six-file directory in `../dist`:
+chapter against the profile, renders a single-file Markdown edition and renders HTML, Typst/PDF and
+DOCX once with `--no-execute`, inspects the payloads and atomically creates a seven-file directory in
+`../dist`:
 
 - `book-html.zip`
 - `book.pdf`
 - `book.docx`
+- `book.md`
 - `book-source.zip`
 - `publication-manifest.json`
 - `SHA256SUMS.txt`

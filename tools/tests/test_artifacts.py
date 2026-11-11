@@ -126,6 +126,54 @@ class ArtifactTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             archive_tree(source, self.root / "source.zip", 1)
 
+    def markdown(self, text: str) -> Path:
+        path = self.root / "book.md"
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def header(self, version: str = "1.0.0", commit: str = "a" * 40) -> str:
+        return (
+            "# Fixture Handbook\n\n"
+            "| Field | Value |\n"
+            "| :--- | :--- |\n"
+            "| Title | Fixture Handbook |\n"
+            f"| Version | {version} |\n"
+            f"| Commit | {commit} |\n"
+            "| Content license | CC BY-SA 4.0 |\n\n"
+            "> Markdown edition.\n\n"
+            "# Introduction\n\nText.\n"
+        )
+
+    def test_markdown_requires_header_identity_and_portable_text(self):
+        output = self.markdown(self.header())
+        self.assertFalse(inspect_payload(output, "markdown", source_commit="a" * 40, version="1.0.0"))
+        self.assertTrue(inspect_payload(output, "markdown", version="1.0.1"))
+        self.assertTrue(inspect_payload(output, "markdown", source_commit="b" * 40))
+
+        output.write_text("No header.\n")
+        self.assertTrue(inspect_payload(output, "markdown"))
+
+        output.write_text(self.header().replace("| Field | Value |\n", ""))
+        self.assertTrue(inspect_payload(output, "markdown"))
+
+        output.write_text(self.header().replace("| Commit | " + "a" * 40 + " |\n", ""))
+        self.assertTrue(inspect_payload(output, "markdown"))
+
+        output.write_text(self.header() + "\nSee /home/user/manuscript/ch01.qmd.\n")
+        self.assertTrue(inspect_payload(output, "markdown"))
+
+        output.write_text(self.header() + "\n<script>alert(1)</script>\n")
+        self.assertTrue(inspect_payload(output, "markdown"))
+
+        output.write_text("")
+        self.assertTrue(inspect_payload(output, "markdown"))
+
+    def test_markdown_must_be_utf8(self):
+        path = self.root / "book.md"
+        path.write_bytes(self.header().encode("utf-8") + b"\xff\xfe")
+        issues = inspect_payload(path, "markdown")
+        self.assertTrue(any("UTF-8" in issue.message for issue in issues))
+
 
 if __name__ == "__main__":
     unittest.main()

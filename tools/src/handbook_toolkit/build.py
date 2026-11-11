@@ -4,9 +4,9 @@ The build is deliberately conservative:
 
 * the source repository must be clean at the exact requested commit;
 * only tracked files from that commit are staged, via ``git archive``;
-* Quarto renders HTML, Typst/PDF and DOCX once from a generated project config;
-* all four payloads are inspected before identity files are written;
-* the four payloads plus manifest/checksums are assembled in a private staging directory;
+* Quarto renders HTML, Typst/PDF, DOCX and a single-file GitHub-flavoured Markdown edition;
+* all five payloads are inspected before identity files are written;
+* the five payloads plus manifest/checksums are assembled in a private staging directory;
 * the verified staging directory is atomically renamed to the final output.
 
 This module does not publish, upload, deploy, approve or release anything.
@@ -18,6 +18,7 @@ from dataclasses import dataclass
 import os
 from pathlib import Path
 import platform
+import posixpath
 import re
 import shutil
 import subprocess
@@ -57,13 +58,28 @@ from .print_layout import (
 QUARTO_VERSION = "1.11.9"
 COMMIT = re.compile(r"[0-9a-f]{40}\Z")
 VERSION = re.compile(r"\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?\Z")
-ROLES = ("html", "pdf", "docx", "source")
+ROLES = ("html", "pdf", "docx", "markdown", "source")
 PAYLOADS = {
     "html": "book-html.zip",
     "pdf": "book.pdf",
     "docx": "book.docx",
+    "markdown": "book.md",
     "source": "book-source.zip",
 }
+MARKDOWN_ENTRY = "book-markdown.qmd"
+MARKDOWN_DIR = "_markdown"
+FRONT_MATTER_BLOCK = re.compile(r"\A---[ \t]*\n.*?\n---[ \t]*\n", re.DOTALL)
+INCLUDE_SHORTCODE = re.compile(r"\{\{<[ \t]*include[ \t]+([^>\s]+)[ \t]*>\}\}")
+XREF_LINK = re.compile(r'<a href="[^"]*" class="quarto-xref">(.*?)</a>', re.DOTALL)
+FIGURE_BLOCK = re.compile(r'<div id="fig-[^"]*">\s*(.*?)\s*</div>', re.DOTALL)
+TABLE_BLOCK = re.compile(r'<div id="tbl-[^"]*">\s*(.*?)\s*</div>', re.DOTALL)
+IMAGE = re.compile(r"!\[([^\]]*)\]\([^)]*\)")
+OMITTED_FIGURE = "*(figure image not included in the Markdown edition)*"
+MARKDOWN_NOTE = (
+    "> Markdown edition: the whole book in reading order, generated from the same source commit as "
+    "the other payloads. Figures appear as their captions only; use the HTML, PDF or DOCX payload "
+    "for the images. Table and figure counters run sequentially in this file."
+)
 
 
 class BuildError(ValueError):
@@ -449,6 +465,130 @@ def _payload_paths(workspace: Path, dist: Path, epoch: int) -> dict[str, Path]:
     }
 
 
+def _markdown_sources(workspace: Path, entries: list[str]) -> str:
+    """Concatenate the canonical reading order into one GitHub-flavoured Markdown source.
+
+    The Markdown edition is one file, so the per-file front matter of the reading order is
+    dropped and include shortcodes are resolved against the combined document at the project
+    root. The canonical sources are read before the render staging rewrites their headings.
+    """
+
+    parts: list[str] = []
+    for entry in entries:
+        try:
+            text = (workspace / entry).read_text(encoding="utf-8")
+        except OSError as exc:
+            raise BuildError(f"cannot read staged chapter {entry}: {exc}") from exc
+        match = FRONT_MATTER_BLOCK.match(text)
+        body = (text[match.end():] if match else text).strip()
+        if not body:
+            continue
+        parts.append(_rewrite_includes(body, entry))
+    if not parts:
+        raise BuildError("the reading order contains no manuscript content for the Markdown edition")
+    return "\n\n".join(parts) + "\n"
+
+
+def _rewrite_includes(text: str, entry: str) -> str:
+    """Resolve include shortcodes relative to the combined document at the project root."""
+
+    directory = posixpath.dirname(entry)
+    if not directory:
+        return text
+
+    def resolve(match: re.Match[str]) -> str:
+        target = posixpath.normpath(posixpath.join(directory, match.group(1)))
+        return f"{{{{< include {target} >}}}}"
+
+    return INCLUDE_SHORTCODE.sub(resolve, text)
+
+
+def _markdown_header(book: dict[str, Any], fields: list[tuple[str, str]], commit: str) -> str:
+    """Open the edition with the document-control fields of the print editions plus the commit."""
+
+    title = str(book.get("title", "")).strip()
+    if not title:
+        raise BuildError("the book descriptor has no title for the Markdown edition")
+    table = document_control_table([*fields, ("Commit", commit)])
+    return f"# {title}\n\n{table}\n\n{MARKDOWN_NOTE}\n\n"
+
+
+def _figure_caption(body: str) -> str:
+    """Replace a rendered figure by its caption or alternative text."""
+
+    caption = ""
+    alternative = ""
+    for line in body.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("!["):
+            image = IMAGE.search(stripped)
+            if image is not None and image.group(1).strip():
+                alternative = image.group(1).strip()
+            continue
+        caption = stripped
+    text = caption or alternative
+    return f"*{text}*" if text else OMITTED_FIGURE
+
+
+def _clean_markdown(text: str) -> str:
+    """Turn the Quarto gfm output into plain GitHub-flavoured Markdown.
+
+    Quarto resolves cross-references to raw HTML anchors and wraps tables and cross-referenced
+    figures in ``<div>`` containers. Markdown links and plain text keep the same information
+    without raw HTML, and figure images become their captions because one file cannot carry them.
+    """
+
+    text = text.replace("\r\n", "\n")
+    text = XREF_LINK.sub(r"\1", text)
+    text = FIGURE_BLOCK.sub(lambda match: f"\n\n{_figure_caption(match.group(1))}\n\n", text)
+    text = TABLE_BLOCK.sub(lambda match: f"\n\n{match.group(1).strip()}\n\n", text)
+    text = IMAGE.sub(
+        lambda match: f"*{match.group(1).strip()}*" if match.group(1).strip() else OMITTED_FIGURE,
+        text,
+    )
+    lines = [line.rstrip() for line in text.splitlines()]
+    collapsed: list[str] = []
+    for line in lines:
+        if not line and collapsed and not collapsed[-1]:
+            continue
+        collapsed.append(line)
+    return "\n".join(collapsed).strip() + "\n"
+
+
+def _render_markdown(
+    workspace: Path,
+    source: str,
+    resources: dict[str, Path],
+    quarto: str,
+    environment: dict[str, str],
+) -> str:
+    """Render one gfm document from the prepared source and return its raw Markdown."""
+
+    (workspace / MARKDOWN_ENTRY).write_text(source, encoding="utf-8")
+    config = {
+        "project": {"type": "default", "output-dir": MARKDOWN_DIR, "render": [MARKDOWN_ENTRY]},
+        "format": {"gfm": {"wrap": "none"}},
+        "filters": [
+            {"at": "pre-ast", "path": resources["filters/table-layout.lua"].relative_to(workspace).as_posix()},
+            {"at": "pre-ast", "path": resources["filters/task-checkbox.lua"].relative_to(workspace).as_posix()},
+        ],
+        "execute": {"enabled": False},
+    }
+    (workspace / "_quarto.yml").write_text(
+        yaml.safe_dump(config, sort_keys=True, allow_unicode=True), encoding="utf-8"
+    )
+    _run([quarto, "render", ".", "--no-execute"], cwd=workspace, env=environment)
+    rendered = workspace / MARKDOWN_DIR / "book-markdown.md"
+    if not rendered.is_file():
+        raise BuildError("Quarto did not produce the Markdown edition")
+    try:
+        return rendered.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise BuildError(f"cannot read the rendered Markdown edition: {exc}") from exc
+
+
 def build_book(
     repo: Path,
     commit: str,
@@ -461,7 +601,7 @@ def build_book(
     mode: str = "chapter",
     preview: bool = False,
 ) -> BuildResult:
-    """Build a verified six-file publication directory at *output*.
+    """Build a verified seven-file publication directory at *output*.
 
     ``output`` must not exist and must be outside the source repository. All work
     happens in a private sibling staging directory; only a complete, inspected
@@ -586,6 +726,9 @@ def build_book(
             language=language,
         )
         control_table = document_control_table(fields)
+        # The Markdown edition carries its own document-control header, so it is captured
+        # before the print editions inject the table into the front matter.
+        markdown_source = _markdown_sources(workspace, entries)
         for entry in entries:
             entry_path = workspace / entry
             content = entry_path.read_text(encoding="utf-8")
@@ -660,11 +803,21 @@ def build_book(
         )
 
         payloads = _payload_paths(workspace, dist, source_epoch)
+        markdown_path = dist / PAYLOADS["markdown"]
+        markdown_path.write_text(
+            _markdown_header(book, fields, commit)
+            + _clean_markdown(
+                _render_markdown(workspace, markdown_source, resources, quarto, environment)
+            ),
+            encoding="utf-8",
+        )
+        payloads["markdown"] = markdown_path
         for role in ROLES:
             issues = inspect_payload(
                 payloads[role],
                 role,
                 source_commit=commit if role == "source" else None,
+                version=book_version if role == "markdown" else None,
             )
             if issues:
                 raise BuildError(
