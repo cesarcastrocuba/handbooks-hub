@@ -1,11 +1,15 @@
 # Inspect rendered formats before publication
 
 The toolkit's `artifacts` module complements publication byte integrity.
-`inspect_payload(path, role, source_commit=...)` returns structural issues for:
+`inspect_payload(path, role, source_commit=..., version=...)` returns structural issues for:
 
 - PDF: signature plus successful `pdfinfo` inspection and at least one page.
 - DOCX: ZIP/CRC, required package parts, Word XML root and nonempty document text.
 - HTML site ZIP: root index, ZIP/CRC and local page, fragment and asset targets.
+- Markdown edition: valid UTF-8 and non-empty, opened by a level-one heading and the
+  document-control table, with a `Version` field matching the manifest version and a
+  `Commit` field matching the source commit. Raw HTML `<script>` and absolute local
+  paths such as `/home/`, `/tmp/` or `file://` are rejected, so the file stays portable.
 - Source ZIP: canonical Quarto input, descriptor, licenses/notices and a ZIP comment
   matching the independently expected full source commit (as written by `git archive`).
   Its declared reading-order file must exist and cover every canonical chapter once.
@@ -32,6 +36,8 @@ Git source archive. Rollback removes this module, its tests and this guide witho
 changing publication identity or existing validators.
 
 The local runtime proof passed for Quarto 1.11.9 / Pandoc 3.10 / Typst 0.15.1
-pilot outputs and a Git archive of the reviewed sample commit. All four payload
-inspectors and six-file manifest/checksum verification passed. Its version is
+pilot outputs and a Git archive of the reviewed sample commit. That proof covered
+the four original payload inspectors and six-file manifest/checksum verification.
+Toolkit `0.6.0` adds the Markdown inspector as a fifth payload; the regression that
+covers it is `make check` and the real build in `test_build.py`. Its version is
 `0.0.0-test`: it is a build-boundary proof, not an approved book release.

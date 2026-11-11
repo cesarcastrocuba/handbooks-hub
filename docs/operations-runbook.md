@@ -50,8 +50,10 @@ Operations distinguish between two verification gates:
      ```
    - Connects over HTTPS (port 443) using pinned public IP addresses.
    - Verifies GitHub release status, tag-to-commit resolution, manifest presence, payload integrity,
-     all six required release assets, format markers, and byte-for-byte parity of live reading
-     sites against the released HTML archive.
+     every release asset declared by the manifest, format markers, and byte-for-byte parity of live
+     reading sites against the released HTML archive. The asset count follows the manifest schema:
+     six assets for `1.0` (published before toolkit `0.6.0`) and seven for `1.1`, which adds
+     `book.md`.
 
 ---
 
@@ -283,7 +285,7 @@ Use when an active release must be pulled immediately without a ready replacemen
 
 5. **Delete release assets on Git host [Implementer / Owner]**:
    In the book repository on the Git hosting platform:
-   - Delete the release page and all six required assets (`book-html.zip`, `book.pdf`, `book.docx`, `book-source.zip`, `publication-manifest.json`, and `SHA256SUMS.txt`).
+   - Delete the release page and all required assets: `book-html.zip`, `book.pdf`, `book.docx`, `book-source.zip`, `publication-manifest.json` and `SHA256SUMS.txt`, plus `book.md` when the manifest schema is `1.1`.
    - **CRITICAL**: **Preserve the Git tag** (e.g., `v1.0.0`). The tag must remain in the repository's
      Git history for cryptographic auditability and commit provenance.
 
@@ -297,7 +299,7 @@ Use during planned remediation when a verified clean replacement is available:
    Owner approves the remediation plan and the replacement release version.
 
 2. **Publish clean release [Implementer & Owner]**:
-   In the book repository, merge fixes to `main`, run the publication build (`handbook-toolkit build-book` or CI publication workflow), verify all 6 assets with `handbook_toolkit.publication.verify_publication` (automatically verified by `build-book`), and publish release `vX.Y.Z` with live Pages deployment.
+   In the book repository, merge fixes to `main`, run the publication build (`handbook-toolkit build-book` or CI publication workflow), verify all 7 assets with `handbook_toolkit.publication.verify_publication` (automatically verified by `build-book`), and publish release `vX.Y.Z` with live Pages deployment.
 
 3. **Update catalog entry [Implementer]**:
    In the hub repository, create branch `feat/catalog-<version>`:
@@ -315,7 +317,7 @@ Use during planned remediation when a verified clean replacement is available:
 
 5. **Withdraw obsolete releases [Owner / Delegated Agent]**:
    Once the portal is verified live pointing to the new release:
-   - Delete the release pages and downloadable asset binaries of the superseded releases (`book-html.zip`, `book.pdf`, `book.docx`, `book-source.zip`, `publication-manifest.json`, and `SHA256SUMS.txt`).
+   - Delete the release pages and downloadable asset binaries of the superseded releases (`book-html.zip`, `book.pdf`, `book.docx`, `book-source.zip`, `publication-manifest.json` and `SHA256SUMS.txt`, plus `book.md` for manifest schema `1.1`).
    - Retain all Git tags in the book repository.
 
 ---

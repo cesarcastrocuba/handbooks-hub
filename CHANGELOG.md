@@ -3,6 +3,35 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
+## [0.6.0] - 2026-11-10
+
+### Added
+
+- A fifth payload, `book.md`: one GitHub-flavoured Markdown edition of the whole book in reading
+  order, rendered with Quarto `gfm` from the same source commit. It opens with the document-control
+  fields (title, version, commit, licenses), keeps headings, tables, callouts and cross-reference
+  text, and replaces each figure by its caption because one file cannot carry the images.
+- `inspect_payload(..., version=...)` checks the Markdown edition: UTF-8, document-control header,
+  version and commit identity, and no raw `<script>` or absolute local path.
+- An upgrade note for `0.5.0` to `0.6.0` in `docs/book-upgrade.md`.
+
+### Changed
+
+- Publication manifest schema `1.1` lists five artifacts (`html`, `pdf`, `docx`, `markdown`,
+  `source`). Schema `1.0` with four artifacts stays valid, so releases published before `0.6.0` keep
+  verifying.
+- `write_manifest` writes schema `1.1` and requires the five payloads; `verify_publication` accepts
+  both versions and rejects a version whose payload set does not match.
+- `catalog_verification` derives the expected release asset count from the manifest instead of a
+  fixed six, so a `1.0` release keeps six assets and a `1.1` release has seven.
+- The template pins toolkit `0.6.0`; `publication.formats` in `book.yaml` still lists only `html`,
+  `pdf` and `docx`, because the Markdown edition is implicit like the source bundle.
+
+### Migration
+
+A book bumps `toolkit` and its `requirements.txt` commit, keeps `publication.formats` unchanged, and
+updates any release workflow that uploads a fixed list of six files to upload seven.
+
 ## [Unreleased]
 
 ### Added
