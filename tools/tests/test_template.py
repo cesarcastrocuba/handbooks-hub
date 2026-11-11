@@ -10,6 +10,7 @@ on a copy.
 
 from __future__ import annotations
 
+from copy import deepcopy
 import hashlib
 import json
 import os
@@ -324,6 +325,41 @@ class TemplateWorkflowTests(unittest.TestCase):
         )
         self.assertEqual(initialize["jobs"]["initialize"]["permissions"], {"contents": "write"})
 
+    def test_no_git_network_command_runs_without_credentials(self) -> None:
+        # A checkout with persist-credentials: false leaves no credential helper. Any later
+        # `git fetch` or `git push` in the same job would fail on a private repository, so it must
+        # authenticate explicitly. initialize-book.yml keeps the checkout credentials and pushes.
+        for path in sorted(TEMPLATE_WORKFLOWS.glob("*.yml")):
+            document = _load(path)
+            for job in document.get("jobs", {}).values():
+                without_credentials = False
+                for step in job.get("steps", []):
+                    uses = step.get("uses", "")
+                    if uses.startswith("actions/checkout@"):
+                        without_credentials = (
+                            step.get("with", {}).get("persist-credentials") is False
+                        )
+                    script = step.get("run", "")
+                    for command in ("git fetch", "git push"):
+                        if command not in script or not without_credentials:
+                            continue
+                        env = step.get("env", {})
+                        authenticated = any(
+                            "token" in key.lower() or "TOKEN" in str(value)
+                            for key, value in env.items()
+                        )
+                        self.assertTrue(
+                            authenticated,
+                            f"{path.name}: {command!r} after a credential-less checkout",
+                        )
+
+    def test_release_checks_tags_through_the_api(self) -> None:
+        release = (TEMPLATE_WORKFLOWS / "release.yml").read_text(encoding="utf-8")
+        self.assertNotIn("git fetch", release)
+        self.assertIn(
+            'gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG"', release
+        )
+
     def test_release_is_published_only_after_the_pages_artifact(self) -> None:
         release = _load(TEMPLATE_WORKFLOWS / "release.yml")
         names = [step.get("name", "") for step in release["jobs"]["build"]["steps"]]
@@ -334,6 +370,118 @@ class TemplateWorkflowTests(unittest.TestCase):
 
 
 class InitializeBookTests(unittest.TestCase):
+    def assert_only_these_lines_changed(
+        self, before: str, after: str, prefixes: tuple[str, ...]
+    ) -> None:
+        before_lines = before.splitlines()
+        after_lines = after.splitlines()
+        self.assertEqual(len(before_lines), len(after_lines))
+        for old, new in zip(before_lines, after_lines):
+            if old == new:
+                continue
+            self.assertTrue(
+                any(old.startswith(prefix) for prefix in prefixes),
+                f"unexpected line changed: {old!r} -> {new!r}",
+            )
+
+    def test_initialization_preserves_comments_and_quoting(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            book = _copy_template(Path(temp), replace=False)
+            names = ("book.yaml", "publishing/_quarto.yml", "publishing/metadata.yaml")
+            originals = {name: (book / name).read_text(encoding="utf-8") for name in names}
+
+            result = _initialize(book)
+            self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+
+            self.assert_only_these_lines_changed(
+                originals["book.yaml"],
+                (book / "book.yaml").read_text(encoding="utf-8"),
+                ("id:", "title:", "  slug:", "  summary:", "    - ", "  url:"),
+            )
+            self.assert_only_these_lines_changed(
+                originals["publishing/_quarto.yml"],
+                (book / "publishing/_quarto.yml").read_text(encoding="utf-8"),
+                ("  title:", "  author:"),
+            )
+            self.assert_only_these_lines_changed(
+                originals["publishing/metadata.yaml"],
+                (book / "publishing/metadata.yaml").read_text(encoding="utf-8"),
+                ("version:", "status:"),
+            )
+
+            descriptor = (book / "book.yaml").read_text(encoding="utf-8")
+            for line in (
+                "# Book descriptor. Replace the identifiers and summary before the first commit.",
+                "# Keep toolkit and profile versions exact: ranges are rejected by the schema.",
+                'schema_version: "1.0"',
+                'toolkit: "0.6.0"',
+                'version: "1.0.0"',
+                "default_branch: main",
+            ):
+                self.assertIn(line, descriptor)
+            metadata = (book / "publishing/metadata.yaml").read_text(encoding="utf-8")
+            self.assertIn("# Provisional publication metadata. Replace identifiers before release.", metadata)
+            self.assertIn('language: "en"', metadata)
+            self.assertIn(
+                'date: "2026-11-06"',
+                (book / "publishing/_quarto.yml").read_text(encoding="utf-8"),
+            )
+
+    def test_awkward_values_round_trip_and_leave_unrelated_keys(self) -> None:
+        identity = {
+            "id": "awkward-book",
+            "title": 'A: "double" \'single\' #hash — Ünïcode  ',
+            "author": '  Zoë O\'Brien: #1 "Author"  ',
+            "summary": "  A: summary # with 'single', \"double\", ünïcode.  ",
+            "category": "engineering",
+            "repository-url": "https://github.com/example/awkward-book",
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            book = _copy_template(Path(temp), replace=False)
+            before_book = _load(book / "book.yaml")
+            before_quarto = _load(book / "publishing/_quarto.yml")
+            before_metadata = _load(book / "publishing/metadata.yaml")
+
+            result = _initialize(book, identity)
+            self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+
+            after_book = _load(book / "book.yaml")
+            after_quarto = _load(book / "publishing/_quarto.yml")
+            after_metadata = _load(book / "publishing/metadata.yaml")
+
+            expected_book = deepcopy(before_book)
+            expected_book["id"] = identity["id"]
+            expected_book["title"] = identity["title"]
+            expected_book["catalog"]["slug"] = identity["id"]
+            expected_book["catalog"]["summary"] = identity["summary"]
+            expected_book["catalog"]["categories"] = [identity["category"]]
+            expected_book["repository"]["url"] = identity["repository-url"]
+            self.assertEqual(after_book, expected_book)
+
+            expected_quarto = deepcopy(before_quarto)
+            expected_quarto["book"]["title"] = identity["title"]
+            expected_quarto["book"]["author"] = identity["author"]
+            self.assertEqual(after_quarto, expected_quarto)
+
+            expected_metadata = deepcopy(before_metadata)
+            expected_metadata["version"] = "0.1.0"
+            expected_metadata["status"] = "Draft"
+            self.assertEqual(after_metadata, expected_metadata)
+
+            validation = _run(
+                [
+                    sys.executable,
+                    "-m",
+                    "handbook_toolkit",
+                    "--root",
+                    str(book),
+                    "validate-book",
+                    "--full",
+                ],
+                book,
+            )
+            self.assertEqual(validation.returncode, 0, validation.stderr or validation.stdout)
+
     def test_initializes_a_copy_and_refuses_a_second_run(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             book = _copy_template(Path(temp), replace=False)
