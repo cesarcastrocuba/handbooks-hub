@@ -18,8 +18,10 @@ The toolkit gains a fifth payload and the publication manifest gains schema `1.1
   valid, because the hub must keep verifying the published sample `v0.2.4` (six assets) until
   `v0.2.5` is listed.
 - `publication.py` knows the `markdown` role (media type and `.md` suffix), writes `1.1` and verifies
-  both versions. `artifacts.py` inspects `book.md`. `catalog_verification.py` derives the release
-  asset count from the manifest instead of a fixed six.
+  both versions. `artifacts.py` inspects `book.md`: header, identity and a raw `<script` in prose,
+  while fenced code blocks and inline code spans stay documentation. `build.py` rejects a leak of the
+  build's own absolute paths. `catalog_verification.py` derives the release asset count from the
+  manifest instead of a fixed six, next to the catalog download-link check.
 - `docs/` describes seven assets, the Markdown limits and the `0.5.0` to `0.6.0` migration.
 
 ## Why

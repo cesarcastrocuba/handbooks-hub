@@ -144,7 +144,7 @@ class ArtifactTests(unittest.TestCase):
             "# Introduction\n\nText.\n"
         )
 
-    def test_markdown_requires_header_identity_and_portable_text(self):
+    def test_markdown_requires_header_and_identity(self):
         output = self.markdown(self.header())
         self.assertFalse(inspect_payload(output, "markdown", source_commit="a" * 40, version="1.0.0"))
         self.assertTrue(inspect_payload(output, "markdown", version="1.0.1"))
@@ -159,13 +159,25 @@ class ArtifactTests(unittest.TestCase):
         output.write_text(self.header().replace("| Commit | " + "a" * 40 + " |\n", ""))
         self.assertTrue(inspect_payload(output, "markdown"))
 
-        output.write_text(self.header() + "\nSee /home/user/manuscript/ch01.qmd.\n")
-        self.assertTrue(inspect_payload(output, "markdown"))
-
-        output.write_text(self.header() + "\n<script>alert(1)</script>\n")
-        self.assertTrue(inspect_payload(output, "markdown"))
-
         output.write_text("")
+        self.assertTrue(inspect_payload(output, "markdown"))
+
+    def test_markdown_content_may_show_paths_and_code_markup(self):
+        output = self.markdown(
+            self.header()
+            + "\nThe demo writes to /tmp/demo and reads /home/user/data and /Users/dev/x.\n\n"
+            "An escaped base URL looks like file:///srv/book.\n\n"
+            "```html\n<script>alert(1)</script>\n```\n\n"
+            "~~~html\n<script src=\"app.js\"></script>\n~~~\n\n"
+            "Inline code such as `<script>` is documentation, not markup.\n"
+        )
+        self.assertFalse(inspect_payload(output, "markdown"))
+
+    def test_markdown_prose_script_is_rejected(self):
+        output = self.markdown(self.header() + "\n<script>alert(1)</script>\n")
+        self.assertTrue(inspect_payload(output, "markdown"))
+
+        output.write_text(self.header() + "\nEmbed an <script src=\"app.js\"> tag.\n")
         self.assertTrue(inspect_payload(output, "markdown"))
 
     def test_markdown_must_be_utf8(self):

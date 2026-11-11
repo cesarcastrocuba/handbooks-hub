@@ -103,6 +103,9 @@ the reading and print editions. Its limits:
   chapter-scoped numbers of the print and HTML editions.
 - Include shortcodes that resolve through the manuscript path work, but any reader that assumes the
   original per-file directory layout is not reproduced.
+- The build fails when the rendered file contains one of its own absolute paths (staging workspace,
+  output parent, source repository or home directory). Book content may still mention paths such as
+  `/tmp/` or `file://`; those are not rejected.
 
 The manifest records the exact commit, book version, toolkit/profile versions, build command, source
 epoch, and Quarto/Pandoc/Typst/Python/zlib runtime versions.

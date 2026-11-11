@@ -27,6 +27,7 @@ from handbook_toolkit.build import (  # noqa: E402
     _clean_markdown,
     _markdown_header,
     _markdown_sources,
+    _reject_local_paths,
     _render_config,
     build_book,
 )
@@ -320,6 +321,15 @@ class MarkdownEditionTests(unittest.TestCase):
         self.assertIn("*(figure image not included in the Markdown edition)*", cleaned)
         self.assertFalse(cleaned.startswith("\n"))
 
+    def test_local_path_guard_rejects_this_build_paths(self):
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp) / ".handbook-build-fixture" / "work"
+            _reject_local_paths("The demo writes to /tmp/demo and file:///srv/book.", [workspace])
+            with self.assertRaises(BuildError):
+                _reject_local_paths(f"See {workspace}/manuscript/ch01.qmd.", [workspace])
+            with self.assertRaises(BuildError):
+                _reject_local_paths(f"Home is {Path.home()}.", [Path.home()])
+
     def test_header_carries_document_control_fields_and_commit(self):
         fields = [("Title", "Fixture"), ("Version", "1.0.0"),
                   ("Content license", "CC BY-SA 4.0")]
@@ -372,6 +382,25 @@ class BuildTests(unittest.TestCase):
             self.assertNotIn("<a href=", markdown)
             self.assertTrue(verify_publication(output).ok)
             self.assertIn("**Definition.**", (repo / "manuscript/chapters/pilot.qmd").read_text())
+
+    def test_local_path_in_the_markdown_fails_the_build(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, commit = make_book(root)
+            pilot = repo / "manuscript/chapters/pilot.qmd"
+            pilot.write_text(
+                pilot.read_text(encoding="utf-8").replace(
+                    "**Example.** An illustrative handbook names its reader and its excluded scope.",
+                    f"**Example.** An illustrative handbook lives at {repo}/manuscript.",
+                ),
+                encoding="utf-8",
+            )
+            self.assertIn(f"{repo}/manuscript", pilot.read_text(encoding="utf-8"))
+            commit = commit_all(repo, "local path in the manuscript")
+            output = root / "dist"
+            with self.assertRaises(BuildError, msg=f"a local path must fail the build: {repo}"):
+                build_book(repo, commit, output, profile=PROFILE, mode="section-pilot")
+            self.assertFalse(output.exists())
 
     def test_existing_output_is_refused(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

@@ -1,7 +1,7 @@
 # Evidence — Markdown edition, toolkit 0.6.0
 
-**Change:** `0019-markdown-edition`. **Branch:** `feat/toolkit-0.6.0`, stacked on
-`docs/decision-027-withdraw-v0.2.2`. **Recorded:** 2026-11-10.
+**Change:** `0019-markdown-edition`. **Branch:** `feat/toolkit-0.6.0`, based on `main` after the
+review fix and the merge of PR 17. **Recorded:** 2026-11-10.
 
 ## What was implemented
 
@@ -16,10 +16,14 @@
   artifacts including `markdown`), each with a `contains` set so a version cannot miss a role.
 - `publication.py`: `markdown` media type and `.md` suffix; `write_manifest` writes `1.1`;
   `verify_publication` derives the required roles from `schema_version`.
-- `artifacts.py`: `inspect_payload(..., version=...)` checks UTF-8, the document-control header, the
-  version and commit rows, and rejects raw `<script>` and absolute local paths.
+- `artifacts.py`: `inspect_payload(..., version=...)` checks UTF-8, the document-control header and
+  the version and commit rows. A raw `<script` in prose is rejected; fenced code blocks and inline
+  code spans are documentation and may show any markup. Paths such as `/tmp/`, `/home/`, `/Users/`
+  and `file://` are legitimate book content and are not inspected.
+- `build.py` fails before writing `book.md` when the text leaks one of this build's own absolute
+  paths: the staging workspace, the output parent, the source repository and the home directory.
 - `catalog_verification.py`: the expected asset count is `len(payloads) + 2` from the manifest
-  (6 for `1.0`, 7 for `1.1`); no catalog `assets` logic was added.
+  (6 for `1.0`, 7 for `1.1`), kept together with the catalog download-link check merged from PR 17.
 - Version `0.6.0` in `tools/pyproject.toml` and `handbook_toolkit.__version__`; template pin and
   seven-file comments updated; `CHANGELOG.md` gets `## [0.6.0] - 2026-11-10`; docs updated.
 
@@ -27,15 +31,18 @@
 
 | Command | Result |
 | --- | --- |
-| `make check` | `Ran 224 tests in 125.254s` — `OK`; `VERIFY: 5 check(s), 0 problem(s)` |
-| `make full` | Same tests pass; `VERIFY: 5 check(s), 0 problem(s)`; `documentation links: OK`; `VERIFY (full): 6 check(s), 0 problem(s)` |
-| `python3 -m unittest discover -s tools/tests -p "test_build.py"` | `Ran 17 tests in 35.816s` — `OK` (includes the real Quarto build) |
+| `make check` | `Ran 245 tests in 88.091s` — `OK`; `VERIFY: 5 check(s), 0 problem(s)` |
+| `make full` | `Ran 245 tests in 196.335s` — `OK`; `VERIFY: 5 check(s), 0 problem(s)`; `documentation links: OK`; `VERIFY (full): 6 check(s), 0 problem(s)` |
+| `python3 -m unittest discover -s tools/tests -p "test_build.py"` | `Ran 19 tests in 104.708s` — `OK` (includes two real Quarto builds) |
 
 New regression coverage: manifest `1.0` and `1.1` both verify, `1.1` without `markdown` fails,
 `1.0` with `markdown` fails, duplicate role cannot replace a required payload; Markdown inspector
-negatives (missing header, wrong version, wrong commit, non-UTF-8, absolute path, `<script>`, empty);
-catalog gate accepts a `1.0` release with six assets and a `1.1` release with seven, and rejects a
-release whose asset count differs from the manifest.
+negatives (missing header, wrong version, wrong commit, non-UTF-8, empty); prose `<script>` rejected
+while `/tmp/demo`, `/home/user`, `file://` and fenced or inline `<script>` samples pass; the build
+guard raises `BuildError` for this build's paths and accepts `/tmp/demo`; a real build whose
+manuscript contains the repository path fails and leaves no output; catalog gate accepts a `1.0`
+release with six assets and a `1.1` release with seven, rejects a differing asset count, and keeps
+main's conflicting download-link test.
 
 ## Real build of the sample book
 
@@ -45,12 +52,14 @@ build ran as an explicit non-release preview at its current `HEAD`:
 ```bash
 PYTHONPATH=tools/src python3 -m handbook_toolkit build-book \
   --repo /home/ubuntu/github/handbook-sample-01 \
-  --commit 261190b0515729e7135405e184da1440815fa215 \
-  --output /tmp/opencode/sample-build --version 0.2.5-preview --preview
+  --commit e4e3f82cdb30934a71c1ea7c19f2a8b1d9166968 \
+  --output /tmp/opencode/sample-build-r2 --version 0.2.5-preview --preview
 ```
 
-Result: `/tmp/opencode/sample-build: OK`, `commit: 261190b0…`, `version: 0.2.5-preview`,
-`epoch: 1794352248`, `pandoc=3.10, python=3.12.3, quarto=1.11.9, typst=0.15.1, zlib=1.3`.
+Result: `/tmp/opencode/sample-build-r2: OK`, `commit: e4e3f82c…`, `version: 0.2.5-preview`,
+`epoch: 1794352783`, `pandoc=3.10, python=3.12.3, quarto=1.11.9, typst=0.15.1, zlib=1.3`. The
+earlier run used the previous sample `HEAD` (`261190b`); the sample merged its withdrawal
+documentation as PR 11 in between, so the excerpt below quotes the newer commit.
 
 Seven assets:
 
@@ -67,8 +76,8 @@ publication-manifest.json
 `sha256sum -c SHA256SUMS.txt` — `OK` for all six listed files. The manifest reports
 `schema_version: 1.1` with roles `docx, html, markdown, pdf, source`.
 
-A second build into `/tmp/opencode/sample-build-2` produced a byte-identical `book.md`
-(`8694eb97bc13bbdce875e4ed8e8ca686537967678e513a7bc1be38707d9c8582`), so the edition is
+A second build into `/tmp/opencode/sample-build-r3` produced a byte-identical `book.md`
+(`2c14427fecb3411a93565468fafb9ab04b09452e16ad084bfe93d9761f7e0693`), so the edition is
 deterministic for this commit and toolchain. `book.md` holds 2,014 lines and contains no `<div>`,
 `<a href`, `<script>`, `file://`, `/home/` or `/tmp/` occurrence.
 
@@ -89,7 +98,7 @@ First 25 lines of `book.md`:
 | Language | English |
 | Content license | CC BY-SA 4.0 |
 | Code license | MIT |
-| Commit | 261190b0515729e7135405e184da1440815fa215 |
+| Commit | e4e3f82cdb30934a71c1ea7c19f2a8b1d9166968 |
 
 > Markdown edition: the whole book in reading order, generated from the same source commit as the other payloads. Figures appear as their captions only; use the HTML, PDF or DOCX payload for the images. Table and figure counters run sequentially in this file.
 
@@ -101,6 +110,25 @@ First 25 lines of `book.md`:
 |:---|:---|
 | Approver and maintainer | Franz César Castro Cuba |
 ```
+
+## Review fix (PR 19, CHANGES_REQUESTED)
+
+The first review found that a generic absolute-path regex and an unconditional `<script` check
+rejected legitimate book content: a handbook with `/tmp/` or `file://` in an example, or `<script`
+in an HTML code sample, would fail its own build and its catalog verification. Fixed:
+
+- `artifacts.py` no longer scans for local paths. The prose script check skips fenced code blocks
+  (backtick or tilde) and inline code spans, so only markup that would render as HTML fails.
+- `build.py` gained `_reject_local_paths`, called before `book.md` is written, with the real paths
+  of this build: repository, staging workspace, output, output parent and home directory.
+- Tests cover both directions: passing content with paths and code markup, failing prose script, and
+  a real build failing when its manuscript contains the repository path.
+
+The review's second item is merged: PR 17 (`feat/portal-library`) landed on `main` with catalog
+`assets` links. The merge conflict in `tools/tests/test_catalog_verification.py` kept both test sets;
+`test_direct_download_links_must_match_the_release_manifest` now uses the legacy four-artifact fixture
+so it can still declare an absent `markdown` link. `catalog_verification.py` keeps the `declared`
+link check and the manifest-derived asset count. The PR base moved from the Phase 0 branch to `main`.
 
 ## Known limits
 

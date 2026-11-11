@@ -8,8 +8,10 @@ The toolkit's `artifacts` module complements publication byte integrity.
 - HTML site ZIP: root index, ZIP/CRC and local page, fragment and asset targets.
 - Markdown edition: valid UTF-8 and non-empty, opened by a level-one heading and the
   document-control table, with a `Version` field matching the manifest version and a
-  `Commit` field matching the source commit. Raw HTML `<script>` and absolute local
-  paths such as `/home/`, `/tmp/` or `file://` are rejected, so the file stays portable.
+  `Commit` field matching the source commit. A raw `<script` in prose is rejected, because
+  it would render as HTML. Fenced code blocks and inline code spans are documentation and
+  are not inspected, so a handbook may show any markup, path or URL in an example: `/tmp/`,
+  `/home/`, `/Users/` and `file://` are legitimate book content.
 - Source ZIP: canonical Quarto input, descriptor, licenses/notices and a ZIP comment
   matching the independently expected full source commit (as written by `git archive`).
   Its declared reading-order file must exist and cover every canonical chapter once.
@@ -34,6 +36,12 @@ Verification: `python3 -m unittest discover -s tools/tests -p test_artifacts.py`
 The runtime harness also inspects actual Quarto-generated PDF/DOCX/HTML and a
 Git source archive. Rollback removes this module, its tests and this guide without
 changing publication identity or existing validators.
+
+The Markdown edition is not checked for portable text by the shared inspector. The build
+itself rejects a leak of its own absolute paths (the staging workspace, the output parent,
+the source repository and the home directory) before writing `book.md`, which catches the
+real defect without rejecting content. The online release gate still passes the source
+commit, so a changed header fails.
 
 The local runtime proof passed for Quarto 1.11.9 / Pandoc 3.10 / Typst 0.15.1
 pilot outputs and a Git archive of the reviewed sample commit. That proof covered

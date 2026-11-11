@@ -557,6 +557,20 @@ def _clean_markdown(text: str) -> str:
     return "\n".join(collapsed).strip() + "\n"
 
 
+def _reject_local_paths(text: str, paths: list[Path]) -> None:
+    """Fail the build when the Markdown edition leaks one of this build's absolute paths.
+
+    Book content may legitimately mention a path such as ``/tmp/demo`` or ``file://``.
+    The leak that matters is the private staging workspace, the output parent or the
+    source repository of this build, including the home directory.
+    """
+
+    leaked = sorted({str(path) for path in paths if str(path) not in {"", "/", "."}})
+    for value in leaked:
+        if value in text:
+            raise BuildError(f"the Markdown edition leaks the local path {value}")
+
+
 def _render_markdown(
     workspace: Path,
     source: str,
@@ -803,14 +817,15 @@ def build_book(
         )
 
         payloads = _payload_paths(workspace, dist, source_epoch)
-        markdown_path = dist / PAYLOADS["markdown"]
-        markdown_path.write_text(
-            _markdown_header(book, fields, commit)
-            + _clean_markdown(
-                _render_markdown(workspace, markdown_source, resources, quarto, environment)
-            ),
-            encoding="utf-8",
+        markdown_text = _markdown_header(book, fields, commit) + _clean_markdown(
+            _render_markdown(workspace, markdown_source, resources, quarto, environment)
         )
+        _reject_local_paths(
+            markdown_text,
+            [repo, workspace, staging, output, output.parent, Path.home()],
+        )
+        markdown_path = dist / PAYLOADS["markdown"]
+        markdown_path.write_text(markdown_text, encoding="utf-8")
         payloads["markdown"] = markdown_path
         for role in ROLES:
             issues = inspect_payload(
