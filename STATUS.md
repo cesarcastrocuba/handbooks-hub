@@ -26,7 +26,7 @@ must be up to date with `main` before merge (`HUB-DEC-026`).
 | Reference handbook | Read-only at `6a15cc211f65e148afdaa75c71a063a8084d1910` |
 | Sample repository | `v0.2.6` is the current release, published by run 43063144576 from `1d73db9`. `v0.2.5` and `v0.2.4` remain published as previous editions. `v0.2.2` is withdrawn and keeps its tag (`HUB-DEC-027`). `v0.2.3` is withdrawn and keeps its tag (sample `DEC-019`). `v0.1.0` to `v0.2.0` are withdrawn and keep their tags (`HUB-DEC-021`). `v0.2.1` is withdrawn and keeps its tag (`HUB-DEC-023`). Introduction, 8 chapters, 3 appendices and References |
 | Toolkit | `0.6.0`, tag `toolkit-v0.6.0` at `c200fd2`, 269 unit tests. One fix merged after the tag: the Markdown leak guard now detects escaped paths (PR 24, recorded under `Unreleased`); it ships with the next toolkit version, so books re-pin when that version is tagged |
-| Template | `1.1.1`, tag `template-v1.1.1`; pins toolkit `0.6.0` at `c200fd2`. `initialize-book` keeps comments and quoting when it rewrites the YAML, and `release.yml` checks the tag through the API; both were verified on GitHub in the throwaway repository (runs 43041194049 failure, then 43041314185 success) |
+| Template | `1.1.1`, tag `template-v1.1.1`; pins toolkit `0.6.0` at `c200fd2`. The `release.yml` tag check through the API was verified on GitHub in the throwaway repository (runs 43041194049 failure, then 43041314185 success). The comment- and quote-preserving `initialize_book.py` was verified locally only, through unit tests and a real initialization of an exported copy (review of PR 22); it has not run on GitHub from the `template-v1.1.1` tree |
 | CI | Sample `v0.2.6` release run 43063144576 succeeded from `1d73db9` and deployed the reading site. Catalog dry run 43063528094 reported `v0.2.5` to `v0.2.6` and `release verification: OK`; real run 43063675117 pushed the catalog branch merged as PR 23 (`a5dc0c9`). `portal-pages` run 43069666080 started on the `push` at `a5dc0c9` and its build and deploy jobs succeeded |
 | Standard profile | `1.0.0`, **Approved** 2026-11-06; `0.2.0` remains resolvable |
 | Licensing | CC BY-SA 4.0 content, MIT code. Bundled third-party render resources reviewed and replaced where in doubt (`HUB-DEC-020`). Sample `v0.2.6` names Franz César Castro Cuba and includes a third-party notices page |
@@ -41,7 +41,8 @@ must be up to date with `main` before merge (`HUB-DEC-026`).
 2. Owner deletes the throwaway repository and its public Pages site: `gh repo delete cesarcastrocuba/handbook-template-dryrun-delete-me --yes`; the delegated token has no `delete_repo` scope.
 3. Owner decision on whether `v0.2.4` and `v0.2.5` stay published: no decision withdraws them, so they remain available as previous editions.
 4. The next toolkit version ships the Markdown leak-guard fix; books re-pin when it is tagged.
-5. Phase 6: migration evaluation of `solutions-architecture-handbook`, including its copies of the replaced fonts and DOCX reference; needs an owner decision.
+5. End-to-end template check: create a new repository from the `template-v1.1.1` tree and run `initialize-book` there. It has not been done; only the `release.yml` tag check ran on GitHub, and `initialize_book.py` was verified locally.
+6. Phase 6: migration evaluation of `solutions-architecture-handbook`, including its copies of the replaced fonts and DOCX reference; needs an owner decision.
 
 ## Blockers and open owner decisions
 
