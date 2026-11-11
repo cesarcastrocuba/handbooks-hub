@@ -1,6 +1,6 @@
 # Local publication build
 
-`handbook-toolkit build-book` builds a verified six-file release directory from an exact clean
+`handbook-toolkit build-book` builds a verified seven-file release directory from an exact clean
 book commit. It does **not** publish, upload, deploy, tag or release anything.
 
 ## Requirements
@@ -65,25 +65,48 @@ The output directory must not exist and must be outside the source repository.
 10. Stages a render-only heading wrapper for each chapter/appendices file, strips manual heading
    numbers so Quarto numbers the rendered sections, and converts source table captions into
    explicit `**Table N.T — Title**` paragraphs below the table. Canonical files are not changed.
-11. Packages the HTML site as a ZIP, the PDF and DOCX as files, and the tracked source as a ZIP whose
-   comment is the full source commit.
-12. Inspects every payload with the shared format inspector.
-13. Writes `publication-manifest.json` and `SHA256SUMS.txt`, then runs `verify_publication`.
-14. Atomically renames the complete verified directory to `--output`.
+11. Renders a single-file Markdown edition with Quarto `gfm` from the canonical sources in reading
+   order: per-file front matter is dropped, include shortcodes are resolved against the combined
+   document, and cross-references become plain text. The edition opens with the same
+   document-control fields as the other editions plus the source commit. Figures become their
+   captions because one file cannot carry the images.
+12. Packages the HTML site as a ZIP, the PDF, the DOCX and the Markdown edition as files, and the
+   tracked source as a ZIP whose comment is the full source commit.
+13. Inspects every payload with the shared format inspector.
+14. Writes `publication-manifest.json` (schema `1.1`) and `SHA256SUMS.txt`, then runs
+    `verify_publication`.
+15. Atomically renames the complete verified directory to `--output`.
 
 No writer staging directory is visible at the final output path. A failed build leaves no final
 output and removes its private staging directory.
 
 ## Output
 
-Exactly six assets:
+Exactly seven assets:
 
 - `book-html.zip`
 - `book.pdf`
 - `book.docx`
+- `book.md`
 - `book-source.zip`
 - `publication-manifest.json`
 - `SHA256SUMS.txt`
+
+`book.md` is one GitHub-flavoured Markdown file in reading order: front matter, chapters, appendices
+and references. It is meant for search, diffing and AI tools; the HTML, PDF and DOCX payloads remain
+the reading and print editions. Its limits:
+
+- Figures are represented by their caption or alternative text, not by images.
+- Raw HTML from the render is reduced to plain Markdown: cross-references keep their text and tables
+  keep their Markdown form, without Quarto `<div>` wrappers or `<a>` anchors.
+- Table and figure counters run sequentially across the whole file, so they may differ from the
+  chapter-scoped numbers of the print and HTML editions.
+- Include shortcodes that resolve through the manuscript path work, but any reader that assumes the
+  original per-file directory layout is not reproduced.
+- The build fails when the rendered file contains one of its own absolute paths (staging workspace,
+  output directory, source repository or home directory). Book content may still mention paths such
+  as `/tmp/` or `file://`; those are not rejected. Paths with fewer than three components are never
+  used as needles.
 
 The manifest records the exact commit, book version, toolkit/profile versions, build command, source
 epoch, and Quarto/Pandoc/Typst/Python/zlib runtime versions.

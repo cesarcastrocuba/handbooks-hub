@@ -9,7 +9,7 @@ check:
 	$(TOOLKIT) --root . validate-book --full
 	$(TOOLKIT) --root . validate-references book.yaml
 
-# Full check: fast checks plus a real six-file local build. Requires Quarto 1.11.9 and pdfinfo.
+# Full check: fast checks plus a real seven-file local build. Requires Quarto 1.11.9 and pdfinfo.
 full: check build
 
 # The build also runs manuscript validation before rendering.

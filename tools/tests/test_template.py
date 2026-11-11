@@ -2,7 +2,7 @@
 
 The fast test copies the template outside the hub, replaces its identifiers, installs
 nothing from the hub checkout and runs the template's own ``make check``. The build test
-additionally runs a real six-file build when Quarto and ``pdfinfo`` are available.
+additionally runs a real seven-file build when Quarto and ``pdfinfo`` are available.
 """
 
 from __future__ import annotations
@@ -30,6 +30,7 @@ PAYLOADS = {
     "book-html.zip",
     "book.pdf",
     "book.docx",
+    "book.md",
     "book-source.zip",
     "publication-manifest.json",
     "SHA256SUMS.txt",
@@ -115,13 +116,13 @@ class TemplateTests(unittest.TestCase):
 
     def test_template_pins_are_exact_and_current(self) -> None:
         descriptor = (TEMPLATE / "book.yaml").read_text(encoding="utf-8")
-        self.assertIn('toolkit: "0.5.0"', descriptor)
+        self.assertIn('toolkit: "0.6.0"', descriptor)
         self.assertIn('version: "1.0.0"', descriptor)
         for name in ("LICENSE", "LICENSE-CODE", "NOTICE.md", "Makefile", "publishing/_quarto.yml"):
             self.assertTrue((TEMPLATE / name).is_file(), name)
 
     @unittest.skipUnless(BUILD_AVAILABLE, "Quarto and pdfinfo are required for the real build")
-    def test_copied_template_builds_six_verified_payloads(self) -> None:
+    def test_copied_template_builds_seven_verified_payloads(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             book = _copy_template(root)
@@ -134,6 +135,15 @@ class TemplateTests(unittest.TestCase):
             manifest = json.loads((output / "publication-manifest.json").read_text())
             self.assertEqual(manifest["book"]["commit"], _git(book, "rev-parse", "HEAD"))
             self.assertEqual(manifest["book"]["version"], "0.1.0-preview")
+            self.assertEqual(manifest["schema_version"], "1.1")
+            self.assertEqual(
+                {entry["role"] for entry in manifest["artifacts"]},
+                {"html", "pdf", "docx", "markdown", "source"},
+            )
+            markdown = (output / "book.md").read_text(encoding="utf-8")
+            self.assertIn("| Version | 0.1.0-preview |", markdown)
+            self.assertIn(f"| Commit | {_git(book, 'rev-parse', 'HEAD')} |", markdown)
+            self.assertIn("Example Chapter", markdown)
 
             if PDFTOTEXT is not None:
                 text = subprocess.check_output(

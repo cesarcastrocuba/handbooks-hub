@@ -27,6 +27,25 @@ profile version change may require manuscript edits. When the changelog marks a 
 incompatible, upgrade in a dedicated branch, update the affected manuscript units, and record a
 rendered review before requesting approval.
 
+## Example: toolkit 0.5.0 to 0.6.0
+
+`0.6.0` adds a fifth payload, `book.md`: one GitHub-flavoured Markdown file in reading order, meant
+for search, diffing and AI tools. It also writes publication manifest schema `1.1`, which lists five
+artifacts; schema `1.0` remains valid so already published releases keep verifying. Migration
+(`HUB-DEC-014`):
+
+1. Update `toolkit` in `book.yaml` to `"0.6.0"`; keep the profile pin unchanged.
+2. Replace the hub commit in `requirements.txt` with the reviewed commit that contains `0.6.0`.
+3. **Do not** change `publication.formats` in `book.yaml`. It keeps listing `html`, `pdf` and `docx`;
+   the Markdown edition is implicit, like the source bundle.
+4. Update the release workflow if it uploads a fixed list of files: it must upload seven assets,
+   including `book.md`.
+5. Run `make check` and `make full`, and inspect `book.md` in the build output. Figures appear as
+   their captions and table and figure counters are sequential in that file.
+
+The release gate accepts both manifest versions: a catalog entry that still points at a `1.0`
+release (six assets) keeps verifying until that book publishes a `1.1` release.
+
 ## Example: toolkit 0.4.0 to 0.5.0
 
 `0.5.0` changes the rendered output: it adds the print-layout stage, bundled Selawik, JetBrains Mono and

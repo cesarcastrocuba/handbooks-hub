@@ -22,7 +22,15 @@ import zipfile
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import support  # noqa: E402
-from handbook_toolkit.build import BuildError, _render_config, build_book  # noqa: E402
+from handbook_toolkit.build import (  # noqa: E402
+    BuildError,
+    _clean_markdown,
+    _markdown_header,
+    _markdown_sources,
+    _reject_local_paths,
+    _render_config,
+    build_book,
+)
 from handbook_toolkit.publication import verify_publication  # noqa: E402
 
 QUARTO = shutil.which("quarto")
@@ -145,7 +153,7 @@ status: draft
 profile:
   id: standard
   version: "1.0.0"
-toolkit: "0.5.0"
+toolkit: "0.6.0"
 license:
   content: CC-BY-SA-4.0
   code: MIT
@@ -273,9 +281,75 @@ class RenderConfigTests(unittest.TestCase):
             )
 
 
+class MarkdownEditionTests(unittest.TestCase):
+    """The Markdown edition is assembled from the reading order without Quarto."""
+
+    def test_sources_follow_reading_order_without_front_matter(self):
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp)
+            (workspace / "manuscript/front").mkdir(parents=True)
+            (workspace / "manuscript/chapters").mkdir(parents=True)
+            (workspace / "manuscript/front/title.qmd").write_text(
+                "---\ntitle: Book\n---\n\n# Document Control\n\nText.\n", encoding="utf-8"
+            )
+            (workspace / "manuscript/chapters/ch01.qmd").write_text(
+                "---\ntitle: 1. Chapter\nprofile: standard\n---\n\n"
+                "# 1. Chapter\n\n{{< include _parts/section.qmd >}}\n",
+                encoding="utf-8",
+            )
+            source = _markdown_sources(
+                workspace, ["manuscript/front/title.qmd", "manuscript/chapters/ch01.qmd"]
+            )
+            self.assertTrue(source.startswith("# Document Control"))
+            self.assertIn("# 1. Chapter", source)
+            self.assertNotIn("profile: standard", source)
+            self.assertIn("{{< include manuscript/chapters/_parts/section.qmd >}}", source)
+
+    def test_clean_markdown_keeps_text_and_drops_rendered_html(self):
+        rendered = (
+            'See <a href="#sec-x" class="quarto-xref">Section 2</a>.\n\n'
+            '<div id="fig-a">\n\n![](images/a.png)\n\nFigure 1: A caption\n\n</div>\n\n'
+            '<div id="tbl-b">\n\nTable 1: A table\n\n| A | B |\n| :- | :- |\n| 1 | 2 |\n\n</div>\n\n'
+            "![](images/b.png)\n"
+        )
+        cleaned = _clean_markdown(rendered)
+        self.assertIn("See Section 2.", cleaned)
+        self.assertIn("*Figure 1: A caption*", cleaned)
+        self.assertIn("| A | B |", cleaned)
+        self.assertNotIn("<div", cleaned)
+        self.assertNotIn("![", cleaned)
+        self.assertIn("*(figure image not included in the Markdown edition)*", cleaned)
+        self.assertFalse(cleaned.startswith("\n"))
+
+    def test_local_path_guard_rejects_this_build_paths(self):
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp) / ".handbook-build-fixture" / "work"
+            _reject_local_paths("The demo writes to /tmp/demo and file:///srv/book.", [workspace])
+            with self.assertRaises(BuildError):
+                _reject_local_paths(f"See {workspace}/manuscript/ch01.qmd.", [workspace])
+            with self.assertRaises(BuildError):
+                _reject_local_paths(f"Home is {Path.home()}.", [Path.home()])
+
+    def test_local_path_guard_ignores_short_system_directories(self):
+        for value in ("/tmp", "/home", "/var", "/opt"):
+            with self.subTest(path=value):
+                _reject_local_paths("The demo writes to /tmp/demo.", [Path(value)])
+        self.assertEqual(len(Path("/tmp").parts), 2)
+        self.assertEqual(len(Path("/home").parts), 2)
+
+    def test_header_carries_document_control_fields_and_commit(self):
+        fields = [("Title", "Fixture"), ("Version", "1.0.0"),
+                  ("Content license", "CC BY-SA 4.0")]
+        header = _markdown_header({"title": "Fixture"}, fields, "a" * 40)
+        self.assertTrue(header.startswith("# Fixture\n\n| Field | Value |\n"))
+        self.assertIn("| Version | 1.0.0 |", header)
+        self.assertIn("| Commit | " + "a" * 40 + " |", header)
+        self.assertIn("| Content license | CC BY-SA 4.0 |", header)
+
+
 @unittest.skipUnless(BUILD_AVAILABLE, "Quarto and pdfinfo are required for the real build")
 class BuildTests(unittest.TestCase):
-    def test_builds_verified_six_file_directory_and_source_comment(self) -> None:
+    def test_builds_verified_seven_file_directory_and_source_comment(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             repo, commit = make_book(root)
@@ -289,6 +363,7 @@ class BuildTests(unittest.TestCase):
                     "book-html.zip",
                     "book.pdf",
                     "book.docx",
+                    "book.md",
                     "book-source.zip",
                     "publication-manifest.json",
                     "SHA256SUMS.txt",
@@ -296,6 +371,7 @@ class BuildTests(unittest.TestCase):
             )
             manifest = json.loads((output / "publication-manifest.json").read_text())
             self.assertEqual(manifest["book"]["commit"], commit)
+            self.assertEqual(manifest["schema_version"], "1.1")
             self.assertIn("--mode section-pilot", manifest["build"]["command"])
             self.assertIn("zlib", manifest["build"]["tool_versions"])
             self.assertIn("typst", manifest["build"]["tool_versions"])
@@ -305,8 +381,33 @@ class BuildTests(unittest.TestCase):
                 site = archive.read("index.html").decode("utf-8")
             self.assertIn("Table 1.1 —", site)
             self.assertIn("A Pilot Section", site)
+            markdown = (output / "book.md").read_text(encoding="utf-8")
+            self.assertTrue(markdown.startswith("# Build Fixture\n"))
+            self.assertIn(f"| Commit | {commit} |", markdown)
+            self.assertIn("| Version | 1.0.0-preview |", markdown)
+            self.assertIn("A Pilot Section", markdown)
+            self.assertNotIn("<a href=", markdown)
             self.assertTrue(verify_publication(output).ok)
             self.assertIn("**Definition.**", (repo / "manuscript/chapters/pilot.qmd").read_text())
+
+    def test_local_path_in_the_markdown_fails_the_build(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, commit = make_book(root)
+            pilot = repo / "manuscript/chapters/pilot.qmd"
+            pilot.write_text(
+                pilot.read_text(encoding="utf-8").replace(
+                    "**Example.** An illustrative handbook names its reader and its excluded scope.",
+                    f"**Example.** An illustrative handbook lives at {repo}/manuscript.",
+                ),
+                encoding="utf-8",
+            )
+            self.assertIn(f"{repo}/manuscript", pilot.read_text(encoding="utf-8"))
+            commit = commit_all(repo, "local path in the manuscript")
+            output = root / "dist"
+            with self.assertRaises(BuildError, msg=f"a local path must fail the build: {repo}"):
+                build_book(repo, commit, output, profile=PROFILE, mode="section-pilot")
+            self.assertFalse(output.exists())
 
     def test_existing_output_is_refused(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -357,7 +458,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.5.0"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.6.0"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             commit = commit_all(repo, "mismatched toolkit pin")
@@ -419,7 +520,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.5.0"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.6.0"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             commit = commit_all(repo, "preview toolkit pin")
@@ -471,7 +572,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.5.0"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.6.0"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             _git(repo, "update-index", "--assume-unchanged", "book.yaml")

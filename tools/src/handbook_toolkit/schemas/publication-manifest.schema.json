@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": ["schema_version", "book", "toolkit", "profile", "build", "artifacts"],
   "properties": {
-    "schema_version": {"const": "1.0"},
+    "schema_version": {"enum": ["1.0", "1.1"]},
     "book": {
       "type": "object", "additionalProperties": false,
       "required": ["id", "version", "commit"],
@@ -37,12 +37,12 @@
       }
     },
     "artifacts": {
-      "type": "array", "minItems": 4, "maxItems": 4,
+      "type": "array", "minItems": 4, "maxItems": 5,
       "items": {
         "type": "object", "additionalProperties": false,
         "required": ["role", "path", "sha256", "bytes", "media_type"],
         "properties": {
-          "role": {"enum": ["html", "pdf", "docx", "source"]},
+          "role": {"enum": ["html", "pdf", "docx", "markdown", "source"]},
           "path": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
           "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
           "bytes": {"type": "integer", "minimum": 1},
@@ -50,5 +50,48 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": ["schema_version"],
+        "properties": {"schema_version": {"const": "1.0"}}
+      },
+      "then": {
+        "properties": {
+          "artifacts": {
+            "minItems": 4, "maxItems": 4,
+            "items": {"properties": {"role": {"enum": ["html", "pdf", "docx", "source"]}}},
+            "allOf": [
+              {"contains": {"required": ["role"], "properties": {"role": {"const": "html"}}}},
+              {"contains": {"required": ["role"], "properties": {"role": {"const": "pdf"}}}},
+              {"contains": {"required": ["role"], "properties": {"role": {"const": "docx"}}}},
+              {"contains": {"required": ["role"], "properties": {"role": {"const": "source"}}}}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["schema_version"],
+        "properties": {"schema_version": {"const": "1.1"}}
+      },
+      "then": {
+        "properties": {
+          "artifacts": {
+            "minItems": 5, "maxItems": 5,
+            "items": {"properties": {"role": {"enum": ["html", "pdf", "docx", "markdown", "source"]}}},
+            "allOf": [
+              {"contains": {"required": ["role"], "properties": {"role": {"const": "html"}}}},
+              {"contains": {"required": ["role"], "properties": {"role": {"const": "pdf"}}}},
+              {"contains": {"required": ["role"], "properties": {"role": {"const": "docx"}}}},
+              {"contains": {"required": ["role"], "properties": {"role": {"const": "markdown"}}}},
+              {"contains": {"required": ["role"], "properties": {"role": {"const": "source"}}}}
+            ]
+          }
+        }
+      }
+    }
+  ]
 }
