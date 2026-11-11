@@ -13,9 +13,11 @@ links; `portal-pages` deployed `v0.2.6` from the catalog change. `v0.2.5` and `v
 as previous editions. Template `1.1.1` is published as the generated mirror
 `cesarcastrocuba/handbooks-template`, tagged `template-v1.1.1`. Toolkit `0.6.0` is tagged and carries
 one fix merged after the tag (the Markdown leak guard, PR 24), which ships with the next toolkit
-version. `HUB-DEC-028`, `HUB-DEC-029` and `HUB-DEC-030` are still **Proposed**: only the Owner
-approves a decision. Changes reach `main` only through pull requests (`HUB-DEC-018`), and a branch
-must be up to date with `main` before merge (`HUB-DEC-026`).
+version. `HUB-DEC-028`, `HUB-DEC-029` and `HUB-DEC-030` were confirmed by the Owner on 2026-11-11
+(change `0026`). `HUB-DEC-031` keeps every published release available: `v0.2.4` and `v0.2.5` stay
+published as previous editions, and a release is withdrawn only for a recorded reason and by an
+explicit Owner decision. Changes reach `main` only through pull requests (`HUB-DEC-018`), and a
+branch must be up to date with `main` before merge (`HUB-DEC-026`).
 
 ## Current facts
 
@@ -37,16 +39,12 @@ must be up to date with `main` before merge (`HUB-DEC-026`).
 
 ## Next actions
 
-1. Owner confirmation of `HUB-DEC-028`, `HUB-DEC-029` and `HUB-DEC-030`: their rows stay **Proposed** until the Owner approves them.
-2. Owner deletes the throwaway repository and its public Pages site: `gh repo delete cesarcastrocuba/handbook-template-dryrun-delete-me --yes`; the delegated token has no `delete_repo` scope.
-3. Owner decision on whether `v0.2.4` and `v0.2.5` stay published: no decision withdraws them, so they remain available as previous editions.
-4. The next toolkit version ships the Markdown leak-guard fix; books re-pin when it is tagged.
-5. End-to-end template check: create a new repository from the `template-v1.1.1` tree and run `initialize-book` there. It has not been done; only the `release.yml` tag check ran on GitHub, and `initialize_book.py` was verified locally.
-6. Phase 6: migration evaluation of `solutions-architecture-handbook`, including its copies of the replaced fonts and DOCX reference; needs an owner decision.
+1. Owner deletes the throwaway repository and its public Pages site: `gh repo delete cesarcastrocuba/handbook-template-dryrun-delete-me --yes`; the delegated token has no `delete_repo` scope.
+2. The next toolkit version ships the Markdown leak-guard fix; books re-pin when it is tagged.
+3. End-to-end template check: create a new repository from the `template-v1.1.1` tree and run `initialize-book` there. It has not been done; only the `release.yml` tag check ran on GitHub, and `initialize_book.py` was verified locally.
+4. Phase 6: migration evaluation of `solutions-architecture-handbook`, including its copies of the replaced fonts and DOCX reference; needs an owner decision.
 
 ## Blockers and open owner decisions
 
-- `HUB-DEC-028`, `HUB-DEC-029` and `HUB-DEC-030` are **Proposed**. They were merged under the delegation in `HUB-DEC-027`, but only the Owner approves a decision, so the Owner must confirm each one before it changes status.
 - The throwaway repository `cesarcastrocuba/handbook-template-dryrun-delete-me` and its public Pages site still exist and need the Owner's deletion.
-- Whether `v0.2.4` and `v0.2.5` stay published is an open owner decision.
 - Phase 6 has not started and needs an owner decision.

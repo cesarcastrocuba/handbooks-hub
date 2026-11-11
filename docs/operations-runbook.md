@@ -251,6 +251,10 @@ Two different orders of withdrawal appear in platform governance:
 - **Remediation order** under `HUB-DEC-021` ([`docs/decisions.md`](decisions.md)):
   *"publish the sample book at v0.2.1 with toolkit 0.5.0, list it in the catalog and withdraw v0.1.0 to v0.2.0 by deleting their release pages and assets while keeping their tags."*
 
+> Since `HUB-DEC-031`, replacing a release does not withdraw the previous one: published releases stay
+> published as previous editions, and both orders below apply only to a withdrawal with a recorded
+> reason and an explicit Owner decision.
+
 These two orders apply in distinct operational scenarios:
 
 | Order | Sequence | When it applies | Rationale |
