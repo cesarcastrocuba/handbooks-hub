@@ -219,7 +219,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     build = subparsers.add_parser(
         "build-book",
-        help="build a local six-file publication payload set without publishing",
+        help="build a local seven-file publication payload set without publishing",
     )
     build.add_argument("--repo", required=True, help="book repository path")
     build.add_argument("--commit", required=True, help="exact clean 40-character source commit")

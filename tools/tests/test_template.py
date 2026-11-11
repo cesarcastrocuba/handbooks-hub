@@ -1,10 +1,11 @@
 """Template 1.1 copy, check, workflow and onboarding regression.
 
-The fast test copies the template outside the hub, replaces its identifiers, installs nothing from
-the hub checkout and runs the template's own ``make check``. The build test additionally runs a real
-six-file build when Quarto and ``pdfinfo`` are available. The workflow tests pin every action to a
-full commit SHA already used by the hub and forbid expression interpolation inside shell scripts. The
-onboarding tests run the book-owned ``initialize_book.py`` on a copy.
+The fast test copies the template outside the hub, replaces its identifiers, installs
+nothing from the hub checkout and runs the template's own ``make check``. The build test
+additionally runs a real seven-file build when Quarto and ``pdfinfo`` are available. The
+workflow tests pin every action to a full commit SHA already used by the hub and forbid expression
+interpolation inside shell scripts. The onboarding tests run the book-owned ``initialize_book.py``
+on a copy.
 """
 
 from __future__ import annotations
@@ -39,6 +40,7 @@ PAYLOADS = {
     "book-html.zip",
     "book.pdf",
     "book.docx",
+    "book.md",
     "book-source.zip",
     "publication-manifest.json",
     "SHA256SUMS.txt",
@@ -194,6 +196,7 @@ class TemplateTests(unittest.TestCase):
 
     def test_template_pins_are_exact_and_current(self) -> None:
         descriptor = _load(TEMPLATE / "book.yaml")
+        self.assertEqual(descriptor["toolkit"], "0.6.0")
         self.assertRegex(descriptor["toolkit"], r"^\d+\.\d+\.\d+$")
         self.assertRegex(descriptor["profile"]["version"], r"^\d+\.\d+\.\d+$")
         requirements = (TEMPLATE / "requirements.txt").read_text(encoding="utf-8")
@@ -224,7 +227,7 @@ class TemplateTests(unittest.TestCase):
             self.assertEqual({path.name for path in output.iterdir()}, PAYLOADS)
 
     @unittest.skipUnless(BUILD_AVAILABLE, "Quarto and pdfinfo are required for the real build")
-    def test_copied_template_builds_six_verified_payloads(self) -> None:
+    def test_copied_template_builds_seven_verified_payloads(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             book = _copy_template(root)
@@ -237,6 +240,15 @@ class TemplateTests(unittest.TestCase):
             manifest = json.loads((output / "publication-manifest.json").read_text())
             self.assertEqual(manifest["book"]["commit"], _git(book, "rev-parse", "HEAD"))
             self.assertEqual(manifest["book"]["version"], "0.1.0-preview")
+            self.assertEqual(manifest["schema_version"], "1.1")
+            self.assertEqual(
+                {entry["role"] for entry in manifest["artifacts"]},
+                {"html", "pdf", "docx", "markdown", "source"},
+            )
+            markdown = (output / "book.md").read_text(encoding="utf-8")
+            self.assertIn("| Version | 0.1.0-preview |", markdown)
+            self.assertIn(f"| Commit | {_git(book, 'rev-parse', 'HEAD')} |", markdown)
+            self.assertIn("Example Chapter", markdown)
 
             if PDFTOTEXT is not None:
                 text = subprocess.check_output(

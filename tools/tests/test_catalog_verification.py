@@ -1,6 +1,8 @@
 """Online release/API/hash checks with controlled transport; formats test separately."""
 
 import copy
+import hashlib
+import json
 from pathlib import Path
 import tempfile
 import socket
@@ -29,9 +31,10 @@ class CatalogVerificationTests(unittest.TestCase):
         with ZipFile(assets / "html.zip", "w") as archive:
             archive.writestr("index.html", '<link href="style.css"><h1 id="hello">Hello</h1>')
             archive.writestr("style.css", "body{color:black}")
-        for name in ("book.pdf", "book.docx", "source.zip"):
+        for name in ("book.pdf", "book.docx", "book.md", "source.zip"):
             (assets / name).write_bytes(b"transport fixture")
-        roles = {"html": "html.zip", "pdf": "book.pdf", "docx": "book.docx", "source": "source.zip"}
+        roles = {"html": "html.zip", "pdf": "book.pdf", "docx": "book.docx",
+                 "markdown": "book.md", "source": "source.zip"}
         write_manifest(assets, {
             "book": {"id": book["id"], "version": "1.0.0", "commit": "a" * 40},
             "toolkit": "0.2.0", "profile": {"id": "standard", "version": "0.2.0"},
@@ -46,6 +49,52 @@ class CatalogVerificationTests(unittest.TestCase):
                         "published_at": "2026-12-01T00:00:00Z",
                         "assets": [{"name": path.name, "state": "uploaded", "browser_download_url": self.prefix + path.name} for path in assets.iterdir()]}
         self.target = {"type": "commit", "sha": "a" * 40}
+
+    def rewrite_as_legacy(self) -> None:
+        """Replace the release fixture by a schema 1.0 release with six assets."""
+
+        legacy = Path(self.temp.name) / "legacy"
+        legacy.mkdir()
+        with ZipFile(legacy / "html.zip", "w") as archive:
+            archive.writestr("index.html", '<link href="style.css"><h1 id="hello">Hello</h1>')
+            archive.writestr("style.css", "body{color:black}")
+        names = {"html": "html.zip", "pdf": "book.pdf", "docx": "book.docx", "source": "source.zip"}
+        media = {"html": "application/zip", "pdf": "application/pdf",
+                 "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                 "source": "application/zip"}
+        artifacts = []
+        for role, name in names.items():
+            if role != "html":
+                (legacy / name).write_bytes(b"transport fixture")
+            path = legacy / name
+            artifacts.append({"role": role, "path": name,
+                              "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                              "bytes": path.stat().st_size, "media_type": media[role]})
+        document = {
+            "schema_version": "1.0",
+            "artifacts": artifacts,
+            "book": {"id": "example-book", "version": "1.0.0", "commit": "a" * 40},
+            "toolkit": "0.2.0",
+            "profile": {"id": "standard", "version": "0.2.0"},
+            "build": {"command": "transport fixture", "source_date_epoch": 1,
+                      "tool_versions": {"quarto": "1.11.9", "pandoc": "3.10", "typst": "0.15.1",
+                                        "python": "3.12", "zlib": zlib.ZLIB_RUNTIME_VERSION}},
+        }
+        encoded = (json.dumps(document, indent=2, sort_keys=True) + "\n").encode("utf-8")
+        (legacy / "publication-manifest.json").write_bytes(encoded)
+        digests = {entry["path"]: entry["sha256"] for entry in artifacts}
+        digests["publication-manifest.json"] = hashlib.sha256(encoded).hexdigest()
+        (legacy / "SHA256SUMS.txt").write_text(
+            "".join(f"{digests[name]}  {name}\n" for name in sorted(digests)), encoding="utf-8"
+        )
+        self.bytes = {self.prefix + path.name: path.read_bytes() for path in legacy.iterdir()}
+        with ZipFile(legacy / "html.zip") as archive:
+            self.bytes[self.site] = archive.read("index.html")
+            self.bytes[self.site + "style.css"] = archive.read("style.css")
+        self.release["assets"] = [
+            {"name": path.name, "state": "uploaded", "browser_download_url": self.prefix + path.name}
+            for path in sorted(legacy.iterdir())
+        ]
 
     def run_gate(self):
         support.write_json(self.catalog, self.document)
@@ -69,7 +118,18 @@ class CatalogVerificationTests(unittest.TestCase):
     def test_published_release_payload_hashes_and_all_live_site_files_match(self):
         self.assertTrue(self.run_gate().ok)
 
+    def test_legacy_one_point_zero_release_with_six_assets_passes(self):
+        self.rewrite_as_legacy()
+        self.assertEqual(len(self.release["assets"]), 6)
+        self.assertTrue(self.run_gate().ok)
+
+    def test_asset_count_comes_from_the_manifest(self):
+        self.assertTrue(self.run_gate().ok)
+        self.release["assets"].pop()
+        self.assertFalse(self.run_gate().ok)
+
     def test_direct_download_links_must_match_the_release_manifest(self):
+        self.rewrite_as_legacy()
         self.document["schema_version"] = "1.1"
         release = self.document["books"][0]["latest_release"]
         release["assets"] = {"pdf": self.prefix + "book.pdf", "docx": self.prefix + "book.docx"}

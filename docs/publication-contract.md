@@ -12,6 +12,7 @@ Each approved book release produces exactly these assets:
 | HTML site bundle (`.zip`) | Offline reading and archival copy of the Pages site | Yes |
 | PDF | Print and review | Yes |
 | DOCX | Editable derivative for accessibility and review | Yes |
+| Markdown edition (`book.md`) | One file in reading order for search, diffing and AI tools; figures appear as captions | Yes from toolkit `0.6.0` |
 | Source bundle (`.zip`) | Canonical sources and build inputs at the release commit | Yes |
 | `publication-manifest.json` | Identity, provenance, artifact hashes and tool versions | Yes |
 | `SHA256SUMS.txt` | Human- and machine-checkable checksums | Yes |
@@ -23,7 +24,7 @@ assets. The catalog links to the release, not to a branch.
 
 1. The owner approves a commit on `main` and authorizes a release.
 2. CI checks out that exact commit, with a clean environment.
-3. CI builds HTML, PDF, DOCX and the source bundle once.
+3. CI builds HTML, PDF, DOCX, the Markdown edition and the source bundle once.
 4. CI runs structural, link, artifact and rendering checks.
 5. CI writes the manifest and checksums over the verified artifacts.
 6. CI attaches those exact files to the release and publishes the same HTML to Pages.
@@ -46,9 +47,9 @@ does not produce a partial catalog entry.
 
 ```json
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "book": { "id": "example-book", "version": "1.0.0", "commit": "<40-hex>" },
-  "toolkit": "0.4.0",
+  "toolkit": "0.6.0",
   "profile": { "id": "standard", "version": "0.2.0" },
   "build": {
     "command": "handbook-toolkit build-book --commit <40-hex>",
@@ -63,14 +64,17 @@ does not produce a partial catalog entry.
   },
   "artifacts": [
     { "role": "pdf", "path": "book.pdf", "sha256": "<64-hex>", "bytes": 123456,
-      "media_type": "application/pdf" }
+      "media_type": "application/pdf" },
+    { "role": "markdown", "path": "book.md", "sha256": "<64-hex>", "bytes": 234567,
+      "media_type": "text/markdown; charset=utf-8" }
   ]
 }
 ```
 
 The manifest schema and verifier are bundled with the toolkit. The local build writes this identity
 only in a private staging directory and exposes the final directory after verification. The example
-is illustrative, not a released format.
+is illustrative, not a released format. Schema `1.1` requires the five payloads; schema `1.0`
+(four payloads, without `markdown`) remains valid for releases published before toolkit `0.6.0`.
 
 ## Quality gates
 

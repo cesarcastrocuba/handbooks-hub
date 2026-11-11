@@ -88,6 +88,11 @@ not open a pull request.
    `https://<owner>.github.io/<repository>/` and the release page is
    `https://github.com/<owner>/<repository>/releases/tag/vX.Y.Z`.
 
+   A release carries seven files: `book-html.zip`, `book.pdf`, `book.docx`, `book.md`,
+   `book-source.zip`, `publication-manifest.json` and `SHA256SUMS.txt`. `book.md` is the
+   single-file Markdown edition for AI tools and plain-text readers; the HTML ZIP is the edition
+   Pages serves.
+
 Never edit the release assets by hand. If a release is wrong, follow the withdrawal procedure in the
 hub's [author guide](https://github.com/cesarcastrocuba/handbooks-hub/blob/main/docs/author-guide.md)
 instead of replacing files.

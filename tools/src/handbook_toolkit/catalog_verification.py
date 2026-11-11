@@ -158,7 +158,7 @@ def _verify_book(book: dict) -> None:
             raise ValueError("manifest identity differs from catalog or resolved release tag")
         entries = document["artifacts"]
         names = [entry["path"] for entry in entries]
-        if len(set(names)) != 4 or {MANIFEST, CHECKSUMS} & set(names):
+        if len(set(names)) != len(names) or {MANIFEST, CHECKSUMS} & set(names):
             raise ValueError("remote manifest has duplicate or reserved payload names")
         declared = {entry["role"]: prefix + entry["path"] for entry in entries}
         for role, url in release.get("assets", {}).items():
@@ -166,8 +166,8 @@ def _verify_book(book: dict) -> None:
                 raise ValueError(f"catalog download link for {role} is not an artifact of the release manifest")
         expected = set(names) | {MANIFEST, CHECKSUMS}
         assets = published.get("assets", [])
-        if not isinstance(assets, list) or len(assets) != 6 or not all(isinstance(asset, dict) for asset in assets) or {asset.get("name") for asset in assets} != expected:
-            raise ValueError("release must contain exactly the six declared assets")
+        if not isinstance(assets, list) or len(assets) != len(expected) or not all(isinstance(asset, dict) for asset in assets) or {asset.get("name") for asset in assets} != expected:
+            raise ValueError(f"release must contain exactly the {len(expected)} declared assets")
         for asset in assets:
             if asset.get("state") != "uploaded" or asset.get("browser_download_url") != prefix + asset["name"]:
                 raise ValueError("release asset is incomplete or has a mixed-release URL")

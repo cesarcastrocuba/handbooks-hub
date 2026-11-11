@@ -81,19 +81,20 @@ the merge, the portal rebuilds automatically from the catalog.
 ## What a release contains
 
 A release is built once, from the exact commit, by `handbook-toolkit build-book`. The toolkit
-currently produces six files:
+currently produces seven files:
 
 | File | Content |
 | --- | --- |
 | `book-html.zip` | The HTML edition; the same bytes are deployed to GitHub Pages |
 | `book.pdf` | The PDF edition |
 | `book.docx` | The DOCX edition |
+| `book.md` | The single-file Markdown edition for AI tools and plain-text readers |
 | `book-source.zip` | The tracked source at the released commit |
 | `publication-manifest.json` | Identity, toolkit and profile versions and per-file SHA-256 |
 | `SHA256SUMS.txt` | Checksums for every payload and the manifest |
 
-A newer toolkit may add files, for example a Markdown edition. The release workflow publishes every
-file in the verified output directory, so such an addition needs no workflow change. The manifest
+The release workflow publishes every file in the verified output directory, so a newer toolkit can
+add files without a workflow change. The manifest
 and the checksums are the audit trail: a withdrawn release keeps its tag, and the tag still points at
 the released commit.
 

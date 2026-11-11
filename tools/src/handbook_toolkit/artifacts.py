@@ -22,6 +22,11 @@ MAX_MEMBERS = 20000
 MAX_TOTAL_BYTES = 1024 * 1024 * 1024
 MAX_MEMBER_BYTES = 128 * 1024 * 1024
 MAX_COMPRESSION_RATIO = 1000
+FENCE = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
+INLINE_CODE = re.compile(r"(`+)(?:(?!\1).)*?\1")
+CONTROL_TABLE = "| Field | Value |"
+VERSION_ROW = re.compile(r"^\| Version \| (.+?) \|\s*$", re.MULTILINE)
+COMMIT_ROW = re.compile(r"^\| Commit \| ([0-9a-f]{40}) \|\s*$", re.MULTILINE)
 
 
 def archive_tree(source: Path, output: Path, epoch: int) -> None:
@@ -159,11 +164,68 @@ def _html(archive: ZipFile, names: set[str]) -> None:
                 raise ValueError(f"missing HTML fragment: {name} -> {link}")
 
 
-def inspect_payload(path: Path, role: str, *, source_commit: str | None = None) -> list[Issue]:
-    """Open PDF, DOCX, HTML/site ZIP or source ZIP and report format failures.
+def _prose_contains(text: str, needle: str) -> bool:
+    """Return True when *needle* appears outside fenced code blocks and inline code spans.
+
+    A handbook may legitimately show ``<script>`` inside a code example. Only prose that
+    would render as raw HTML in the Markdown edition is a defect.
+    """
+
+    fence: str | None = None
+    for line in text.splitlines():
+        marker = FENCE.match(line)
+        if marker:
+            token = marker.group(1)
+            if fence is None:
+                fence = token[0] * len(token)
+            elif token.startswith(fence):
+                fence = None
+            continue
+        if fence is not None:
+            continue
+        if needle in INLINE_CODE.sub("", line).lower():
+            return True
+    return False
+
+
+def _markdown(path: Path, commit: str | None, version: str | None) -> None:
+    """Check the single-file Markdown edition: header, identity and no raw prose script."""
+
+    try:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError("Markdown payload must be UTF-8") from exc
+    if not text.strip():
+        raise ValueError("Markdown payload is empty")
+    if not text.lstrip().startswith("# "):
+        raise ValueError("Markdown payload must open with a level-one heading")
+    if CONTROL_TABLE not in text:
+        raise ValueError("Markdown payload lacks the document-control table")
+    declared = VERSION_ROW.search(text)
+    if declared is None:
+        raise ValueError("Markdown payload lacks the document-control version field")
+    if version is not None and declared.group(1).strip() != version:
+        raise ValueError("Markdown payload version differs from the publication manifest")
+    commit_row = COMMIT_ROW.search(text)
+    if commit_row is None:
+        raise ValueError("Markdown payload lacks the document-control commit field")
+    if commit is not None and commit_row.group(1) != commit:
+        raise ValueError("Markdown payload commit differs from the publication manifest")
+    if _prose_contains(text, "<script"):
+        raise ValueError("Markdown payload must not contain raw HTML script in prose")
+
+
+def inspect_payload(
+    path: Path, role: str, *, source_commit: str | None = None, version: str | None = None
+) -> list[Issue]:
+    """Open PDF, DOCX, HTML/site ZIP, Markdown or source ZIP and report format failures.
 
     PDF inspection requires Poppler's pdfinfo. This inspects structure and local
     HTML targets; factual accuracy and visual layout still require human review.
+    The Markdown check reads the document-control header and rejects raw scripts in prose;
+    code examples may show any markup. ``version`` and ``source_commit`` compare its
+    identity with an independently known publication, and the local build rejects leaks of
+    its own absolute paths before the payload is written.
     """
     try:
         if path.is_symlink() or not path.is_file():
@@ -177,6 +239,8 @@ def inspect_payload(path: Path, role: str, *, source_commit: str | None = None) 
             pages = re.search(r"^Pages:\s+(\d+)\s*$", result.stdout, re.MULTILINE)
             if result.returncode or not pages or int(pages[1]) < 1:
                 raise ValueError("pdfinfo could not open a PDF with at least one page")
+        elif role == "markdown":
+            _markdown(path, source_commit, version)
         elif role in {"html", "docx", "source"}:
             with ZipFile(path) as archive:
                 names = _zip_members(archive)

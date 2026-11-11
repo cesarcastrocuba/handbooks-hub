@@ -20,10 +20,17 @@ MANIFEST = "publication-manifest.json"
 CHECKSUMS = "SHA256SUMS.txt"
 MEDIA = {"html": "application/zip", "pdf": "application/pdf",
          "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+         "markdown": "text/markdown; charset=utf-8",
          "source": "application/zip"}
 SAFE_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\Z")
 SUM_LINE = re.compile(r"([0-9a-f]{64})  ([A-Za-z0-9][A-Za-z0-9._-]*)\Z")
-SUFFIX = {"html": ".zip", "source": ".zip", "pdf": ".pdf", "docx": ".docx"}
+SUFFIX = {"html": ".zip", "source": ".zip", "pdf": ".pdf", "docx": ".docx", "markdown": ".md"}
+LATEST_SCHEMA = "1.1"
+# Manifest schema 1.0 stays verifiable because published releases carry it. New builds write 1.1.
+MANIFEST_ROLES = {
+    "1.0": ("docx", "html", "pdf", "source"),
+    "1.1": ("docx", "html", "markdown", "pdf", "source"),
+}
 
 
 def _payload(directory: Path, name: str) -> Path:
@@ -41,22 +48,24 @@ def _digest(path: Path) -> str:
 
 
 def write_manifest(directory: Path, metadata: dict, artifacts: dict[str, str]) -> Path:
-    """Write a new manifest and checksums for four already-built payloads.
+    """Write a new manifest and checksums for five already-built payloads.
 
-    Metadata follows publication-manifest.schema.json. Refuse replacement of an
-    existing manifest or checksum file; callers must use a fresh build directory.
+    Metadata follows publication-manifest.schema.json. The written schema version is 1.1,
+    which lists the ``markdown`` payload. Refuse replacement of an existing manifest or
+    checksum file; callers must use a fresh build directory.
     """
     directory = directory.resolve()
     if (directory / MANIFEST).exists() or (directory / CHECKSUMS).exists():
         raise ValueError("publication identity already exists; use a fresh output directory")
-    if set(artifacts) != set(MEDIA):
-        raise ValueError("exactly html, pdf, docx and source payloads are required")
-    if len(set(artifacts.values())) != 4 or {MANIFEST, CHECKSUMS} & set(artifacts.values()):
+    roles = MANIFEST_ROLES[LATEST_SCHEMA]
+    if set(artifacts) != set(roles):
+        raise ValueError("exactly html, pdf, docx, markdown and source payloads are required")
+    if len(set(artifacts.values())) != len(roles) or {MANIFEST, CHECKSUMS} & set(artifacts.values()):
         raise ValueError("payload filenames must be distinct and cannot be identity files")
     if {path.name for path in directory.iterdir()} != set(artifacts.values()):
-        raise ValueError("fresh output directory must contain exactly the four payloads")
+        raise ValueError("fresh output directory must contain exactly the five payloads")
     document = deepcopy(metadata)
-    document["schema_version"] = "1.0"
+    document["schema_version"] = LATEST_SCHEMA
     document["artifacts"] = []
     for role, name in sorted(artifacts.items()):
         path = _payload(directory, name)
@@ -113,8 +122,14 @@ def verify_publication(directory: Path) -> CheckResult:
         entries = document["artifacts"]
         roles = [entry["role"] for entry in entries]
         names = [entry["path"] for entry in entries]
-        if len(set(roles)) != 4 or set(roles) != set(MEDIA):
-            issues.append(Issue(MANIFEST, "exactly one payload for each required role is required"))
+        required = MANIFEST_ROLES[document["schema_version"]]
+        if len(set(roles)) != len(required) or set(roles) != set(required):
+            issues.append(
+                Issue(
+                    MANIFEST,
+                    f"exactly one payload for each role of schema {document['schema_version']} is required",
+                )
+            )
         if len(set(names)) != len(names) or {MANIFEST, CHECKSUMS} & set(names):
             issues.append(Issue(MANIFEST, "payload names must be unique and exclude identity files"))
         for entry in entries:

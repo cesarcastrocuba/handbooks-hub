@@ -1,7 +1,8 @@
 # Evidence — Author onboarding (change 0020)
 
 **Decision:** `HUB-DEC-029` (Proposed until the Owner merges). **Change record:**
-[`record.md`](record.md). **Implemented:** 2026-11-10 on branch `feat/template-1.1.0`.
+[`record.md`](record.md). **Implemented:** 2026-11-10 on branch `feat/template-1.1.0`. **Toolkit
+0.6.0 merged from `main`:** 2026-11-11.
 
 ## What changed
 
@@ -15,6 +16,8 @@
 | `template/book/docs/AUTHOR_QUICKSTART.md` | New: numbered author onboarding steps |
 | `template/book/README.md` | Points to the quickstart, documents the new files, `../dist` output |
 | `template/book/Makefile` | Unchanged default build output `../dist`; the toolkit refuses an output inside the source repository |
+| `template/book/book.yaml` | Toolkit pin `0.6.0` merged from `main` |
+| `template/book/requirements.txt` | Toolkit pinned to `c200fd26924d1ba32ce203091d26ea69961ded1a`, hub main at `toolkit-v0.6.0` |
 | `tools/scripts/export_template.py` | New: deterministic export of the tracked template tree |
 | `tools/tests/test_export_template.py` | New: export equality, determinism and refusal tests |
 | `tools/tests/test_issue_forms.py` | New: issue-form YAML and required-field tests |
@@ -27,8 +30,8 @@
 | `CONTRIBUTING.md` | "Adding a book" now describes the real path |
 
 Out of scope and untouched: `tools/src/**`, `docs/decisions.md`, `STATUS.md`, `CHANGELOG.md`,
-`docs/operations-runbook.md`, `docs/portal.md`, `template/book/requirements.txt` and the `toolkit:`
-value in `template/book/book.yaml` (the coordinator pins toolkit `0.6.0` afterwards).
+`docs/operations-runbook.md` and `docs/portal.md`. The template's toolkit and requirements pins were
+out of scope during the first review round and were applied in the toolkit 0.6.0 integration below.
 
 ## Review fixes (2026-11-11)
 
@@ -48,30 +51,52 @@ The coordinator requested changes on PR 18 at `12e301b`. Fixed on the same branc
    Pages packaging failure cannot leave a published release without a site. A test asserts the step
    order.
 
+## Toolkit 0.6.0 integration (2026-11-11)
+
+Merged `origin/main` at `c200fd26924d1ba32ce203091d26ea69961ded1a` (PR 19, `toolkit-v0.6.0`). The
+conflicts were resolved by keeping both intents:
+
+- `template/book/README.md`: the quickstart pointer and the `0.6.0` pin sentence, plus the merged
+  seven-file build description and `book.md`.
+- `template/book/Makefile`: `OUTPUT ?= ../dist` from this branch, plus the merged "seven-file"
+  comment.
+- `template/book/book.yaml`: `toolkit: "0.6.0"` from `main`; the rest of the descriptor is unchanged.
+- `tools/tests/test_template.py`: the seven-file payload set and manifest `1.1`/Markdown assertions
+  from `main`, plus this branch's workflow, initialization, default-output and permission tests.
+
+The template now pins the toolkit to hub commit
+`c200fd26924d1ba32ce203091d26ea69961ded1a` (`toolkit-v0.6.0`) in `requirements.txt`, and
+`book.yaml` carries `toolkit: "0.6.0"`. The author guide, quickstart and template README describe
+seven release files and `book.md`, the single-file Markdown edition for AI tools and plain-text
+readers.
+
 ## Commands actually run
 
 All commands ran in this worktree, `/home/ubuntu/github/handbooks-hub.worktrees/template`.
 
 | Command | Result |
 | --- | --- |
-| `python3 -m unittest tools.tests.test_template tools.tests.test_export_template tools.tests.test_issue_forms tools.tests.test_docs_commands -v` | `Ran 19 tests`, `OK` |
-| `make check` | `Ran 244 tests`, `OK`; `VERIFY: 5 check(s), 0 problem(s)` |
-| `make full` | `Ran 244 tests`, `OK`; `VERIFY (full): 6 check(s), 0 problem(s)` (documentation links included) |
+| `python3 -m unittest tools.tests.test_template tools.tests.test_export_template tools.tests.test_issue_forms tools.tests.test_docs_commands -v` | `Ran 23 tests`, `OK` |
+| `make check` | `Ran 264 tests`, `OK`; `VERIFY: 5 check(s), 0 problem(s)` |
+| `make full` | `Ran 264 tests`, `OK`; `VERIFY (full): 6 check(s), 0 problem(s)` (documentation links included) |
 | `python3 tools/scripts/export_template.py --output /tmp/opencode/template-export` | `exported 18 files`; `diff -r template/book /tmp/opencode/template-export` printed nothing |
 | `actionlint template/book/.github/workflows/*.yml` | No findings (actionlint `1.7.7`) |
 | `bash -n` on every `run:` script extracted from the three template workflows | No syntax errors |
 | `git status --short` | Only the files listed above are staged |
 
-The `make check` and `make full` runs include the existing template copy test and the real six-file
+The `make check` and `make full` runs include the existing template copy test and the real seven-file
 build test. Quarto `1.11.9` and `pdfinfo` are installed in this environment, so the build test was
 executed, not skipped. The runs reported above were repeated after merging `origin/main` (change
-`0021`, portal library) into the branch, so the test count includes that change's tests and the two
-review fixes: the default output check and the workflow-level permission check.
+`0021`, portal library, and then `toolkit-v0.6.0`), so the test count includes those changes' tests
+and the review fixes.
 
 ### What the tests prove
 
 - A copy of `template/book/` outside the hub passes its own `make check` and, when Quarto is
-  available, builds exactly the six verified payloads.
+  available, builds exactly the seven verified payloads: HTML ZIP, PDF, DOCX, Markdown, source ZIP,
+  publication manifest and checksums.
+- The built manifest uses schema `1.1`, declares the `markdown` role, and `book.md` records the
+  version and commit and contains the chapter text.
 - The template Makefile's default `OUTPUT` resolves outside the copied book directory, and
   `make build` with that default succeeds on the copy (when Quarto and `pdfinfo` are available).
 - `initialize_book.py` rewrites the identifiers on a copy, leaves `.github/` byte-identical, produces
@@ -115,6 +140,5 @@ review fixes: the default output check and the workflow-level permission check.
 
 ## Follow-up (coordinator)
 
-- Pin toolkit `0.6.0` in `template/book/book.yaml` and `template/book/requirements.txt`.
-- Merge, then export and tag the mirror, mark it as a template, and run the throwaway dry run
-  described in `record.md`.
+- Merge, then export and tag the mirror `template-v1.1.0`, mark it as a template, and run the
+  throwaway dry run described in `record.md`.

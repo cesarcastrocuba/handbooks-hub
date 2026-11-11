@@ -10,7 +10,14 @@ import unittest
 from unittest.mock import patch
 
 import support  # noqa: F401 -- establishes the toolkit source path
-from handbook_toolkit.publication import CHECKSUMS, MANIFEST, verify_publication, write_manifest
+from handbook_toolkit.publication import (
+    CHECKSUMS,
+    MANIFEST,
+    MEDIA,
+    SUFFIX,
+    verify_publication,
+    write_manifest,
+)
 
 
 class PublicationTests(unittest.TestCase):
@@ -18,7 +25,8 @@ class PublicationTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        self.artifacts = {"html": "site.zip", "pdf": "book.pdf", "docx": "book.docx", "source": "source.zip"}
+        self.artifacts = {"html": "site.zip", "pdf": "book.pdf", "docx": "book.docx",
+                          "markdown": "book.md", "source": "source.zip"}
         for role, name in self.artifacts.items():
             (self.root / name).write_bytes((role + " fixture").encode())
         self.metadata = {
@@ -34,9 +42,11 @@ class PublicationTests(unittest.TestCase):
     def test_manifest_identity_and_exact_checksum_membership(self):
         manifest = json.loads(self.publish().read_text())
         self.assertEqual(manifest["book"]["commit"], "a" * 40)
+        self.assertEqual(manifest["schema_version"], "1.1")
+        self.assertEqual(len(manifest["artifacts"]), 5)
         self.assertNotIn("artifacts", self.metadata)
         lines = (self.root / CHECKSUMS).read_text().splitlines()
-        self.assertEqual(len(lines), 5)
+        self.assertEqual(len(lines), 6)
         self.assertTrue(verify_publication(self.root).ok)
 
     def test_same_length_corruption_is_rejected(self):
@@ -138,6 +148,78 @@ class PublicationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.publish()
         self.assertFalse((self.root / MANIFEST).exists())
+
+
+def _write_identity(root: Path, document: dict) -> None:
+    """Write a manifest and checksums exactly as the toolkit writes them."""
+
+    encoded = (json.dumps(document, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    (root / MANIFEST).write_bytes(encoded)
+    digests = {entry["path"]: entry["sha256"] for entry in document["artifacts"]}
+    digests[MANIFEST] = hashlib.sha256(encoded).hexdigest()
+    (root / CHECKSUMS).write_text(
+        "".join(f"{digests[name]}  {name}\n" for name in sorted(digests)), encoding="utf-8"
+    )
+
+
+class ManifestVersionTests(unittest.TestCase):
+    """Schema 1.0 and 1.1 must both verify; a mismatched payload set must not."""
+
+    NAMES = {"html": "book-html.zip", "pdf": "book.pdf", "docx": "book.docx",
+             "markdown": "book.md", "source": "book-source.zip"}
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+
+    def build(self, version: str, roles: tuple[str, ...]) -> None:
+        artifacts = []
+        for role in roles:
+            path = self.root / self.NAMES[role]
+            self.assertTrue(path.name.endswith(SUFFIX[role]))
+            path.write_bytes((role + " fixture").encode())
+            artifacts.append({
+                "role": role,
+                "path": path.name,
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                "bytes": path.stat().st_size,
+                "media_type": MEDIA[role],
+            })
+        document = {
+            "schema_version": version,
+            "artifacts": artifacts,
+            "book": {"id": "test-book", "version": "1.0.0", "commit": "a" * 40},
+            "toolkit": "0.6.0",
+            "profile": {"id": "standard", "version": "1.0.0"},
+            "build": {"command": "fixture build", "source_date_epoch": 1,
+                      "tool_versions": {"quarto": "1.11.9", "pandoc": "3.10",
+                                        "typst": "0.15.1", "python": "3.12",
+                                        "zlib": zlib.ZLIB_RUNTIME_VERSION}},
+        }
+        _write_identity(self.root, document)
+
+    def test_legacy_one_point_zero_manifest_still_verifies(self):
+        self.build("1.0", ("html", "pdf", "docx", "source"))
+        self.assertEqual(len((self.root / CHECKSUMS).read_text().splitlines()), 5)
+        self.assertTrue(verify_publication(self.root).ok)
+
+    def test_current_one_point_one_manifest_verifies(self):
+        self.build("1.1", ("html", "pdf", "docx", "markdown", "source"))
+        self.assertEqual(len((self.root / CHECKSUMS).read_text().splitlines()), 6)
+        self.assertTrue(verify_publication(self.root).ok)
+
+    def test_one_point_one_without_markdown_fails(self):
+        self.build("1.1", ("html", "pdf", "docx", "source"))
+        result = verify_publication(self.root)
+        self.assertFalse(result.ok)
+        self.assertTrue(any("artifacts" in issue.location for issue in result.issues))
+
+    def test_one_point_zero_with_markdown_fails(self):
+        self.build("1.0", ("html", "pdf", "docx", "markdown", "source"))
+        result = verify_publication(self.root)
+        self.assertFalse(result.ok)
+        self.assertTrue(any("artifacts" in issue.location for issue in result.issues))
 
 
 if __name__ == "__main__":
