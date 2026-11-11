@@ -32,16 +32,21 @@ workflow on GitHub, (4) remove the leftover worktree. Sample decision `DEC-022`.
 | Release `v0.2.6` assets | Seven files; `sha256sum -c SHA256SUMS.txt` OK for the six listed files; manifest schema `1.1`, toolkit `0.6.0`, commit `1d73db9d4784ce31424f25892f647b0cc974c0e0`; `book.md` has no six-file wording |
 | Catalog dry run 43063528094 | `updated: handbook-authoring-and-publishing v0.2.5 -> v0.2.6 (published 2026-11-11)`; `release verification: OK` |
 | Catalog real run 43063675117 | Success; pushed `catalog/handbook-authoring-and-publishing-v0.2.6` |
-| `catalog_verification` on this branch | First local run `FAILED`, second run minutes later `OK`. The first failure was not captured; the likely cause is the reading site still propagating after the release |
+| `catalog_verification` on this branch | First local run `FAILED`, second run minutes later `OK`, and four further runs by the independent reviewer `OK`. The error of the first run was not captured, so its cause is unknown |
 
 ## Incidents
 
-- Sample release runs 43044978372 and 43046711504 and five attempts of the `publication-build` job
-  of hub PR 22 failed in `apt-get install poppler-utils` with
+- Sample release runs 43044978372 and 43046711504 and eight attempts of the `publication-build` job
+  of hub PR 22 (run 43044403487) failed in `apt-get install poppler-utils` with
   `Temporary failure resolving 'azure.archive.ubuntu.com'`. Nothing was published and no tag was
   created by the failed runs. Both succeeded once the runner network recovered.
 
 ## Known gaps
+
+- `tools/tests/test_build.py::test_local_path_in_the_markdown_fails_the_build` fails about one run in
+  ten. The independent reviewer found the cause: when the build path contains `_`, Pandoc escapes it
+  in the Markdown output and the local-path guard added with toolkit `0.6.0` no longer matches, so
+  the guard can also miss a real leak. It predates this change and is fixed in a follow-up.
 
 - The throwaway repository and its public Pages site still exist; the Owner deletes it with
   `gh repo delete cesarcastrocuba/handbook-template-dryrun-delete-me --yes`.
