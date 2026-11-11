@@ -128,6 +128,16 @@ class CatalogVerificationTests(unittest.TestCase):
         self.release["assets"].pop()
         self.assertFalse(self.run_gate().ok)
 
+    def test_direct_download_links_must_match_the_release_manifest(self):
+        self.rewrite_as_legacy()
+        self.document["schema_version"] = "1.1"
+        release = self.document["books"][0]["latest_release"]
+        release["assets"] = {"pdf": self.prefix + "book.pdf", "docx": self.prefix + "book.docx"}
+        self.assertTrue(self.run_gate().ok)
+        release["assets"]["markdown"] = self.prefix + "book.md"
+        result = self.run_gate()
+        self.assertIn("download link for markdown", str(result.issues[0]))
+
     def test_draft_missing_asset_and_wrong_tag_commit_fail(self):
         original = copy.deepcopy(self.release)
         self.release["draft"] = True

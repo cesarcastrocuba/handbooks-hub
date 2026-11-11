@@ -24,7 +24,7 @@ import tempfile
 from typing import Any
 from urllib.parse import urlsplit
 
-from handbook_toolkit.catalog import validate_catalog
+from handbook_toolkit.catalog import ASSET_FILES, validate_catalog
 from handbook_toolkit.publication import CHECKSUMS, MANIFEST
 from handbook_toolkit.validation import load_packaged_schema
 
@@ -102,11 +102,15 @@ def source_repo_of(book: dict[str, Any]) -> str:
     return "/".join(parts[:2])
 
 
-def release_entry(source_repo: str, tag: str, published_at: str) -> dict[str, str]:
-    """Build the ``latest_release`` object that the catalog contract requires."""
+def release_entry(source_repo: str, tag: str, published_at: str, roles: tuple[str, ...] = ()) -> dict[str, Any]:
+    """Build the ``latest_release`` object that the catalog contract requires.
+
+    ``roles`` lists the artifact roles whose canonical file is attached to the release; each one
+    becomes a direct download link under ``assets`` (catalog schema 1.1).
+    """
 
     site = f"https://github.com/{source_repo}/releases"
-    return {
+    entry: dict[str, Any] = {
         "version": tag[1:],
         "tag": tag,
         "url": f"{site}/tag/{tag}",
@@ -114,6 +118,30 @@ def release_entry(source_repo: str, tag: str, published_at: str) -> dict[str, st
         "manifest_url": f"{site}/download/{tag}/{MANIFEST}",
         "checksums_url": f"{site}/download/{tag}/{CHECKSUMS}",
     }
+    if roles:
+        entry["assets"] = {role: f"{site}/download/{tag}/{ASSET_FILES[role]}" for role in ASSET_FILES if role in roles}
+    return entry
+
+
+def release_roles(release: Any, source_repo: str, tag: str) -> tuple[str, ...]:
+    """Return the artifact roles whose canonical file is an uploaded asset of this release.
+
+    A release object without an ``assets`` list yields no roles, so the catalog entry carries no
+    direct download links. Online verification later checks every link against the manifest.
+    """
+
+    assets = release.get("assets") if isinstance(release, dict) else None
+    if not isinstance(assets, list):
+        return ()
+    prefix = f"https://github.com/{source_repo}/releases/download/{tag}/"
+    uploaded = {
+        asset.get("name")
+        for asset in assets
+        if isinstance(asset, dict)
+        and asset.get("state") == "uploaded"
+        and asset.get("browser_download_url") == prefix + str(asset.get("name"))
+    }
+    return tuple(role for role, name in ASSET_FILES.items() if name in uploaded)
 
 
 def published_date(release: Any, tag: str) -> str:
@@ -134,8 +162,18 @@ def published_date(release: Any, tag: str) -> str:
     return match.group(1)
 
 
-def plan_update(document: dict[str, Any], slug: str, source_repo: str, tag: str, published_at: str) -> UpdatePlan:
-    """Return the catalog with ``slug`` listing ``tag``; the input document is not modified."""
+def _without_assets(release: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in release.items() if key != "assets"}
+
+
+def plan_update(
+    document: dict[str, Any], slug: str, source_repo: str, tag: str, published_at: str, roles: tuple[str, ...] = ()
+) -> UpdatePlan:
+    """Return the catalog with ``slug`` listing ``tag``; the input document is not modified.
+
+    A listed release never changes: asking again for the listed tag is a no-op and does not add
+    download links to an entry that was listed without them.
+    """
 
     version = parse_tag(tag)
     _check_source_repo(source_repo)
@@ -151,16 +189,18 @@ def plan_update(document: dict[str, Any], slug: str, source_repo: str, tag: str,
         raise CatalogUpdateError(f"book {slug!r} is released from {catalog_repo}, not {source_repo}: moving it is a human change")
 
     current = book["latest_release"]
-    entry = release_entry(source_repo, tag, published_at)
+    entry = release_entry(source_repo, tag, published_at, roles)
     current_version = parse_tag(current["tag"])
     if version < current_version:
         raise CatalogUpdateError(f"version downgrade rejected: {slug} lists {current['tag']}, requested {tag}")
     if version == current_version:
-        if current != entry:
+        if _without_assets(current) != _without_assets(entry) or ("assets" in current and current != entry):
             raise CatalogUpdateError(f"{slug} already lists {tag} with different release data: a published release must not change")
         return UpdatePlan(updated, False, f"no-op: {slug} already lists {tag}")
 
     book["latest_release"] = entry
+    if "assets" in entry:
+        updated["schema_version"] = "1.1"
     _check_catalog(updated, "updated")
     return UpdatePlan(updated, True, f"updated: {slug} {current['tag']} -> {tag} (published {published_at})")
 
@@ -186,8 +226,10 @@ def _source_repo_command(args: argparse.Namespace) -> None:
 
 
 def _apply_command(args: argparse.Namespace) -> None:
-    published_at = published_date(_read_json(args.release_json), args.tag)
-    plan = plan_update(_read_json(args.catalog), args.slug, args.source_repo, args.tag, published_at)
+    release = _read_json(args.release_json)
+    published_at = published_date(release, args.tag)
+    roles = release_roles(release, args.source_repo, args.tag)
+    plan = plan_update(_read_json(args.catalog), args.slug, args.source_repo, args.tag, published_at, roles)
     if plan.changed:
         args.catalog.write_text(serialize(plan.document), encoding="utf-8", newline="\n")
     print(plan.message)

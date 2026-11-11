@@ -33,6 +33,8 @@ Add `-f dry_run=false` to push a branch. The inputs are:
 1. **`prepare` job (read-only token).** Refuses a real run outside `main`, reads the book's source
    repository from its current catalog entry, and fetches the release object for the tag.
 2. `tools/scripts/update_catalog.py` applies the rules below and rewrites only `latest_release`.
+   For each canonical edition file attached to the release it also records a direct download link
+   under `latest_release.assets` and sets the catalog `schema_version` to `1.1`.
 3. `python -m handbook_toolkit.catalog_verification catalog/catalog.json` checks the published bytes
    of every listed release, and `make full` runs the repository checks. Both run on a dry run and
    on a no-op too.
@@ -51,6 +53,7 @@ commit, and the compare URL lets the owner open the pull request.
 | Tag newer than the listed version (numeric comparison) | Entry updated |
 | Tag already listed, identical release data | No-op, reported; nothing is pushed |
 | Tag already listed, different release data | Rejected: a published release must not change |
+| Tag already listed without download links | No-op: a listed release never gains links afterwards |
 | Older tag | Rejected as a downgrade |
 | Slug not in the catalog | Rejected: adding a book is a human change |
 | Archived book | Rejected: changing a book's status is a human change |

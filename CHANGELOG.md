@@ -36,6 +36,12 @@ updates any release workflow that uploads a fixed list of six files to upload se
 
 ### Added
 
+- Library portal: generated book covers, download buttons per edition, text search, static guide
+  sections (platform, author path, publishing and withdrawal, contributing, questions and answers)
+  and an `llms.txt` index for AI tools.
+- Catalog schema `1.1`: optional `latest_release.assets` with a direct download link per artifact
+  role. `update_catalog.py` records the links for a newly listed release and online verification
+  checks each link against the release manifest. A `1.0` catalog stays valid.
 - Catalog update automation: the `catalog-update` workflow validates a published release, updates an
   existing catalog entry, verifies the result and leaves a branch for review. It is manual-dispatch
   only and defaults to a dry run.

@@ -160,6 +160,10 @@ def _verify_book(book: dict) -> None:
         names = [entry["path"] for entry in entries]
         if len(set(names)) != len(names) or {MANIFEST, CHECKSUMS} & set(names):
             raise ValueError("remote manifest has duplicate or reserved payload names")
+        declared = {entry["role"]: prefix + entry["path"] for entry in entries}
+        for role, url in release.get("assets", {}).items():
+            if declared.get(role) != url:
+                raise ValueError(f"catalog download link for {role} is not an artifact of the release manifest")
         expected = set(names) | {MANIFEST, CHECKSUMS}
         assets = published.get("assets", [])
         if not isinstance(assets, list) or len(assets) != len(expected) or not all(isinstance(asset, dict) for asset in assets) or {asset.get("name") for asset in assets} != expected:
