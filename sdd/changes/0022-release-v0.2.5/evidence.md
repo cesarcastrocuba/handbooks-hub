@@ -21,7 +21,7 @@
 | Release assets | Seven files: `book-html.zip`, `book.pdf`, `book.docx`, `book.md`, `book-source.zip`, `publication-manifest.json`, `SHA256SUMS.txt`; `sha256sum -c SHA256SUMS.txt` OK for the six listed files |
 | Manifest | schema `1.1`, toolkit `0.6.0`, commit `c8c8703ac5109bc3c94c726db5c9177b18c6296b`, version `0.2.5`, roles `docx`, `html`, `markdown`, `pdf`, `source` |
 | `book.md` | 2015 lines; control header with version `0.2.5`, status "Released edition" and the release commit |
-| PDF | 57 pages (`pdfinfo`; it also printed the warning "Suspects object is wrong type (boolean)") |
+| PDF | 57 pages (`pdfinfo`), title "Handbook Authoring and Publishing". The earlier note that `pdfinfo` printed "Suspects object is wrong type (boolean)" did not reproduce in the independent review; it is specific to that environment, not a property of the artifact |
 | Reading site | HTTP 200 |
 | Catalog dry run 42989439736 | `updated: handbook-authoring-and-publishing v0.2.4 -> v0.2.5 (published 2026-11-11)`; `release verification: OK`; publish skipped |
 | Catalog real run 42989589682 | Success; pushed `catalog/handbook-authoring-and-publishing-v0.2.5` |
@@ -44,4 +44,12 @@
 
 ## After merge
 
-Recorded in `STATUS.md` by the follow-up status change once `portal-pages` has deployed.
+- A different agent reviewed PR 20 at `efc9f0c` and approved it with no Critical or Major findings;
+  the review re-ran `make full`, the online `catalog_verification`, the portal build and the download
+  of the seven assets. PR 20 merged as `b0f148b`.
+- `portal-pages` run 42990936743 started on the `push` at `b0f148b`; its build and deploy jobs
+  succeeded.
+- Live checks after the deployment: the portal and its `llms.txt` return HTTP 200; the portal shows
+  five edition buttons (PDF, HTML, DOCX, Markdown, Source) pointing at the `v0.2.5` assets and
+  `llms.txt` lists `book.md` of `v0.2.5`; the reading site returns HTTP 200.
+- `STATUS.md` records this state in the follow-up status change.
