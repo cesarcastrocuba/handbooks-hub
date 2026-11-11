@@ -51,8 +51,7 @@ jobs:
             echo "::error::a release must be dispatched from $DEFAULT_REF, not $GITHUB_REF"
             exit 1
           fi
-          git fetch --tags --force origin
-          if git rev-parse -q --verify "refs/tags/$TAG" > /dev/null; then
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" > /dev/null 2>&1; then
             echo "::error::tag $TAG already exists"
             exit 1
           fi

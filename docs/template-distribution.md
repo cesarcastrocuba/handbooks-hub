@@ -26,7 +26,7 @@ The output contains `book.yaml`, `Makefile`, `README.md`, the licenses, `manuscr
 
 ## Publish the mirror
 
-Run this from a clean hub clone with the template change already merged. Replace `1.1.0` with the
+Run this from a clean hub clone with the template change already merged. Replace `1.1.1` with the
 template version recorded in the change.
 
 ```bash
@@ -36,10 +36,10 @@ find /tmp/handbooks-template-mirror -mindepth 1 -maxdepth 1 ! -name .git -exec r
 cp -a /tmp/handbooks-template/. /tmp/handbooks-template-mirror/
 diff -r /tmp/handbooks-template /tmp/handbooks-template-mirror --exclude .git
 git -C /tmp/handbooks-template-mirror add -A
-git -C /tmp/handbooks-template-mirror commit -m "chore(template): publish template 1.1.0"
+git -C /tmp/handbooks-template-mirror commit -m "chore(template): publish template 1.1.1"
 git -C /tmp/handbooks-template-mirror push origin HEAD:main
-git -C /tmp/handbooks-template-mirror tag -a template-v1.1.0 -m "Template 1.1.0"
-git -C /tmp/handbooks-template-mirror push origin template-v1.1.0
+git -C /tmp/handbooks-template-mirror tag -a template-v1.1.1 -m "Template 1.1.1"
+git -C /tmp/handbooks-template-mirror push origin template-v1.1.1
 ```
 
 `diff -r` must print nothing. A mirror commit that differs from the export is a defect: discard it

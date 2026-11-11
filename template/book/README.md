@@ -1,4 +1,4 @@
-# Book template 1.1.0
+# Book template 1.1.1
 
 A starting point for an independent handbook repository. Copy this directory into a new repository,
 then replace the identifiers and content. The copy is owned by the book; the hub does not update it
