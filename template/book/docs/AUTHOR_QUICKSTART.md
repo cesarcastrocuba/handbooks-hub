@@ -71,7 +71,9 @@ not open a pull request.
 
    `make check` validates the descriptor, the reading order, the cross-reference gate and local
    images. It needs no Quarto. `make full` additionally renders the editions and needs Quarto
-   `1.11.9` and Poppler `pdfinfo`.
+   `1.11.9` and Poppler `pdfinfo`. The build writes its verified directory to `../dist`, outside the
+   book repository, because the toolkit refuses an output path inside the source tree; use
+   `make build OUTPUT=/an/external/path` to change it.
 
 ## 6. Publish a release
 

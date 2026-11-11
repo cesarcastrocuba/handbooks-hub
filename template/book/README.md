@@ -68,7 +68,7 @@ make full
 
 `make build` requires a clean git commit, Quarto `1.11.9` and Poppler `pdfinfo`. It validates every
 chapter against the profile, renders HTML, Typst/PDF and DOCX once with `--no-execute`, inspects the
-payloads and atomically creates a six-file directory in `dist`:
+payloads and atomically creates a six-file directory in `../dist`:
 
 - `book-html.zip`
 - `book.pdf`
@@ -85,7 +85,7 @@ Without `make`, run the same commands directly:
 ```bash
 handbook-toolkit --root . validate-book --full
 handbook-toolkit --root . validate-references book.yaml
-handbook-toolkit build-book --repo . --commit "$(git rev-parse HEAD)" --output dist --mode chapter
+handbook-toolkit build-book --repo . --commit "$(git rev-parse HEAD)" --output ../dist --mode chapter
 ```
 
 ## Before the first commit

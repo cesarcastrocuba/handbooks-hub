@@ -13,8 +13,8 @@
 | `template/book/.github/scripts/initialize_book.py` | New: book-owned YAML rewrite with input validation |
 | `template/book/.gitignore` | New: build output, Quarto caches, Python caches, virtualenvs |
 | `template/book/docs/AUTHOR_QUICKSTART.md` | New: numbered author onboarding steps |
-| `template/book/README.md` | Points to the quickstart, documents the new files, `dist` output |
-| `template/book/Makefile` | Default build output changed from `../dist` to `dist` so it stays inside the book |
+| `template/book/README.md` | Points to the quickstart, documents the new files, `../dist` output |
+| `template/book/Makefile` | Unchanged default build output `../dist`; the toolkit refuses an output inside the source repository |
 | `tools/scripts/export_template.py` | New: deterministic export of the tracked template tree |
 | `tools/tests/test_export_template.py` | New: export equality, determinism and refusal tests |
 | `tools/tests/test_issue_forms.py` | New: issue-form YAML and required-field tests |
@@ -30,6 +30,24 @@ Out of scope and untouched: `tools/src/**`, `docs/decisions.md`, `STATUS.md`, `C
 `docs/operations-runbook.md`, `docs/portal.md`, `template/book/requirements.txt` and the `toolkit:`
 value in `template/book/book.yaml` (the coordinator pins toolkit `0.6.0` afterwards).
 
+## Review fixes (2026-11-11)
+
+The coordinator requested changes on PR 18 at `12e301b`. Fixed on the same branch:
+
+1. **Build output.** `template/book/Makefile` keeps `OUTPUT ?= ../dist`. `handbook_toolkit`
+   `build_book` refuses an output path inside the source repository, so the previous `dist` default
+   would have failed for every new book. The README, the author quickstart and the `.gitignore`
+   (where `dist/` remains a safety net for an explicit override) follow the same path. A new test
+   resolves the Makefile default and asserts it is outside the copied book; a real default-output
+   build test runs when Quarto is available.
+2. **Least privilege.** All three template workflows now declare `permissions: contents: read` at
+   workflow level. `release.yml` grants `contents: write` and `pages: read` only to the build job;
+   the deploy job keeps `pages: write` and `id-token: write`. `initialize-book.yml` grants
+   `contents: write` only to its job. A test asserts the workflow-level permissions.
+3. **Release ordering.** `release.yml` uploads the Pages artifact before it creates the release, so a
+   Pages packaging failure cannot leave a published release without a site. A test asserts the step
+   order.
+
 ## Commands actually run
 
 All commands ran in this worktree, `/home/ubuntu/github/handbooks-hub.worktrees/template`.
@@ -37,8 +55,8 @@ All commands ran in this worktree, `/home/ubuntu/github/handbooks-hub.worktrees/
 | Command | Result |
 | --- | --- |
 | `python3 -m unittest tools.tests.test_template tools.tests.test_export_template tools.tests.test_issue_forms tools.tests.test_docs_commands -v` | `Ran 19 tests`, `OK` |
-| `make check` | `Ran 240 tests`, `OK`; `VERIFY: 5 check(s), 0 problem(s)` |
-| `make full` | `Ran 240 tests`, `OK`; `VERIFY (full): 6 check(s), 0 problem(s)` (documentation links included) |
+| `make check` | `Ran 244 tests`, `OK`; `VERIFY: 5 check(s), 0 problem(s)` |
+| `make full` | `Ran 244 tests`, `OK`; `VERIFY (full): 6 check(s), 0 problem(s)` (documentation links included) |
 | `python3 tools/scripts/export_template.py --output /tmp/opencode/template-export` | `exported 18 files`; `diff -r template/book /tmp/opencode/template-export` printed nothing |
 | `actionlint template/book/.github/workflows/*.yml` | No findings (actionlint `1.7.7`) |
 | `bash -n` on every `run:` script extracted from the three template workflows | No syntax errors |
@@ -47,19 +65,26 @@ All commands ran in this worktree, `/home/ubuntu/github/handbooks-hub.worktrees/
 The `make check` and `make full` runs include the existing template copy test and the real six-file
 build test. Quarto `1.11.9` and `pdfinfo` are installed in this environment, so the build test was
 executed, not skipped. The runs reported above were repeated after merging `origin/main` (change
-`0021`, portal library) into the branch, so the 240 tests include that change's tests.
+`0021`, portal library) into the branch, so the test count includes that change's tests and the two
+review fixes: the default output check and the workflow-level permission check.
 
 ### What the tests prove
 
 - A copy of `template/book/` outside the hub passes its own `make check` and, when Quarto is
   available, builds exactly the six verified payloads.
+- The template Makefile's default `OUTPUT` resolves outside the copied book directory, and
+  `make build` with that default succeeds on the copy (when Quarto and `pdfinfo` are available).
 - `initialize_book.py` rewrites the identifiers on a copy, leaves `.github/` byte-identical, produces
   a tree that passes `validate-book --full`, refuses a second run and rejects a bad id, a category
   outside the vocabulary, a 281-character summary, an empty title and a non-GitHub repository URL
   without writing anything.
 - Every `uses:` in the template workflows is pinned to a 40-character commit SHA that the hub's own
   workflows already use.
+- The workflow-level permissions of all three template workflows are `contents: read`; write
+  permissions exist only on the jobs that need them.
 - No `${{ ... }}` expression appears inside any `run:` script in the template workflows.
+- The release is published only after the Pages artifact has been uploaded, so a Pages packaging
+  failure cannot leave a release without a site.
 - Both issue forms parse as YAML with the required top-level fields and required inputs, the catalog
   vocabulary is used, and blank issues are enabled.
 - The export tree equals the tracked `template/book/` tree file-for-file, including dotfiles, and
@@ -84,8 +109,9 @@ executed, not skipped. The runs reported above were repeated after merging `orig
   initialization pull request.
 - The release workflow requires the repository's Pages source to be **GitHub Actions** and a public
   repository for the unauthenticated `git fetch --tags`; the quickstart states both.
-- The default build output moved from `../dist` to `dist` so it stays inside the book; the README and
-  `.gitignore` follow the same path.
+- The default build output stays `../dist`, outside the book repository, because the toolkit refuses
+  an output path inside the source tree. `.gitignore` still ignores `dist/` as a safety net for an
+  explicit `OUTPUT=dist`.
 
 ## Follow-up (coordinator)
 

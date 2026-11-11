@@ -168,6 +168,18 @@ def _initialize(book: Path, identity: dict[str, str] | None = None) -> subproces
     return _run(command, book)
 
 
+def _default_build_output(book: Path) -> Path:
+    """Return the output path the Makefile uses when ``OUTPUT`` is not overridden."""
+
+    result = _run(["make", "-n", "build"], book)
+    if result.returncode:
+        raise AssertionError(result.stderr or result.stdout)
+    match = re.search(r"--output\s+(\S+)", result.stdout)
+    if match is None:
+        raise AssertionError(f"make -n build printed no --output: {result.stdout}")
+    return (book / match.group(1)).resolve()
+
+
 class TemplateTests(unittest.TestCase):
     def test_copied_template_passes_its_own_fast_checks(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -190,6 +202,26 @@ class TemplateTests(unittest.TestCase):
             self.assertTrue((TEMPLATE / name).is_file(), name)
         for name in (".gitignore", "docs/AUTHOR_QUICKSTART.md"):
             self.assertTrue((TEMPLATE / name).is_file(), name)
+
+    def test_default_build_output_is_outside_the_book(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            book = _copy_template(Path(temp))
+            output = _default_build_output(book)
+            self.assertNotEqual(output, book.resolve())
+            self.assertNotIn(book.resolve(), output.parents)
+            self.assertEqual(output.name, "dist")
+
+    @unittest.skipUnless(BUILD_AVAILABLE, "Quarto and pdfinfo are required for the real build")
+    def test_copied_template_builds_with_default_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            book = _copy_template(root)
+
+            result = _run(["make", "build"], book)
+            self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+
+            output = root / "dist"
+            self.assertEqual({path.name for path in output.iterdir()}, PAYLOADS)
 
     @unittest.skipUnless(BUILD_AVAILABLE, "Quarto and pdfinfo are required for the real build")
     def test_copied_template_builds_six_verified_payloads(self) -> None:
@@ -239,17 +271,27 @@ class TemplateWorkflowTests(unittest.TestCase):
                 if script is not None:
                     self.assertNotIn("${{", script, f"{path.name}: expression inside run")
 
+    def test_workflow_level_permissions_are_read_only(self) -> None:
+        for path in sorted(TEMPLATE_WORKFLOWS.glob("*.yml")):
+            self.assertEqual(_load(path)["permissions"], {"contents": "read"}, path.name)
+
     def test_triggers_and_permissions(self) -> None:
         ci = _load(TEMPLATE_WORKFLOWS / "ci.yml")
         self.assertIn("push", _triggers(ci))
         self.assertIn("pull_request", _triggers(ci))
-        self.assertEqual(ci["permissions"], {"contents": "read"})
+        self.assertEqual(ci["jobs"]["check"]["permissions"], {"contents": "read"})
 
         release = _load(TEMPLATE_WORKFLOWS / "release.yml")
         self.assertEqual(set(_triggers(release)), {"workflow_dispatch"})
         self.assertIs(_triggers(release)["workflow_dispatch"]["inputs"]["version"]["required"], True)
-        self.assertEqual(release["permissions"]["contents"], "write")
-        self.assertEqual(release["permissions"]["pages"], "write")
+        self.assertEqual(
+            release["jobs"]["build"]["permissions"],
+            {"contents": "write", "pages": "read"},
+        )
+        self.assertEqual(
+            release["jobs"]["deploy"]["permissions"],
+            {"pages": "write", "id-token": "write"},
+        )
 
         initialize = _load(TEMPLATE_WORKFLOWS / "initialize-book.yml")
         self.assertEqual(set(_triggers(initialize)), {"workflow_dispatch"})
@@ -268,7 +310,15 @@ class TemplateWorkflowTests(unittest.TestCase):
                 "security",
             ],
         )
-        self.assertEqual(initialize["permissions"], {"contents": "write"})
+        self.assertEqual(initialize["jobs"]["initialize"]["permissions"], {"contents": "write"})
+
+    def test_release_is_published_only_after_the_pages_artifact(self) -> None:
+        release = _load(TEMPLATE_WORKFLOWS / "release.yml")
+        names = [step.get("name", "") for step in release["jobs"]["build"]["steps"]]
+        self.assertLess(
+            names.index("Upload the Pages artifact"),
+            names.index("Publish every verified file to the release"),
+        )
 
 
 class InitializeBookTests(unittest.TestCase):

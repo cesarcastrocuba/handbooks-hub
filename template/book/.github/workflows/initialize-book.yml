@@ -38,7 +38,7 @@ on:
           - security
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: initialize-book
@@ -48,6 +48,8 @@ jobs:
   initialize:
     name: Replace the template identity
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write # push the init/<id> branch
     env:
       BOOK_TITLE: ${{ inputs.title }}
       BOOK_ID: ${{ inputs.id }}

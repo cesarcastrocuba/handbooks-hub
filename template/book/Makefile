@@ -1,6 +1,6 @@
 TOOLKIT ?= handbook-toolkit
 COMMIT ?= $(shell git rev-parse HEAD)
-OUTPUT ?= dist
+OUTPUT ?= ../dist
 
 .PHONY: check full build
 
