@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "books": [
     {
       "id": "handbook-authoring-and-publishing",
@@ -13,12 +13,19 @@
       ],
       "status": "published",
       "latest_release": {
-        "version": "0.2.4",
-        "tag": "v0.2.4",
-        "url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/tag/v0.2.4",
-        "published_at": "2026-11-10",
-        "manifest_url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.4/publication-manifest.json",
-        "checksums_url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.4/SHA256SUMS.txt"
+        "version": "0.2.5",
+        "tag": "v0.2.5",
+        "url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/tag/v0.2.5",
+        "published_at": "2026-11-11",
+        "manifest_url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.5/publication-manifest.json",
+        "checksums_url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.5/SHA256SUMS.txt",
+        "assets": {
+          "pdf": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.5/book.pdf",
+          "html": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.5/book-html.zip",
+          "docx": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.5/book.docx",
+          "markdown": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.5/book.md",
+          "source": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.5/book-source.zip"
+        }
       }
     }
   ]
