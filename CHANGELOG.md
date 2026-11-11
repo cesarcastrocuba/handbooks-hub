@@ -3,6 +3,16 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
+## [Unreleased]
+
+### Fixed
+
+- The Markdown leak guard in `build-book` compares the rendered text with its CommonMark backslash
+  escapes removed as well as raw, so it detects a path such as `/tmp/build_dir` even when the gfm
+  writer renders it as `/tmp/build\_dir`. This closes the real gap behind the intermittent
+  `test_local_path_in_the_markdown_fails_the_build` failure. It ships with the next toolkit version;
+  tag `toolkit-v0.6.0` is unchanged.
+
 ## [0.6.0] - 2026-11-10
 
 ### Added
