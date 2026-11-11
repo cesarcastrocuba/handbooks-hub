@@ -74,6 +74,8 @@ XREF_LINK = re.compile(r'<a href="[^"]*" class="quarto-xref">(.*?)</a>', re.DOTA
 FIGURE_BLOCK = re.compile(r'<div id="fig-[^"]*">\s*(.*?)\s*</div>', re.DOTALL)
 TABLE_BLOCK = re.compile(r'<div id="tbl-[^"]*">\s*(.*?)\s*</div>', re.DOTALL)
 IMAGE = re.compile(r"!\[([^\]]*)\]\([^)]*\)")
+# CommonMark: a backslash before ASCII punctuation is an escape and renders as that character.
+BACKSLASH_ESCAPE = re.compile(r"\\(?=[!\"#$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~])")
 OMITTED_FIGURE = "*(figure image not included in the Markdown edition)*"
 MARKDOWN_NOTE = (
     "> Markdown edition: the whole book in reading order, generated from the same source commit as "
@@ -557,6 +559,17 @@ def _clean_markdown(text: str) -> str:
     return "\n".join(collapsed).strip() + "\n"
 
 
+def _unescape_markdown(text: str) -> str:
+    """Remove CommonMark backslash escapes so an escaped path compares as written.
+
+    The gfm writer escapes ASCII punctuation in prose, for example ``/tmp/build_dir``
+    becomes ``/tmp/build\\_dir``. The escaped form is the same path to a reader, so the
+    leak check must look at both the raw and the unescaped text.
+    """
+
+    return BACKSLASH_ESCAPE.sub("", text)
+
+
 def _reject_local_paths(text: str, paths: list[Path]) -> None:
     """Fail the build when the Markdown edition leaks one of this build's absolute paths.
 
@@ -569,8 +582,9 @@ def _reject_local_paths(text: str, paths: list[Path]) -> None:
     """
 
     leaked = sorted({str(path) for path in paths if len(path.parts) >= 3})
+    unescaped = _unescape_markdown(text)
     for value in leaked:
-        if value in text:
+        if value in text or value in unescaped:
             raise BuildError(f"the Markdown edition leaks the local path {value}")
 
 

@@ -330,6 +330,23 @@ class MarkdownEditionTests(unittest.TestCase):
             with self.assertRaises(BuildError):
                 _reject_local_paths(f"Home is {Path.home()}.", [Path.home()])
 
+    def test_local_path_guard_sees_markdown_escaped_paths(self):
+        for raw, escaped in (
+            ("/tmp/leak_guard/work", "/tmp/leak\\_guard/work"),
+            ("/tmp/leak*guard/work", "/tmp/leak\\*guard/work"),
+            ("/tmp/leak[1]/work", "/tmp/leak\\[1\\]/work"),
+        ):
+            with self.subTest(path=raw):
+                needle = Path(raw)
+                with self.assertRaises(BuildError):
+                    _reject_local_paths(f"See {raw}/manuscript.", [needle])
+                with self.assertRaises(BuildError):
+                    _reject_local_paths(f"See {escaped}/manuscript.", [needle])
+        _reject_local_paths(
+            "Unrelated content: /tmp/demo, /home/reader/project and file:///srv/book.",
+            [Path(raw)],
+        )
+
     def test_local_path_guard_ignores_short_system_directories(self):
         for value in ("/tmp", "/home", "/var", "/opt"):
             with self.subTest(path=value):
@@ -392,22 +409,33 @@ class BuildTests(unittest.TestCase):
 
     def test_local_path_in_the_markdown_fails_the_build(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            repo, commit = make_book(root)
-            pilot = repo / "manuscript/chapters/pilot.qmd"
-            pilot.write_text(
-                pilot.read_text(encoding="utf-8").replace(
-                    "**Example.** An illustrative handbook names its reader and its excluded scope.",
-                    f"**Example.** An illustrative handbook lives at {repo}/manuscript.",
-                ),
-                encoding="utf-8",
-            )
-            self.assertIn(f"{repo}/manuscript", pilot.read_text(encoding="utf-8"))
-            commit = commit_all(repo, "local path in the manuscript")
-            output = root / "dist"
-            with self.assertRaises(BuildError, msg=f"a local path must fail the build: {repo}"):
-                build_book(repo, commit, output, profile=PROFILE, mode="section-pilot")
-            self.assertFalse(output.exists())
+            base = Path(temp)
+            # The escaped case proves the guard under a real Quarto render: the gfm writer
+            # escapes the underscore, so a raw comparison alone would miss the leak.
+            for name, escaped in (("plain", False), ("under_score", True)):
+                with self.subTest(directory=name):
+                    root = base / name
+                    root.mkdir()
+                    repo, commit = make_book(root)
+                    self.assertEqual("_" in root.name, escaped)
+                    if escaped:
+                        self.assertIn("_", str(repo))
+                    pilot = repo / "manuscript/chapters/pilot.qmd"
+                    pilot.write_text(
+                        pilot.read_text(encoding="utf-8").replace(
+                            "**Example.** An illustrative handbook names its reader and its excluded scope.",
+                            f"**Example.** An illustrative handbook lives at {repo}/manuscript.",
+                        ),
+                        encoding="utf-8",
+                    )
+                    self.assertIn(f"{repo}/manuscript", pilot.read_text(encoding="utf-8"))
+                    commit = commit_all(repo, f"local path in the manuscript ({name})")
+                    output = root / "dist"
+                    with self.assertRaises(
+                        BuildError, msg=f"a local path must fail the build: {repo}"
+                    ):
+                        build_book(repo, commit, output, profile=PROFILE, mode="section-pilot")
+                    self.assertFalse(output.exists())
 
     def test_existing_output_is_refused(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
