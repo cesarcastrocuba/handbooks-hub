@@ -4,10 +4,10 @@ The visual language of the platform is data, not taste applied per pull request.
 document defines the colour roles, type roles, spacing and contrast floors that the portal, the book
 HTML, the Typst/PDF edition and the DOCX edition must share.
 
-**Status:** Phase 0 of the unified design change. The contract, its schema and the contrast tests are
-in place. Renderers do not consume the tokens yet; generation from them is the next phase, so this
-document records intent plus validated starting values, not a claim that every surface already
-matches.
+**Status:** Phases 0 to 4 implemented on the `feat/design-tokens` branch. The portal, the book
+stylesheet, the Typst theme and the DOCX reference document take their values from this contract;
+the template exposes search, repository actions and a light/dark book theme. Release publication and
+the sample upgrade remain owner-gated.
 
 **Date:** 2026-11-12
 
@@ -89,29 +89,33 @@ lost that separation.
 
 | Role | Web family | Print family | Web size | Print size | Line height | Measure |
 | --- | --- | --- | --- | --- | --- | --- |
-| `body` | System sans stack | Selawik | 16 px | 10 pt | 1.65 | 72 characters |
-| `display` | System sans stack | Selawik | 40 px | 21 pt | 1.15 | none |
-| `code` | System monospace stack | JetBrains Mono | 14 px | 9 pt | 1.5 | none |
+| `body` | Handbook Sans (Liberation Sans) | Liberation Sans | 16 px | 10 pt | 1.65 | 72 characters |
+| `display` | Handbook Sans (Liberation Sans) | Liberation Sans | 40 px | 21 pt | 1.15 | none |
+| `code` | Handbook Mono (JetBrains Mono) | JetBrains Mono | 14 px | 9 pt | 1.5 | none |
 
 Spacing uses a 4 px unit with 56 px section rhythm. Controls use a 6 px radius and cards 8 px.
 
-The table above is the temporary Phase 0 baseline, not the target. System stacks cannot deliver one
-brand identity: the web renders a different typeface on every operating system and never matches the
-PDF. One bundled OFL family is required, self-hosted for the web, embedded in the PDF and named in
-the DOCX. The family choice, its OFL review and the packaged files are recorded before Phase 1; until
-then the surfaces share colour, hierarchy and spacing but not typography.
+The brand family is **Liberation Sans** (SIL OFL 1.1). The portal and the book self-host it as
+subsetted WOFF2 files under the CSS name `Handbook Sans`; the PDF embeds the TTF; the DOCX names
+**Arial**, which is metrically compatible, so a reader without Liberation Sans gets no layout shift.
+JetBrains Mono remains the code family in every medium. The files ship in the toolkit and are listed
+in `NOTICE.md`; no font is fetched from a third-party host.
+
+The web designs target a 60 to 75 character measure. Quarto renders the book content column and the
+tools page applies `--measure`; the portal keeps its responsive card grid.
 
 ## Surface mapping
 
-| Surface | Current state | Target |
-| --- | --- | --- |
-| Portal | Inline styles in the portal generator | Generated CSS from these roles |
-| Book HTML | Packaged stylesheet plus the Quarto base theme | Generated stylesheet plus local light/dark themes |
-| PDF | Typst theme with its own constants | Typst values derived from these roles |
-| DOCX | Generated reference document with its own constants | Generated styles with these roles |
+| Surface | How it consumes the contract |
+| --- | --- |
+| Portal | Generated `:root` variables in the single HTML page plus seven same-origin WOFF2 files |
+| Book HTML | Generated `design-tokens.css` loaded before the layout stylesheet; dark values on `body.quarto-dark` and on the OS media query |
+| PDF | Generated `design-tokens.typ` constants read by the Typst theme and print layout |
+| DOCX | `generate_reference_docx.py` reads the tokens at generation time; Arial for body text and JetBrains Mono for code |
 
-PDF and DOCX already share one palette and one font set. The work is to make that shared baseline
-the same one the web uses, not to redesign print from scratch.
+The Typst theme, the print layout and the DOCX reference no longer carry private palette constants.
+The alert colours used by Quarto callouts remain component colours and are not part of the brand
+palette.
 
 ## Changing the contract
 
@@ -126,9 +130,13 @@ the same one the web uses, not to redesign print from scratch.
 - Values that serve only one medium, such as a print rule colour, stay in the token document as an
   explicit per-scheme value rather than as a hidden constant in a renderer.
 
-## Not covered yet
+## Implemented and pending
 
-This phase changes no rendered output. It does not add search, repository actions, issue forms,
-light/dark configuration for the book, generated portal CSS, Typst variables, DOCX style generation or
-any release. Those are the following phases of the unified design change, and each one is expected to
-update this document with what it actually implemented and verified.
+Implemented on the branch: packaged tokens and contrast tests, generated portal CSS and self-hosted
+WOFF2 assets, generated book stylesheet with a Quarto light/dark theme, Typst constants, DOCX style
+values, portal source links, accent-insensitive search, book search and repository actions in the
+template, and issue forms for corrections and proposals.
+
+Pending, and deliberately not claimed here: the sample book upgrade and release, the catalog update,
+the Pages deployment, the independent review record and the owner merge. Those steps run through the
+repository's reviewed release path.

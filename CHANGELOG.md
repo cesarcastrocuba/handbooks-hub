@@ -9,8 +9,18 @@ semantic versioning once the toolkit is published.
 
 - A packaged semantic design-token contract: `design/tokens.json`, its schema, a loader and tests
   that require every colour role to cover light, dark and print, and that recompute each declared
-  WCAG contrast pair. No renderer consumes the tokens yet; generated portal, book, Typst and DOCX
-  values follow in the next change.
+  WCAG contrast pair.
+- One brand typeface: Liberation Sans, subsetted and self-hosted as WOFF2 under the CSS name
+  `Handbook Sans`, with JetBrains Mono for code. The PDF embeds the family and the DOCX names its
+  metric-compatible equivalent, Arial.
+- Generated surfaces: portal `:root` variables and fonts, a book `design-tokens.css` with a
+  `quarto-dark` scheme, Typst design constants and a DOCX reference document generated from the
+  tokens.
+- Portal contribution path: a **Source and issues** link derived from the verified release URL,
+  accent-insensitive card search and a correct singular result count.
+- Template reader path: full-book search, `repo-url`/`repo-actions`, a library link, release
+  downloads, a light/dark theme and two plain-language issue forms. Initialize rewrites the
+  `OWNER/REPOSITORY` placeholder.
 
 ### Fixed
 

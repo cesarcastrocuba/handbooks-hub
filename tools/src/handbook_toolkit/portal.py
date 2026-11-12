@@ -7,7 +7,9 @@ from html import escape
 from pathlib import Path
 import shutil
 import tempfile
+from urllib.parse import urlsplit
 
+from . import design
 from .catalog import validate_catalog
 from .validation import load_document, load_packaged_schema
 
@@ -23,17 +25,14 @@ WITHDRAWAL_URL = f"{HUB_URL}/issues/new?template=request-withdrawal.yml"
 # Label of each downloadable edition, in the order the buttons are shown.
 FORMATS = {"pdf": "PDF", "html": "HTML", "docx": "DOCX", "markdown": "Markdown", "source": "Source"}
 
-STYLE = """
-:root{--paper:#f6f1e7;--surface:#fffdf8;--ink:#1d2a2c;--muted:#55666a;--line:#ddd3c0;--accent:#0b5d5f;--accent-ink:#fff;--soft:#ebe3d2;--shelf:#b9a37c;--warn:#8a4b12;
-font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:var(--paper);font-synthesis:none;color-scheme:light dark}
-@media(prefers-color-scheme:dark){:root{--paper:#141a1b;--surface:#1c2526;--ink:#ebe6da;--muted:#a3b0b0;--line:#33403f;--accent:#6fcfc6;--accent-ink:#0c1a1a;--soft:#243030;--shelf:#5b4c33;--warn:#e7b071}}
+STYLE_LAYOUT = """
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;line-height:1.6}a{color:var(--accent);text-underline-offset:4px}a:hover{text-decoration-thickness:2px}
-h1,h2,h3{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+h1,h2,h3{font-family:var(--font-sans);font-weight:700;letter-spacing:-.01em;text-wrap:balance}
 button,select,input{font:inherit}button,a,select,input{touch-action:manipulation}:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:4px}
 .skip{position:absolute;left:1rem;top:-5rem;background:var(--surface);padding:1rem;z-index:3}.skip:focus{top:1rem}
 .wrap{max-width:1120px;margin:auto;padding:0 1.5rem}
 nav{display:flex;justify-content:space-between;align-items:center;min-height:72px;gap:1rem;flex-wrap:wrap;padding-top:.5rem;padding-bottom:.5rem}
-.brand{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-weight:700;font-size:1.3rem;color:var(--ink);text-decoration:none}.brand span{color:var(--accent)}
+.brand{font-family:var(--font-sans);font-weight:700;font-size:1.3rem;color:var(--ink);text-decoration:none}.brand span{color:var(--accent)}
 .menu{display:flex;gap:1.2rem;flex-wrap:wrap;font-size:.92rem}.menu a{color:var(--ink);text-decoration:none;padding:.6rem 0}.menu a:hover{color:var(--accent);text-decoration:underline}
 header{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:linear-gradient(160deg,var(--soft),var(--paper) 70%);padding:4rem 0 3.5rem}
 .eyebrow{font-size:.75rem;text-transform:uppercase;letter-spacing:.14em;font-weight:700;color:var(--accent);margin:0}
@@ -53,12 +52,10 @@ button{cursor:pointer}button[aria-pressed=true]{background:var(--accent);color:v
 .results{color:var(--muted);font-size:.9rem;margin:.8rem 0 1.2rem}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,31rem),1fr));gap:1.5rem}
 .book{display:grid;grid-template-columns:9.5rem 1fr;gap:1.4rem;background:var(--surface);border:1px solid var(--line);border-bottom:6px solid var(--shelf);border-radius:12px;padding:1.4rem}
-.cover{--tone:#0f5c5c;aspect-ratio:3/4;align-self:start;display:flex;flex-direction:column;justify-content:space-between;padding:.9rem .8rem .8rem 1.2rem;border-radius:3px 8px 8px 3px;color:#fff;
+.cover{--tone:var(--accent-solid);aspect-ratio:3/4;align-self:start;display:flex;flex-direction:column;justify-content:space-between;padding:.9rem .8rem .8rem 1.2rem;border-radius:3px 8px 8px 3px;color:var(--on-solid);
 background:linear-gradient(90deg,#0004 0 .45rem,#fff2 .45rem .55rem,#0000 .55rem),linear-gradient(155deg,#fff2,#0000 55%),var(--tone);box-shadow:3px 4px 10px #0003}
-.cover[data-tone=architecture]{--tone:#3b4a7a}.cover[data-tone=authoring]{--tone:#0f5c5c}.cover[data-tone=cloud]{--tone:#1f5f8b}.cover[data-tone=data]{--tone:#5a3f7a}
-.cover[data-tone=engineering]{--tone:#7a4a1f}.cover[data-tone=governance]{--tone:#5c2f3f}.cover[data-tone=publishing]{--tone:#2f5c3a}.cover[data-tone=security]{--tone:#6b2d2d}
 .cover-kicker{font-size:.62rem;text-transform:uppercase;letter-spacing:.14em;opacity:.85}
-.cover-title{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-weight:700;font-size:1rem;line-height:1.25;overflow-wrap:anywhere}
+.cover-title{font-family:var(--font-sans);font-weight:700;font-size:1rem;line-height:1.25;overflow-wrap:anywhere}
 .cover-foot{font-family:ui-monospace,monospace;font-size:.68rem;opacity:.85}
 .details{display:flex;flex-direction:column;min-width:0}.book h3{font-size:1.3rem;line-height:1.3;margin:.5rem 0}
 .summary{color:var(--muted);margin:0;flex-grow:1}.tags{display:flex;gap:.4rem;flex-wrap:wrap}
@@ -93,18 +90,19 @@ const grid=document.querySelector('.grid');
 if(grid){
  const cards=Array.from(grid.querySelectorAll('.book'));
  const search=document.querySelector('#search');
+ const normalize=(value)=>value.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');
  let category='all';
  function update(){
   const mode=document.querySelector('#sort').value;
-  const words=search.value.toLowerCase().split(/\\s+/).filter(Boolean);
+  const words=normalize(search.value).split(/\\s+/).filter(Boolean);
   cards.sort((a,b)=>mode==='latest'?b.dataset.date.localeCompare(a.dataset.date)||a.dataset.title.localeCompare(b.dataset.title,'en'):mode==='za'?b.dataset.title.localeCompare(a.dataset.title,'en'):a.dataset.title.localeCompare(b.dataset.title,'en'));
   let shown=0;
   for(const card of cards){
-   const text=card.querySelector('.details').textContent.toLowerCase();
+   const text=normalize(card.querySelector('.details').textContent);
    card.hidden=(category!=='all'&&!card.dataset.categories.split(' ').includes(category))||!words.every(word=>text.includes(word));
    if(!card.hidden)shown++;grid.append(card);
   }
-  document.querySelector('#results').textContent=`Showing ${shown} of ${cards.length} handbooks`;
+  document.querySelector('#results').textContent=`Showing ${shown} of ${cards.length} ${cards.length===1?'handbook':'handbooks'}`;
  }
  for(const button of document.querySelectorAll('[data-filter]')){
   button.addEventListener('click',()=>{category=button.dataset.filter;for(const item of document.querySelectorAll('[data-filter]'))item.setAttribute('aria-pressed',String(item===button));update();});
@@ -175,6 +173,18 @@ GUIDE = f"""
 </section>"""
 
 
+def _repository_url(release_url: str) -> str | None:
+    """Return the GitHub repository of a release URL, or None when it is not GitHub."""
+
+    parts = urlsplit(release_url)
+    segments = [segment for segment in parts.path.split("/") if segment]
+    if parts.scheme != "https" or parts.hostname != "github.com":
+        return None
+    if len(segments) < 4 or segments[2] != "releases":
+        return None
+    return f"https://github.com/{segments[0]}/{segments[1]}"
+
+
 def _card(book: dict) -> str:
     release = book["latest_release"]
     tags = "".join(f'<span class="tag">{escape(category.title())}</span>' for category in book["categories"])
@@ -187,11 +197,17 @@ def _card(book: dict) -> str:
     )
     if formats:
         formats = f'<div class="formats">{formats}</div>'
+    repository = _repository_url(release["url"])
+    source = (
+        f'<a href="{escape(repository, quote=True)}">Source and issues</a>'
+        if repository
+        else ''
+    )
     return f'''<article class="book" data-title="{escape(book['title'], quote=True)}" data-date="{release['published_at']}" data-categories="{' '.join(book['categories'])}">
 <div class="cover" data-tone="{book['categories'][0]}" aria-hidden="true"><span class="cover-kicker">{escape(book['categories'][0])}</span><span class="cover-title">{title}</span><span class="cover-foot">v{release['version']}</span></div>
 <div class="details"><div class="tags">{tags}</div>{archived}<h3>{title}</h3><p class="summary">{escape(book['summary'])}</p>
 <div class="version">v{release['version']} · <time datetime="{release['published_at']}">{release['published_at']}</time></div>
-<div class="links"><a class="read" href="{escape(book['reading_url'], quote=True)}">Read handbook →</a><a href="{escape(release['url'], quote=True)}">Release downloads</a></div>{formats}
+<div class="links"><a class="read" href="{escape(book['reading_url'], quote=True)}">Read handbook →</a>{source}<a href="{escape(release['url'], quote=True)}">Release downloads</a></div>{formats}
 <div class="assets"><a href="{escape(release['manifest_url'], quote=True)}">Manifest</a><a href="{escape(release['checksums_url'], quote=True)}">Checksums</a></div></div></article>'''
 
 
@@ -247,14 +263,14 @@ def build_portal(catalog: Path, output: Path) -> Path:
         content = f'''<div class="toolbar"><div class="filters" role="group" aria-label="Filter by topic">{buttons}</div>
 <div class="tools"><label for="search">Search <input type="search" id="search" autocomplete="off" aria-controls="book-grid"></label>
 <label for="sort">Sort by <select id="sort"><option value="az">Title A–Z</option><option value="za">Title Z–A</option><option value="latest">Latest release</option></select></label></div></div>
-<p class="results" id="results" aria-live="polite">Showing {len(books)} of {len(books)} handbooks</p><div class="grid" id="book-grid">{''.join(_card(book) for book in books)}</div>'''
+<p class="results" id="results" aria-live="polite">Showing {len(books)} of {len(books)} {'handbook' if len(books) == 1 else 'handbooks'}</p><div class="grid" id="book-grid">{''.join(_card(book) for book in books)}</div>'''
     else:
         content = '''<div class="empty"><h3>The first handbook is being prepared.</h3><p>Handbooks appear here after an approved release and artifact verification. Each book will have its own reading site, source repository and downloadable editions.</p></div>'''
     planned = sorted(CATEGORIES - set(categories))
     if planned:
         content += '<p class="planned"><strong>Planned topics:</strong> ' + " · ".join(category.title() for category in planned) + '. Topics become filters when a released handbook is available.</p>'
     page = f'''<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="A library of independent technical handbooks, maintained in public and published as verified releases."><title>Handbook Hub — An open library of technical handbooks</title><style>{STYLE}</style></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="A library of independent technical handbooks, maintained in public and published as verified releases."><title>Handbook Hub — An open library of technical handbooks</title><style>{design.portal_theme_css()}{STYLE_LAYOUT}</style></head>
 <body><a class="skip" href="#library">Skip to handbooks</a><nav class="wrap" aria-label="Main navigation"><a class="brand" href="./">Handbook<span>Hub</span></a>
 <div class="menu"><a href="#library">Library</a><a href="#how-it-works">How it works</a><a href="#create">Create a handbook</a><a href="#publishing">Publishing</a><a href="#faq">FAQ</a><a href="{HUB_URL}">GitHub</a></div></nav>
 <header><div class="wrap"><p class="eyebrow">Independent books · Shared standards</p><h1>Knowledge worth keeping.<br>Handbooks worth sharing.</h1><p class="intro">An open library of practical technical handbooks. Read online, download an edition, or write the next one.</p>
@@ -268,6 +284,10 @@ def build_portal(catalog: Path, output: Path) -> Path:
     try:
         (staged / "index.html").write_text(page, encoding="utf-8")
         (staged / "llms.txt").write_text(llms_text(books), encoding="utf-8")
+        for relative, data in design.font_assets().items():
+            target = staged / "fonts" / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
         staged.rename(output)
     finally:
         if staged.exists():

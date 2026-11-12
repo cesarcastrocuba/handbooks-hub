@@ -18,15 +18,25 @@ and never imports a parent hub checkout.
 | `book.yaml` | Book descriptor, exact toolkit/profile pins, licenses and catalog metadata |
 | `manuscript/book.yml` | Reading order |
 | `manuscript/chapters/01-example.qmd` | Replaceable chapter that passes the standard profile |
-| `publishing/_quarto.yml` | Quarto project configuration for HTML, Typst/PDF and DOCX |
+| `publishing/_quarto.yml` | Quarto project configuration for HTML, Typst/PDF and DOCX; book search, repository edit/issue actions, a library link and a light/dark theme |
 | `publishing/metadata.yaml` | Book version and status consumed by the build |
 | `Makefile` | `check`, `build` and `full` targets |
 | `LICENSE`, `LICENSE-CODE`, `NOTICE.md` | Licensing and attribution |
 | `AGENTS.md` | Book-owned contributor rules |
 | `.github/workflows/` | `ci.yml` (fast checks), `release.yml` (guarded release and Pages), `initialize-book.yml` (one-time identity rewrite) |
+| `.github/ISSUE_TEMPLATE/` | Plain-language forms for a content correction and a content proposal |
 | `.github/scripts/initialize_book.py` | Book-owned bootstrap rewrite used by `initialize-book.yml` |
 | `.gitignore` | Ignores build output, Quarto caches, Python caches and virtualenvs |
 | `docs/AUTHOR_QUICKSTART.md` | Step-by-step author onboarding |
+
+## Reader navigation and contributions
+
+- The reading site has full-book search and a light/dark toggle that follows the reader's preference.
+- `repo-url` and `repo-actions` add **Edit this page**, **Report an issue** and **View source**. The
+  Initialize book workflow replaces the `OWNER/REPOSITORY` placeholder with the real repository.
+- The navbar links back to the hub library and to the repository's releases page.
+- Two issue forms ask for the page or section, the problem and the evidence, so a report is
+  actionable without knowing the internal review process.
 
 ## Install the pinned toolkit
 

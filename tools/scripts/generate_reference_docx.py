@@ -10,21 +10,25 @@ Usage: python3 tools/scripts/generate_reference_docx.py [output.docx]
 """
 from __future__ import annotations
 
+import json
 import sys
 import zipfile
 from pathlib import Path
 from xml.sax.saxutils import quoteattr
 
+TOKENS = Path(__file__).resolve().parents[1] / "src/handbook_toolkit/design/tokens.json"
+_TOKENS = json.loads(TOKENS.read_text(encoding="utf-8"))
+_PRINT = {role: values["print"].lstrip("#") for role, values in _TOKENS["color"].items()}
 DEFAULT_OUTPUT = (
     Path(__file__).resolve().parents[1] / "src/handbook_toolkit/render_data/docx/reference.docx"
 )
 WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-BODY_FONT = "Selawik"
-CODE_FONT = "JetBrains Mono"
-INK = "161616"
-MUTED = "605E5C"
-BLUE = "0065B3"
-RULE = "D9E2EC"
+BODY_FONT = _TOKENS["type"]["brand"]["docx_family"]
+CODE_FONT = _TOKENS["type"]["code"]["print_family"]
+INK = _PRINT["text"]
+MUTED = _PRINT["muted"]
+BLUE = _PRINT["accent"]
+RULE = _PRINT["border"]
 FIXED_TIME = (1980, 1, 1, 0, 0, 0)
 
 

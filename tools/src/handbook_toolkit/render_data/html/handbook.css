@@ -1,14 +1,24 @@
-/* Handbook HTML stylesheet, adapted from the author's reference handbook; see NOTICE.md. */
-:root {
-  --sah-navy: #1B365D;
-  --sah-teal: #0D6E6E;
-  --sah-slate: #334E68;
-  --sah-border: #D9E2EC;
-  --sah-row-alt: #F8FAFC;
+/* Handbook HTML stylesheet, adapted from the author's reference handbook; see NOTICE.md.
+   Semantic values and @font-face rules are injected by the toolkit as a separate
+   stylesheet generated from design/tokens.json. */
+
+body {
+  font-family: var(--font-sans);
+  color: var(--text);
 }
 
 h1, h2, h3, h4 {
-  color: var(--sah-navy);
+  color: var(--heading);
+  font-family: var(--font-sans);
+}
+
+code, pre, kbd, samp {
+  font-family: var(--font-mono);
+}
+
+#quarto-document-content p,
+#quarto-document-content li {
+  max-width: var(--measure);
 }
 
 table.table, main table {
@@ -23,7 +33,7 @@ table.caption-top, table.table, main table {
 }
 
 table caption {
-  color: var(--sah-slate);
+  color: var(--muted);
   font-style: italic;
   text-align: center;
   padding: 0.45rem 0 0 0;
@@ -41,31 +51,31 @@ main p:has(> a[id^="tbl-"]) {
 }
 
 table.table thead th, main table thead th {
-  background-color: var(--sah-navy);
-  color: #ffffff;
+  background-color: var(--accent-solid);
+  color: var(--on-solid);
   font-weight: 600;
-  border: 1px solid var(--sah-navy);
+  border: 1px solid var(--accent-solid);
   padding: 0.55rem 0.75rem;
   text-align: left;
 }
 
 table.table tbody td, main table tbody td {
-  border: 1px solid var(--sah-border);
+  border: 1px solid var(--border);
   padding: 0.5rem 0.75rem;
   vertical-align: top;
 }
 
 table.table tbody tr:nth-child(even), main table tbody tr:nth-child(even) {
-  background-color: var(--sah-row-alt);
+  background-color: var(--surface);
 }
 
 div.callout-note.callout {
-  border-left-color: var(--sah-teal) !important;
-  background-color: #F4F9F9;
+  border-left-color: var(--accent) !important;
+  background-color: var(--surface);
 }
 
 figcaption, .figure-caption {
-  color: var(--sah-slate);
+  color: var(--muted);
   font-style: italic;
   text-align: center;
 }

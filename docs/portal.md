@@ -6,8 +6,9 @@ Build a fresh static portal from the Git-tracked approved-release catalog:
 python3 -m handbook_toolkit.portal catalog/catalog.json --output /tmp/handbook-portal
 ```
 
-The output directory holds two files: `index.html`, a single responsive page with embedded
-styles and JavaScript, and `llms.txt`, a plain-text index for AI tools.
+The output directory holds `index.html`, a single responsive page with embedded
+styles and JavaScript, `llms.txt`, a plain-text index for AI tools, and a
+`fonts/` directory with the self-hosted WOFF2 files the page requests.
 
 `index.html` contains:
 

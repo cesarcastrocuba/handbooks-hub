@@ -87,6 +87,56 @@ class DesignTokenTests(unittest.TestCase):
         )
         package_data = pyproject["tool"]["setuptools"]["package-data"]["handbook_toolkit"]
         self.assertIn("design/*.json", package_data)
+        self.assertIn("render_data/fonts/*/*.woff2", package_data)
+
+    def test_brand_typeface_is_shared_across_media(self) -> None:
+        brand = self.tokens["type"]["brand"]
+        self.assertEqual(self.tokens["type"]["body"]["print_family"], brand["family"])
+        self.assertEqual(self.tokens["type"]["display"]["print_family"], brand["family"])
+        self.assertIn(brand["web_name"], self.tokens["type"]["body"]["web_family"])
+        self.assertIn(brand["web_name"], self.tokens["type"]["display"]["web_family"])
+        self.assertEqual(self.tokens["type"]["code"]["print_family"], "JetBrains Mono")
+
+    def test_web_font_assets_are_packaged_woff2(self) -> None:
+        assets = design.font_assets()
+        expected = {relative for _family, relative, _weight, _style in design.WEB_FONTS}
+        self.assertEqual(set(assets), expected)
+        for relative, data in assets.items():
+            with self.subTest(font=relative):
+                self.assertTrue(data.startswith(b"wOF2"))
+                self.assertGreater(len(data), 10_000)
+
+    def test_font_faces_are_same_origin(self) -> None:
+        css = design.font_face_css("fonts/")
+        self.assertIn("@font-face", css)
+        self.assertNotIn("http", css)
+        self.assertIn("fonts/liberation-sans/LiberationSans-Regular.woff2", css)
+
+    def test_book_theme_covers_quarto_dark_and_media(self) -> None:
+        css = design.book_theme_css()
+        self.assertIn("body.quarto-dark", css)
+        self.assertIn("prefers-color-scheme:dark", css)
+        for role, values in self.tokens["color"].items():
+            with self.subTest(role=role):
+                self.assertIn(values["light"], css)
+                self.assertIn(values["dark"], css)
+
+    def test_portal_theme_uses_brand_font_and_both_schemes(self) -> None:
+        css = design.portal_theme_css()
+        self.assertIn('font-family:"Handbook Sans"', css)
+        self.assertIn("--paper: var(--canvas);", css)
+        self.assertIn("prefers-color-scheme:dark", css)
+
+    def test_typst_preamble_uses_brand_fonts(self) -> None:
+        typst = design.typst_preamble()
+        self.assertIn('#let hb-font = ("Liberation Sans",)', typst)
+        self.assertIn('#let hb-code-font = ("JetBrains Mono",)', typst)
+
+    def test_docx_values_name_the_compatible_family(self) -> None:
+        values = design.docx_values()
+        self.assertEqual(values["body_font"], "Arial")
+        self.assertEqual(values["code_font"], "JetBrains Mono")
+        self.assertEqual(values["ink"], self.tokens["color"]["text"]["print"])
 
 
 if __name__ == "__main__":

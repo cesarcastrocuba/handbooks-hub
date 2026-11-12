@@ -46,8 +46,20 @@
     "type": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["body", "display", "code"],
+      "required": ["brand", "body", "display", "code"],
       "properties": {
+        "brand": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["family", "web_name", "docx_family", "license", "source"],
+          "properties": {
+            "family": { "type": "string", "minLength": 1 },
+            "web_name": { "type": "string", "minLength": 1 },
+            "docx_family": { "type": "string", "minLength": 1 },
+            "license": { "type": "string", "pattern": "^OFL-1\\.1$" },
+            "source": { "type": "string", "pattern": "^https://" }
+          }
+        },
         "body": { "$ref": "#/$defs/type_role" },
         "display": { "$ref": "#/$defs/type_role" },
         "code": { "$ref": "#/$defs/type_role" }
