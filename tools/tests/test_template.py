@@ -21,6 +21,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import zipfile
 
 import yaml
 
@@ -238,6 +239,11 @@ class TemplateTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
             self.assertEqual({path.name for path in output.iterdir()}, PAYLOADS)
 
+            with zipfile.ZipFile(output / "book-html.zip") as archive:
+                names = set(archive.namelist())
+            self.assertIn(".handbook-render/fonts/liberation-sans/OFL.txt", names)
+            self.assertIn(".handbook-render/fonts/jetbrains-mono/OFL.txt", names)
+
             manifest = json.loads((output / "publication-manifest.json").read_text())
             self.assertEqual(manifest["book"]["commit"], _git(book, "rev-parse", "HEAD"))
             self.assertEqual(manifest["book"]["version"], "0.1.0-preview")
@@ -373,9 +379,13 @@ class TemplateWorkflowTests(unittest.TestCase):
         book = quarto["book"]
         self.assertTrue(book["search"])
         self.assertEqual(book["repo-url"], "https://github.com/OWNER/REPOSITORY")
-        self.assertEqual(book["repo-actions"], ["edit", "issue", "source"])
+        self.assertEqual(book["repo-actions"], ["issue"])
         self.assertEqual(book["navbar"]["right"][0]["href"],
                          "https://github.com/cesarcastrocuba/handbooks-hub")
+        self.assertEqual(
+            book["navbar"]["right"][1]["href"],
+            "https://github.com/OWNER/REPOSITORY/tree/main/manuscript",
+        )
         self.assertEqual(
             quarto["format"]["html"]["theme"], {"light": "cosmo", "dark": "darkly"}
         )
@@ -487,7 +497,9 @@ class InitializeBookTests(unittest.TestCase):
             expected_quarto["book"]["repo-url"] = identity["repository-url"]
             for item in expected_quarto["book"]["navbar"]["right"]:
                 if item.get("href", "").startswith("https://github.com/OWNER/REPOSITORY"):
-                    item["href"] = identity["repository-url"] + "/releases"
+                    item["href"] = item["href"].replace(
+                        "https://github.com/OWNER/REPOSITORY", identity["repository-url"]
+                    )
             self.assertEqual(after_quarto, expected_quarto)
 
             expected_metadata = deepcopy(before_metadata)
@@ -533,6 +545,10 @@ class InitializeBookTests(unittest.TestCase):
             self.assertTrue(quarto["book"]["search"])
             self.assertEqual(
                 quarto["book"]["navbar"]["right"][1]["href"],
+                f"{IDENTITY['repository-url']}/tree/main/manuscript",
+            )
+            self.assertEqual(
+                quarto["book"]["navbar"]["right"][2]["href"],
                 f"{IDENTITY['repository-url']}/releases",
             )
             self.assertTrue(quarto["format"]["html"]["respect-user-color-scheme"])

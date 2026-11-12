@@ -469,6 +469,13 @@ def _payload_paths(workspace: Path, dist: Path, epoch: int) -> dict[str, Path]:
         site,
         ignore=shutil.ignore_patterns("*.pdf", "*.docx", "*.typst"),
     )
+    # Quarto copies only the font files referenced by the stylesheet. The OFL
+    # notices must travel with them, so they are added explicitly before the
+    # exact tree is archived and deployed.
+    for relative, data in design.font_licenses().items():
+        target = site / ".handbook-render" / "fonts" / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
     archive_tree(site, dist / PAYLOADS["html"], epoch)
     pdf = _one_file(output, ".pdf")
     docx = _one_file(output, ".docx")

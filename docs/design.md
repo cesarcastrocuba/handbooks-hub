@@ -99,7 +99,9 @@ The brand family is **Liberation Sans** (SIL OFL 1.1). The portal and the book s
 subsetted WOFF2 files under the CSS name `Handbook Sans`; the PDF embeds the TTF; the DOCX names
 **Arial**, which is metrically compatible, so a reader without Liberation Sans gets no layout shift.
 JetBrains Mono remains the code family in every medium. The files ship in the toolkit and are listed
-in `NOTICE.md`; no font is fetched from a third-party host.
+in `NOTICE.md`; no font is fetched from a third-party host. The web subsets carry renamed internal
+names, keep the OFL text and URL in their name table, and are published together with their `OFL.txt`
+files.
 
 The web designs target a 60 to 75 character measure. Quarto renders the book content column and the
 tools page applies `--measure`; the portal keeps its responsive card grid.

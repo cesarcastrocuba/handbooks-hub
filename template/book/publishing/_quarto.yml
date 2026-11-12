@@ -8,11 +8,13 @@ book:
   date: "2026-11-06"
   search: true
   repo-url: "https://github.com/OWNER/REPOSITORY"
-  repo-actions: [edit, issue, source]
+  repo-actions: [issue]
   navbar:
     right:
       - text: "Handbook Hub"
         href: "https://github.com/cesarcastrocuba/handbooks-hub"
+      - text: "Source"
+        href: "https://github.com/OWNER/REPOSITORY/tree/main/manuscript"
       - text: "Downloads"
         href: "https://github.com/OWNER/REPOSITORY/releases"
 

@@ -157,13 +157,13 @@ def _contrast_issues(tokens: dict[str, Any]) -> list[Issue]:
 # Web font assets, relative to ``render_data/fonts``. Each tuple is
 # (CSS family, relative path, weight, style).
 WEB_FONTS: tuple[tuple[str, str, int, str], ...] = (
-    ("Handbook Sans", "liberation-sans/LiberationSans-Regular.woff2", 400, "normal"),
-    ("Handbook Sans", "liberation-sans/LiberationSans-Bold.woff2", 700, "normal"),
-    ("Handbook Sans", "liberation-sans/LiberationSans-Italic.woff2", 400, "italic"),
-    ("Handbook Sans", "liberation-sans/LiberationSans-BoldItalic.woff2", 700, "italic"),
-    ("Handbook Mono", "jetbrains-mono/JetBrainsMono-Regular.woff2", 400, "normal"),
-    ("Handbook Mono", "jetbrains-mono/JetBrainsMono-Bold.woff2", 700, "normal"),
-    ("Handbook Mono", "jetbrains-mono/JetBrainsMono-Italic.woff2", 400, "italic"),
+    ("Handbook Sans", "liberation-sans/HandbookSans-Regular.woff2", 400, "normal"),
+    ("Handbook Sans", "liberation-sans/HandbookSans-Bold.woff2", 700, "normal"),
+    ("Handbook Sans", "liberation-sans/HandbookSans-Italic.woff2", 400, "italic"),
+    ("Handbook Sans", "liberation-sans/HandbookSans-BoldItalic.woff2", 700, "italic"),
+    ("Handbook Mono", "jetbrains-mono/HandbookMono-Regular.woff2", 400, "normal"),
+    ("Handbook Mono", "jetbrains-mono/HandbookMono-Bold.woff2", 700, "normal"),
+    ("Handbook Mono", "jetbrains-mono/HandbookMono-Italic.woff2", 400, "italic"),
 )
 
 LEGACY_ALIASES = (
@@ -199,9 +199,24 @@ def font_assets() -> dict[str, bytes]:
             for _family, relative, _weight, _style in WEB_FONTS}
 
 
+def font_licenses() -> dict[str, bytes]:
+    """Return the OFL license files that must travel with the web fonts."""
+
+    package = resource_files("handbook_toolkit").joinpath("render_data", "fonts")
+    return {
+        "liberation-sans/OFL.txt": package.joinpath("liberation-sans", "OFL.txt").read_bytes(),
+        "jetbrains-mono/OFL.txt": package.joinpath("jetbrains-mono", "OFL.txt").read_bytes(),
+    }
+
+
 def font_face_css(prefix: str) -> str:
     """Return ``@font-face`` rules whose URLs are relative to *prefix* (same origin only)."""
 
+    comment = (
+        "/* Web fonts: Handbook Sans (Liberation Sans subset, SIL OFL 1.1, "
+        f"{prefix}liberation-sans/OFL.txt); Handbook Mono (JetBrains Mono subset, SIL OFL 1.1, "
+        f"{prefix}jetbrains-mono/OFL.txt). */"
+    )
     rules = []
     for family, relative, weight, style in WEB_FONTS:
         rules.append(
@@ -209,7 +224,7 @@ def font_face_css(prefix: str) -> str:
             "font-weight:%d;font-style:%s;font-display:swap}"
             % (family, prefix, relative, weight, style)
         )
-    return "\n".join(rules)
+    return comment + "\n" + "\n".join(rules)
 
 
 def css_variables(scheme: str) -> str:

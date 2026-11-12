@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 from pathlib import Path
+import io
 import sys
 import tomllib
 import unittest
@@ -110,7 +111,7 @@ class DesignTokenTests(unittest.TestCase):
         css = design.font_face_css("fonts/")
         self.assertIn("@font-face", css)
         self.assertNotIn("http", css)
-        self.assertIn("fonts/liberation-sans/LiberationSans-Regular.woff2", css)
+        self.assertIn("fonts/liberation-sans/HandbookSans-Regular.woff2", css)
 
     def test_book_theme_covers_quarto_dark_and_media(self) -> None:
         css = design.book_theme_css()
@@ -137,6 +138,24 @@ class DesignTokenTests(unittest.TestCase):
         self.assertEqual(values["body_font"], "Arial")
         self.assertEqual(values["code_font"], "JetBrains Mono")
         self.assertEqual(values["ink"], self.tokens["color"]["text"]["print"])
+
+
+    def test_web_fonts_are_renamed_and_carry_the_license(self) -> None:
+        from fontTools.ttLib import TTFont
+
+        for relative, data in design.font_assets().items():
+            with self.subTest(font=relative):
+                font = TTFont(io.BytesIO(data))
+                name = font["name"]
+                family = name.getDebugName(1) or ""
+                postscript = name.getDebugName(6) or ""
+                self.assertIn(family, ("Handbook Sans", "Handbook Mono"))
+                self.assertTrue(
+                    postscript.startswith(("HandbookSans-", "HandbookMono-")), postscript
+                )
+                self.assertNotIn("LiberationSans", postscript)
+                self.assertIn("SIL Open Font License", name.getDebugName(13) or "")
+                self.assertIn("openfontlicense.org", name.getDebugName(14) or "")
 
 
 if __name__ == "__main__":

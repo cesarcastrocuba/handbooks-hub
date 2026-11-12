@@ -35,7 +35,7 @@ class GeneratedSurfaceTests(unittest.TestCase):
         css = design.book_theme_css()
         self.assertIn("body.quarto-dark", css)
         self.assertIn("prefers-color-scheme:dark", css)
-        self.assertIn("../fonts/liberation-sans/LiberationSans-Regular.woff2", css)
+        self.assertIn("../fonts/liberation-sans/HandbookSans-Regular.woff2", css)
 
     def test_book_layout_has_no_private_palette(self) -> None:
         css = (RENDER / "html" / "handbook.css").read_text(encoding="utf-8")
@@ -76,6 +76,34 @@ class GeneratedSurfaceTests(unittest.TestCase):
         for relative, data in assets.items():
             with self.subTest(font=relative):
                 self.assertTrue(data.startswith(b"wOF2"))
+
+    def test_license_files_travel_with_the_web_fonts(self) -> None:
+        licenses = design.font_licenses()
+        self.assertEqual(
+            set(licenses),
+            {"liberation-sans/OFL.txt", "jetbrains-mono/OFL.txt"},
+        )
+        for relative, data in licenses.items():
+            with self.subTest(license=relative):
+                self.assertIn(b"SIL OPEN FONT LICENSE", data.upper())
+
+    def test_font_face_output_names_the_license(self) -> None:
+        css = design.font_face_css("fonts/")
+        self.assertIn("fonts/liberation-sans/OFL.txt", css)
+        self.assertIn("fonts/jetbrains-mono/OFL.txt", css)
+
+    def test_portal_filled_controls_use_the_solid_role(self) -> None:
+        from handbook_toolkit.portal import STYLE_LAYOUT
+
+        self.assertIn(
+            "button[aria-pressed=true]{background:var(--accent-solid);color:var(--on-solid)",
+            STYLE_LAYOUT,
+        )
+        self.assertIn(
+            ".btn.primary{background:var(--accent-solid);color:var(--on-solid)}",
+            STYLE_LAYOUT,
+        )
+        self.assertNotIn("background:var(--accent);color:var(--accent-ink)", STYLE_LAYOUT)
 
 
 if __name__ == "__main__":

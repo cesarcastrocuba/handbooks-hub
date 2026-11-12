@@ -24,14 +24,14 @@ RESOURCE_NAMES = (
     "fonts/liberation-sans/LiberationSans-Bold.ttf",
     "fonts/liberation-sans/LiberationSans-Italic.ttf",
     "fonts/liberation-sans/LiberationSans-BoldItalic.ttf",
-    "fonts/liberation-sans/LiberationSans-Regular.woff2",
-    "fonts/liberation-sans/LiberationSans-Bold.woff2",
-    "fonts/liberation-sans/LiberationSans-Italic.woff2",
-    "fonts/liberation-sans/LiberationSans-BoldItalic.woff2",
+    "fonts/liberation-sans/HandbookSans-Regular.woff2",
+    "fonts/liberation-sans/HandbookSans-Bold.woff2",
+    "fonts/liberation-sans/HandbookSans-Italic.woff2",
+    "fonts/liberation-sans/HandbookSans-BoldItalic.woff2",
     "fonts/liberation-sans/OFL.txt",
-    "fonts/jetbrains-mono/JetBrainsMono-Regular.woff2",
-    "fonts/jetbrains-mono/JetBrainsMono-Bold.woff2",
-    "fonts/jetbrains-mono/JetBrainsMono-Italic.woff2",
+    "fonts/jetbrains-mono/HandbookMono-Regular.woff2",
+    "fonts/jetbrains-mono/HandbookMono-Bold.woff2",
+    "fonts/jetbrains-mono/HandbookMono-Italic.woff2",
 )
 
 

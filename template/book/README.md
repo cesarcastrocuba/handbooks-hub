@@ -32,9 +32,9 @@ and never imports a parent hub checkout.
 ## Reader navigation and contributions
 
 - The reading site has full-book search and a light/dark toggle that follows the reader's preference.
-- `repo-url` and `repo-actions` add **Edit this page**, **Report an issue** and **View source**. The
-  Initialize book workflow replaces the `OWNER/REPOSITORY` placeholder with the real repository.
-- The navbar links back to the hub library and to the repository's releases page.
+- `repo-url` and `repo-actions: [issue]` add **Report an issue** to every page. The navbar links to
+  the manuscript source and to the repository's releases page, so no edit link points at a generated
+  file. The Initialize book workflow replaces the `OWNER/REPOSITORY` placeholder.
 - Two issue forms ask for the page or section, the problem and the evidence, so a report is
   actionable without knowing the internal review process.
 

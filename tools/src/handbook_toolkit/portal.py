@@ -40,14 +40,14 @@ h1{font-size:clamp(2.3rem,6vw,4rem);line-height:1.08;max-width:860px;margin:.8re
 .intro{max-width:640px;font-size:1.1rem;color:var(--muted);margin:0}
 .cta{display:flex;gap:.8rem;flex-wrap:wrap;margin:1.8rem 0 0}
 .btn{display:inline-flex;align-items:center;min-height:44px;padding:.6rem 1.1rem;border-radius:8px;border:1px solid var(--accent);font-weight:650;text-decoration:none}
-.btn.primary{background:var(--accent);color:var(--accent-ink)}.btn:hover{text-decoration:underline}
+.btn.primary{background:var(--accent-solid);color:var(--on-solid)}.btn:hover{text-decoration:underline}
 .statusline{font-size:.9rem;color:var(--muted);margin:1.8rem 0 0}
 main section{padding:3.5rem 0;border-bottom:1px solid var(--line)}main section:last-child{border-bottom:0}
 h2{font-size:clamp(1.6rem,3.5vw,2.1rem);margin:0 0 .5rem}.lede{color:var(--muted);max-width:700px;margin:0 0 1.5rem}
 .toolbar{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin:1.5rem 0 .5rem}
 .filters{display:flex;gap:.5rem;flex-wrap:wrap}
 button,select,input[type=search]{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;min-height:44px;padding:.5rem .95rem}
-button{cursor:pointer}button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button{cursor:pointer}button[aria-pressed=true]{background:var(--accent-solid);color:var(--on-solid);border-color:var(--accent-solid)}
 .tools{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;font-size:.9rem}.tools label{display:flex;gap:.5rem;align-items:center}
 .results{color:var(--muted);font-size:.9rem;margin:.8rem 0 1.2rem}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,31rem),1fr));gap:1.5rem}
@@ -71,7 +71,7 @@ background:linear-gradient(90deg,#0004 0 .45rem,#fff2 .45rem .55rem,#0000 .55rem
 .planned{margin:1.8rem 0 0;color:var(--muted);font-size:.9rem}
 .flow{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(11.5rem,1fr));gap:1rem;counter-reset:step}
 .flow li{counter-increment:step;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1.1rem 1.1rem 1.2rem}
-.flow li::before{content:counter(step);display:grid;place-items:center;width:2rem;height:2rem;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:.9rem;margin-bottom:.7rem}
+.flow li::before{content:counter(step);display:grid;place-items:center;width:2rem;height:2rem;border-radius:50%;background:var(--accent-solid);color:var(--on-solid);font-weight:700;font-size:.9rem;margin-bottom:.7rem}
 .flow strong{display:block;font-size:1.02rem;margin-bottom:.25rem}.flow span{color:var(--muted);font-size:.92rem;display:block}
 .parts{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:1rem;margin:0 0 1.5rem;padding:0;list-style:none}
 .parts li{border-left:4px solid var(--accent);background:var(--surface);padding:.9rem 1rem;border-radius:0 10px 10px 0}.parts strong{display:block}.parts span{color:var(--muted);font-size:.92rem}
@@ -276,7 +276,7 @@ def build_portal(catalog: Path, output: Path) -> Path:
 <header><div class="wrap"><p class="eyebrow">Independent books · Shared standards</p><h1>Knowledge worth keeping.<br>Handbooks worth sharing.</h1><p class="intro">An open library of practical technical handbooks. Read online, download an edition, or write the next one.</p>
 <p class="cta"><a class="btn primary" href="#library">Browse the library</a><a class="btn" href="#create">Create your handbook</a></p><p class="statusline">{published} published · {archived} archived · Verified release downloads</p></div></header>
 <main class="wrap"><section id="library" aria-labelledby="library-title"><h2 id="library-title">Explore the library</h2>{content}</section>{GUIDE}</main>
-<footer><div class="wrap">Each handbook owns its source, review process and releases. This catalog links to approved editions; it does not mirror manuscript content.<br>Content: CC BY-SA 4.0 · Platform code: MIT · <a href="{HUB_URL}">Source and contribution guide</a> · <a href="llms.txt">llms.txt</a></div></footer><script>{SCRIPT}</script></body></html>'''
+<footer><div class="wrap">Each handbook owns its source, review process and releases. This catalog links to approved editions; it does not mirror manuscript content.<br>Content: CC BY-SA 4.0 · Platform code: MIT · Fonts: <a href="fonts/liberation-sans/OFL.txt">Liberation Sans OFL</a>, <a href="fonts/jetbrains-mono/OFL.txt">JetBrains Mono OFL</a> · <a href="{HUB_URL}">Source and contribution guide</a> · <a href="llms.txt">llms.txt</a></div></footer><script>{SCRIPT}</script></body></html>'''
     if output.exists() or output.is_symlink():
         raise FileExistsError(output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -285,6 +285,10 @@ def build_portal(catalog: Path, output: Path) -> Path:
         (staged / "index.html").write_text(page, encoding="utf-8")
         (staged / "llms.txt").write_text(llms_text(books), encoding="utf-8")
         for relative, data in design.font_assets().items():
+            target = staged / "fonts" / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
+        for relative, data in design.font_licenses().items():
             target = staged / "fonts" / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(data)

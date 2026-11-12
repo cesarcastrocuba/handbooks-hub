@@ -207,13 +207,22 @@ class PortalContributionTests(unittest.TestCase):
         self.assertIn("cards.length===1?'handbook':'handbooks'", SCRIPT)
 
     def test_fonts_are_published_next_to_the_page(self):
-        self.build(support.catalog_document())
+        page = self.build(support.catalog_document())
         fonts = sorted(
             path.relative_to(self.output).as_posix()
             for path in (self.output / "fonts").rglob("*.woff2")
         )
         self.assertEqual(len(fonts), 7)
         self.assertTrue(all(name.startswith("fonts/") for name in fonts))
+        licenses = sorted(
+            path.relative_to(self.output).as_posix()
+            for path in (self.output / "fonts").rglob("OFL.txt")
+        )
+        self.assertEqual(
+            licenses,
+            ["fonts/jetbrains-mono/OFL.txt", "fonts/liberation-sans/OFL.txt"],
+        )
+        self.assertIn("fonts/liberation-sans/OFL.txt", page)
 
     def test_theme_carries_the_tokens_and_no_external_host(self):
         page = self.build(support.catalog_document())
