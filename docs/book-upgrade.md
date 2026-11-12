@@ -40,7 +40,8 @@ Migration (`HUB-DEC-014`):
 
 1. Update `toolkit` in `book.yaml` to `"0.7.0"`; keep the profile pin unchanged.
 2. Replace the hub commit in `requirements.txt` with the reviewed commit that contains `0.7.0`.
-3. Run `make check` and `make full`. No manuscript or `book.yaml` change is required.
+3. Run `make check` and `make full`. No manuscript change is required; only the toolkit pin in
+   `book.yaml` and the commit in `requirements.txt` change.
 4. Inspect the HTML, PDF and DOCX before release. The PDF body type and table header colour change;
    the DOCX body style changes from Selawik to Arial. If the book has its own CSS that sets colours,
    fonts or table rules, confirm it still matches the book's identity; the generated stylesheet loads
