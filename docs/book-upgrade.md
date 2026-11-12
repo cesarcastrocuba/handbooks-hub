@@ -27,6 +27,29 @@ profile version change may require manuscript edits. When the changelog marks a 
 incompatible, upgrade in a dedicated branch, update the affected manuscript units, and record a
 rendered review before requesting approval.
 
+## Example: toolkit 0.6.0 to 0.7.0
+
+`0.7.0` changes the rendered output on every surface. It adds a packaged design-token contract and
+one brand typeface: Liberation Sans, self-hosted as WOFF2 for the HTML edition and embedded in the
+PDF, with Arial named in the DOCX as its metric-compatible equivalent. JetBrains Mono remains the code
+font. A generated `design-tokens.css` carries the HTML variables and a light/dark scheme, and the table
+filter keeps narrow columns above a floor so labels do not break mid-word. It changes no CLI command,
+descriptor field, profile rule or payload set.
+
+Migration (`HUB-DEC-014`):
+
+1. Update `toolkit` in `book.yaml` to `"0.7.0"`; keep the profile pin unchanged.
+2. Replace the hub commit in `requirements.txt` with the reviewed commit that contains `0.7.0`.
+3. Run `make check` and `make full`. No manuscript or `book.yaml` change is required.
+4. Inspect the HTML, PDF and DOCX before release. The PDF body type and table header colour change;
+   the DOCX body style changes from Selawik to Arial. If the book has its own CSS that sets colours,
+   fonts or table rules, confirm it still matches the book's identity; the generated stylesheet loads
+   first, so book CSS wins where it sets a value.
+5. Keep the release workflow uploading the generated HTML archive as-is. It now contains the
+   `design-tokens.css`, seven WOFF2 files and both `OFL.txt` notices.
+
+Books that stay on `0.6.0` keep their previous rendering and remain publishable.
+
 ## Example: toolkit 0.5.0 to 0.6.0
 
 `0.6.0` adds a fifth payload, `book.md`: one GitHub-flavoured Markdown file in reading order, meant
