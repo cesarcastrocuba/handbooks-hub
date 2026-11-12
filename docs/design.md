@@ -95,10 +95,11 @@ lost that separation.
 
 Spacing uses a 4 px unit with 56 px section rhythm. Controls use a 6 px radius and cards 8 px.
 
-The web keeps system stacks on purpose: no new font is downloaded, no external request is created
-and no additional license enters the project. The print editions keep the fonts already approved
-and bundled. A single typeface family across all surfaces is a separate owner decision because it
-would add a packaged asset and change the licensing surface.
+The table above is the temporary Phase 0 baseline, not the target. System stacks cannot deliver one
+brand identity: the web renders a different typeface on every operating system and never matches the
+PDF. One bundled OFL family is required, self-hosted for the web, embedded in the PDF and named in
+the DOCX. The family choice, its OFL review and the packaged files are recorded before Phase 1; until
+then the surfaces share colour, hierarchy and spacing but not typography.
 
 ## Surface mapping
 
