@@ -49,10 +49,15 @@ families: light web, dark web and print.
 | `surface` | `#FFFDF8` | `#1C2526` | `#FFFFFF` | Cards, tables and raised areas |
 | `text` | `#1D2A2C` | `#EBE6DA` | `#1D2A2C` | Body copy |
 | `muted` | `#55666A` | `#A3B0B0` | `#55666A` | Secondary copy, captions and metadata |
-| `heading` | `#1B365D` | `#EBE6DA` | `#1B365D` | Headings and structural emphasis |
+| `heading` | `#1D2A2C` | `#EBE6DA` | `#1D2A2C` | Headings and structural emphasis |
 | `accent` | `#0B5D5F` | `#6FCFC6` | `#0B5D5F` | Links, active controls and primary actions |
 | `on_accent` | `#FFFFFF` | `#0C1A1A` | `#FFFFFF` | Text on an accent background |
 | `border` | `#DDD3C0` | `#33403F` | `#D9E2EC` | Rules, dividers and table borders |
+
+Headings use the same near-black as body text on light and print; hierarchy comes from size, weight
+and spacing rather than from a third hue. The dark scheme keeps the same relationship with a light
+ink. This preserves the editorial character of the current portal and print editions instead of
+introducing a separate heading colour.
 
 ## Contrast policy
 
@@ -66,7 +71,7 @@ it serves and a minimum ratio. The loader rejects a declaration below the WCAG 2
 | `text` on `surface` | light, dark | 14.55:1, 12.57:1 |
 | `muted` on `canvas` | light, dark, print | 5.34:1, 7.87:1, 6.01:1 |
 | `muted` on `surface` | light, dark | 5.91:1, 7.00:1 |
-| `heading` on `canvas` | light, dark, print | 10.77:1, 14.13:1, 12.12:1 |
+| `heading` on `canvas` | light, dark, print | 13.14:1, 14.13:1, 14.79:1 |
 | `accent` on `canvas` | light, dark, print | 6.80:1, 9.57:1, 7.65:1 |
 | `on_accent` on `accent` | light, dark, print | 7.65:1, 9.69:1, 7.65:1 |
 
