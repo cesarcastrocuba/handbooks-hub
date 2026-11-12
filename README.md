@@ -5,14 +5,14 @@ contracts, the versioned Python toolkit, the standard editorial profile, the boo
 catalog and the static portal. Each book repository owns its canonical manuscript and publishes its
 own reading site and release downloads.
 
-Status: **Phase 1 integrated on `main`; Phase 2 next.** See [`STATUS.md`](STATUS.md) and the
-[implementation plan](docs/implementation-plan.md).
+Status: **Phases 1 to 5 complete, with the unified design released in toolkit `0.7.0`.** See
+[`STATUS.md`](STATUS.md) and the [implementation plan](docs/implementation-plan.md).
 
 ## Who this is for
 
 | Reader | Installation needed? | Start here |
 | --- | --- | --- |
-| Reader of a published handbook | **No** | Use the book's reading site or release downloads. The hub catalog is empty until a release is approved. |
+| Reader of a published handbook | **No** | Use the book's reading site or release downloads. The catalog currently lists `handbook-authoring-and-publishing` `v0.2.7`. |
 | Contributor to this hub | **Yes** — Git, Python 3.11+, pip, venv | [Quick start](#quick-start-hub-contributors) or [`docs/setup.md`](docs/setup.md) |
 | Hub maintainer | **Yes** — the contributor setup plus `make` and CI knowledge | [`docs/setup.md`](docs/setup.md) |
 | Author of an independent book | **Yes** — Python, venv and the pinned toolkit | [`template/book/README.md`](template/book/README.md) |
@@ -48,10 +48,11 @@ activation and troubleshooting, start with [`docs/setup.md`](docs/setup.md).
 | Path | Purpose |
 | --- | --- |
 | `docs/` | Architecture, contracts, decisions, assumptions, setup guide and phased plan |
+| `docs/design.md` | Design contract: colour roles, contrast floors, the brand typeface and per-surface mapping |
 | `profiles/standard/` | Approved standard editorial profile `1.0.0` with per-rule validation classification |
 | `tools/` | Versioned `handbook-toolkit` package with deterministic validators and tests |
 | `tools/src/handbook_toolkit/schemas/` | JSON Schema contracts for books, profiles and the catalog, shipped inside the toolkit package |
-| `template/book/` | Book template `1.1.0` with publishing config, licenses, workflows and `make check`/`build`/`full` |
+| `template/book/` | Book template `1.2.0` with publishing config, licenses, workflows, search/contribution actions and `make check`/`build`/`full` |
 | `catalog/` | Catalog of approved book releases |
 | `docs/publication-build.md` | Local seven-file build with staging, payload inspection and atomic finalization |
 | `docs/book-upgrade.md` | Supported toolkit/profile upgrade path for an independent book |
