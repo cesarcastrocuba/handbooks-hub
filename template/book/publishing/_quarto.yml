@@ -6,11 +6,26 @@ book:
   title: "Handbook Template"
   author: "Template Author"
   date: "2026-11-06"
+  search: true
+  repo-url: "https://github.com/OWNER/REPOSITORY"
+  repo-actions: [issue]
+  navbar:
+    right:
+      - text: "Handbook Hub"
+        href: "https://github.com/cesarcastrocuba/handbooks-hub"
+      - text: "Source"
+        href: "https://github.com/OWNER/REPOSITORY/tree/main/manuscript"
+      - text: "Downloads"
+        href: "https://github.com/OWNER/REPOSITORY/releases"
 
 format:
   html:
     toc: true
     toc-depth: 3
+    theme:
+      light: cosmo
+      dark: darkly
+    respect-user-color-scheme: true
   typst:
     papersize: a4
     toc: true

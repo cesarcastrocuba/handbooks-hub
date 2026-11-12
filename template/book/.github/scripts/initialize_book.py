@@ -25,6 +25,7 @@ from typing import NoReturn
 import yaml
 
 TEMPLATE_ID = "template-book"
+TEMPLATE_REPOSITORY = "https://github.com/OWNER/REPOSITORY"
 IDENTIFIER = re.compile(r"[a-z][a-z0-9-]{1,63}")
 REPOSITORY_URL = re.compile(r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")
 CATEGORIES = (
@@ -253,6 +254,10 @@ def main(argv: list[str] | None = None) -> int:
     expected_quarto = deepcopy(quarto)
     expected_quarto["book"]["title"] = args.title
     expected_quarto["book"]["author"] = args.author
+    expected_quarto["book"]["repo-url"] = args.repository_url
+    for item in expected_quarto["book"].get("navbar", {}).get("right", []):
+        if isinstance(item, dict) and item.get("href", "").startswith(TEMPLATE_REPOSITORY):
+            item["href"] = item["href"].replace(TEMPLATE_REPOSITORY, args.repository_url)
 
     expected_metadata = deepcopy(metadata)
     expected_metadata["version"] = DEFAULT_VERSION
@@ -267,6 +272,7 @@ def main(argv: list[str] | None = None) -> int:
     book_text = set_scalar(book_text, ("repository", "url"), args.repository_url, "book.yaml")
 
     quarto_text = paths["quarto"].read_text(encoding="utf-8")
+    quarto_text = quarto_text.replace(TEMPLATE_REPOSITORY, args.repository_url)
     quarto_text = set_scalar(quarto_text, ("book", "title"), args.title, "_quarto.yml")
     quarto_text = set_scalar(quarto_text, ("book", "author"), args.author, "_quarto.yml")
 

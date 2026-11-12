@@ -177,8 +177,8 @@ def typst_front(
         lines += [f"#{_typst_string(license_text)}", ""]
     if disclaimer:
         lines += [
-            "#block(inset: (left: 12pt, y: 4pt), stroke: (left: 2pt + rgb(\"#E1DFDD\")))["
-            f"#text(fill: rgb(\"#605E5C\"))[#{_typst_string(disclaimer)}]]",
+            "#block(inset: (left: 12pt, y: 4pt), stroke: (left: 2pt + hb-border))["
+            f"#text(fill: hb-muted)[#{_typst_string(disclaimer)}]]",
             "",
         ]
     lines += ["#pagebreak()", f"#outline(title: [Contents], depth: {depth})", ""]

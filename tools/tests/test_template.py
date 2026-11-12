@@ -21,6 +21,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import zipfile
 
 import yaml
 
@@ -238,6 +239,11 @@ class TemplateTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
             self.assertEqual({path.name for path in output.iterdir()}, PAYLOADS)
 
+            with zipfile.ZipFile(output / "book-html.zip") as archive:
+                names = set(archive.namelist())
+            self.assertIn(".handbook-render/fonts/liberation-sans/OFL.txt", names)
+            self.assertIn(".handbook-render/fonts/jetbrains-mono/OFL.txt", names)
+
             manifest = json.loads((output / "publication-manifest.json").read_text())
             self.assertEqual(manifest["book"]["commit"], _git(book, "rev-parse", "HEAD"))
             self.assertEqual(manifest["book"]["version"], "0.1.0-preview")
@@ -368,6 +374,33 @@ class TemplateWorkflowTests(unittest.TestCase):
             names.index("Publish every verified file to the release"),
         )
 
+    def test_reader_navigation_and_issue_forms(self) -> None:
+        quarto = yaml.safe_load((TEMPLATE / "publishing/_quarto.yml").read_text(encoding="utf-8"))
+        book = quarto["book"]
+        self.assertTrue(book["search"])
+        self.assertEqual(book["repo-url"], "https://github.com/OWNER/REPOSITORY")
+        self.assertEqual(book["repo-actions"], ["issue"])
+        self.assertEqual(book["navbar"]["right"][0]["href"],
+                         "https://github.com/cesarcastrocuba/handbooks-hub")
+        self.assertEqual(
+            book["navbar"]["right"][1]["href"],
+            "https://github.com/OWNER/REPOSITORY/tree/main/manuscript",
+        )
+        self.assertEqual(
+            quarto["format"]["html"]["theme"], {"light": "cosmo", "dark": "darkly"}
+        )
+        self.assertTrue(quarto["format"]["html"]["respect-user-color-scheme"])
+        for name, title in (
+            ("content-correction.yml", "Content correction"),
+            ("content-proposal.yml", "Content proposal"),
+        ):
+            with self.subTest(form=name):
+                form = yaml.safe_load(
+                    (TEMPLATE / ".github/ISSUE_TEMPLATE" / name).read_text(encoding="utf-8")
+                )
+                self.assertEqual(form["name"], title)
+                self.assertTrue(form["body"])
+
 
 class InitializeBookTests(unittest.TestCase):
     def assert_only_these_lines_changed(
@@ -401,7 +434,7 @@ class InitializeBookTests(unittest.TestCase):
             self.assert_only_these_lines_changed(
                 originals["publishing/_quarto.yml"],
                 (book / "publishing/_quarto.yml").read_text(encoding="utf-8"),
-                ("  title:", "  author:"),
+                ("  title:", "  author:", "  repo-url:", "        href:"),
             )
             self.assert_only_these_lines_changed(
                 originals["publishing/metadata.yaml"],
@@ -461,6 +494,12 @@ class InitializeBookTests(unittest.TestCase):
             expected_quarto = deepcopy(before_quarto)
             expected_quarto["book"]["title"] = identity["title"]
             expected_quarto["book"]["author"] = identity["author"]
+            expected_quarto["book"]["repo-url"] = identity["repository-url"]
+            for item in expected_quarto["book"]["navbar"]["right"]:
+                if item.get("href", "").startswith("https://github.com/OWNER/REPOSITORY"):
+                    item["href"] = item["href"].replace(
+                        "https://github.com/OWNER/REPOSITORY", identity["repository-url"]
+                    )
             self.assertEqual(after_quarto, expected_quarto)
 
             expected_metadata = deepcopy(before_metadata)
@@ -502,6 +541,17 @@ class InitializeBookTests(unittest.TestCase):
             quarto = _load(book / "publishing/_quarto.yml")
             self.assertEqual(quarto["book"]["title"], IDENTITY["title"])
             self.assertEqual(quarto["book"]["author"], IDENTITY["author"])
+            self.assertEqual(quarto["book"]["repo-url"], IDENTITY["repository-url"])
+            self.assertTrue(quarto["book"]["search"])
+            self.assertEqual(
+                quarto["book"]["navbar"]["right"][1]["href"],
+                f"{IDENTITY['repository-url']}/tree/main/manuscript",
+            )
+            self.assertEqual(
+                quarto["book"]["navbar"]["right"][2]["href"],
+                f"{IDENTITY['repository-url']}/releases",
+            )
+            self.assertTrue(quarto["format"]["html"]["respect-user-color-scheme"])
 
             metadata = _load(book / "publishing/metadata.yaml")
             self.assertEqual(metadata["version"], "0.1.0")

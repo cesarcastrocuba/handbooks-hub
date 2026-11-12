@@ -30,6 +30,7 @@ import zlib
 import yaml
 
 from . import __version__
+from . import design
 from .artifacts import archive_tree, inspect_payload
 from .publication import verify_publication, write_manifest
 from .profiles import validate_profile
@@ -376,16 +377,23 @@ def _render_config(
         return resources[name].relative_to(workspace).as_posix()
 
     typst_format = config["format"]["typst"]
-    typst_format["mainfont"] = "Selawik"
+    typst_format["mainfont"] = design.load_tokens()["type"]["brand"]["family"]
     typst_format["monofont"] = "JetBrains Mono"
     typst_format["font-paths"] = [
         resources["fonts/selawik/selawk.ttf"].parent.relative_to(workspace).as_posix(),
         resources["fonts/jetbrains-mono/JetBrainsMono-Regular.ttf"].parent.relative_to(workspace).as_posix(),
         resources["fonts/liberation-sans/LiberationSans-Regular.ttf"].parent.relative_to(workspace).as_posix(),
     ]
+    # Design constants are generated from the packaged tokens; the hand-written
+    # theme reads them and never carries its own palette.
+    typst_tokens = resources["typst/handbook-typst.typ"].parent / "design-tokens.typ"
+    typst_tokens.write_text(design.typst_preamble(), encoding="utf-8")
     # Styles and page furniture are header includes so they apply before the
     # cover is laid out; the generated cover and Contents open the body.
-    header_includes = [staged("typst/handbook-typst.typ")]
+    header_includes = [
+        typst_tokens.relative_to(workspace).as_posix(),
+        staged("typst/handbook-typst.typ"),
+    ]
     if "typst/book-data.typ" in resources:
         header_includes.append(staged("typst/book-data.typ"))
     typst_format["include-in-header"] = header_includes
@@ -408,10 +416,17 @@ def _render_config(
             config["format"][name].setdefault("toc-depth", toc_depth)
 
     html_format = config["format"]["html"]
-    if "css" not in html_format:
-        html_format["css"] = [
-            resources["html/handbook.css"].relative_to(workspace).as_posix()
-        ]
+    html_tokens = resources["html/handbook.css"].parent / "design-tokens.css"
+    html_tokens.write_text(design.book_theme_css(), encoding="utf-8")
+    tokens_css = html_tokens.relative_to(workspace).as_posix()
+    existing_css = html_format.get("css")
+    if existing_css is None:
+        stylesheets = [resources["html/handbook.css"].relative_to(workspace).as_posix()]
+    elif isinstance(existing_css, str):
+        stylesheets = [existing_css]
+    else:
+        stylesheets = list(existing_css)
+    html_format["css"] = [tokens_css] + [sheet for sheet in stylesheets if sheet != tokens_css]
     execute = config.setdefault("execute", {})
     if not isinstance(execute, dict):
         raise BuildError("publishing/_quarto.yml execute section must be a mapping")
@@ -454,6 +469,13 @@ def _payload_paths(workspace: Path, dist: Path, epoch: int) -> dict[str, Path]:
         site,
         ignore=shutil.ignore_patterns("*.pdf", "*.docx", "*.typst"),
     )
+    # Quarto copies only the font files referenced by the stylesheet. The OFL
+    # notices must travel with them, so they are added explicitly before the
+    # exact tree is archived and deployed.
+    for relative, data in design.font_licenses().items():
+        target = site / ".handbook-render" / "fonts" / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
     archive_tree(site, dist / PAYLOADS["html"], epoch)
     pdf = _one_file(output, ".pdf")
     docx = _one_file(output, ".docx")

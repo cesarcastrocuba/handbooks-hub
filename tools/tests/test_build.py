@@ -249,7 +249,7 @@ class RenderConfigTests(unittest.TestCase):
             )
             self.assertEqual(
                 config["format"]["typst"]["mainfont"],
-                "Selawik",
+                "Liberation Sans",
             )
             self.assertEqual(
                 config["format"]["typst"]["monofont"],
@@ -277,7 +277,10 @@ class RenderConfigTests(unittest.TestCase):
             )
             self.assertEqual(
                 config["format"]["html"]["css"],
-                [".handbook-render/html/handbook.css"],
+                [
+                    ".handbook-render/html/design-tokens.css",
+                    ".handbook-render/html/handbook.css",
+                ],
             )
 
 

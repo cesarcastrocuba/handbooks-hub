@@ -176,3 +176,56 @@ class PortalTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PortalContributionTests(unittest.TestCase):
+    """Readers must be able to reach the book source and contribute without guessing."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.catalog = self.root / "catalog.json"
+        self.output = self.root / "site"
+
+    def build(self, document):
+        support.write_json(self.catalog, document)
+        return build_portal(self.catalog, self.output).read_text()
+
+    def test_card_links_to_the_source_repository(self):
+        page = self.build(support.catalog_document())
+        self.assertIn("Source and issues", page)
+        self.assertIn("https://github.com/example/example-book", page)
+
+    def test_single_book_result_uses_the_singular(self):
+        page = self.build(support.catalog_document())
+        self.assertIn("Showing 1 of 1 handbook<", page)
+
+    def test_search_normalizes_case_and_accents(self):
+        self.assertIn("normalize('NFD')", SCRIPT)
+        self.assertIn("u0300", SCRIPT)
+        self.assertIn("cards.length===1?'handbook':'handbooks'", SCRIPT)
+
+    def test_fonts_are_published_next_to_the_page(self):
+        page = self.build(support.catalog_document())
+        fonts = sorted(
+            path.relative_to(self.output).as_posix()
+            for path in (self.output / "fonts").rglob("*.woff2")
+        )
+        self.assertEqual(len(fonts), 7)
+        self.assertTrue(all(name.startswith("fonts/") for name in fonts))
+        licenses = sorted(
+            path.relative_to(self.output).as_posix()
+            for path in (self.output / "fonts").rglob("OFL.txt")
+        )
+        self.assertEqual(
+            licenses,
+            ["fonts/jetbrains-mono/OFL.txt", "fonts/liberation-sans/OFL.txt"],
+        )
+        self.assertIn("fonts/liberation-sans/OFL.txt", page)
+
+    def test_theme_carries_the_tokens_and_no_external_host(self):
+        page = self.build(support.catalog_document())
+        self.assertIn('font-family:"Handbook Sans"', page)
+        self.assertIn("--accent-solid:", page)
+        self.assertNotIn("fonts.googleapis.com", page)

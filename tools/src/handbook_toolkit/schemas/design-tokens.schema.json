@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://handbooks.example/schemas/design-tokens.schema.json",
+  "title": "Handbook semantic design tokens",
+  "description": "The single source of colour, type, space and contrast rules for every rendered surface.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "color",
+    "type",
+    "space",
+    "radius",
+    "contrast"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "color": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canvas",
+        "surface",
+        "text",
+        "muted",
+        "heading",
+        "accent",
+        "accent_solid",
+        "on_solid",
+        "border"
+      ],
+      "properties": {
+        "canvas": { "$ref": "#/$defs/color_role" },
+        "surface": { "$ref": "#/$defs/color_role" },
+        "text": { "$ref": "#/$defs/color_role" },
+        "muted": { "$ref": "#/$defs/color_role" },
+        "heading": { "$ref": "#/$defs/color_role" },
+        "accent": { "$ref": "#/$defs/color_role" },
+        "accent_solid": { "$ref": "#/$defs/color_role" },
+        "on_solid": { "$ref": "#/$defs/color_role" },
+        "border": { "$ref": "#/$defs/color_role" }
+      }
+    },
+    "type": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["brand", "body", "display", "code"],
+      "properties": {
+        "brand": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["family", "web_name", "docx_family", "license", "source"],
+          "properties": {
+            "family": { "type": "string", "minLength": 1 },
+            "web_name": { "type": "string", "minLength": 1 },
+            "docx_family": { "type": "string", "minLength": 1 },
+            "license": { "type": "string", "pattern": "^OFL-1\\.1$" },
+            "source": { "type": "string", "pattern": "^https://" }
+          }
+        },
+        "body": { "$ref": "#/$defs/type_role" },
+        "display": { "$ref": "#/$defs/type_role" },
+        "code": { "$ref": "#/$defs/type_role" }
+      }
+    },
+    "space": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit_px", "section_px"],
+      "properties": {
+        "unit_px": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "section_px": { "type": "integer", "minimum": 16, "maximum": 160 }
+      }
+    },
+    "radius": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["control_px", "card_px"],
+      "properties": {
+        "control_px": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "card_px": { "type": "integer", "minimum": 0, "maximum": 32 }
+      }
+    },
+    "contrast": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "foreground", "background", "schemes", "minimum"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9 _-]*$"
+          },
+          "foreground": {
+            "type": "string",
+            "pattern": "^[a-z][a-z_]*$"
+          },
+          "background": {
+            "type": "string",
+            "pattern": "^[a-z][a-z_]*$"
+          },
+          "schemes": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": ["light", "dark", "print"]
+            }
+          },
+          "minimum": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 21
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "hex": {
+      "type": "string",
+      "pattern": "^#[0-9A-F]{6}$"
+    },
+    "color_role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["light", "dark", "print"],
+      "properties": {
+        "light": { "$ref": "#/$defs/hex" },
+        "dark": { "$ref": "#/$defs/hex" },
+        "print": { "$ref": "#/$defs/hex" }
+      }
+    },
+    "type_role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "web_family",
+        "print_family",
+        "web_size_px",
+        "print_size_pt",
+        "line_height"
+      ],
+      "properties": {
+        "web_family": { "type": "string", "minLength": 1 },
+        "print_family": { "type": "string", "minLength": 1 },
+        "web_size_px": { "type": "number", "minimum": 10, "maximum": 96 },
+        "print_size_pt": { "type": "number", "minimum": 6, "maximum": 72 },
+        "line_height": { "type": "number", "minimum": 1, "maximum": 2.5 },
+        "measure_ch": { "type": "integer", "minimum": 40, "maximum": 90 }
+      }
+    }
+  }
+}

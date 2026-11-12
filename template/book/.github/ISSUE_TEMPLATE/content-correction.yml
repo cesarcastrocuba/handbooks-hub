@@ -1,0 +1,38 @@
+name: Content correction
+description: Report an error, a broken link or an unclear passage in this handbook.
+title: "[Correction]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve this handbook. Describe one problem per issue.
+        Do not include secrets, personal data or material you cannot share.
+  - type: input
+    id: location
+    attributes:
+      label: Page or section
+      description: The chapter and section, or the URL of the reading page.
+      placeholder: "Chapter 2, The editorial contract"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong
+      description: Quote the sentence or describe the problem, and explain why it is wrong.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: A source, standard or reproducible example that supports the correction.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched the existing issues for this problem.
+          required: true
+        - label: This issue contains no secrets or personal data.
+          required: true

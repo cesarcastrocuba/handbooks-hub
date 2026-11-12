@@ -1,0 +1,42 @@
+name: Content proposal
+description: Propose a new section, chapter or substantial change to this handbook.
+title: "[Proposal]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for a change that is larger than a correction. Small fixes can go straight
+        to a pull request. Maintainers review proposals before a chapter is written.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Reader problem
+      description: What can a reader not do today? Who is affected?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Outline the new content or the change, and where it belongs in the reading order.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and exclusions
+      description: What would this change deliberately not cover?
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sources and evidence
+      description: Standards, references or examples that support the proposal.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched the existing issues and the table of contents first.
+          required: true
+        - label: This proposal contains no secrets, personal data or unlicensed material.
+          required: true

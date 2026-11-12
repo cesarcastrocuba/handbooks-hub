@@ -92,6 +92,26 @@ local function table_widths(tbl)
     end
   end
   percentages[widest] = percentages[widest] + (100 - assigned)
+
+  -- A column narrower than its longest word breaks the word. Keep a small
+  -- deterministic floor for narrow tables and take the share from the widest
+  -- column that can afford it.
+  local floor = ncols <= 3 and 15 or (ncols <= 5 and 11 or 8)
+  for i = 1, ncols do
+    if percentages[i] < floor then
+      local deficit = floor - percentages[i]
+      local donor = nil
+      for j = 1, ncols do
+        if j ~= i and (donor == nil or percentages[j] > percentages[donor]) then
+          donor = j
+        end
+      end
+      if donor ~= nil and percentages[donor] - deficit >= floor then
+        percentages[i] = floor
+        percentages[donor] = percentages[donor] - deficit
+      end
+    end
+  end
   return percentages
 end
 
