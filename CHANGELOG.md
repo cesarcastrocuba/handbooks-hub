@@ -21,14 +21,28 @@ semantic versioning once the toolkit is published.
 - Template reader path: full-book search, `repo-url`/`repo-actions`, a library link, release
   downloads, a light/dark theme and two plain-language issue forms. Initialize rewrites the
   `OWNER/REPOSITORY` placeholder.
+- Library portal: generated book covers, download buttons per edition, text search, static guide
+  sections (platform, author path, publishing and withdrawal, contributing, questions and answers)
+  and an `llms.txt` index for AI tools.
+- Catalog schema `1.1`: optional `latest_release.assets` with a direct download link per artifact
+  role. `update_catalog.py` records the links for a newly listed release and online verification
+  checks each link against the release manifest. A `1.0` catalog stays valid.
+- Catalog update automation: the `catalog-update` workflow validates a published release, updates an
+  existing catalog entry, verifies the result and leaves a branch for review. It is manual-dispatch
+  only and defaults to a dry run.
+- Thin Claude Code and GitHub Copilot adapters, the adapter contract and a drift check that rejects
+  missing, drifting or over-long adapters.
+- Linux and macOS clean-clone matrix for the hub and the public sample book, with a post-merge run on
+  `main` at `ad1f5b8`.
+- Operations runbook covering toolkit/profile upgrade, rollback, release withdrawal and incident
+  response.
 
 ### Fixed
 
 - The Markdown leak guard in `build-book` compares the rendered text with its CommonMark backslash
   escapes removed as well as raw, so it detects a path such as `/tmp/build_dir` even when the gfm
   writer renders it as `/tmp/build\_dir`. This closes the real gap behind the intermittent
-  `test_local_path_in_the_markdown_fails_the_build` failure. It ships with the next toolkit version;
-  tag `toolkit-v0.6.0` is unchanged.
+  `test_local_path_in_the_markdown_fails_the_build` failure. It ships in this release.
 
 ## [0.6.0] - 2026-11-10
 
@@ -58,26 +72,6 @@ semantic versioning once the toolkit is published.
 
 A book bumps `toolkit` and its `requirements.txt` commit, keeps `publication.formats` unchanged, and
 updates any release workflow that uploads a fixed list of six files to upload seven.
-
-## [0.7.0] - 2026-11-12
-
-### Added
-
-- Library portal: generated book covers, download buttons per edition, text search, static guide
-  sections (platform, author path, publishing and withdrawal, contributing, questions and answers)
-  and an `llms.txt` index for AI tools.
-- Catalog schema `1.1`: optional `latest_release.assets` with a direct download link per artifact
-  role. `update_catalog.py` records the links for a newly listed release and online verification
-  checks each link against the release manifest. A `1.0` catalog stays valid.
-- Catalog update automation: the `catalog-update` workflow validates a published release, updates an
-  existing catalog entry, verifies the result and leaves a branch for review. It is manual-dispatch
-  only and defaults to a dry run.
-- Thin Claude Code and GitHub Copilot adapters, the adapter contract and a drift check that rejects
-  missing, drifting or over-long adapters.
-- Linux and macOS clean-clone matrix for the hub and the public sample book, with a post-merge run on
-  `main` at `ad1f5b8`.
-- Operations runbook covering toolkit/profile upgrade, rollback, release withdrawal and incident
-  response.
 
 ## [0.5.0] - 2026-11-08
 
