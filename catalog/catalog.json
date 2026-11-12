@@ -13,18 +13,18 @@
       ],
       "status": "published",
       "latest_release": {
-        "version": "0.2.6",
-        "tag": "v0.2.6",
-        "url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/tag/v0.2.6",
-        "published_at": "2026-11-11",
-        "manifest_url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.6/publication-manifest.json",
-        "checksums_url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.6/SHA256SUMS.txt",
+        "version": "0.2.7",
+        "tag": "v0.2.7",
+        "url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/tag/v0.2.7",
+        "published_at": "2026-11-12",
+        "manifest_url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.7/publication-manifest.json",
+        "checksums_url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.7/SHA256SUMS.txt",
         "assets": {
-          "pdf": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.6/book.pdf",
-          "html": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.6/book-html.zip",
-          "docx": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.6/book.docx",
-          "markdown": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.6/book.md",
-          "source": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.6/book-source.zip"
+          "pdf": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.7/book.pdf",
+          "html": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.7/book-html.zip",
+          "docx": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.7/book.docx",
+          "markdown": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.7/book.md",
+          "source": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.2.7/book-source.zip"
         }
       }
     }
