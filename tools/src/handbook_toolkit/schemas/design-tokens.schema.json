@@ -27,7 +27,8 @@
         "muted",
         "heading",
         "accent",
-        "on_accent",
+        "accent_solid",
+        "on_solid",
         "border"
       ],
       "properties": {
@@ -37,7 +38,8 @@
         "muted": { "$ref": "#/$defs/color_role" },
         "heading": { "$ref": "#/$defs/color_role" },
         "accent": { "$ref": "#/$defs/color_role" },
-        "on_accent": { "$ref": "#/$defs/color_role" },
+        "accent_solid": { "$ref": "#/$defs/color_role" },
+        "on_solid": { "$ref": "#/$defs/color_role" },
         "border": { "$ref": "#/$defs/color_role" }
       }
     },

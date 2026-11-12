@@ -50,8 +50,9 @@ families: light web, dark web and print.
 | `text` | `#1D2A2C` | `#EBE6DA` | `#1D2A2C` | Body copy |
 | `muted` | `#55666A` | `#A3B0B0` | `#55666A` | Secondary copy, captions and metadata |
 | `heading` | `#1D2A2C` | `#EBE6DA` | `#1D2A2C` | Headings and structural emphasis |
-| `accent` | `#0B5D5F` | `#6FCFC6` | `#0B5D5F` | Links, active controls and primary actions |
-| `on_accent` | `#FFFFFF` | `#0C1A1A` | `#FFFFFF` | Text on an accent background |
+| `accent` | `#0B5D5F` | `#6FCFC6` | `#0B5D5F` | Links, active controls and outlines |
+| `accent_solid` | `#0B5D5F` | `#157875` | `#0B5D5F` | Filled surfaces: buttons, covers, table headers |
+| `on_solid` | `#FFFFFF` | `#FFFFFF` | `#FFFFFF` | Text on a filled accent surface |
 | `border` | `#DDD3C0` | `#33403F` | `#D9E2EC` | Rules, dividers and table borders |
 
 Headings use the same near-black as body text on light and print; hierarchy comes from size, weight
@@ -73,10 +74,16 @@ it serves and a minimum ratio. The loader rejects a declaration below the WCAG 2
 | `muted` on `surface` | light, dark | 5.91:1, 7.00:1 |
 | `heading` on `canvas` | light, dark, print | 13.14:1, 14.13:1, 14.79:1 |
 | `accent` on `canvas` | light, dark, print | 6.80:1, 9.57:1, 7.65:1 |
-| `on_accent` on `accent` | light, dark, print | 7.65:1, 9.69:1, 7.65:1 |
+| `on_solid` on `accent_solid` | light, dark, print | 7.65:1, 5.28:1, 7.65:1 |
 
 These figures cover declared token pairs only. They do not certify a rendered page, which still needs
 a human review of real components, disabled states, focus rings, images and overlays.
+
+Two accent roles are deliberate. `accent` is the link and outline colour, so it stays legible on
+both canvases. `accent_solid` is the fill of buttons, covers and table headers and always pairs with
+`on_solid`. In dark mode the solid stays deep enough for a white label (5.28:1) and still separates
+from the canvas (3.33:1); using the light link accent as a fill would have forced a dark label and
+lost that separation.
 
 ## Type and layout roles
 
