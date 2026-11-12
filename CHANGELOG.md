@@ -3,7 +3,7 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
-## [Unreleased]
+## [0.7.0] - 2026-11-12
 
 ### Added
 
@@ -59,7 +59,7 @@ semantic versioning once the toolkit is published.
 A book bumps `toolkit` and its `requirements.txt` commit, keeps `publication.formats` unchanged, and
 updates any release workflow that uploads a fixed list of six files to upload seven.
 
-## [Unreleased]
+## [0.7.0] - 2026-11-12
 
 ### Added
 
