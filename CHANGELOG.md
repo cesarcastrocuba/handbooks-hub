@@ -5,6 +5,13 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+### Added
+
+- A packaged semantic design-token contract: `design/tokens.json`, its schema, a loader and tests
+  that require every colour role to cover light, dark and print, and that recompute each declared
+  WCAG contrast pair. No renderer consumes the tokens yet; generated portal, book, Typst and DOCX
+  values follow in the next change.
+
 ### Fixed
 
 - The Markdown leak guard in `build-book` compares the rendered text with its CommonMark backslash
