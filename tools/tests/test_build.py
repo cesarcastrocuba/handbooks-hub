@@ -17,6 +17,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -29,6 +30,8 @@ from handbook_toolkit.build import (  # noqa: E402
     _markdown_sources,
     _reject_local_paths,
     _render_config,
+    _list_of_tables_paragraph,
+    _reflow_license_paragraph,
     build_book,
 )
 from handbook_toolkit.publication import verify_publication  # noqa: E402
@@ -60,10 +63,20 @@ PILOT = """\
 
 ::: {.callout-warning appearance="simple" icon=false title="Common Pitfall"}
 Treating a successful render as editorial approval.
+
+| Signal | Verdict |
+| :--- | :--- |
+| Render succeeds | Not enough |
+| Review approves | Enough |
 :::
 
 ::: {.callout-important appearance="simple" icon=false title="Decision & Trade-off"}
 Should the pilot include a diagram? Only if the relationship needs one; this fixture does not.
+:::
+
+::: {.callout-note .review appearance="simple" icon=false title="Review Checklist"}
+- Does the review box use the neutral role?
+- Is every checklist item inside the box?
 :::
 """
 
@@ -372,6 +385,32 @@ class MarkdownEditionTests(unittest.TestCase):
         self.assertIn("| Content license | CC BY-SA 4.0 |", header)
 
 
+WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+W = "{%s}" % WORD_NS
+
+
+class DocxHelperTests(unittest.TestCase):
+    def test_license_paragraph_reflows_hard_lines_and_keeps_blank_lines(self) -> None:
+        paragraph = ET.Element(f"{W}p")
+        for text in ("The MIT License (MIT)", "Copyright (c) The Authors", "", "Permission is granted"):
+            run = ET.SubElement(paragraph, f"{W}r")
+            ET.SubElement(run, f"{W}t").text = text
+            ET.SubElement(run, f"{W}br")
+        _reflow_license_paragraph(paragraph, W)
+        text = "".join(node.text or "" for node in paragraph.iter(f"{W}t"))
+        self.assertIn("The MIT License (MIT) Copyright (c) The Authors", text)
+        self.assertNotIn("(MIT)Copyright", text)
+        self.assertIn("Permission is granted", text)
+        self.assertEqual(len(list(paragraph.iter(f"{W}br"))), 2)
+
+    def test_list_of_tables_entry_links_to_the_table_bookmark(self) -> None:
+        paragraph = _list_of_tables_paragraph(W, "Table 1: Routes", "tbl-1")
+        link = paragraph.find(f"./{W}hyperlink")
+        self.assertIsNotNone(link)
+        self.assertEqual(link.get(f"{W}anchor"), "tbl-1")
+        self.assertEqual("".join(node.text or "" for node in link.iter(f"{W}t")), "Table 1: Routes")
+
+
 @unittest.skipUnless(BUILD_AVAILABLE, "Quarto and pdfinfo are required for the real build")
 class BuildTests(unittest.TestCase):
     def test_builds_verified_seven_file_directory_and_source_comment(self) -> None:
@@ -414,14 +453,46 @@ class BuildTests(unittest.TestCase):
             self.assertIn("updateFields", settings_xml)
             self.assertIn("displayBackgroundShape", settings_xml)
             self.assertIn("Callout", document_xml)
-            self.assertIn("w:pBdr", document_xml)
+            self.assertIn("CalloutBox", document_xml)
+            self.assertIn("cantSplit", document_xml)
             self.assertIn("List of Tables", document_xml)
-            self.assertIn("w:keepNext", document_xml)
+            self.assertIn('w:anchor="tbl-', document_xml)
+            self.assertNotIn("w:pBdr", document_xml)
+            self.assertIn('w:jc w:val="left"', document_xml)
+            self.assertIn("TablePlain", document_xml)
+            self.assertIn("CalloutReviewTitle", document_xml)
             self.assertIn("Table&nbsp;1.1", site)
+            self.assertIn('class="review callout', site)
+            root = ET.fromstring(document_xml)
+            for box in root.iter(f"{W}tbl"):
+                style = box.find(f"./{W}tblPr/{W}tblStyle")
+                if style is None or style.get(f"{W}val") != "CalloutBox":
+                    continue
+                for nested in box.iter(f"{W}tbl"):
+                    if nested is box:
+                        continue
+                    nested_style = nested.find(f"./{W}tblPr/{W}tblStyle")
+                    self.assertEqual(nested_style.get(f"{W}val"), "TablePlain")
+                    for row in nested.findall(f"{W}tr"):
+                        properties = row.find(f"./{W}trPr")
+                        if properties is not None:
+                            self.assertIsNone(properties.find(f"./{W}shd"))
+            for cell in root.iter(f"{W}tc"):
+                for paragraph in cell.findall(f"./{W}p"):
+                    properties = paragraph.findall(f"./{W}pPr")
+                    self.assertLessEqual(len(properties), 1)
+                    if properties:
+                        self.assertLessEqual(
+                            len(properties[0].findall(f"./{W}jc")), 1
+                        )
             with zipfile.ZipFile(output / "book-html.zip") as archive:
                 tables_page = archive.read("tables.html").decode("utf-8")
+                index_page = archive.read("index.html").decode("utf-8")
             self.assertIn("List of Tables", tables_page)
             self.assertIn('href="index.html#tbl-', tables_page)
+            self.assertIn('menu-text">Tables</span>', tables_page)
+            self.assertIn('menu-text">Tables</span>', index_page)
+            self.assertIn('class="sidebar-item-text sidebar-link"', index_page)
             self.assertIn("A Pilot Section", site)
             markdown = (output / "book.md").read_text(encoding="utf-8")
             self.assertTrue(markdown.startswith("# Build Fixture\n"))

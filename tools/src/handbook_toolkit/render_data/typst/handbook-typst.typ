@@ -132,6 +132,8 @@
     (hb-callout-important-accent, hb-callout-important-tint)
   } else if "Key Takeaway" in label {
     (hb-callout-tip-accent, hb-callout-tip-tint)
+  } else if "Review Checklist" in label {
+    (hb-callout-review-accent, hb-callout-review-tint)
   } else if "When to Use" in label {
     (hb-callout-note-accent, hb-callout-note-tint)
   } else {
@@ -155,6 +157,8 @@
       #text(weight: "bold", fill: accent)[#title]
       #v(3pt)
     ]
+    // Tables inside a callout use the box tint, never the alternating stripe.
+    #set table(fill: (_, y) => if y == 0 { hb-accent-solid } else { none })
     #body
   ]
 }

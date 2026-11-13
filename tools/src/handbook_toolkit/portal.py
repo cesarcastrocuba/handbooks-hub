@@ -30,7 +30,7 @@ STYLE_LAYOUT = """
 h1,h2,h3{font-family:var(--font-display);font-weight:700;letter-spacing:-.01em;text-wrap:balance}
 button,select,input{font:inherit}button,a,select,input{touch-action:manipulation}:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:4px}
 .skip{position:absolute;left:1rem;top:-5rem;background:var(--surface);padding:1rem;z-index:3}.skip:focus{top:1rem}
-.wrap{max-width:1040px;margin:auto;padding:0 1.25rem}
+.wrap{max-width:1300px;margin:auto;padding:0 1.25rem}
 nav{display:flex;justify-content:space-between;align-items:center;min-height:60px;gap:1rem;flex-wrap:wrap;padding-top:.5rem;padding-bottom:.5rem}
 .brand{font-family:var(--font-display);font-weight:700;font-size:1.12rem;color:var(--ink);text-decoration:none}.brand span{color:var(--accent)}
 .menu{display:flex;gap:1rem;flex-wrap:wrap;font-size:.82rem}.menu a{color:var(--ink);text-decoration:none;padding:.6rem 0}.menu a:hover{color:var(--accent);text-decoration:underline}

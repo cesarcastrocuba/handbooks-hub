@@ -140,9 +140,17 @@ def table_style() -> str:
         f"<w:tblCellMar>{margins}</w:tblCellMar></w:tblPr>"
         f'<w:tblStylePr w:type="firstRow"><w:rPr><w:b/><w:bCs/><w:color w:val="FFFFFF"/></w:rPr>'
         f'<w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="{BLUE}"/></w:tcPr></w:tblStylePr>'
-        f'<w:tblStylePr w:type="band1Horz"><w:tcPr><w:shd w:val="clear" w:color="auto" '
-        f'w:fill="{_TOKENS["color"]["table_stripe"]["print"].lstrip("#")}"/></w:tcPr></w:tblStylePr>'
         "</w:style>"
+        '<w:style w:type="table" w:styleId="TablePlain"><w:name w:val="Table Plain"/><w:qFormat/>'
+        '<w:basedOn w:val="Table"/>'
+        f'<w:tblPr><w:tblBorders>{borders}</w:tblBorders></w:tblPr></w:style>'
+        '<w:style w:type="table" w:styleId="CalloutBox"><w:name w:val="Callout Box"/><w:qFormat/>'
+        '<w:tblPr><w:tblBorders>'
+        + "".join(
+            f'<w:{side} w:val="nil"/>'
+            for side in ("top", "left", "bottom", "right", "insideH", "insideV")
+        )
+        + "</w:tblBorders></w:tblPr></w:style>"
     )
 
 
@@ -175,14 +183,12 @@ def callout_styles() -> list[str]:
     for name, (accent, tint) in CALLOUTS.items():
         styles.append(paragraph_style(
             f"Callout{name}Title", f"Callout {name} Title", follow=f"Callout{name}Body",
-            ppr=para(keep=True, lines=True, before=100, after=0, left=240,
-                     left_rule=(24, 8, accent), shade=tint),
+            ppr=para(keep=True, lines=True, before=0, after=0),
             rpr=run(font=DISPLAY_FONT, bold=True, color=accent, size=21), custom=True,
         ))
         styles.append(paragraph_style(
             f"Callout{name}Body", f"Callout {name} Body", based="BodyText", follow="BodyText",
-            ppr=para(before=0, after=120, left=240, right=120,
-                     left_rule=(24, 8, accent), shade=tint),
+            ppr=para(before=0, after=80),
             rpr=run(color=INK, size=21), custom=True,
         ))
     return styles
@@ -221,6 +227,9 @@ def styles_xml() -> str:
         paragraph_style("BlockText", "Block Text", based="BodyText", follow="BodyText",
                         ppr=para(before=120, after=120, left=360, right=360),
                         rpr=run(italic=True, color=MUTED)),
+        paragraph_style("SourceCode", "Source Code", based="Normal", follow="Normal",
+                        ppr=para(before=120, after=120, shade=_PRINT["code"].lstrip("#")),
+                        rpr=run(font=CODE_FONT, color=INK, size=19), custom=True),
         paragraph_style("FootnoteText", "Footnote Text", follow="FootnoteText"),
         paragraph_style("FootnoteBlockText", "Footnote Block Text", based="FootnoteText", follow="FootnoteText",
                         ppr=para(before=100, after=100, left=480, right=480)),

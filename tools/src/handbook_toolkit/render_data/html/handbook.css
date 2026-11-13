@@ -77,3 +77,15 @@ figcaption, .figure-caption {
   font-style: italic;
   text-align: center;
 }
+
+.list-of-tables ul {
+  padding-left: 1.1rem;
+}
+
+.list-of-tables li {
+  margin: 0.4rem 0;
+}
+
+.callout table tbody tr:nth-child(even) {
+  background-color: transparent;
+}
