@@ -39,7 +39,8 @@ stay published and unchanged.
 
 There is technical debt with one common cause: the toolkit repairs Quarto output **after** rendering
 (regular expressions over HTML, XML surgery over DOCX) instead of asking Quarto and Pandoc for the
-result natively. The Word edition was reviewed only in LibreOffice, where its defects do not show.
+result natively. The Word edition was reviewed only in LibreOffice; the Owner reported its defects
+from desktop Word.
 
 ## Findings
 
@@ -50,14 +51,14 @@ from the published `v0.4.1` assets and from `main` at `0db3f69`.
 
 | ID | Sev | Finding | Required outcome |
 | --- | --- | --- | --- |
-| W1 | A | Callout titles are not bold in Word. `word/styles.xml` defines every callout style twice with the same `w:styleId` (10 duplicates). `docx-callouts.lua` passes the style **ID** (`CalloutNoteTitle`) as `custom-style`; Pandoc matches by style **name** (`Callout Note Title`), does not find it and appends a second, plain style. Word applies the last definition, LibreOffice the first. `_colour_callout_title` in `build.py` is a patch over this | The filter uses the real style names. The colour patch is removed. No duplicate `w:styleId`; every style used is defined exactly once |
+| W1 | A | `word/styles.xml` defines every callout style twice with the same `w:styleId` (10 duplicates): the intended definition (name `Callout Note Title`, bold, coloured) followed by a plain one (name `CalloutNoteTitle`). `docx-callouts.lua` passes the unspaced name as `custom-style`; Pandoc matches by style **name**, does not find it and appends the plain style. The Owner observed in desktop Word that callout titles are not bold; the LibreOffice conversion shows them bold. The likely cause is that the two applications resolve the duplicate ID differently; that rule was not tested here. `_colour_callout_title` in `build.py` is a patch over this | The filter uses the real style names. The colour patch is removed. No duplicate `w:styleId`; every style used is defined exactly once |
 | W2 | A | The List of Tables is static paragraphs with links and no page numbers: `_replace_docx_list_of_tables` deletes the field Pandoc emits and writes `TOC1` paragraphs | Lists are real Word fields with a cached result, generalised to figures and listings |
 | W3 | A | "Contents" is empty outside Word (LibreOffice, previewers): the TOC field has no cached result | Same mechanism as W2 |
 | W4 | A | Table stripes are written as `w:shd` inside `w:trPr` (24 times), which the OOXML schema does not allow; LibreOffice ignores them | Banding comes from the table style (`w:tblStylePr`) in the reference document; the row-level writer is removed |
 | W5 | B | The document names "Source Sans 3" and "Source Serif 4" but neither embeds them nor declares fallbacks in `fontTable.xml` | `fontTable.xml` entries with `w:altName` fallbacks |
 | W6 | B | Six colours are hard-coded in `build.py` (for example `D9E2EC`, `0B5D5F`), bypassing the tokens; the conformance test does not read that file | Values come from `design.docx_values()`; the conformance test covers every toolkit module |
 | W7 | C | ElementTree rewrites lose namespace prefixes (`ns0:`); the callout box overflows the right margin in LibreOffice | Registered namespaces; box width within the text column |
-| W8 | B | DOCX tests are `assertIn("string", xml)`; they cannot detect W1, W3 or W4 | Structural validators and a LibreOffice smoke conversion in CI |
+| W8 | B | The DOCX tests parse `document.xml` for callout tables and paragraph properties, and otherwise assert string presence; none checks for duplicate styles, cached field results or schema-valid row properties, so W1, W3 and W4 passed | Structural validators and a LibreOffice smoke conversion in CI |
 
 ### Book HTML
 
@@ -67,7 +68,7 @@ from the published `v0.4.1` assets and from `main` at `0db3f69`.
 | H2 | B | `tables.html` is produced by cloning `index.html` and applying eight `re.sub` calls; the sidebar link is injected by a regular expression that looks for the literal text "Document Control" in every page | The list is a generated `.qmd` page rendered by Quarto |
 | H3 | B | The book uses `cosmo` for light and `darkly` for dark, two different themes, corrected by about 40 `!important` rules held in a 210-line Python string | A Quarto theme generated from the tokens, the same base in both modes |
 | H4 | B | No favicon, no social cards (Open Graph, Twitter), no `description` | Native Quarto options |
-| H5 | B | The first page of a book is "Document Control"; the sidebar is flat; no page states which edition is being read | Cover page, parts, edition footer |
+| H5 | B | The first page of a book is "Document Control", which holds the only statement of the version; the sidebar is flat; chapter pages carry no persistent indication of the edition being read | Cover page, parts, edition footer |
 | H6 | B | No figure exists in the sample or in the real-build tests: the image path (HTML, PDF, DOCX, `book.md`) has never been exercised. The reference handbook that will be migrated has 121 figures and `lof: true` | A figure in the template and the sample, a List of Figures in every edition, a real-build test with a figure |
 
 ### Portal
@@ -152,8 +153,9 @@ focus, buttons, covers and `<details>`. Everything sits inside
 
 ## Known gaps
 
-- Nobody in this run can open the DOCX in desktop Word. W1 is proven in the XML and matches what the
-  Owner saw; W4 and W7 were checked only in LibreOffice. The Owner waived the pre-release check for
+- Nobody in this run can open the DOCX in desktop Word. The duplicate style IDs of W1 are proven in
+  the XML and are consistent with what the Owner saw; how Word resolves them was not tested. W4 is a
+  proven schema defect whose rendering in Word was not tested; W7 was checked only in LibreOffice. The Owner waived the pre-release check for
   this run and verifies afterwards (`HUB-DEC-040`).
 - Whether a `TOC \f` field with a cached result behaves as intended in Word is confirmed only by
   structure and by LibreOffice until the Owner opens the file.
