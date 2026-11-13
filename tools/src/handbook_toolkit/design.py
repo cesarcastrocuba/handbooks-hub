@@ -240,6 +240,11 @@ def css_variables(scheme: str) -> str:
     tokens = load_tokens()
     declarations = [f"--{role.replace('_', '-')}: {values[scheme]};"
                     for role, values in tokens["color"].items()]
+    for name, callout in tokens.get("callout", {}).items():
+        for part in ("accent", "tint"):
+            declarations.append(
+                f"--callout-{name}-{part}: {callout[part][scheme]};"
+            )
     body = tokens["type"]["body"]
     code = tokens["type"]["code"]
     def rgb(value: str) -> str:
@@ -274,6 +279,12 @@ BOOK_CHROME = """
 
 /* Book chrome. The reading site uses Quarto's Bootstrap shell; these rules keep that shell on the
    same canvas, type and accent as the content. */
+#quarto-header .navbar-container {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
 #quarto-header .navbar,
 #quarto-header .navbar[data-bs-theme="dark"] {
   background: var(--canvas) !important;
@@ -292,7 +303,15 @@ BOOK_CHROME = """
   color: var(--heading) !important;
   font-family: var(--font-display);
   font-size: 1.02rem;
+  font-weight: 700;
   letter-spacing: -.01em;
+}
+#quarto-header .navbar .navbar-nav {
+  gap: .2rem;
+}
+#quarto-header .navbar .nav-link {
+  padding-left: .55rem;
+  padding-right: .55rem;
 }
 #quarto-header .navbar .nav-link,
 #quarto-header .navbar .dropdown-toggle {
@@ -311,10 +330,10 @@ BOOK_CHROME = """
   font-size: .8rem;
 }
 #title-block-header {
-  background: linear-gradient(160deg, var(--surface), var(--canvas) 78%);
+  background: var(--canvas);
   border-bottom: 1px solid var(--border);
-  padding: 2.2rem 0 1.8rem;
-  margin-bottom: 2rem;
+  padding: 1.4rem 0 1.2rem;
+  margin-bottom: 1.4rem;
 }
 #title-block-header .title {
   color: var(--heading);
@@ -406,15 +425,25 @@ BOOK_CHROME = """
   border-left-width: 4px;
   border-left-style: solid;
   background: var(--surface);
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
-.callout-note.callout { border-left-color: #0065B3; background: color-mix(in srgb, #0065B3 7%, var(--surface)); }
-.callout-tip.callout { border-left-color: #107C10; background: color-mix(in srgb, #107C10 7%, var(--surface)); }
-.callout-warning.callout { border-left-color: #D83B01; background: color-mix(in srgb, #D83B01 7%, var(--surface)); }
-.callout-important.callout { border-left-color: #5C2D91; background: color-mix(in srgb, #5C2D91 7%, var(--surface)); }
-.callout-note .callout-title { color: #0065B3; }
-.callout-tip .callout-title { color: #107C10; }
-.callout-warning .callout-title { color: #D83B01; }
-.callout-important .callout-title { color: #5C2D91; }
+.callout-note.callout { border-left: 4px solid var(--callout-note-accent); background: var(--callout-note-tint); }
+.callout-tip.callout { border-left: 4px solid var(--callout-tip-accent); background: var(--callout-tip-tint); }
+.callout-warning.callout { border-left: 4px solid var(--callout-warning-accent); background: var(--callout-warning-tint); }
+.callout-important.callout { border-left: 4px solid var(--callout-important-accent); background: var(--callout-important-tint); }
+.callout-note .callout-title-container,
+.callout-note .callout-title { color: var(--callout-note-accent); }
+.callout-tip .callout-title-container,
+.callout-tip .callout-title { color: var(--callout-tip-accent); }
+.callout-warning .callout-title-container,
+.callout-warning .callout-title { color: var(--callout-warning-accent); }
+.callout-important .callout-title-container,
+.callout-important .callout-title { color: var(--callout-important-accent); }
+.callout-note .callout-body-container,
+.callout-tip .callout-body-container,
+.callout-warning .callout-body-container,
+.callout-important .callout-body-container { background: transparent; }
 .page-navigation a { color: var(--accent); }
 .list-of-tables {
   margin: 2rem 0;
@@ -503,6 +532,11 @@ def typst_preamble() -> str:
     for role, value in colour.items():
         name = role.replace("_", "-")
         lines.append(f'#let hb-{name} = rgb("{value}")')
+    for name, callout in tokens.get("callout", {}).items():
+        for part in ("accent", "tint"):
+            lines.append(
+                f'#let hb-callout-{name}-{part} = rgb("{callout[part]["print"]}")'
+            )
     return "\n".join(lines) + "\n"
 
 

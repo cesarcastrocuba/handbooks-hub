@@ -4,7 +4,7 @@ The visual language of the platform is data, not taste applied per pull request.
 document defines the colour roles, type roles, spacing and contrast floors that the portal, the book
 HTML, the Typst/PDF edition and the DOCX edition must share.
 
-**Status:** Phases 0 to 4 implemented on the `feat/design-tokens` branch. The portal, the book
+**Status:** Phases 0 to 4 implemented, with the 0.9 design polish adding compact web chrome, cream Word pages, unified callout boxes and table stripes. The portal, the book
 stylesheet, the Typst theme and the DOCX reference document take their values from this contract;
 the template exposes search, repository actions and a light/dark book theme. Release publication and
 the sample upgrade remain owner-gated.
@@ -45,8 +45,9 @@ families: light web, dark web and print.
 
 | Role | Light web | Dark web | Print | Meaning |
 | --- | --- | --- | --- | --- |
-| `canvas` | `#F6F1E7` | `#141A1B` | `#FFFFFF` | Page background |
-| `surface` | `#FFFDF8` | `#1C2526` | `#FFFFFF` | Cards, tables and raised areas |
+| `canvas` | `#F6F1E7` | `#141A1B` | `#F6F1E7` | Page background |
+| `surface` | `#FFFDF8` | `#1C2526` | `#FFFDF8` | Cards and raised areas |
+| `table_stripe` | `#F2ECE0` | `#1F2A2B` | `#F5EFE4` | Alternate table rows |
 | `text` | `#1D2A2C` | `#EBE6DA` | `#1D2A2C` | Body copy |
 | `muted` | `#55666A` | `#A3B0B0` | `#55666A` | Secondary copy, captions and metadata |
 | `heading` | `#1D2A2C` | `#EBE6DA` | `#1D2A2C` | Headings and structural emphasis |
@@ -59,6 +60,16 @@ Headings use the same near-black as body text on light and print; hierarchy come
 and spacing rather than from a third hue. The dark scheme keeps the same relationship with a light
 ink. This preserves the editorial character of the current portal and print editions instead of
 introducing a separate heading colour.
+
+| `callout` | Accent | Tint |
+| --- | --- | --- |
+| Note | `#0065B3` | `#EFF6FC` |
+| Tip | `#107C10` | `#F1FAF1` |
+| Warning | `#D83B01` | `#FDF3F0` |
+| Important | `#5C2D91` | `#F5F0FA` |
+
+Web, PDF and DOCX use the same callout accent/tint values. The PDF and DOCX page canvas is
+`#F6F1E7`, the same paper tone as the reading site.
 
 ## Contrast policy
 

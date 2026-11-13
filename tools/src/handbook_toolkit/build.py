@@ -505,25 +505,191 @@ def _inject_table_index(site: Path) -> None:
                 relative = path.relative_to(site).as_posix()
                 entries.append((order(path), relative, match.group(1), caption))
     if not entries:
-        return
-    items = "".join(
+        items = "<li>This edition has no tables.</li>"
+    else:
+        items = "".join(
         f'<li><a href="{escape(relative)}#{escape(identifier, quote=True)}">'
         f"{escape(caption)}</a></li>"
         for _position, relative, identifier, caption in entries
     )
-    section = (
-        '<section class="list-of-tables" aria-labelledby="list-of-tables-title">'
-        '<h2 id="list-of-tables-title">List of Tables</h2>'
-        f"<ul>{items}</ul></section>"
-    )
-    text = index.read_text(encoding="utf-8")
-    main = text.find("<main")
-    section_at = text.find("<section", main if main >= 0 else 0)
-    if section_at >= 0:
-        text = text[:section_at] + section + "\n" + text[section_at:]
-    elif "</main>" in text:
-        text = text.replace("</main>", section + "\n</main>", 1)
-    index.write_text(text, encoding="utf-8")
+    page = f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>List of Tables — Handbook</title>
+<link rel="stylesheet" href=".handbook-render/html/design-tokens.css">
+<link rel="stylesheet" href=".handbook-render/html/handbook.css">
+</head><body><main id="quarto-document-content" class="content"
+ style="max-width:1040px;margin:0 auto;padding:2rem 1.25rem">
+<p><a href="./index.html">← Back to the handbook</a></p>
+<h1 class="title">List of Tables</h1>
+<section class="list-of-tables" aria-labelledby="list-of-tables-title">
+<h2 id="list-of-tables-title">List of Tables</h2><ul>{items}</ul></section>
+</main></body></html>"""
+    (site / "tables.html").write_text(page, encoding="utf-8")
+
+
+def _replace_docx_list_of_tables(root: ET.Element, word: str) -> None:
+    """Replace Word's empty List of Tables field with a static, readable list.
+
+    Word may update the TOC field on open, but a static list is deterministic
+    and visible in every viewer. It carries the table numbers and captions; page
+    numbers remain a Word field concern for the main Contents.
+    """
+
+    body = root.find(f".//{word}body")
+    if body is None:
+        return
+    target = None
+    target_index = None
+    for index, child in enumerate(list(body)):
+        if child.tag != f"{word}sdt":
+            continue
+        text = "".join(node.text or "" for node in child.iter(f"{word}t"))
+        if "List of Tables" in text:
+            target = child
+            target_index = index
+            break
+    if target is None or target_index is None:
+        return
+    captions = []
+    for paragraph in root.iter(f"{word}p"):
+        if _paragraph_style(paragraph, word) not in {"ImageCaption", "TableCaption", "Caption"}:
+            continue
+        text = "".join(node.text or "" for node in paragraph.iter(f"{word}t")).strip()
+        if text.startswith("Table"):
+            captions.append(text)
+    if not captions:
+        return
+    body.remove(target)
+    title = ET.Element(f"{word}p")
+    properties = ET.SubElement(title, f"{word}pPr")
+    style = ET.SubElement(properties, f"{word}pStyle")
+    style.set(f"{word}val", "TOCHeading")
+    run = ET.SubElement(title, f"{word}r")
+    text = ET.SubElement(run, f"{word}t")
+    text.text = "List of Tables"
+    body.insert(target_index, title)
+    for offset, caption in enumerate(captions, start=1):
+        paragraph = ET.Element(f"{word}p")
+        properties = ET.SubElement(paragraph, f"{word}pPr")
+        style = ET.SubElement(properties, f"{word}pStyle")
+        style.set(f"{word}val", "TOC1")
+        run = ET.SubElement(paragraph, f"{word}r")
+        text = ET.SubElement(run, f"{word}t")
+        text.text = caption
+        body.insert(target_index + offset, paragraph)
+
+
+def _paragraph_style(paragraph: ET.Element, word: str) -> str:
+    style = paragraph.find(f"./{word}pPr/{word}pStyle")
+    return style.get(f"{word}val", "") if style is not None else ""
+
+
+def _set_paragraph_box(paragraph: ET.Element, word: str, accent: str, tint: str,
+                       first: bool, last: bool, keep: bool) -> None:
+    properties = paragraph.find(f"{word}pPr")
+    if properties is None:
+        properties = ET.Element(f"{word}pPr")
+        paragraph.insert(0, properties)
+    for tag in ("pBdr", "shd", "keepNext", "keepLines"):
+        existing = properties.find(f"{word}{tag}")
+        if existing is not None:
+            properties.remove(existing)
+    borders = ET.SubElement(properties, f"{word}pBdr")
+    for side in ("left", "right"):
+        border = ET.SubElement(borders, f"{word}{side}")
+        border.set(f"{word}val", "single")
+        border.set(f"{word}sz", "12")
+        border.set(f"{word}space", "4")
+        border.set(f"{word}color", accent)
+    if first:
+        border = ET.SubElement(borders, f"{word}top")
+        border.set(f"{word}val", "single")
+        border.set(f"{word}sz", "4")
+        border.set(f"{word}space", "2")
+        border.set(f"{word}color", accent)
+    if last:
+        border = ET.SubElement(borders, f"{word}bottom")
+        border.set(f"{word}val", "single")
+        border.set(f"{word}sz", "4")
+        border.set(f"{word}space", "2")
+        border.set(f"{word}color", accent)
+    shade = ET.SubElement(properties, f"{word}shd")
+    shade.set(f"{word}val", "clear")
+    shade.set(f"{word}color", "auto")
+    shade.set(f"{word}fill", tint)
+    if keep:
+        ET.SubElement(properties, f"{word}keepNext")
+    ET.SubElement(properties, f"{word}keepLines")
+
+
+def _style_docx_callouts(root: ET.Element, word: str) -> None:
+    """Turn each callout paragraph group into a continuous shaded box.
+
+    Pandoc emits list paragraphs as ``Compact`` inside the custom-style Div, so
+    styling only the Div would leave holes in the callout. Group from the title
+    style to the next heading and paint every paragraph, keeping the group
+    together across a page break when it fits.
+    """
+
+    tokens = design.load_tokens()["callout"]
+    names = {"CalloutNoteTitle": "note", "CalloutTipTitle": "tip",
+             "CalloutWarningTitle": "warning", "CalloutImportantTitle": "important"}
+    body = root.find(f".//{word}body")
+    if body is None:
+        return
+    children = list(body)
+    index = 0
+    while index < len(children):
+        child = children[index]
+        if child.tag != f"{word}p":
+            index += 1
+            continue
+        style = _paragraph_style(child, word)
+        kind = names.get(style)
+        if kind is None:
+            index += 1
+            continue
+        group = [child]
+        cursor = index + 1
+        while cursor < len(children):
+            candidate = children[cursor]
+            if candidate.tag != f"{word}p":
+                break
+            candidate_style = _paragraph_style(candidate, word)
+            if candidate_style.startswith("Heading") or candidate_style in names:
+                break
+            group.append(candidate)
+            cursor += 1
+        accent = tokens[kind]["accent"]["print"].lstrip("#")
+        tint = tokens[kind]["tint"]["print"].lstrip("#")
+        for position, paragraph in enumerate(group):
+            _set_paragraph_box(
+                paragraph, word, accent, tint,
+                first=position == 0, last=position == len(group) - 1,
+                keep=position < len(group) - 1,
+            )
+        index = cursor
+
+
+def _style_docx_stripes(root: ET.Element, word: str) -> None:
+    fill = design.load_tokens()["color"]["table_stripe"]["print"].lstrip("#")
+    for table in root.iter(f"{word}tbl"):
+        if any(node is not table and node.tag == f"{word}tbl" for node in table.iter()):
+            continue
+        for row_index, row in enumerate(table.findall(f"{word}tr")[1:]):
+            if row_index % 2 == 0:
+                continue
+            properties = row.find(f"{word}trPr")
+            if properties is None:
+                properties = ET.Element(f"{word}trPr")
+                row.insert(0, properties)
+            shade = properties.find(f"{word}shd")
+            if shade is None:
+                shade = ET.SubElement(properties, f"{word}shd")
+            shade.set(f"{word}val", "clear")
+            shade.set(f"{word}color", "auto")
+            shade.set(f"{word}fill", fill)
 
 
 def _style_docx_table_headers(path: Path) -> None:
@@ -580,6 +746,35 @@ def _style_docx_table_headers(path: Path) -> None:
                 if colour is None:
                     colour = ET.SubElement(run_properties, f"{word}color")
                 colour.set(f"{word}val", "FFFFFF")
+    _style_docx_callouts(root, word)
+    _style_docx_stripes(root, word)
+    _replace_docx_list_of_tables(root, word)
+    for paragraph in root.iter(f"{word}p"):
+        style = _paragraph_style(paragraph, word)
+        if style not in {"ImageCaption", "TableCaption", "Caption"}:
+            continue
+        text = "".join(node.text or "" for node in paragraph.iter(f"{word}t")).strip()
+        if not text.startswith("Table"):
+            continue
+        properties = paragraph.find(f"{word}pPr")
+        if properties is None:
+            properties = ET.Element(f"{word}pPr")
+            paragraph.insert(0, properties)
+        for existing in properties.findall(f"{word}jc"):
+            properties.remove(existing)
+        align = ET.SubElement(properties, f"{word}jc")
+        align.set(f"{word}val", "center")
+    background = ET.Element(f"{word}background")
+    background.set(f"{word}color", "F6F1E7")
+    root.insert(0, background)
+    settings = ET.fromstring(members["word/settings.xml"]) if "word/settings.xml" in members else None
+    if settings is not None:
+        for tag in ("updateFields", "displayBackgroundShape"):
+            if settings.find(f"{word}{tag}") is None:
+                ET.SubElement(settings, f"{word}{tag}")
+        members["word/settings.xml"] = ET.tostring(
+            settings, encoding="utf-8", xml_declaration=True
+        )
     ET.register_namespace("w", namespace)
     members["word/document.xml"] = ET.tostring(
         root, encoding="utf-8", xml_declaration=True
