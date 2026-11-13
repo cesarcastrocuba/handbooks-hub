@@ -27,6 +27,22 @@ profile version change may require manuscript edits. When the changelog marks a 
 incompatible, upgrade in a dedicated branch, update the affected manuscript units, and record a
 rendered review before requesting approval.
 
+## Example: toolkit 0.8.0 to 0.9.0
+
+`0.9.0` is a rendering refinement. It makes the hub cards compact and full-width, adds a dedicated
+web List of Tables, aligns the book navbar to 1040 px, gives callouts one shared palette with atomic
+pagination, adds table stripes in web/PDF/DOCX, and gives Word a cream page, shaded callout boxes,
+a static List of Tables, centered captions and no outer table border. It changes no command,
+descriptor field, profile rule or manuscript contract.
+
+Migration (`HUB-DEC-014`):
+
+1. Update `toolkit` in `book.yaml` to `"0.9.0"` and the commit in `requirements.txt`.
+2. Run `make check` and `make full`; rebuild the HTML, PDF and DOCX and inspect the callouts, tables
+   and the List of Tables page. Word shows the static List of Tables without waiting for a field
+   update.
+3. Books that stay on `0.8.0` keep their previous rendering.
+
 ## Example: toolkit 0.7.0 to 0.8.0
 
 `0.8.0` changes the visual edition without changing the manuscript contract. It replaces Liberation

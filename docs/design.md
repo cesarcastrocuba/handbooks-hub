@@ -9,7 +9,7 @@ stylesheet, the Typst theme and the DOCX reference document take their values fr
 the template exposes search, repository actions and a light/dark book theme. Release publication and
 the sample upgrade remain owner-gated.
 
-**Date:** 2026-11-12
+**Date:** 2026-11-13
 
 ## Source of truth
 
