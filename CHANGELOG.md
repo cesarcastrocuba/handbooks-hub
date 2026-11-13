@@ -3,7 +3,7 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
-## [Unreleased]
+## [0.8.0] - 2026-11-13
 
 ### Changed
 
