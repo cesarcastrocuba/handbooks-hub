@@ -27,6 +27,22 @@ profile version change may require manuscript edits. When the changelog marks a 
 incompatible, upgrade in a dedicated branch, update the affected manuscript units, and record a
 rendered review before requesting approval.
 
+## Example: toolkit 0.9.0 to 0.9.1
+
+`0.9.1` fixes the rendered details of the 0.9 design. The hub and book share a 1300 px desktop
+column, the List of Tables sits in the book sidebar below Document Control, callout tables drop the
+alternating stripe, `Review Checklist` uses a neutral callout role, web code and licence blocks use
+the `code` token, and Word callouts become single-cell boxes with clickable table links and
+full-width licences. It changes no command, descriptor field, profile rule or manuscript contract.
+
+Migration (`HUB-DEC-014`):
+
+1. Update `toolkit` in `book.yaml` to `"0.9.1"` and the commit in `requirements.txt`.
+2. Run `make check` and `make full`; rebuild HTML, PDF and DOCX and inspect the sidebar Tables link,
+   the callout boxes and the List of Tables page.
+3. A book that wants the neutral review box adds the `review` class to that callout, for example
+   `::: {.callout-note .review title="Review Checklist"}`. Books without it keep the note colour.
+
 ## Example: toolkit 0.8.0 to 0.9.0
 
 `0.9.0` is a rendering refinement. It makes the hub cards compact and full-width, adds a dedicated
