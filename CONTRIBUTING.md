@@ -16,8 +16,9 @@ python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements-dev.txt
 ```
 
-The current checks need only Python, `jsonschema` and `PyYAML`. Quarto and Graphviz are not needed
-until the future publication setup.
+The checks need only Python, `jsonschema` and `PyYAML`. Rendering runs through
+`handbook-toolkit build-book` and needs Quarto `1.11.9` and Poppler `pdfinfo`; the checks above do not
+run it.
 
 ## Checks
 

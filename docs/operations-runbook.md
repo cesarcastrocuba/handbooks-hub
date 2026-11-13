@@ -125,7 +125,8 @@ reviewed changes; nothing upgrades automatically.
 
 7. **Inspect rendered outputs [Implementer]**:
    Examine generated HTML, PDF, and DOCX files in the staging directory. Verify font rendering
-   (e.g., Selawik, JetBrains Mono, Liberation Sans), heading layout, table column widths, and page
+   (Handbook Sans and Handbook Serif in the HTML and PDF, Source Sans 3 and Source Serif 4 in Word,
+   JetBrains Mono for code in every edition), heading layout, table column widths, and page
    breaks.
 
 8. **Submit pull request [Implementer]**:
