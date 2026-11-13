@@ -3,6 +3,16 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
+## [Unreleased]
+
+### Changed
+
+- Hub cards and header: full-width intro, single-line edition links and the preview tag style.
+- Book web: 1040 px navbar, bold display brand, Pages link for Handbook Hub, dedicated List of Tables page, no colored title band and full-width prose.
+- Callouts share one accent/tint palette in web, PDF and DOCX; PDF callouts are atomic and do not split across pages; Word callouts are real shaded boxes with keep-together rules.
+- Table rows alternate with a `table_stripe` token in web, PDF and DOCX; outer table borders are removed and captions stay centered below.
+- Word pages use the cream canvas, a static List of Tables, `updateFields`, teal first-row headers and a 10.5 pt body.
+
 ## [0.8.0] - 2026-11-13
 
 ### Changed

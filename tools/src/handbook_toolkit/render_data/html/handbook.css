@@ -18,12 +18,13 @@ code, pre, kbd, samp {
 
 #quarto-document-content p,
 #quarto-document-content li {
-  max-width: var(--measure);
+  max-width: none;
 }
 
 table.table, main table {
   width: 100%;
   border-collapse: collapse;
+  border: 0;
   margin: 1rem auto 1.25rem auto;
   font-size: 0.94rem;
 }
@@ -54,19 +55,21 @@ table.table thead th, main table thead th {
   background-color: var(--accent-solid);
   color: var(--on-solid);
   font-weight: 600;
-  border: 1px solid var(--accent-solid);
+  border: 0;
+  border-bottom: 1px solid var(--accent-solid);
   padding: 0.55rem 0.75rem;
   text-align: left;
 }
 
 table.table tbody td, main table tbody td {
-  border: 1px solid var(--border);
+  border: 0;
+  border-bottom: 1px solid var(--border);
   padding: 0.5rem 0.75rem;
   vertical-align: top;
 }
 
 table.table tbody tr:nth-child(even), main table tbody tr:nth-child(even) {
-  background-color: var(--surface);
+  background-color: var(--table-stripe);
 }
 
 div.callout-note.callout {

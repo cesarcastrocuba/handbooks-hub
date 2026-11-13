@@ -23,6 +23,7 @@
       "required": [
         "canvas",
         "surface",
+        "table_stripe",
         "text",
         "muted",
         "heading",
@@ -34,6 +35,7 @@
       "properties": {
         "canvas": { "$ref": "#/$defs/color_role" },
         "surface": { "$ref": "#/$defs/color_role" },
+        "table_stripe": { "$ref": "#/$defs/color_role" },
         "text": { "$ref": "#/$defs/color_role" },
         "muted": { "$ref": "#/$defs/color_role" },
         "heading": { "$ref": "#/$defs/color_role" },
@@ -75,6 +77,17 @@
         "body": { "$ref": "#/$defs/type_role" },
         "display": { "$ref": "#/$defs/type_role" },
         "code": { "$ref": "#/$defs/type_role" }
+      }
+    },
+    "callout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["note", "tip", "warning", "important"],
+      "properties": {
+        "note": { "$ref": "#/$defs/callout_role" },
+        "tip": { "$ref": "#/$defs/callout_role" },
+        "warning": { "$ref": "#/$defs/callout_role" },
+        "important": { "$ref": "#/$defs/callout_role" }
       }
     },
     "space": {
@@ -136,6 +149,15 @@
     "hex": {
       "type": "string",
       "pattern": "^#[0-9A-F]{6}$"
+    },
+    "callout_role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["accent", "tint"],
+      "properties": {
+        "accent": { "$ref": "#/$defs/color_role" },
+        "tint": { "$ref": "#/$defs/color_role" }
+      }
     },
     "color_role": {
       "type": "object",

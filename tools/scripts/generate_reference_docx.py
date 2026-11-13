@@ -125,8 +125,10 @@ def character_style(style_id, name, based="DefaultParagraphFont", rpr="", custom
 
 def table_style() -> str:
     borders = "".join(
-        f'<w:{side} w:val="single" w:sz="4" w:space="0" w:color="{RULE}"/>'
-        for side in ("top", "left", "bottom", "right", "insideH", "insideV")
+        f'<w:{side} w:val="nil"/>' for side in ("top", "left", "bottom", "right")
+    ) + (
+        f'<w:insideH w:val="single" w:sz="4" w:space="0" w:color="{RULE}"/>'
+        '<w:insideV w:val="nil"/>'
     )
     margins = "".join(
         f'<w:{side} w:w="{width}" w:type="dxa"/>'
@@ -138,6 +140,8 @@ def table_style() -> str:
         f"<w:tblCellMar>{margins}</w:tblCellMar></w:tblPr>"
         f'<w:tblStylePr w:type="firstRow"><w:rPr><w:b/><w:bCs/><w:color w:val="FFFFFF"/></w:rPr>'
         f'<w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="{BLUE}"/></w:tcPr></w:tblStylePr>'
+        f'<w:tblStylePr w:type="band1Horz"><w:tcPr><w:shd w:val="clear" w:color="auto" '
+        f'w:fill="{_TOKENS["color"]["table_stripe"]["print"].lstrip("#")}"/></w:tcPr></w:tblStylePr>'
         "</w:style>"
     )
 
@@ -158,10 +162,11 @@ def heading_styles() -> list[str]:
 
 
 CALLOUTS = {
-    "Note": ("0065B3", "EFF6FC"),
-    "Tip": ("107C10", "F1FAF1"),
-    "Warning": ("D83B01", "FDF3F0"),
-    "Important": ("5C2D91", "F5F0FA"),
+    name.title(): (
+        values["accent"]["print"].lstrip("#"),
+        values["tint"]["print"].lstrip("#"),
+    )
+    for name, values in _TOKENS["callout"].items()
 }
 
 

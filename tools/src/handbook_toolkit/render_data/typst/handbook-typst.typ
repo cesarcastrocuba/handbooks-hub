@@ -97,22 +97,12 @@
 })
 
 // Contents -------------------------------------------------------------------
-// Document Control sits on its own page after the Contents and is not listed,
-// as in the reference handbook.
-#show outline.entry: it => {
-  let body = it.element.body
-  if it.element.func() == heading and body.has("text") and body.text == "Document Control" {
-    none
-  } else {
-    it
-  }
-}
 
 // Tables ---------------------------------------------------------------------
 #set table(
   stroke: 0.5pt + hb-border,
   inset: (x: 7pt, y: 6pt),
-  fill: (_, y) => if y == 0 { hb-accent-solid } else { white },
+  fill: (_, y) => if y == 0 { hb-accent-solid } else if calc.even(y) { hb-table-stripe } else { none },
 )
 #show table.cell.where(y: 0): set text(fill: hb-on-solid, weight: "bold")
 #show table.cell: set block(breakable: false)
@@ -137,19 +127,19 @@
 ) = {
   let label = repr(title)
   let (accent, tint) = if "Common Pitfall" in label {
-    (rgb("#D83B01"), rgb("#FDF3F0"))
+    (hb-callout-warning-accent, hb-callout-warning-tint)
   } else if "Decision" in label {
-    (rgb("#5C2D91"), rgb("#F5F0FA"))
+    (hb-callout-important-accent, hb-callout-important-tint)
   } else if "Key Takeaway" in label {
-    (rgb("#107C10"), rgb("#F1FAF1"))
+    (hb-callout-tip-accent, hb-callout-tip-tint)
   } else if "When to Use" in label {
-    (rgb("#0065B3"), rgb("#EFF6FC"))
+    (hb-callout-note-accent, hb-callout-note-tint)
   } else {
-    (rgb("#0065B3"), rgb("#F4F9F9"))
+    (hb-callout-note-accent, hb-callout-note-tint)
   }
   block(
     width: 100%,
-    breakable: true,
+    breakable: false,
     fill: tint,
     stroke: (
       left: 4pt + accent,

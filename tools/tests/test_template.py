@@ -381,9 +381,10 @@ class TemplateWorkflowTests(unittest.TestCase):
         self.assertEqual(book["repo-url"], "https://github.com/OWNER/REPOSITORY")
         self.assertEqual(book["repo-actions"], ["issue"])
         self.assertEqual(book["navbar"]["right"][0]["href"],
-                         "https://github.com/cesarcastrocuba/handbooks-hub")
+                         "https://cesarcastrocuba.github.io/handbooks-hub/")
+        self.assertEqual(book["navbar"]["right"][1]["href"], "tables.html")
         self.assertEqual(
-            book["navbar"]["right"][1]["href"],
+            book["navbar"]["right"][2]["href"],
             "https://github.com/OWNER/REPOSITORY/tree/main/manuscript",
         )
         self.assertEqual(
@@ -543,12 +544,13 @@ class InitializeBookTests(unittest.TestCase):
             self.assertEqual(quarto["book"]["author"], IDENTITY["author"])
             self.assertEqual(quarto["book"]["repo-url"], IDENTITY["repository-url"])
             self.assertTrue(quarto["book"]["search"])
+            self.assertEqual(quarto["book"]["navbar"]["right"][1]["href"], "tables.html")
             self.assertEqual(
-                quarto["book"]["navbar"]["right"][1]["href"],
+                quarto["book"]["navbar"]["right"][2]["href"],
                 f"{IDENTITY['repository-url']}/tree/main/manuscript",
             )
             self.assertEqual(
-                quarto["book"]["navbar"]["right"][2]["href"],
+                quarto["book"]["navbar"]["right"][3]["href"],
                 f"{IDENTITY['repository-url']}/releases",
             )
             self.assertTrue(quarto["format"]["html"]["respect-user-color-scheme"])

@@ -29,6 +29,17 @@ class DesignTokenTests(unittest.TestCase):
                 for scheme, value in values.items():
                     self.assertRegex(value, r"^#[0-9A-F]{6}$", f"{role}.{scheme}")
 
+    def test_pdf_canvas_is_cream_and_callouts_cover_every_scheme(self) -> None:
+        self.assertEqual(self.tokens["color"]["canvas"]["print"], "#F6F1E7")
+        self.assertEqual(
+            set(self.tokens["callout"]), {"note", "tip", "warning", "important"}
+        )
+        for name, values in self.tokens["callout"].items():
+            with self.subTest(callout=name):
+                self.assertEqual(sorted(values), ["accent", "tint"])
+                for part in values.values():
+                    self.assertEqual(sorted(part), sorted(design.SCHEMES))
+
     def test_contrast_pairs_cover_every_scheme(self) -> None:
         covered = {scheme for pair in self.tokens["contrast"] for scheme in pair["schemes"]}
         self.assertEqual(covered, set(design.SCHEMES))
