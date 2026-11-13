@@ -16,7 +16,8 @@ python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements-dev.txt
 ```
 
-The checks need only Python, `jsonschema` and `PyYAML`. Rendering runs through
+The checks need Python and the packages in `requirements-dev.txt`: the toolkit with `jsonschema` and
+`PyYAML`, plus `fonttools` and `brotli` for the font tests. Rendering runs through
 `handbook-toolkit build-book` and needs Quarto `1.11.9` and Poppler `pdfinfo`; the checks above do not
 run it.
 

@@ -23,6 +23,9 @@ Documentation only; no code, `docs/decisions.md`, template content or worktree o
 | `docs/setup.md` | `build-book` exposes a "six-file directory" | Seven-file directory | `docs/publication-build.md`, `template/book/README.md` |
 | `docs/setup.md` | Contributor row lists Graphviz among tools not needed | Lists Quarto, Poppler and PDF/DOCX tools; Graphviz is not part of the toolchain | `template/book/publishing/_quarto.yml`, `docs/publication-build.md` |
 | `docs/operations-runbook.md` | Step 7 names Selawik and Liberation Sans | Names Handbook Sans and Handbook Serif (HTML/PDF), Source Sans 3 and Source Serif 4 (Word) and JetBrains Mono | `tools/src/handbook_toolkit/design/tokens.json` (`type.*` families), `render_data/typst/typst-show.typ`, `tools/scripts/generate_reference_docx.py` |
+| `CONTRIBUTING.md` (review F1) | "The checks need only Python, `jsonschema` and `PyYAML`" | The checks need Python and the packages in `requirements-dev.txt`: the toolkit with `jsonschema` and `PyYAML`, plus `fonttools` and `brotli` for the font tests | `requirements-dev.txt`, `tools/tests/test_design.py` (`from fontTools.ttLib import TTFont`), `0027-audit-plan` known gap |
+| `README.md` (review F1) | "Current validators need **Python only**" | The checks need Python and the packages in `requirements-dev.txt`; only the rendering tools are optional | `requirements-dev.txt`, `tools/tests/test_design.py` |
+| `docs/setup.md` (review F1) | "`requirements-dev.txt` installs the editable local toolkit (`-e ./tools`) and its `jsonschema`/`PyYAML` dependencies" | Also lists `fonttools` and `brotli` for the font tests | `requirements-dev.txt` |
 
 ## Left unchanged, and why
 

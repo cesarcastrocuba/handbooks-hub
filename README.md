@@ -17,10 +17,11 @@ Status: **Phases 1 to 5 complete, with the unified design released in toolkit `0
 | Hub maintainer | **Yes** — the contributor setup plus `make` and CI knowledge | [`docs/setup.md`](docs/setup.md) |
 | Author of an independent book | **Yes** — Python, venv and the pinned toolkit | [`template/book/README.md`](template/book/README.md) |
 
-Current validators need **Python only**. Rendering ships in the same toolkit: `handbook-toolkit
-build-book` builds the HTML site, the PDF, the DOCX edition, the Markdown edition and the source
-bundle, and needs Quarto `1.11.9` and Poppler `pdfinfo`. Those tools are **not** required to run the
-checks described here.
+The checks need **Python** and the packages in `requirements-dev.txt`: the toolkit with `jsonschema`
+and `PyYAML`, plus `fonttools` and `brotli` for the font tests. Rendering ships in the same toolkit:
+`handbook-toolkit build-book` builds the HTML site, the PDF, the DOCX edition, the Markdown edition
+and the source bundle, and needs Quarto `1.11.9` and Poppler `pdfinfo`. Those tools are **not**
+required to run the checks described here.
 
 ## Quick start (hub contributors)
 
