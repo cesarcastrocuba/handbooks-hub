@@ -72,6 +72,7 @@ class ArtifactTests(unittest.TestCase):
         with ZipFile(output, "w") as archive:
             archive.writestr("[Content_Types].xml", "<Types/>")
             archive.writestr("_rels/.rels", "<Relationships/>")
+            archive.writestr("word/styles.xml", '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="paragraph" w:styleId="Normal"/></w:styles>')
             archive.writestr("word/document.xml", '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Hello</w:t></w:r></w:p></w:body></w:document>')
         self.assertFalse(inspect_payload(output, "docx"))
 

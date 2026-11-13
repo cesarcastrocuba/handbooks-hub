@@ -34,9 +34,7 @@ import yaml
 from . import __version__
 from . import design
 from .docx_post import (
-    _style_docx_table_headers,
-    _list_of_tables_paragraph,
-    _reflow_license_paragraph,
+    prepare_docx,
 )
 from .artifacts import archive_tree, inspect_payload
 from .publication import verify_publication, write_manifest
@@ -330,6 +328,7 @@ def _prepare_render(workspace: Path, entries: list[str]) -> list[str]:
     except OSError as exc:
         raise BuildError(f"cannot read staged chapter {first}: {exc}") from exc
     index_text = _transform_chapter(first_text, 1)
+    (workspace / ".handbook-index-source-dir").write_text(str(PurePosixPath(first).parent))
     (workspace / "index.qmd").write_text(index_text, encoding="utf-8")
 
     rendered: list[str] = ["index.qmd"]
@@ -388,6 +387,15 @@ def _render_config(
         {"at": "pre-ast", "path": (resources["filters/docx-callouts.lua"]).relative_to(workspace).as_posix()},
     ]
 
+    if "filters/index-resources.lua" in resources:
+        config["filters"].insert(0, {
+            "at": "pre-ast",
+            "path": resources["filters/index-resources.lua"].relative_to(workspace).as_posix(),
+        })
+        origin = workspace / ".handbook-index-source-dir"
+        if origin.is_file():
+            config["handbook-index-source-dir"] = origin.read_text()
+
     def staged(name: str) -> str:
         return resources[name].relative_to(workspace).as_posix()
 
@@ -432,6 +440,7 @@ def _render_config(
     config["format"]["docx"].setdefault("toc-title", "Contents")
     for name in ("typst", "docx"):
         config["format"][name].setdefault("lot", True)
+        config["format"][name].setdefault("lof", True)
 
     html_format = config["format"]["html"]
     html_format.setdefault("toc-title", "Contents")
@@ -670,7 +679,7 @@ def _payload_paths(workspace: Path, dist: Path, epoch: int) -> dict[str, Path]:
     docx = _one_file(output, ".docx")
     shutil.copy2(pdf, dist / PAYLOADS["pdf"])
     shutil.copy2(docx, dist / PAYLOADS["docx"])
-    _style_docx_table_headers(dist / PAYLOADS["docx"])
+    prepare_docx(dist / PAYLOADS["docx"])
     return {
         "html": dist / PAYLOADS["html"],
         "pdf": dist / PAYLOADS["pdf"],

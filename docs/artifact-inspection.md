@@ -4,7 +4,11 @@ The toolkit's `artifacts` module complements publication byte integrity.
 `inspect_payload(path, role, source_commit=..., version=...)` returns structural issues for:
 
 - PDF: signature plus successful `pdfinfo` inspection and at least one page.
-- DOCX: ZIP/CRC, required package parts, Word XML root and nonempty document text.
+- DOCX: ZIP/CRC, required package parts, Word XML root and nonempty document text; unique style
+  IDs and correctly typed definitions for used paragraph/run/table styles; valid children, order
+  and uniqueness in the property containers authored by the toolkit; balanced nested complex fields;
+  unique Word-compatible bookmarks (ASCII letter first, at most 40 letters/digits/underscores);
+  and existing bookmark targets for internal hyperlinks and REF/PAGEREF fields.
 - HTML site ZIP: root index, ZIP/CRC and local page, fragment and asset targets.
 - Markdown edition: valid UTF-8 and non-empty, opened by a level-one heading and the
   document-control table, with a `Version` field matching the manifest version and a
@@ -50,3 +54,15 @@ the four original payload inspectors and six-file manifest/checksum verification
 Toolkit `0.6.0` adds the Markdown inspector as a fifth payload; the regression that
 covers it is `make check` and the real build in `test_build.py`. Its version is
 `0.0.0-test`: it is a build-boundary proof, not an approved book release.
+
+
+The DOCX gate is a bounded structural validator, not a complete implementation of ISO/IEC 29500.
+It covers paragraph/run/table/row/cell properties and settings written by the toolkit. It does not
+claim full schema validation of arbitrary external Word extensions. Development evidence can add
+the Open XML SDK OpenXmlValidator with the Office 2019 profile; the SDK is not a build dependency.
+
+The real-build fixture generates an original PNG and checks the PDF List of Figures, DOCX image
+part, and HTML image asset. When soffice and pdftotext are available, its smoke test converts
+the DOCX to PDF and checks that Contents, List of Tables and List of Figures each show their cached
+entries. Publication-build CI installs both tools; the conversion test explicitly skips when
+they are absent locally. This does not replace opening the document in desktop Word.

@@ -138,6 +138,28 @@ The Typst theme, the print layout and the DOCX reference no longer carry private
 The alert colours used by Quarto callouts remain component colours and are not part of the brand
 palette.
 
+## Word layout and indexes
+
+The Word post-processor is isolated from publication orchestration. It works on parsed OOXML.
+The reference generator and Pandoc callout filter obtain human-readable style names from
+design.docx_callout_styles(), so titles inherit their bold face and token color from one style
+definition. Callout boxes use a single non-splitting row within the text column.
+
+Table stripes live in the reference style's band1Horz/band2Horz conditionals. Plain tables inside
+callouts have no banding. The toolkit writes no row-level shading. Print colors in toolkit Python
+come from design.docx_values(); the conformance gate scans every toolkit module.
+
+Contents and caption lists are complex fields with cached hyperlinks. One registry covers tables,
+figures and listings. Hidden caption TC fields select entries with portable field identifiers;
+the list uses TOC with its field-identifier switch, not a localized style-list separator.
+Cached entries contain a caption link, tab and dirty PAGEREF field whose result is empty until
+pagination is known. Bookmark normalization preserves internal links. Empty lists are omitted.
+
+Word font declarations include single-name alternate-font chains: Source Sans 3 → Segoe UI →
+Calibri → Arial, Source Serif 4 → Georgia → Cambria, and JetBrains Mono → Consolas → Courier New.
+An altName represents one alternate name, not a CSS fallback list; actual substitution remains
+the viewer's choice. No font binary is embedded in the DOCX.
+
 ## Changing the contract
 
 - A new or changed colour role requires an entry for all three schemes, a declared contrast pair

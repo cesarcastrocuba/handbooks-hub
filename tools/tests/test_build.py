@@ -10,6 +10,8 @@ No release, upload or deployment is performed.
 from __future__ import annotations
 
 import json
+import struct
+import zlib
 import os
 from pathlib import Path
 import shutil
@@ -31,10 +33,11 @@ from handbook_toolkit.build import (  # noqa: E402
     _reject_local_paths,
     _render_config,
     _inject_table_index,
-    _list_of_tables_paragraph,
-    _reflow_license_paragraph,
     build_book,
 )
+from handbook_toolkit.docx_post import _reflow_license_paragraph
+from handbook_toolkit.docx_xml import W, fields, text_of
+from handbook_toolkit.docx_validation import validate_docx
 from handbook_toolkit.publication import verify_publication  # noqa: E402
 
 QUARTO = shutil.which("quarto")
@@ -61,6 +64,8 @@ PILOT = """\
 | Promise | A bounded outcome |
 
 : Fixture table caption.
+
+![An original fixture diagram.](../images/fixture.png){#fig-fixture}
 
 ::: {.callout-warning appearance="simple" icon=false title="Common Pitfall"}
 Treating a successful render as editorial approval.
@@ -158,6 +163,13 @@ def commit_all(repo: Path, message: str = "fixture update") -> str:
 def make_book(root: Path, *, include_quarto: bool = True, chapter: bool = False, version: str = "1.0.0-preview") -> tuple[Path, str]:
     repo = root / "book"
     repo.mkdir()
+    image = repo / "manuscript/images/fixture.png"
+    image.parent.mkdir(parents=True, exist_ok=True)
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data))
+    image.write_bytes(
+        b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 2, 2, 8, 2, 0, 0, 0)) +
+        chunk(b"IDAT", zlib.compress((b"\x00" + b"\x20\x80\x60" * 2) * 2)) + chunk(b"IEND", b""))
     (repo / "book.yaml").write_text(
         """\
 schema_version: "1.0"
@@ -167,7 +179,7 @@ status: draft
 profile:
   id: standard
   version: "1.0.0"
-toolkit: "0.9.1"
+toolkit: "0.9.2"
 license:
   content: CC-BY-SA-4.0
   code: MIT
@@ -432,13 +444,6 @@ class DocxHelperTests(unittest.TestCase):
         self.assertIn("Permission is granted", text)
         self.assertEqual(len(list(paragraph.iter(f"{W}br"))), 2)
 
-    def test_list_of_tables_entry_links_to_the_table_bookmark(self) -> None:
-        paragraph = _list_of_tables_paragraph(W, "Table 1: Routes", "tbl-1")
-        link = paragraph.find(f"./{W}hyperlink")
-        self.assertIsNotNone(link)
-        self.assertEqual(link.get(f"{W}anchor"), "tbl-1")
-        self.assertEqual("".join(node.text or "" for node in link.iter(f"{W}t")), "Table 1: Routes")
-
 
 @unittest.skipUnless(BUILD_AVAILABLE, "Quarto and pdfinfo are required for the real build")
 class BuildTests(unittest.TestCase):
@@ -475,21 +480,30 @@ class BuildTests(unittest.TestCase):
             with zipfile.ZipFile(output / "book.docx") as archive:
                 document_xml = archive.read("word/document.xml").decode("utf-8")
                 settings_xml = archive.read("word/settings.xml").decode("utf-8")
-            self.assertIn("0B5D5F", document_xml)
-            self.assertIn("FFFFFF", document_xml)
-            self.assertIn("tblHeader", document_xml)
-            self.assertIn("w:background", document_xml)
-            self.assertIn("updateFields", settings_xml)
-            self.assertIn("displayBackgroundShape", settings_xml)
-            self.assertIn("Callout", document_xml)
-            self.assertIn("CalloutBox", document_xml)
-            self.assertIn("cantSplit", document_xml)
-            self.assertIn("List of Tables", document_xml)
-            self.assertIn('w:anchor="tbl-', document_xml)
-            self.assertNotIn("w:pBdr", document_xml)
-            self.assertIn('w:jc w:val="left"', document_xml)
-            self.assertIn("TablePlain", document_xml)
-            self.assertIn("CalloutReviewTitle", document_xml)
+            document = ET.fromstring(document_xml)
+            settings = ET.fromstring(settings_xml)
+            self.assertIsNotNone(document.find(W + "background"))
+            self.assertIsNotNone(settings.find(W + "updateFields"))
+            self.assertIsNotNone(settings.find(W + "displayBackgroundShape"))
+            with zipfile.ZipFile(output / "book.docx") as archive:
+                validate_docx(archive)
+                styles = ET.fromstring(archive.read("word/styles.xml"))
+            ids = [style.get(W + "styleId") for style in styles.findall(W + "style")]
+            self.assertEqual(len(ids), len(set(ids)))
+            instructions = [item.instruction for item in fields(document)]
+            self.assertTrue(any(value.startswith("TOC ") and "\\o" in value for value in instructions))
+            for letter in ("T", "F"):
+                self.assertTrue(any(value == f"TOC \\h \\z \\f {letter}" for value in instructions))
+            self.assertTrue(any(value.startswith("TC ") for value in instructions))
+            for item in fields(document):
+                if item.instruction.startswith("PAGEREF"):
+                    self.assertEqual(item.begin.get(W + "dirty"), "true")
+            self.assertTrue(document.findall(".//" + W + "tblHeader"))
+            self.assertFalse(document.findall(".//" + W + "trPr/" + W + "shd"))
+            callout = styles.find(f"{W}style[@{W}styleId='CalloutReviewTitle']")
+            self.assertIsNotNone(callout.find(W + "rPr/" + W + "b"))
+            self.assertTrue(document.findall(".//" + W + "cantSplit"))
+            self.assertFalse(document.findall(".//" + W + "pBdr"))
             self.assertIn("Table&nbsp;1.1", site)
             self.assertIn('class="review callout', site)
             root = ET.fromstring(document_xml)
@@ -531,6 +545,39 @@ class BuildTests(unittest.TestCase):
             self.assertNotIn("<a href=", markdown)
             self.assertTrue(verify_publication(output).ok)
             self.assertIn("**Definition.**", (repo / "manuscript/chapters/pilot.qmd").read_text())
+
+    @unittest.skipUnless(shutil.which("soffice") and shutil.which("pdftotext"),
+                         "LibreOffice and pdftotext are required for the smoke conversion")
+    def test_libreoffice_displays_cached_contents_tables_and_figures(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, commit = make_book(root)
+            output = root / "dist"
+            build_book(repo, commit, output, profile=PROFILE, mode="section-pilot")
+            converted = root / "converted"
+            converted.mkdir()
+            subprocess.run([
+                shutil.which("soffice"),
+                "-env:UserInstallation=" + (root / "lo-profile").as_uri(),
+                "--headless", "--convert-to", "pdf", "--outdir", str(converted),
+                str(output / "book.docx")], check=True, capture_output=True, text=True, timeout=90)
+            text = subprocess.check_output(
+                ["pdftotext", "-layout", str(converted / "book.pdf"), "-"],
+                text=True, timeout=30)
+            pages = [" ".join(page.split()) for page in text.split("\f")]
+            for title, entry in (("Contents", "A Pilot Section"),
+                                 ("List of Tables", "Fixture table caption"),
+                                 ("List of Figures", "An original fixture diagram")):
+                matching = [page for page in pages if page.startswith(title)]
+                self.assertEqual(len(matching), 1, pages)
+                self.assertIn(entry, matching[0])
+            pdf = subprocess.check_output(["pdftotext", str(output / "book.pdf"), "-"], text=True)
+            self.assertIn("List of Figures", pdf)
+            self.assertIn("An original fixture diagram", pdf)
+            with zipfile.ZipFile(output / "book.docx") as archive:
+                self.assertTrue(any(name.startswith("word/media/") for name in archive.namelist()))
+            with zipfile.ZipFile(output / "book-html.zip") as archive:
+                self.assertTrue(any(name.endswith("/fixture.png") for name in archive.namelist()))
 
     def test_local_path_in_the_markdown_fails_the_build(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -611,7 +658,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.9.1"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.9.2"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             commit = commit_all(repo, "mismatched toolkit pin")
@@ -673,7 +720,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.9.1"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.9.2"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             commit = commit_all(repo, "preview toolkit pin")
@@ -725,7 +772,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.9.1"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.9.2"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             _git(repo, "update-index", "--assume-unchanged", "book.yaml")

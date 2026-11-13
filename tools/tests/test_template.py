@@ -28,6 +28,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import support  # noqa: E402
+from handbook_toolkit import __version__
 
 TEMPLATE = support.REPO_ROOT / "template/book"
 TEMPLATE_WORKFLOWS = TEMPLATE / ".github/workflows"
@@ -88,7 +89,7 @@ def _environment() -> dict[str, str]:
     )
 
 
-def _copy_template(root: Path, replace: bool = True) -> Path:
+def _copy_template(root: Path, replace: bool = True, toolkit_version: str | None = None) -> Path:
     book = root / "book"
     shutil.copytree(TEMPLATE, book)
     if replace:
@@ -99,6 +100,13 @@ def _copy_template(root: Path, replace: bool = True) -> Path:
                 raise AssertionError(f"template descriptor is missing {old!r}")
             text = text.replace(old, new)
         descriptor.write_text(text, encoding="utf-8")
+    if toolkit_version is not None:
+        # This gate exercises the PR builder; the released-template pin has its
+        # own install boundary and advances only in the coordinator's release PR.
+        descriptor = book / "book.yaml"
+        document = _load(descriptor)
+        document["toolkit"] = toolkit_version
+        descriptor.write_text(yaml.safe_dump(document, sort_keys=False))
     _git(book, "init", "-q", "-b", "main")
     _git(book, "add", "-A")
     _git(
@@ -220,7 +228,7 @@ class TemplateTests(unittest.TestCase):
     def test_copied_template_builds_with_default_output(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            book = _copy_template(root)
+            book = _copy_template(root, toolkit_version=__version__)
 
             result = _run(["make", "build"], book)
             self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
@@ -232,7 +240,7 @@ class TemplateTests(unittest.TestCase):
     def test_copied_template_builds_seven_verified_payloads(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            book = _copy_template(root)
+            book = _copy_template(root, toolkit_version=__version__)
             output = root / "dist"
 
             result = _run(["make", "build", f"OUTPUT={output}"], book)

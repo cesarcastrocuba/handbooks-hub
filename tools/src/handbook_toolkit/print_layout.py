@@ -184,8 +184,17 @@ def typst_front(
     lines += [
         "#pagebreak()",
         f"#outline(title: [Contents], depth: {depth})",
-        "#pagebreak()",
-        '#outline(title: [List of Tables], target: figure.where(kind: "quarto-float-tbl"))',
+
         "",
     ]
+    from .indexes import LISTS
+
+    for prefix, title, _letter in LISTS:
+        target = f'figure.where(kind: "quarto-float-{prefix}")'
+        lines += [
+            f"#context {{ if query({target}).len() > 0 {{",
+            "  pagebreak()",
+            f"  outline(title: [{title}], target: {target})",
+            "} }",
+        ]
     return "\n".join(lines)

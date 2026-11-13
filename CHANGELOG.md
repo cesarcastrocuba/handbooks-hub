@@ -3,6 +3,23 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
+## [0.9.2] - 2026-11-13
+
+### Fixed
+
+- Word callouts use the reference document's real style names, with one definition per style.
+- Contents and caption lists are native Word fields with linked cached entries. Unknown page
+  references stay empty and dirty until a viewer updates the fields; no page numbers are invented.
+- Lists of Tables, Figures and Listings share one registry and appear only for existing entries.
+  The PDF now includes a conditional List of Figures.
+- Word table banding comes from reference styles, callout tables stay unbanded, font aliases are
+  declared, and callout boxes fit the text column.
+- The DOCX gate rejects duplicate/undefined styles, invalid authored property containers,
+  malformed fields and broken bookmark references. A real figure and LibreOffice conversion
+  exercise the build in CI.
+- First-page image paths are rebased in a native Pandoc filter when staged as index.qmd.
+- The HTML Tables page has one title rule without the extra empty band.
+
 ## [0.9.1] - 2026-11-13
 
 ### Changed

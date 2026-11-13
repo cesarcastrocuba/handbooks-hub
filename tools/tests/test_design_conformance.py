@@ -15,11 +15,25 @@ from handbook_toolkit import design  # noqa: E402
 
 RENDER = support.SRC / "handbook_toolkit" / "render_data"
 HEX = re.compile(r"#[0-9A-Fa-f]{6}")
+COLOUR_LITERAL = re.compile(r"#[0-9A-Fa-f]{6}\b|[\"'][0-9A-Fa-f]{6}[\"']")
 
 
 class GeneratedSurfaceTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tokens = design.load_tokens()
+
+    def test_all_toolkit_modules_obtain_colours_from_design(self) -> None:
+        for path in sorted((support.SRC / "handbook_toolkit").rglob("*.py")):
+            if path.name == "design.py":
+                continue
+            with self.subTest(module=str(path.relative_to(support.SRC))):
+                self.assertEqual(COLOUR_LITERAL.findall(path.read_text()), [])
+
+    def test_colour_guard_detects_css_and_word_literals(self) -> None:
+        for value in ('fill = "#ABCDEF"', "color = 'D9E2EC'", "color = '#0065b3'"):
+            with self.subTest(source=value):
+                self.assertIsNotNone(COLOUR_LITERAL.search(value))
+        self.assertIsNone(COLOUR_LITERAL.search('color = values["accent"]'))
 
     def test_portal_theme_contains_every_token_and_font(self) -> None:
         css = design.portal_theme_css()

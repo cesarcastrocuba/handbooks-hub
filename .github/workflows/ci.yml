@@ -74,7 +74,8 @@ jobs:
           handbook-toolkit --root . validate-references book.yaml
           handbook-toolkit --root . validate-manuscript manuscript/chapters/01-example.qmd \
             --mode chapter --profile "$GITHUB_WORKSPACE/profiles/standard/profile.yaml"
-          test "$(handbook-toolkit version)" = "handbook-toolkit 0.9.1"
+          expected=$(python3 -c 'import yaml; print(yaml.safe_load(open("book.yaml"))["toolkit"])')
+          test "$(handbook-toolkit version)" = "handbook-toolkit $expected"
 
   publication-build:
     runs-on: ubuntu-24.04
@@ -86,15 +87,15 @@ jobs:
       - uses: quarto-dev/quarto-actions/setup@v2
         with:
           version: "1.11.9"
-      - name: Install PDF inspection dependency
+      - name: Install PDF inspection and Word conversion dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends poppler-utils
+          sudo apt-get install -y --no-install-recommends poppler-utils libreoffice-writer
       - name: Install the toolkit and test dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements-dev.txt
-      - name: Build a real pilot and verify the six-file identity
+      - name: Build a real pilot and verify the seven-file identity
         run: python3 -m unittest discover -s tools/tests -p test_build.py -v
       - name: Run render-resource runtime tests
         run: python3 -m unittest discover -s tools/tests -p test_render_resources.py -v

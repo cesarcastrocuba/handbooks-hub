@@ -3,8 +3,11 @@
 from importlib.resources import files
 from pathlib import Path
 import shutil
+import json
+from .design import docx_callout_styles
 
 RESOURCE_NAMES = (
+    "filters/index-resources.lua",
     "filters/table-layout.lua",
     "filters/task-checkbox.lua",
     "filters/docx-callouts.lua",
@@ -56,6 +59,12 @@ def stage_render_resources(destination: Path) -> dict[str, Path]:
             target = destination / name
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(package.joinpath(*name.split("/")).read_bytes())
+            if name == "filters/docx-callouts.lua":
+                entries = ",\n".join(
+                    "  [%s] = {title = %s, body = %s}" % (json.dumps(kind), json.dumps(names["title"]), json.dumps(names["body"]))
+                    for kind, names in docx_callout_styles().items()
+                )
+                target.write_text(target.read_text().replace("local styles = {}", "local styles = {\n" + entries + "\n}"))
             staged[name] = target
         return staged
     except Exception:
