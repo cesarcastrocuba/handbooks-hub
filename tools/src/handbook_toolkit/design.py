@@ -428,10 +428,10 @@ BOOK_CHROME = """
   break-inside: avoid;
   page-break-inside: avoid;
 }
-.callout.callout-note { border-left-color: var(--callout-note-accent) !important; background: var(--callout-note-tint) !important; }
-.callout.callout-tip { border-left-color: var(--callout-tip-accent) !important; background: var(--callout-tip-tint) !important; }
-.callout.callout-warning { border-left-color: var(--callout-warning-accent) !important; background: var(--callout-warning-tint) !important; }
-.callout.callout-important { border-left-color: var(--callout-important-accent) !important; background: var(--callout-important-tint) !important; }
+div.callout.callout-note { border-left-color: var(--callout-note-accent) !important; background: var(--callout-note-tint) !important; }
+div.callout.callout-tip { border-left-color: var(--callout-tip-accent) !important; background: var(--callout-tip-tint) !important; }
+div.callout.callout-warning { border-left-color: var(--callout-warning-accent) !important; background: var(--callout-warning-tint) !important; }
+div.callout.callout-important { border-left-color: var(--callout-important-accent) !important; background: var(--callout-important-tint) !important; }
 .callout-note .callout-title-container,
 .callout-note .callout-title { color: var(--callout-note-accent) !important; }
 .callout-tip .callout-title-container,
