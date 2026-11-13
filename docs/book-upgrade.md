@@ -38,10 +38,15 @@ full-width licences. It changes no command, descriptor field, profile rule or ma
 Migration (`HUB-DEC-014`):
 
 1. Update `toolkit` in `book.yaml` to `"0.9.1"` and the commit in `requirements.txt`.
-2. Run `make check` and `make full`; rebuild HTML, PDF and DOCX and inspect the sidebar Tables link,
+2. Remove any `Tables` entry from the book `navbar` in `publishing/_quarto.yml`. The build injects the
+   List of Tables link into the book sidebar below Document Control, so the navbar entry would
+   duplicate it.
+3. Run `make check` and `make full`; rebuild HTML, PDF and DOCX and inspect the sidebar Tables link,
    the callout boxes and the List of Tables page.
-3. A book that wants the neutral review box adds the `review` class to that callout, for example
-   `::: {.callout-note .review title="Review Checklist"}`. Books without it keep the note colour.
+4. A book that wants the neutral review box adds the `review` class to that callout, for example
+   `::: {.callout-note .review title="Review Checklist"}`. HTML and DOCX select it by class. The PDF
+   template selects the neutral role by the `Review Checklist` title, so a renamed review box keeps
+   the note colour in print. Books without either keep the note colour.
 
 ## Example: toolkit 0.8.0 to 0.9.0
 
