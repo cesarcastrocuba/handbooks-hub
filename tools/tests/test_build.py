@@ -30,6 +30,7 @@ from handbook_toolkit.build import (  # noqa: E402
     _markdown_sources,
     _reject_local_paths,
     _render_config,
+    _inject_table_index,
     _list_of_tables_paragraph,
     _reflow_license_paragraph,
     build_book,
@@ -383,6 +384,34 @@ class MarkdownEditionTests(unittest.TestCase):
         self.assertIn("| Version | 1.0.0 |", header)
         self.assertIn("| Commit | " + "a" * 40 + " |", header)
         self.assertIn("| Content license | CC BY-SA 4.0 |", header)
+
+
+class TablesPageTests(unittest.TestCase):
+    def test_title_with_regex_syntax_is_escaped_not_interpreted(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            site = Path(temp)
+            (site / "index.html").write_text(
+                "<html><head><title>Handbook \\T</title></head><body>"
+                '<nav id="quarto-sidebar"><div class="sidebar-menu-container">'
+                '<ul class="list-unstyled mt-1"><li class="sidebar-item">'
+                '<div class="sidebar-item-container"><a href="./index.html" '
+                'class="sidebar-item-text sidebar-link active">'
+                '<span class="menu-text">Document Control</span></a></div></li></ul>'
+                "</div></nav><main class=\"content\"><p>Document Control</p></main>"
+                "</body></html>",
+                encoding="utf-8",
+            )
+            chapter = site / "manuscript/chapters"
+            chapter.mkdir(parents=True)
+            (chapter / "ch02.html").write_text(
+                '<div id="tbl-1" class="quarto-float"><figcaption>Table 1: Routes</figcaption></div>',
+                encoding="utf-8",
+            )
+            _inject_table_index(site)
+            page = (site / "tables.html").read_text(encoding="utf-8")
+            self.assertIn("<title>List of Tables — Handbook \\T</title>", page)
+            self.assertIn("Table 1: Routes", page)
+            self.assertIn('href="manuscript/chapters/ch02.html#tbl-1"', page)
 
 
 WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"

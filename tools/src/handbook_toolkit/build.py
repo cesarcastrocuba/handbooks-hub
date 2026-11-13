@@ -601,7 +601,7 @@ def _inject_table_index(site: Path) -> None:
     )
     page = re.sub(
         r"<title>.*?</title>",
-        f"<title>List of Tables — {escape(book_title)}</title>",
+        lambda match: f"<title>List of Tables — {escape(book_title)}</title>",
         page,
         count=1,
         flags=re.DOTALL,
