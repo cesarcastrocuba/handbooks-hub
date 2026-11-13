@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Regenerate the self-hosted WOFF2 fonts with renamed internal identifiers.
 
-The web fonts are modified subsets of Liberation Sans and JetBrains Mono, both under the SIL Open
-Font License 1.1. The OFL requires a modified font with a Reserved Font Name to be renamed, and its
+The web fonts are modified subsets of Source Sans 3, Source Serif 4 and JetBrains Mono, all under
+the SIL Open Font License 1.1. The OFL requires a modified font with a Reserved Font Name to be renamed, and its
 copyright and license to travel with every copy. This script performs the subset, rewrites the
 internal family/full/PostScript names to ``Handbook Sans``/``Handbook Mono``, keeps the upstream
 copyright, and writes the OFL license text and URL into the name table.
@@ -36,10 +36,13 @@ OFL_TEXT = (
 OFL_URL = "https://openfontlicense.org"
 
 FONTS = (
-    ("liberation-sans/LiberationSans-Regular.ttf", "liberation-sans/HandbookSans-Regular.woff2", "Handbook Sans", "Regular"),
-    ("liberation-sans/LiberationSans-Bold.ttf", "liberation-sans/HandbookSans-Bold.woff2", "Handbook Sans", "Bold"),
-    ("liberation-sans/LiberationSans-Italic.ttf", "liberation-sans/HandbookSans-Italic.woff2", "Handbook Sans", "Italic"),
-    ("liberation-sans/LiberationSans-BoldItalic.ttf", "liberation-sans/HandbookSans-BoldItalic.woff2", "Handbook Sans", "Bold Italic"),
+    ("source-sans3/HandbookSans-Regular.ttf", "source-sans3/HandbookSans-Regular.woff2", "Handbook Sans", "Regular"),
+    ("source-sans3/HandbookSans-Bold.ttf", "source-sans3/HandbookSans-Bold.woff2", "Handbook Sans", "Bold"),
+    ("source-sans3/HandbookSans-Italic.ttf", "source-sans3/HandbookSans-Italic.woff2", "Handbook Sans", "Italic"),
+    ("source-sans3/HandbookSans-BoldItalic.ttf", "source-sans3/HandbookSans-BoldItalic.woff2", "Handbook Sans", "Bold Italic"),
+    ("source-serif4/HandbookSerif-Regular.ttf", "source-serif4/HandbookSerif-Regular.woff2", "Handbook Serif", "Regular"),
+    ("source-serif4/HandbookSerif-Semibold.ttf", "source-serif4/HandbookSerif-Semibold.woff2", "Handbook Serif", "Semibold"),
+    ("source-serif4/HandbookSerif-Bold.ttf", "source-serif4/HandbookSerif-Bold.woff2", "Handbook Serif", "Bold"),
     ("jetbrains-mono/JetBrainsMono-Regular.ttf", "jetbrains-mono/HandbookMono-Regular.woff2", "Handbook Mono", "Regular"),
     ("jetbrains-mono/JetBrainsMono-Bold.ttf", "jetbrains-mono/HandbookMono-Bold.woff2", "Handbook Mono", "Bold"),
     ("jetbrains-mono/JetBrainsMono-Italic.ttf", "jetbrains-mono/HandbookMono-Italic.woff2", "Handbook Mono", "Italic"),

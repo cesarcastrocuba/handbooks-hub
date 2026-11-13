@@ -89,19 +89,20 @@ lost that separation.
 
 | Role | Web family | Print family | Web size | Print size | Line height | Measure |
 | --- | --- | --- | --- | --- | --- | --- |
-| `body` | Handbook Sans (Liberation Sans) | Liberation Sans | 16 px | 10 pt | 1.65 | 72 characters |
-| `display` | Handbook Sans (Liberation Sans) | Liberation Sans | 40 px | 21 pt | 1.15 | none |
-| `code` | Handbook Mono (JetBrains Mono) | JetBrains Mono | 14 px | 9 pt | 1.5 | none |
+| `body` | Handbook Sans (Source Sans 3) | Handbook Sans | 15 px | 10 pt | 1.55 | 68 characters |
+| `display` | Handbook Serif (Source Serif 4) | Handbook Serif | 34 px | 21 pt | 1.15 | none |
+| `code` | Handbook Mono (JetBrains Mono) | JetBrains Mono | 13 px | 9 pt | 1.5 | none |
 
 Spacing uses a 4 px unit with 56 px section rhythm. Controls use a 6 px radius and cards 8 px.
 
-The brand family is **Liberation Sans** (SIL OFL 1.1). The portal and the book self-host it as
-subsetted WOFF2 files under the CSS name `Handbook Sans`; the PDF embeds the TTF; the DOCX names
-**Arial**, which is metrically compatible, so a reader without Liberation Sans gets no layout shift.
-JetBrains Mono remains the code family in every medium. The files ship in the toolkit and are listed
-in `NOTICE.md`; no font is fetched from a third-party host. The web subsets carry renamed internal
-names, keep the OFL text and URL in their name table, and are published together with their `OFL.txt`
-files.
+The brand pairing is **Source Sans 3** for text and **Source Serif 4** for display headings, both
+SIL OFL 1.1. The portal and the book self-host subsetted WOFF2 files under the CSS names `Handbook
+Sans` and `Handbook Serif`; the PDF embeds the renamed TTFs; the DOCX names the upstream families
+**Source Sans 3** and **Source Serif 4**, so a reader with those fonts installed gets the intended
+rendering without distributing a modified binary through Word. JetBrains Mono remains the code
+family in every medium. The files ship in the toolkit and are listed in `NOTICE.md`; no font is
+fetched from a third-party host. The web subsets carry renamed internal names, keep the OFL text and
+URL in their name table, and are published together with their `OFL.txt` files.
 
 The web designs target a 60 to 75 character measure. Quarto renders the book content column and the
 tools page applies `--measure`; the portal keeps its responsive card grid.
@@ -113,7 +114,7 @@ tools page applies `--measure`; the portal keeps its responsive card grid.
 | Portal | Generated `:root` variables in the single HTML page plus seven same-origin WOFF2 files |
 | Book HTML | Generated `design-tokens.css` loaded before the layout stylesheet; dark values on `body.quarto-dark` and on the OS media query |
 | PDF | Generated `design-tokens.typ` constants read by the Typst theme and print layout |
-| DOCX | `generate_reference_docx.py` reads the tokens at generation time; Arial for body text and JetBrains Mono for code |
+| DOCX | `generate_reference_docx.py` reads the tokens at generation time; Source Sans 3 for body text, Source Serif 4 for headings and JetBrains Mono for code |
 
 The Typst theme, the print layout and the DOCX reference no longer carry private palette constants.
 The alert colours used by Quarto callouts remain component colours and are not part of the brand

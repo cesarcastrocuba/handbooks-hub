@@ -28,7 +28,7 @@ copying this template does not copy hub source code into the book.
 
 ## Fonts in published editions
 
-The toolkit renders PDF editions with the bundled Selawik, JetBrains Mono and Liberation Sans fonts,
+The toolkit renders PDF editions with the bundled Source Sans 3, Source Serif 4 and JetBrains Mono fonts,
 distributed under the SIL Open Font License 1.1 and embedded as subsets. The font license does not
 extend to the document that uses them. If a book distributes the font files themselves, it must
 include the license files shipped with the toolkit.

@@ -23,7 +23,8 @@ DEFAULT_OUTPUT = (
     Path(__file__).resolve().parents[1] / "src/handbook_toolkit/render_data/docx/reference.docx"
 )
 WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-BODY_FONT = _TOKENS["type"]["brand"]["docx_family"]
+BODY_FONT = _TOKENS["type"]["brand"]["docx_text_family"]
+DISPLAY_FONT = _TOKENS["type"]["brand"]["docx_display_family"]
 CODE_FONT = _TOKENS["type"]["code"]["print_family"]
 INK = _PRINT["text"]
 MUTED = _PRINT["muted"]
@@ -56,7 +57,7 @@ def run(*, font=None, bold=None, italic=False, color=None, size=None, tracking=N
     return f"<w:rPr>{''.join(parts)}</w:rPr>" if parts else ""
 
 
-def para(*, keep=False, lines=False, rule=None, before=None, after=None, line=None,
+def para(*, keep=False, lines=False, pagebreak=False, rule=None, left_rule=None, shade=None, before=None, after=None, line=None,
          left=None, right=None, center=False, outline=None, tab=None) -> str:
     # Element order follows the CT_PPr schema sequence.
     parts = []
@@ -64,13 +65,21 @@ def para(*, keep=False, lines=False, rule=None, before=None, after=None, line=No
         parts.append("<w:keepNext/>")
     if lines:
         parts.append("<w:keepLines/>")
+    if pagebreak:
+        parts.append("<w:pageBreakBefore/>")
+    borders = []
+    if left_rule:
+        width, space, color = left_rule
+        borders.append(f'<w:left w:val="single" w:sz="{width}" w:space="{space}" w:color="{color}"/>')
     if rule == "none":
-        parts.append('<w:pBdr><w:bottom w:val="nil"/></w:pBdr>')
+        borders.append('<w:bottom w:val="nil"/>')
     elif rule:
         width, space, color = rule
-        parts.append(
-            f'<w:pBdr><w:bottom w:val="single" w:sz="{width}" w:space="{space}" w:color="{color}"/></w:pBdr>'
-        )
+        borders.append(f'<w:bottom w:val="single" w:sz="{width}" w:space="{space}" w:color="{color}"/>')
+    if borders:
+        parts.append(f"<w:pBdr>{''.join(borders)}</w:pBdr>")
+    if shade:
+        parts.append(f'<w:shd w:val="clear" w:color="auto" w:fill="{shade}"/>')
     if tab:
         parts.append(f'<w:tabs><w:tab w:val="right" w:leader="dot" w:pos="{tab}"/></w:tabs>')
     if before is not None or after is not None or line is not None:
@@ -126,7 +135,10 @@ def table_style() -> str:
     return (
         '<w:style w:type="table" w:default="1" w:styleId="Table"><w:name w:val="Table"/><w:qFormat/>'
         f'<w:tblPr><w:tblInd w:w="0" w:type="dxa"/><w:tblBorders>{borders}</w:tblBorders>'
-        f"<w:tblCellMar>{margins}</w:tblCellMar></w:tblPr></w:style>"
+        f"<w:tblCellMar>{margins}</w:tblCellMar></w:tblPr>"
+        f'<w:tblStylePr w:type="firstRow"><w:rPr><w:b/><w:bCs/><w:color w:val="FFFFFF"/></w:rPr>'
+        f'<w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="{BLUE}"/></w:tcPr></w:tblStylePr>'
+        "</w:style>"
     )
 
 
@@ -138,11 +150,37 @@ def heading_styles() -> list[str]:
     return [
         paragraph_style(
             f"Heading{level}", f"heading {level}", follow="BodyText",
-            ppr=para(keep=True, lines=True, before=before, after=after, outline=level - 1),
-            rpr=run(font=BODY_FONT, bold=True, color=color, size=size),
+            ppr=para(keep=True, lines=True, pagebreak=(level == 1), before=before, after=after, outline=level - 1),
+            rpr=run(font=DISPLAY_FONT if level <= 2 else BODY_FONT, bold=True, color=color, size=size),
         )
         for level, (before, after, size, color) in enumerate(sizes, start=1)
     ]
+
+
+CALLOUTS = {
+    "Note": ("0065B3", "EFF6FC"),
+    "Tip": ("107C10", "F1FAF1"),
+    "Warning": ("D83B01", "FDF3F0"),
+    "Important": ("5C2D91", "F5F0FA"),
+}
+
+
+def callout_styles() -> list[str]:
+    styles = []
+    for name, (accent, tint) in CALLOUTS.items():
+        styles.append(paragraph_style(
+            f"Callout{name}Title", f"Callout {name} Title", follow=f"Callout{name}Body",
+            ppr=para(keep=True, lines=True, before=100, after=0, left=240,
+                     left_rule=(24, 8, accent), shade=tint),
+            rpr=run(font=DISPLAY_FONT, bold=True, color=accent, size=21), custom=True,
+        ))
+        styles.append(paragraph_style(
+            f"Callout{name}Body", f"Callout {name} Body", based="BodyText", follow="BodyText",
+            ppr=para(before=0, after=120, left=240, right=120,
+                     left_rule=(24, 8, accent), shade=tint),
+            rpr=run(color=INK, size=21), custom=True,
+        ))
+    return styles
 
 
 def styles_xml() -> str:
@@ -154,13 +192,13 @@ def styles_xml() -> str:
         paragraph_style("FirstParagraph", "First Paragraph", based="BodyText", follow="BodyText",
                         ppr=para(before=0, after=160), custom=True),
         paragraph_style("Compact", "Compact", based="BodyText",
-                        ppr=para(before=40, after=40), rpr=run(size=20), custom=True),
+                        ppr=para(before=40, after=40), rpr=run(size=21), custom=True),
         paragraph_style("Title", "Title", follow="BodyText",
                         ppr=para(keep=True, rule=(12, 10, BLUE), before=2200, after=160, line=240, center=True),
-                        rpr=run(font=BODY_FONT, bold=True, color=INK, size=56)),
+                        rpr=run(font=DISPLAY_FONT, bold=True, color=INK, size=56)),
         paragraph_style("Subtitle", "Subtitle", based="Title", follow="BodyText",
                         ppr=para(rule="none", before=0, after=200, center=True),
-                        rpr=run(bold=False, color=MUTED, size=26)),
+                        rpr=run(font=DISPLAY_FONT, bold=False, color=MUTED, size=26)),
         paragraph_style("Author", "Author", based="Title", follow="BodyText",
                         ppr=para(keep=True, rule="none", before=0, after=40, center=True),
                         rpr=run(bold=False, color=MUTED, size=24), custom=True),
@@ -169,7 +207,7 @@ def styles_xml() -> str:
                         rpr=run(bold=False, color=MUTED, size=21)),
         paragraph_style("AbstractTitle", "Abstract Title", follow="Abstract",
                         ppr=para(keep=True, lines=True, before=300, after=0, center=True),
-                        rpr=run(bold=True, size=20), custom=True),
+                        rpr=run(font=DISPLAY_FONT, bold=True, size=20), custom=True),
         paragraph_style("Abstract", "Abstract", follow="BodyText",
                         ppr=para(keep=True, lines=True, before=100, after=300),
                         rpr=run(size=20), custom=True),
@@ -192,9 +230,10 @@ def styles_xml() -> str:
                         ppr=para(before=60, after=200, center=True), custom=True),
         paragraph_style("Figure", "Figure", custom=True),
         paragraph_style("CaptionedFigure", "Captioned Figure", based="Figure", ppr=para(keep=True), custom=True),
+        *callout_styles(),
         paragraph_style("TOCHeading", "TOC Heading", based="Heading1", follow="BodyText",
                         ppr=para(keep=True, before=0, after=240, outline=9),
-                        rpr=run(bold=False, color=INK, size=36)),
+                        rpr=run(font=DISPLAY_FONT, bold=False, color=INK, size=36)),
         paragraph_style("TOC1", "toc 1", follow="Normal", ppr=para(tab=9400, before=40, after=20)),
         paragraph_style("TOC2", "toc 2", based="TOC1", follow="Normal",
                         ppr=para(tab=9400, before=20, after=20, left=240), rpr=run(size=19)),

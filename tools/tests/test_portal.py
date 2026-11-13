@@ -212,7 +212,7 @@ class PortalContributionTests(unittest.TestCase):
             path.relative_to(self.output).as_posix()
             for path in (self.output / "fonts").rglob("*.woff2")
         )
-        self.assertEqual(len(fonts), 7)
+        self.assertEqual(len(fonts), 10)
         self.assertTrue(all(name.startswith("fonts/") for name in fonts))
         licenses = sorted(
             path.relative_to(self.output).as_posix()
@@ -220,9 +220,13 @@ class PortalContributionTests(unittest.TestCase):
         )
         self.assertEqual(
             licenses,
-            ["fonts/jetbrains-mono/OFL.txt", "fonts/liberation-sans/OFL.txt"],
+            [
+                "fonts/jetbrains-mono/OFL.txt",
+                "fonts/source-sans3/OFL.txt",
+                "fonts/source-serif4/OFL.txt",
+            ],
         )
-        self.assertIn("fonts/liberation-sans/OFL.txt", page)
+        self.assertIn("fonts/source-sans3/OFL.txt", page)
 
     def test_theme_carries_the_tokens_and_no_external_host(self):
         page = self.build(support.catalog_document())
