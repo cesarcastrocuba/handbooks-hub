@@ -30,7 +30,8 @@
         "accent",
         "accent_solid",
         "on_solid",
-        "border"
+        "border",
+        "code"
       ],
       "properties": {
         "canvas": { "$ref": "#/$defs/color_role" },
@@ -42,7 +43,8 @@
         "accent": { "$ref": "#/$defs/color_role" },
         "accent_solid": { "$ref": "#/$defs/color_role" },
         "on_solid": { "$ref": "#/$defs/color_role" },
-        "border": { "$ref": "#/$defs/color_role" }
+        "border": { "$ref": "#/$defs/color_role" },
+        "code": { "$ref": "#/$defs/color_role" }
       }
     },
     "type": {
@@ -82,12 +84,13 @@
     "callout": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["note", "tip", "warning", "important"],
+      "required": ["note", "tip", "warning", "important", "review"],
       "properties": {
         "note": { "$ref": "#/$defs/callout_role" },
         "tip": { "$ref": "#/$defs/callout_role" },
         "warning": { "$ref": "#/$defs/callout_role" },
-        "important": { "$ref": "#/$defs/callout_role" }
+        "important": { "$ref": "#/$defs/callout_role" },
+        "review": { "$ref": "#/$defs/callout_role" }
       }
     },
     "space": {

@@ -3,6 +3,18 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
+## [Unreleased]
+
+### Changed
+
+- Hub and book web now share a 1300 px desktop column, so the library chrome and the three-column book align.
+- The List of Tables moved from the top navigation to the book sidebar, directly below Document Control; the generated page reuses the book chrome.
+- Callout-contained tables drop the alternating stripe in HTML, PDF and DOCX and inherit the callout tint.
+- `Review Checklist` uses a new neutral callout role in HTML, PDF and DOCX; section 2.2 now uses the warning and important roles for its two closing callouts.
+- Web code and licence blocks use the `code` token, matching the PDF block colour and spanning the full column.
+- DOCX callouts are single-cell tables with an aligned left rule and keep-together rows; titles carry their palette colour directly; tables keep body text left and captions centred.
+- The Word List of Tables is a static, clickable index that links to each table bookmark; licence blocks reflow to the full text width.
+
 ## [0.9.0] - 2026-11-13
 
 ### Changed

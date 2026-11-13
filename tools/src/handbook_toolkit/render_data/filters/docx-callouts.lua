@@ -6,6 +6,7 @@ local kinds = {
   ["callout-tip"] = "Tip",
   ["callout-warning"] = "Warning",
   ["callout-important"] = "Important",
+  ["callout-review"] = "Review",
 }
 
 function Div(el)
@@ -14,7 +15,9 @@ function Div(el)
   end
   local name = nil
   for _, class in ipairs(el.classes) do
-    if kinds[class] then
+    if class == "review" then
+      name = "Review"
+    elseif kinds[class] and name == nil then
       name = kinds[class]
     end
   end

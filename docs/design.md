@@ -55,6 +55,7 @@ families: light web, dark web and print.
 | `accent_solid` | `#0B5D5F` | `#157875` | `#0B5D5F` | Filled surfaces: buttons, covers, table headers |
 | `on_solid` | `#FFFFFF` | `#FFFFFF` | `#FFFFFF` | Text on a filled accent surface |
 | `border` | `#DDD3C0` | `#33403F` | `#D9E2EC` | Rules, dividers and table borders |
+| `code` | `#F1F3F5` | `#1B2426` | `#F1F3F5` | Code and licence blocks |
 
 Headings use the same near-black as body text on light and print; hierarchy comes from size, weight
 and spacing rather than from a third hue. The dark scheme keeps the same relationship with a light
@@ -67,6 +68,12 @@ introducing a separate heading colour.
 | Tip | `#107C10` | `#F1FAF1` |
 | Warning | `#D83B01` | `#FDF3F0` |
 | Important | `#5C2D91` | `#F5F0FA` |
+| Review | `#55666A` | `#F2F1ED` |
+
+The `review` role is opt-in: a callout carries the `review` class (for example
+`::: {.callout-note .review title="Review Checklist"}`) and all three renderers use the neutral
+accent and tint instead of the note blue. Tables inside a callout never receive the alternating
+stripe; their rows keep the callout tint.
 
 Web, PDF and DOCX use the same callout accent/tint values. The PDF and DOCX page canvas is
 `#F6F1E7`, the same paper tone as the reading site.

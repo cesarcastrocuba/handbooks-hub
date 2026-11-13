@@ -280,7 +280,7 @@ BOOK_CHROME = """
 /* Book chrome. The reading site uses Quarto's Bootstrap shell; these rules keep that shell on the
    same canvas, type and accent as the content. */
 #quarto-header .navbar-container {
-  max-width: 1040px;
+  max-width: 1300px;
   margin: 0 auto;
   padding-left: 1.25rem;
   padding-right: 1.25rem;
@@ -432,6 +432,7 @@ div.callout.callout-note { border-left-color: var(--callout-note-accent) !import
 div.callout.callout-tip { border-left-color: var(--callout-tip-accent) !important; background: var(--callout-tip-tint) !important; }
 div.callout.callout-warning { border-left-color: var(--callout-warning-accent) !important; background: var(--callout-warning-tint) !important; }
 div.callout.callout-important { border-left-color: var(--callout-important-accent) !important; background: var(--callout-important-tint) !important; }
+div.callout.review { border-left-color: var(--callout-review-accent) !important; background: var(--callout-review-tint) !important; }
 .callout-note .callout-title-container,
 .callout-note .callout-title { color: var(--callout-note-accent) !important; }
 .callout-tip .callout-title-container,
@@ -440,6 +441,8 @@ div.callout.callout-important { border-left-color: var(--callout-important-accen
 .callout-warning .callout-title { color: var(--callout-warning-accent) !important; }
 .callout-important .callout-title-container,
 .callout-important .callout-title { color: var(--callout-important-accent) !important; }
+.callout.review .callout-title-container,
+.callout.review .callout-title { color: var(--callout-review-accent) !important; }
 .callout-note .callout-body-container,
 .callout-tip .callout-body-container,
 .callout-warning .callout-body-container,
@@ -467,6 +470,16 @@ div.callout.callout-important { border-left-color: var(--callout-important-accen
 .list-of-tables li { font-size: .8rem; color: var(--text); }
 .list-of-tables a { color: var(--accent); text-decoration: none; }
 .list-of-tables a:hover { text-decoration: underline; }
+#quarto-document-content pre.text,
+#quarto-document-content div.sourceCode,
+#quarto-document-content pre.sourceCode {
+  background: var(--code);
+  border-radius: 4px;
+  padding: .7rem 1rem;
+}
+#quarto-document-content .callout table tbody tr:nth-child(even) {
+  background-color: transparent;
+}
 @media (max-width: 600px) {
   html, body { max-width: 100%; overflow-x: hidden; }
   #quarto-document-content, main.content, .page-columns { min-width: 0; max-width: 100%; }
