@@ -72,11 +72,6 @@ table.table tbody tr:nth-child(even), main table tbody tr:nth-child(even) {
   background-color: var(--table-stripe);
 }
 
-div.callout-note.callout {
-  border-left-color: var(--accent) !important;
-  background-color: var(--surface);
-}
-
 figcaption, .figure-caption {
   color: var(--muted);
   font-style: italic;
