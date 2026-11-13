@@ -19,6 +19,8 @@ import os
 from pathlib import Path
 import platform
 import posixpath
+from html import escape
+import html
 import re
 import shutil
 import subprocess
@@ -294,8 +296,10 @@ def _transform_chapter(text: str, chapter_number: int) -> str:
         caption = re.match(r"^:\s+(.*\S)\s*$", line)
         if caption and previous.lstrip().startswith("|"):
             table_number += 1
-            caption_text = re.sub(r"\s*\{[^}]*\}\s*$", "", caption.group(1)).strip()
-            output.extend(["", f"**Table {chapter_number}.{table_number} — {caption_text}**", ""])
+            if not re.search(r"\{#tbl-[^}]+\}\s*$", caption.group(1)):
+                caption_text = re.sub(r"\s*\{[^}]*\}\s*$", "", caption.group(1)).strip()
+                line = f": {caption_text} {{#tbl-{chapter_number}-{table_number}}}"
+            output.extend(["", line, ""])
             previous = ""
             continue
         output.append(line)
@@ -364,6 +368,11 @@ def _render_config(
         book_config["date"] = edition_date
         config.setdefault("date-format", "MMMM YYYY")
 
+    config.setdefault("tbl-cap-location", "bottom")
+    config.setdefault("number-sections", True)
+    crossref = config.setdefault("crossref", {})
+    if isinstance(crossref, dict):
+        crossref.setdefault("chapters", True)
     formats = config.get("format", {})
     if not isinstance(formats, dict):
         raise BuildError("publishing/_quarto.yml format section must be a mapping")
@@ -371,18 +380,19 @@ def _render_config(
     config["filters"] = [
         {"at": "pre-ast", "path": (resources["filters/table-layout.lua"]).relative_to(workspace).as_posix()},
         {"at": "pre-ast", "path": (resources["filters/task-checkbox.lua"]).relative_to(workspace).as_posix()},
+        {"at": "pre-ast", "path": (resources["filters/docx-callouts.lua"]).relative_to(workspace).as_posix()},
     ]
 
     def staged(name: str) -> str:
         return resources[name].relative_to(workspace).as_posix()
 
     typst_format = config["format"]["typst"]
-    typst_format["mainfont"] = design.load_tokens()["type"]["brand"]["family"]
+    typst_format["mainfont"] = design.load_tokens()["type"]["brand"]["text_family"]
     typst_format["monofont"] = "JetBrains Mono"
     typst_format["font-paths"] = [
-        resources["fonts/selawik/selawk.ttf"].parent.relative_to(workspace).as_posix(),
+        resources["fonts/source-sans3/HandbookSans-Regular.ttf"].parent.relative_to(workspace).as_posix(),
+        resources["fonts/source-serif4/HandbookSerif-Regular.ttf"].parent.relative_to(workspace).as_posix(),
         resources["fonts/jetbrains-mono/JetBrainsMono-Regular.ttf"].parent.relative_to(workspace).as_posix(),
-        resources["fonts/liberation-sans/LiberationSans-Regular.ttf"].parent.relative_to(workspace).as_posix(),
     ]
     # Design constants are generated from the packaged tokens; the hand-written
     # theme reads them and never carries its own palette.
@@ -414,8 +424,12 @@ def _render_config(
     if toc_depth is not None:
         for name in ("typst", "docx"):
             config["format"][name].setdefault("toc-depth", toc_depth)
+    config["format"]["docx"].setdefault("toc-title", "Contents")
+    for name in ("typst", "docx"):
+        config["format"][name].setdefault("lot", True)
 
     html_format = config["format"]["html"]
+    html_format.setdefault("toc-title", "Contents")
     html_tokens = resources["html/handbook.css"].parent / "design-tokens.css"
     html_tokens.write_text(design.book_theme_css(), encoding="utf-8")
     tokens_css = html_tokens.relative_to(workspace).as_posix()
@@ -459,6 +473,55 @@ def _one_file(directory: Path, suffix: str) -> Path:
     return matches[0]
 
 
+def _inject_table_index(site: Path) -> None:
+    """Add a web-only List of Tables to the landing page, with links to each table."""
+
+    index = site / "index.html"
+    if not index.is_file():
+        return
+    entries: list[tuple[int, str, str, str]] = []
+
+    def order(path: Path) -> int:
+        relative = path.relative_to(site).as_posix()
+        if relative == "index.html" or "/front-matter/" in relative:
+            return 0
+        if "/chapters/" in relative:
+            return 1
+        if "/appendices/" in relative:
+            return 2
+        return 3
+
+    pattern = re.compile(
+        r'<div id="(tbl-[^"]+)"[^>]*>.*?<figcaption[^>]*>(.*?)</figcaption>',
+        re.DOTALL,
+    )
+    for path in sorted(site.rglob("*.html"), key=lambda item: (order(item), item.as_posix())):
+        text = path.read_text(encoding="utf-8")
+        for match in pattern.finditer(text):
+            caption = html.unescape(re.sub(r"<[^>]+>", "", match.group(2))).strip()
+            if caption:
+                relative = path.relative_to(site).as_posix()
+                entries.append((order(path), relative, match.group(1), caption))
+    if not entries:
+        return
+    items = "".join(
+        f'<li><a href="{escape(relative)}#{escape(identifier, quote=True)}">'
+        f"{escape(caption)}</a></li>"
+        for _position, relative, identifier, caption in entries
+    )
+    section = (
+        '<section class="list-of-tables" aria-labelledby="list-of-tables-title">'
+        '<h2 id="list-of-tables-title">List of Tables</h2>'
+        f"<ul>{items}</ul></section>"
+    )
+    text = index.read_text(encoding="utf-8")
+    if "</header>" in text:
+        text = text.replace("</header>", "</header>\n" + section, 1)
+    elif "</main>" in text:
+        text = text.replace("</main>", section + "\n</main>", 1)
+    index.write_text(text, encoding="utf-8")
+
+
 def _payload_paths(workspace: Path, dist: Path, epoch: int) -> dict[str, Path]:
     output = workspace / "_output"
     if not (output / "index.html").is_file():
@@ -476,6 +539,7 @@ def _payload_paths(workspace: Path, dist: Path, epoch: int) -> dict[str, Path]:
         target = site / ".handbook-render" / "fonts" / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
+    _inject_table_index(site)
     archive_tree(site, dist / PAYLOADS["html"], epoch)
     pdf = _one_file(output, ".pdf")
     docx = _one_file(output, ".docx")
@@ -745,8 +809,17 @@ def build_book(
         book_version = _book_version(workspace, version)
         _require_prerelease_version(book_version, mode, preview)
         resources = stage_render_resources(workspace / ".handbook-render")
+        brand = design.load_tokens()
+        brand_colours = {
+            role: values["light"] for role, values in brand["color"].items()
+        }
         (workspace / "_brand.yml").write_text(
-            'color:\n  primary: "#161616"\n', encoding="utf-8"
+            "color:\n"
+            f"  palette:\n    canvas: \"{brand_colours['canvas']}\"\n"
+            f"    ink: \"{brand_colours['text']}\"\n"
+            f"    accent: \"{brand_colours['accent']}\"\n"
+            "  background: canvas\n  foreground: ink\n  primary: accent\n",
+            encoding="utf-8",
         )
         metadata_path = workspace / "publishing/metadata.yaml"
         metadata: dict[str, Any] = {}

@@ -27,45 +27,45 @@ FORMATS = {"pdf": "PDF", "html": "HTML", "docx": "DOCX", "markdown": "Markdown",
 
 STYLE_LAYOUT = """
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;line-height:1.6}a{color:var(--accent);text-underline-offset:4px}a:hover{text-decoration-thickness:2px}
-h1,h2,h3{font-family:var(--font-sans);font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+h1,h2,h3{font-family:var(--font-display);font-weight:700;letter-spacing:-.01em;text-wrap:balance}
 button,select,input{font:inherit}button,a,select,input{touch-action:manipulation}:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:4px}
 .skip{position:absolute;left:1rem;top:-5rem;background:var(--surface);padding:1rem;z-index:3}.skip:focus{top:1rem}
-.wrap{max-width:1120px;margin:auto;padding:0 1.5rem}
-nav{display:flex;justify-content:space-between;align-items:center;min-height:72px;gap:1rem;flex-wrap:wrap;padding-top:.5rem;padding-bottom:.5rem}
-.brand{font-family:var(--font-sans);font-weight:700;font-size:1.3rem;color:var(--ink);text-decoration:none}.brand span{color:var(--accent)}
-.menu{display:flex;gap:1.2rem;flex-wrap:wrap;font-size:.92rem}.menu a{color:var(--ink);text-decoration:none;padding:.6rem 0}.menu a:hover{color:var(--accent);text-decoration:underline}
-header{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:linear-gradient(160deg,var(--soft),var(--paper) 70%);padding:4rem 0 3.5rem}
+.wrap{max-width:1040px;margin:auto;padding:0 1.25rem}
+nav{display:flex;justify-content:space-between;align-items:center;min-height:60px;gap:1rem;flex-wrap:wrap;padding-top:.5rem;padding-bottom:.5rem}
+.brand{font-family:var(--font-display);font-weight:700;font-size:1.12rem;color:var(--ink);text-decoration:none}.brand span{color:var(--accent)}
+.menu{display:flex;gap:1rem;flex-wrap:wrap;font-size:.82rem}.menu a{color:var(--ink);text-decoration:none;padding:.6rem 0}.menu a:hover{color:var(--accent);text-decoration:underline}
+header{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:linear-gradient(160deg,var(--soft),var(--paper) 70%);padding:3rem 0 2.6rem}
 .eyebrow{font-size:.75rem;text-transform:uppercase;letter-spacing:.14em;font-weight:700;color:var(--accent);margin:0}
-h1{font-size:clamp(2.3rem,6vw,4rem);line-height:1.08;max-width:860px;margin:.8rem 0 1.2rem}
-.intro{max-width:640px;font-size:1.1rem;color:var(--muted);margin:0}
-.cta{display:flex;gap:.8rem;flex-wrap:wrap;margin:1.8rem 0 0}
-.btn{display:inline-flex;align-items:center;min-height:44px;padding:.6rem 1.1rem;border-radius:8px;border:1px solid var(--accent);font-weight:650;text-decoration:none}
+h1{font-size:clamp(2.05rem,5vw,3.15rem);line-height:1.08;max-width:860px;margin:.65rem 0 .9rem}
+.intro{max-width:620px;font-size:.98rem;color:var(--muted);margin:0}
+.cta{display:flex;gap:.65rem;flex-wrap:wrap;margin:1.3rem 0 0}
+.btn{display:inline-flex;align-items:center;min-height:40px;padding:.45rem .9rem;border-radius:7px;border:1px solid var(--accent);font-size:.84rem;font-weight:650;text-decoration:none}
 .btn.primary{background:var(--accent-solid);color:var(--on-solid)}.btn:hover{text-decoration:underline}
-.statusline{font-size:.9rem;color:var(--muted);margin:1.8rem 0 0}
-main section{padding:3.5rem 0;border-bottom:1px solid var(--line)}main section:last-child{border-bottom:0}
-h2{font-size:clamp(1.6rem,3.5vw,2.1rem);margin:0 0 .5rem}.lede{color:var(--muted);max-width:700px;margin:0 0 1.5rem}
-.toolbar{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin:1.5rem 0 .5rem}
+.statusline{font-size:.8rem;color:var(--muted);margin:1.3rem 0 0}
+main section{padding:2.6rem 0;border-bottom:1px solid var(--line)}main section:last-child{border-bottom:0}
+h2{font-size:clamp(1.45rem,3.2vw,1.9rem);margin:0 0 .4rem}.lede{color:var(--muted);max-width:700px;margin:0 0 1.15rem;font-size:.94rem}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin:1.1rem 0 .4rem}
 .filters{display:flex;gap:.5rem;flex-wrap:wrap}
 button,select,input[type=search]{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;min-height:44px;padding:.5rem .95rem}
 button{cursor:pointer}button[aria-pressed=true]{background:var(--accent-solid);color:var(--on-solid);border-color:var(--accent-solid)}
 .tools{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;font-size:.9rem}.tools label{display:flex;gap:.5rem;align-items:center}
 .results{color:var(--muted);font-size:.9rem;margin:.8rem 0 1.2rem}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,31rem),1fr));gap:1.5rem}
-.book{display:grid;grid-template-columns:9.5rem 1fr;gap:1.4rem;background:var(--surface);border:1px solid var(--line);border-bottom:6px solid var(--shelf);border-radius:12px;padding:1.4rem}
-.cover{--tone:var(--accent-solid);aspect-ratio:3/4;align-self:start;display:flex;flex-direction:column;justify-content:space-between;padding:.9rem .8rem .8rem 1.2rem;border-radius:3px 8px 8px 3px;color:var(--on-solid);
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,27rem),1fr));gap:1.15rem}
+.book{display:grid;grid-template-columns:8rem 1fr;gap:1.1rem;background:var(--surface);border:1px solid var(--line);border-bottom:4px solid var(--shelf);border-radius:10px;padding:1.05rem}
+.cover{--tone:var(--accent-solid);aspect-ratio:3/4;align-self:start;display:flex;flex-direction:column;justify-content:space-between;padding:.7rem .65rem .65rem .95rem;border-radius:3px 7px 7px 3px;color:var(--on-solid);
 background:linear-gradient(90deg,#0004 0 .45rem,#fff2 .45rem .55rem,#0000 .55rem),linear-gradient(155deg,#fff2,#0000 55%),var(--tone);box-shadow:3px 4px 10px #0003}
-.cover-kicker{font-size:.62rem;text-transform:uppercase;letter-spacing:.14em;opacity:.85}
-.cover-title{font-family:var(--font-sans);font-weight:700;font-size:1rem;line-height:1.25;overflow-wrap:anywhere}
-.cover-foot{font-family:ui-monospace,monospace;font-size:.68rem;opacity:.85}
-.details{display:flex;flex-direction:column;min-width:0}.book h3{font-size:1.3rem;line-height:1.3;margin:.5rem 0}
-.summary{color:var(--muted);margin:0;flex-grow:1}.tags{display:flex;gap:.4rem;flex-wrap:wrap}
-.tag{font-size:.72rem;background:var(--soft);color:var(--ink);padding:.2rem .55rem;border-radius:5px}
-.version{font-family:ui-monospace,monospace;font-size:.8rem;color:var(--muted);margin-top:.9rem}
-.links{display:flex;gap:1rem;flex-wrap:wrap;align-items:center;margin-top:.9rem}.read{font-weight:700}
-.formats{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.9rem}
-.fmt{display:inline-flex;align-items:center;min-height:36px;padding:.25rem .7rem;border:1px solid var(--line);border-radius:6px;background:var(--paper);font-size:.82rem;font-weight:650;text-decoration:none}
+.cover-kicker{font-size:.56rem;text-transform:uppercase;letter-spacing:.14em;opacity:.85}
+.cover-title{font-family:var(--font-display);font-weight:700;font-size:.82rem;line-height:1.25;overflow-wrap:anywhere}
+.cover-foot{font-family:var(--font-mono);font-size:.6rem;opacity:.85}
+.details{display:flex;flex-direction:column;min-width:0}.book h3{font-size:1.08rem;line-height:1.3;margin:.4rem 0}
+.summary{color:var(--muted);margin:0;flex-grow:1;font-size:.9rem}.tags{display:flex;gap:.4rem;flex-wrap:wrap}
+.tag{font-size:.66rem;background:var(--soft);color:var(--ink);padding:.16rem .48rem;border-radius:4px}
+.version{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-top:.65rem}
+.links{display:flex;gap:.85rem;flex-wrap:wrap;align-items:center;margin-top:.65rem;font-size:.84rem}.read{font-weight:700}
+.formats{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.7rem}
+.fmt{display:inline-flex;align-items:center;min-height:30px;padding:.18rem .55rem;border:1px solid var(--line);border-radius:5px;background:var(--paper);font-size:.74rem;font-weight:650;text-decoration:none}
 .fmt:hover{border-color:var(--accent);text-decoration:underline}
-.assets{font-size:.8rem;display:flex;gap:.9rem;flex-wrap:wrap;margin-top:.8rem}
+.assets{font-size:.72rem;display:flex;gap:.8rem;flex-wrap:wrap;margin-top:.6rem}
 .archived{color:var(--warn);font-weight:650;font-size:.8rem;margin-top:.4rem}
 .empty{background:var(--surface);border:1px dashed var(--shelf);border-radius:16px;padding:3.5rem 2rem;text-align:center}.empty h3{font-size:1.5rem;margin:0 0 1rem}.empty p{max-width:550px;margin:auto;color:var(--muted)}
 .planned{margin:1.8rem 0 0;color:var(--muted);font-size:.9rem}
@@ -276,7 +276,7 @@ def build_portal(catalog: Path, output: Path) -> Path:
 <header><div class="wrap"><p class="eyebrow">Independent books · Shared standards</p><h1>Knowledge worth keeping.<br>Handbooks worth sharing.</h1><p class="intro">An open library of practical technical handbooks. Read online, download an edition, or write the next one.</p>
 <p class="cta"><a class="btn primary" href="#library">Browse the library</a><a class="btn" href="#create">Create your handbook</a></p><p class="statusline">{published} published · {archived} archived · Verified release downloads</p></div></header>
 <main class="wrap"><section id="library" aria-labelledby="library-title"><h2 id="library-title">Explore the library</h2>{content}</section>{GUIDE}</main>
-<footer><div class="wrap">Each handbook owns its source, review process and releases. This catalog links to approved editions; it does not mirror manuscript content.<br>Content: CC BY-SA 4.0 · Platform code: MIT · Fonts: <a href="fonts/liberation-sans/OFL.txt">Liberation Sans OFL</a>, <a href="fonts/jetbrains-mono/OFL.txt">JetBrains Mono OFL</a> · <a href="{HUB_URL}">Source and contribution guide</a> · <a href="llms.txt">llms.txt</a></div></footer><script>{SCRIPT}</script></body></html>'''
+<footer><div class="wrap">Each handbook owns its source, review process and releases. This catalog links to approved editions; it does not mirror manuscript content.<br>Content: CC BY-SA 4.0 · Platform code: MIT · Fonts: <a href="fonts/source-sans3/OFL.txt">Source Sans OFL</a>, <a href="fonts/source-serif4/OFL.txt">Source Serif OFL</a>, <a href="fonts/jetbrains-mono/OFL.txt">JetBrains Mono OFL</a> · <a href="{HUB_URL}">Source and contribution guide</a> · <a href="llms.txt">llms.txt</a></div></footer><script>{SCRIPT}</script></body></html>'''
     if output.exists() or output.is_symlink():
         raise FileExistsError(output)
     output.parent.mkdir(parents=True, exist_ok=True)

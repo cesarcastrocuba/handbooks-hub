@@ -181,5 +181,11 @@ def typst_front(
             f"#text(fill: hb-muted)[#{_typst_string(disclaimer)}]]",
             "",
         ]
-    lines += ["#pagebreak()", f"#outline(title: [Contents], depth: {depth})", ""]
+    lines += [
+        "#pagebreak()",
+        f"#outline(title: [Contents], depth: {depth})",
+        "#pagebreak()",
+        '#outline(title: [List of Tables], target: figure.where(kind: "quarto-float-tbl"))',
+        "",
+    ]
     return "\n".join(lines)

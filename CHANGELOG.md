@@ -3,6 +3,33 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
+## [Unreleased]
+
+### Changed
+
+- Replaced Liberation Sans/Arial with a real editorial type system: Source Sans 3 for text and
+  Source Serif 4 for headings, both self-hosted as renamed OFL subsets for the web and embedded in
+  the PDF. The DOCX names the upstream families; the metric-compatible Arial fallback is gone.
+- Compacted the portal to the reviewed card and control scale, and rebuilt the book chrome from
+  tokens: canvas navbar and sidebar, teal links, near-black headings, title-block band and a soft
+  divider.
+- Unified table captions and numbering. The build no longer injects bold `Table N.M` paragraphs;
+  every table is a Quarto float with a deterministic id, captions sit below the table in italic,
+  and the PDF, HTML and DOCX share chapter-based numbers. The PDF gains a List of Tables.
+- Replaced the table width floor with a longest-token calculation, so long labels such as
+  `Detailed content specification` and `Continuous unversioned edits` no longer overflow or break
+  mid-word.
+- Rebuilt the DOCX reference: Contents title, page breaks before each top-level section, teal
+  first-row table headers with white bold text, body/table/callout text at 10.5 pt, callout title
+  and body styles for Note/Tip/Warning/Important, and a List of Tables.
+
+### Fixed
+
+- The book site no longer inherits the grey Bootstrap navbar or the blue default links; it uses the
+  same canvas, accent and display face as the library portal.
+- The portal uses the tighter preview scale (15 px body, 8 rem cover, compact format buttons) rather
+  than the oversized card layout.
+
 ## [0.7.0] - 2026-11-12
 
 ### Added

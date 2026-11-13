@@ -26,13 +26,19 @@ local function hash_text(text)
   return string.format("%08x", value)
 end
 
-local function add_row(row, totals, counts, ncols)
+local function add_row(row, totals, counts, longest, ncols)
   for i = 1, ncols do
     local cell = row.cells[i]
     if cell ~= nil then
       local text = pandoc.utils.stringify(cell)
       totals[i] = totals[i] + text_length(text)
       counts[i] = counts[i] + 1
+      for word in text:gmatch("%S+") do
+        local size = utf8.len(word) or #word
+        if size > longest[i] then
+          longest[i] = size
+        end
+      end
     end
   end
 end
@@ -43,27 +49,28 @@ local function table_widths(tbl)
     return nil
   end
 
-  local totals, counts = {}, {}
+  local totals, counts, longest = {}, {}, {}
   for i = 1, ncols do
     totals[i] = 0
     counts[i] = 0
+    longest[i] = 0
   end
 
   if tbl.head and tbl.head.rows then
     for _, row in ipairs(tbl.head.rows) do
-      add_row(row, totals, counts, ncols)
+      add_row(row, totals, counts, longest, ncols)
     end
   end
   if tbl.bodies then
     for _, body in ipairs(tbl.bodies) do
       if body.head then
         for _, row in ipairs(body.head) do
-          add_row(row, totals, counts, ncols)
+          add_row(row, totals, counts, longest, ncols)
         end
       end
       if body.body then
         for _, row in ipairs(body.body) do
-          add_row(row, totals, counts, ncols)
+          add_row(row, totals, counts, longest, ncols)
         end
       end
     end
@@ -72,7 +79,6 @@ local function table_widths(tbl)
   local weights, sum = {}, 0
   for i = 1, ncols do
     local average = counts[i] > 0 and (totals[i] / counts[i]) or 0
-    -- Soft content weights: short labels stay compact, prose columns grow.
     weights[i] = math.max(average, 8)
     sum = sum + weights[i]
   end
@@ -93,21 +99,34 @@ local function table_widths(tbl)
   end
   percentages[widest] = percentages[widest] + (100 - assigned)
 
-  -- A column narrower than its longest word breaks the word. Keep a small
-  -- deterministic floor for narrow tables and take the share from the widest
-  -- column that can afford it.
-  local floor = ncols <= 3 and 15 or (ncols <= 5 and 11 or 8)
+  -- A column cannot be narrower than its longest unbreakable token plus cell
+  -- padding. Keep a per-column floor, then take the difference from a column
+  -- that can afford it. The cap keeps a long word from consuming the page.
+  local floors, floor_sum = {}, 0
   for i = 1, ncols do
-    if percentages[i] < floor then
-      local deficit = floor - percentages[i]
+    local target = math.ceil(longest[i] * 1.5)
+    target = math.max(10, math.min(ncols <= 2 and 35 or ncols == 3 and 28 or 20, target))
+    floors[i] = target
+    floor_sum = floor_sum + target
+  end
+  if floor_sum > 100 then
+    for i = 1, ncols do
+      floors[i] = math.max(8, math.floor(floors[i] * 100 / floor_sum))
+    end
+  end
+  for i = 1, ncols do
+    if percentages[i] < floors[i] then
+      local deficit = floors[i] - percentages[i]
       local donor = nil
       for j = 1, ncols do
-        if j ~= i and (donor == nil or percentages[j] > percentages[donor]) then
-          donor = j
+        if j ~= i and percentages[j] - deficit >= floors[j] then
+          if donor == nil or percentages[j] > percentages[donor] then
+            donor = j
+          end
         end
       end
-      if donor ~= nil and percentages[donor] - deficit >= floor then
-        percentages[i] = floor
+      if donor ~= nil then
+        percentages[i] = percentages[i] + deficit
         percentages[donor] = percentages[donor] - deficit
       end
     end

@@ -224,14 +224,15 @@ class RenderConfigTests(unittest.TestCase):
             resources = {
                 "filters/table-layout.lua": workspace / ".handbook-render/filters/table-layout.lua",
                 "filters/task-checkbox.lua": workspace / ".handbook-render/filters/task-checkbox.lua",
+                "filters/docx-callouts.lua": workspace / ".handbook-render/filters/docx-callouts.lua",
                 "typst/callout-breakable.typ": workspace / ".handbook-render/typst/callout-breakable.typ",
                 "typst/handbook-typst.typ": workspace / ".handbook-render/typst/handbook-typst.typ",
                 "typst/typst-show.typ": workspace / ".handbook-render/typst/typst-show.typ",
                 "docx/reference.docx": workspace / ".handbook-render/docx/reference.docx",
                 "html/handbook.css": workspace / ".handbook-render/html/handbook.css",
-                "fonts/selawik/selawk.ttf": workspace / ".handbook-render/fonts/selawik/selawk.ttf",
+                "fonts/source-sans3/HandbookSans-Regular.ttf": workspace / ".handbook-render/fonts/source-sans3/HandbookSans-Regular.ttf",
+                "fonts/source-serif4/HandbookSerif-Regular.ttf": workspace / ".handbook-render/fonts/source-serif4/HandbookSerif-Regular.ttf",
                 "fonts/jetbrains-mono/JetBrainsMono-Regular.ttf": workspace / ".handbook-render/fonts/jetbrains-mono/JetBrainsMono-Regular.ttf",
-                "fonts/liberation-sans/LiberationSans-Regular.ttf": workspace / ".handbook-render/fonts/liberation-sans/LiberationSans-Regular.ttf",
             }
             for path in resources.values():
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -245,11 +246,15 @@ class RenderConfigTests(unittest.TestCase):
             )
             self.assertEqual(
                 [entry["path"] for entry in config["filters"]],
-                [".handbook-render/filters/table-layout.lua", ".handbook-render/filters/task-checkbox.lua"],
+                [
+                    ".handbook-render/filters/table-layout.lua",
+                    ".handbook-render/filters/task-checkbox.lua",
+                    ".handbook-render/filters/docx-callouts.lua",
+                ],
             )
             self.assertEqual(
                 config["format"]["typst"]["mainfont"],
-                "Liberation Sans",
+                "Handbook Sans",
             )
             self.assertEqual(
                 config["format"]["typst"]["monofont"],
@@ -258,9 +263,9 @@ class RenderConfigTests(unittest.TestCase):
             self.assertEqual(
                 config["format"]["typst"]["font-paths"],
                 [
-                    ".handbook-render/fonts/selawik",
+                    ".handbook-render/fonts/source-sans3",
+                    ".handbook-render/fonts/source-serif4",
                     ".handbook-render/fonts/jetbrains-mono",
-                    ".handbook-render/fonts/liberation-sans",
                 ],
             )
             self.assertEqual(
@@ -399,7 +404,9 @@ class BuildTests(unittest.TestCase):
                 self.assertEqual(archive.comment.decode("ascii"), commit)
             with zipfile.ZipFile(output / "book-html.zip") as archive:
                 site = archive.read("index.html").decode("utf-8")
-            self.assertIn("Table 1.1 —", site)
+            self.assertIn("Table&nbsp;1.1", site)
+            self.assertIn("List of Tables", site)
+            self.assertIn('href="index.html#tbl-', site)
             self.assertIn("A Pilot Section", site)
             markdown = (output / "book.md").read_text(encoding="utf-8")
             self.assertTrue(markdown.startswith("# Build Fixture\n"))

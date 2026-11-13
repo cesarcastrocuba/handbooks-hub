@@ -157,10 +157,13 @@ def _contrast_issues(tokens: dict[str, Any]) -> list[Issue]:
 # Web font assets, relative to ``render_data/fonts``. Each tuple is
 # (CSS family, relative path, weight, style).
 WEB_FONTS: tuple[tuple[str, str, int, str], ...] = (
-    ("Handbook Sans", "liberation-sans/HandbookSans-Regular.woff2", 400, "normal"),
-    ("Handbook Sans", "liberation-sans/HandbookSans-Bold.woff2", 700, "normal"),
-    ("Handbook Sans", "liberation-sans/HandbookSans-Italic.woff2", 400, "italic"),
-    ("Handbook Sans", "liberation-sans/HandbookSans-BoldItalic.woff2", 700, "italic"),
+    ("Handbook Sans", "source-sans3/HandbookSans-Regular.woff2", 400, "normal"),
+    ("Handbook Sans", "source-sans3/HandbookSans-Bold.woff2", 700, "normal"),
+    ("Handbook Sans", "source-sans3/HandbookSans-Italic.woff2", 400, "italic"),
+    ("Handbook Sans", "source-sans3/HandbookSans-BoldItalic.woff2", 700, "italic"),
+    ("Handbook Serif", "source-serif4/HandbookSerif-Regular.woff2", 400, "normal"),
+    ("Handbook Serif", "source-serif4/HandbookSerif-Semibold.woff2", 600, "normal"),
+    ("Handbook Serif", "source-serif4/HandbookSerif-Bold.woff2", 700, "normal"),
     ("Handbook Mono", "jetbrains-mono/HandbookMono-Regular.woff2", 400, "normal"),
     ("Handbook Mono", "jetbrains-mono/HandbookMono-Bold.woff2", 700, "normal"),
     ("Handbook Mono", "jetbrains-mono/HandbookMono-Italic.woff2", 400, "italic"),
@@ -183,6 +186,8 @@ BOOTSTRAP_ALIASES = (
     "--bs-heading-color: var(--heading);",
     "--bs-link-color: var(--accent);",
     "--bs-link-hover-color: var(--accent);",
+    "--bs-link-color-rgb: var(--accent-rgb);",
+    "--bs-link-hover-color-rgb: var(--accent-rgb);",
     "--bs-border-color: var(--border);",
     "--bs-body-font-family: var(--font-sans);",
     "--bs-body-font-size: var(--body-size);",
@@ -204,7 +209,8 @@ def font_licenses() -> dict[str, bytes]:
 
     package = resource_files("handbook_toolkit").joinpath("render_data", "fonts")
     return {
-        "liberation-sans/OFL.txt": package.joinpath("liberation-sans", "OFL.txt").read_bytes(),
+        "source-sans3/OFL.txt": package.joinpath("source-sans3", "OFL.txt").read_bytes(),
+        "source-serif4/OFL.txt": package.joinpath("source-serif4", "OFL.txt").read_bytes(),
         "jetbrains-mono/OFL.txt": package.joinpath("jetbrains-mono", "OFL.txt").read_bytes(),
     }
 
@@ -213,8 +219,9 @@ def font_face_css(prefix: str) -> str:
     """Return ``@font-face`` rules whose URLs are relative to *prefix* (same origin only)."""
 
     comment = (
-        "/* Web fonts: Handbook Sans (Liberation Sans subset, SIL OFL 1.1, "
-        f"{prefix}liberation-sans/OFL.txt); Handbook Mono (JetBrains Mono subset, SIL OFL 1.1, "
+        "/* Web fonts: Handbook Sans (Source Sans 3 subset, SIL OFL 1.1, "
+        f"{prefix}source-sans3/OFL.txt); Handbook Serif (Source Serif 4 subset, SIL OFL 1.1, "
+        f"{prefix}source-serif4/OFL.txt); Handbook Mono (JetBrains Mono subset, SIL OFL 1.1, "
         f"{prefix}jetbrains-mono/OFL.txt). */"
     )
     rules = []
@@ -235,9 +242,16 @@ def css_variables(scheme: str) -> str:
                     for role, values in tokens["color"].items()]
     body = tokens["type"]["body"]
     code = tokens["type"]["code"]
+    def rgb(value: str) -> str:
+        value = value.lstrip("#")
+        return f"{int(value[0:2], 16)}, {int(value[2:4], 16)}, {int(value[4:6], 16)}"
+
     declarations += [
         f"--font-sans: {body['web_family']};",
+        f"--font-display: {tokens['type']['display']['web_family']};",
         f"--font-mono: {code['web_family']};",
+        f"--accent-rgb: {rgb(tokens['color']['accent'][scheme])};",
+        f"--accent-solid-rgb: {rgb(tokens['color']['accent_solid'][scheme])};",
         f"--body-size: {body['web_size_px']}px;",
         f"--body-line: {body['line_height']};",
         f"--display-size: {tokens['type']['display']['web_size_px']}px;",
@@ -256,13 +270,182 @@ def _aliases(scheme: str) -> str:
     return "\n".join(alias.format(warn=warn) for alias in LEGACY_ALIASES)
 
 
+BOOK_CHROME = """
+
+/* Book chrome. The reading site uses Quarto's Bootstrap shell; these rules keep that shell on the
+   same canvas, type and accent as the content. */
+#quarto-header .navbar,
+#quarto-header .navbar[data-bs-theme="dark"] {
+  background: var(--canvas) !important;
+  color: var(--text) !important;
+  min-height: 56px;
+  border-bottom: 1px solid var(--border);
+  box-shadow: none;
+  --bs-navbar-color: var(--text);
+  --bs-navbar-hover-color: var(--accent);
+  --bs-navbar-active-color: var(--accent);
+  --bs-navbar-brand-color: var(--heading);
+  --bs-navbar-brand-hover-color: var(--accent);
+}
+#quarto-header .navbar .navbar-brand,
+#quarto-header .navbar .navbar-title {
+  color: var(--heading) !important;
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  letter-spacing: -.01em;
+}
+#quarto-header .navbar .nav-link,
+#quarto-header .navbar .dropdown-toggle {
+  color: var(--text) !important;
+  font-size: .84rem;
+}
+#quarto-header .navbar .nav-link:hover,
+#quarto-header .navbar .nav-link.active {
+  color: var(--accent) !important;
+}
+#quarto-header .quarto-secondary-nav,
+#quarto-header .quarto-page-breadcrumbs {
+  background: var(--canvas);
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: .8rem;
+}
+#title-block-header {
+  background: linear-gradient(160deg, var(--surface), var(--canvas) 78%);
+  border-bottom: 1px solid var(--border);
+  padding: 2.2rem 0 1.8rem;
+  margin-bottom: 2rem;
+}
+#title-block-header .title {
+  color: var(--heading);
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.08;
+}
+#title-block-header .subtitle {
+  color: var(--muted);
+  font-size: 1rem;
+  max-width: 62ch;
+}
+#title-block-header .quarto-title-meta-heading {
+  color: var(--muted);
+  font-size: .68rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+#title-block-header .quarto-title-meta-contents {
+  color: var(--text);
+  font-size: .82rem;
+}
+#quarto-sidebar,
+#quarto-margin-sidebar,
+#TOC,
+.sidebar-navigation {
+  background: var(--canvas) !important;
+  color: var(--text);
+}
+#quarto-sidebar {
+  border-right: 1px solid var(--border);
+}
+.sidebar-title,
+#toc-title {
+  color: var(--muted);
+  font-size: .68rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.sidebar-navigation a,
+#TOC a,
+.sidebar-item-text {
+  color: var(--text);
+  font-size: .82rem;
+}
+.sidebar-navigation a:hover,
+#TOC a:hover {
+  color: var(--accent);
+}
+.sidebar-navigation a.active,
+#TOC a.active,
+.sidebar-item-container .active {
+  color: var(--accent) !important;
+  border-left: 2px solid var(--accent);
+  padding-left: .55rem;
+  font-weight: 600;
+}
+#quarto-document-content h1,
+#quarto-document-content h2,
+#quarto-document-content h3,
+#quarto-document-content h4,
+#quarto-document-content .title {
+  color: var(--heading);
+  font-family: var(--font-display);
+}
+#quarto-document-content a,
+#quarto-document-content .nav-link,
+#quarto-document-content .quarto-xref {
+  color: var(--accent);
+}
+#quarto-document-content table thead th {
+  background: var(--accent-solid) !important;
+  color: var(--on-solid) !important;
+  border-color: var(--accent-solid) !important;
+  font-weight: 600;
+}
+#quarto-document-content table caption,
+#quarto-document-content .quarto-float-caption,
+#quarto-document-content figcaption {
+  color: var(--muted);
+  font-family: var(--font-sans);
+  font-size: .8rem;
+  font-style: italic;
+  text-align: center;
+  padding-top: .45rem;
+}
+.callout.callout-style-simple {
+  border-left-width: 4px;
+  border-left-style: solid;
+  background: var(--surface);
+}
+.callout-note.callout { border-left-color: #0065B3; background: color-mix(in srgb, #0065B3 7%, var(--surface)); }
+.callout-tip.callout { border-left-color: #107C10; background: color-mix(in srgb, #107C10 7%, var(--surface)); }
+.callout-warning.callout { border-left-color: #D83B01; background: color-mix(in srgb, #D83B01 7%, var(--surface)); }
+.callout-important.callout { border-left-color: #5C2D91; background: color-mix(in srgb, #5C2D91 7%, var(--surface)); }
+.callout-note .callout-title { color: #0065B3; }
+.callout-tip .callout-title { color: #107C10; }
+.callout-warning .callout-title { color: #D83B01; }
+.callout-important .callout-title { color: #5C2D91; }
+.page-navigation a { color: var(--accent); }
+.list-of-tables {
+  margin: 2rem 0;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--border);
+}
+.list-of-tables h2 {
+  font-family: var(--font-display);
+  color: var(--heading);
+  font-size: 1.35rem;
+  margin: 0 0 .7rem;
+}
+.list-of-tables ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: .35rem 1.5rem;
+}
+.list-of-tables li { font-size: .8rem; color: var(--text); }
+.list-of-tables a { color: var(--accent); text-decoration: none; }
+.list-of-tables a:hover { text-decoration: underline; }
+"""
 def portal_theme_css() -> str:
     """Return the portal stylesheet preamble: same-origin fonts plus both schemes."""
 
     light = (
         f":root{{\n{css_variables('light')}\n{_aliases('light')}\n}}\n"
-        "body{font-family:var(--font-sans);color:var(--text);background:var(--canvas);"
-        "line-height:var(--body-line)}"
+        "body{font-family:var(--font-sans);font-size:var(--body-size);color:var(--text);"
+        "background:var(--canvas);line-height:var(--body-line)}"
     )
     dark = f":root{{\n{css_variables('dark')}\n{_aliases('dark')}\n}}"
     return (
@@ -296,6 +479,7 @@ def book_theme_css() -> str:
         + "\n"
         + "\n".join(BOOTSTRAP_ALIASES)
         + "\n}}"
+        + BOOK_CHROME
     )
 
 
@@ -306,7 +490,8 @@ def typst_preamble() -> str:
     colour = {role: values["print"] for role, values in tokens["color"].items()}
     lines = [
         '// Generated from design/tokens.json. Do not edit.',
-        f'#let hb-font = ("{tokens["type"]["brand"]["family"]}",)',
+        f'#let hb-font = ("{tokens["type"]["brand"]["text_family"]}",)',
+        f'#let hb-display-font = ("{tokens["type"]["brand"]["display_family"]}",)',
         f'#let hb-code-font = ("{tokens["type"]["code"]["print_family"]}",)',
     ]
     for role, value in colour.items():
@@ -322,7 +507,8 @@ def docx_values() -> dict[str, str]:
     brand = tokens["type"]["brand"]
     colour = {role: values["print"] for role, values in tokens["color"].items()}
     return {
-        "body_font": brand["docx_family"],
+        "body_font": brand["docx_text_family"],
+        "display_font": brand["docx_display_family"],
         "code_font": tokens["type"]["code"]["print_family"],
         "ink": colour["text"],
         "muted": colour["muted"],

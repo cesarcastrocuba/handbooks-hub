@@ -92,10 +92,10 @@ class DesignTokenTests(unittest.TestCase):
 
     def test_brand_typeface_is_shared_across_media(self) -> None:
         brand = self.tokens["type"]["brand"]
-        self.assertEqual(self.tokens["type"]["body"]["print_family"], brand["family"])
-        self.assertEqual(self.tokens["type"]["display"]["print_family"], brand["family"])
-        self.assertIn(brand["web_name"], self.tokens["type"]["body"]["web_family"])
-        self.assertIn(brand["web_name"], self.tokens["type"]["display"]["web_family"])
+        self.assertEqual(self.tokens["type"]["body"]["print_family"], brand["text_family"])
+        self.assertEqual(self.tokens["type"]["display"]["print_family"], brand["display_family"])
+        self.assertIn(brand["web_text_name"], self.tokens["type"]["body"]["web_family"])
+        self.assertIn(brand["web_display_name"], self.tokens["type"]["display"]["web_family"])
         self.assertEqual(self.tokens["type"]["code"]["print_family"], "JetBrains Mono")
 
     def test_web_font_assets_are_packaged_woff2(self) -> None:
@@ -111,7 +111,7 @@ class DesignTokenTests(unittest.TestCase):
         css = design.font_face_css("fonts/")
         self.assertIn("@font-face", css)
         self.assertNotIn("http", css)
-        self.assertIn("fonts/liberation-sans/HandbookSans-Regular.woff2", css)
+        self.assertIn("fonts/source-sans3/HandbookSans-Regular.woff2", css)
 
     def test_book_theme_covers_quarto_dark_and_media(self) -> None:
         css = design.book_theme_css()
@@ -125,17 +125,20 @@ class DesignTokenTests(unittest.TestCase):
     def test_portal_theme_uses_brand_font_and_both_schemes(self) -> None:
         css = design.portal_theme_css()
         self.assertIn('font-family:"Handbook Sans"', css)
+        self.assertIn('font-family:"Handbook Serif"', css)
         self.assertIn("--paper: var(--canvas);", css)
         self.assertIn("prefers-color-scheme:dark", css)
 
     def test_typst_preamble_uses_brand_fonts(self) -> None:
         typst = design.typst_preamble()
-        self.assertIn('#let hb-font = ("Liberation Sans",)', typst)
+        self.assertIn('#let hb-font = ("Handbook Sans",)', typst)
+        self.assertIn('#let hb-display-font = ("Handbook Serif",)', typst)
         self.assertIn('#let hb-code-font = ("JetBrains Mono",)', typst)
 
     def test_docx_values_name_the_compatible_family(self) -> None:
         values = design.docx_values()
-        self.assertEqual(values["body_font"], "Arial")
+        self.assertEqual(values["body_font"], "Source Sans 3")
+        self.assertEqual(values["display_font"], "Source Serif 4")
         self.assertEqual(values["code_font"], "JetBrains Mono")
         self.assertEqual(values["ink"], self.tokens["color"]["text"]["print"])
 
@@ -149,11 +152,11 @@ class DesignTokenTests(unittest.TestCase):
                 name = font["name"]
                 family = name.getDebugName(1) or ""
                 postscript = name.getDebugName(6) or ""
-                self.assertIn(family, ("Handbook Sans", "Handbook Mono"))
+                self.assertIn(family, ("Handbook Sans", "Handbook Serif", "Handbook Mono"))
                 self.assertTrue(
-                    postscript.startswith(("HandbookSans-", "HandbookMono-")), postscript
+                    postscript.startswith(("HandbookSans-", "HandbookSerif-", "HandbookMono-")), postscript
                 )
-                self.assertNotIn("LiberationSans", postscript)
+                self.assertNotIn("SourceSans", postscript)
                 self.assertIn("SIL Open Font License", name.getDebugName(13) or "")
                 self.assertIn("openfontlicense.org", name.getDebugName(14) or "")
 

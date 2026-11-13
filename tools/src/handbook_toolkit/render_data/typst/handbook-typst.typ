@@ -67,6 +67,7 @@
 }
 #set heading(numbering: handbook-numbering)
 
+#show heading: set text(font: hb-display-font)
 #show heading.where(level: 1): set text(size: 21pt, weight: "bold", fill: hb-text)
 #show heading.where(level: 2): set text(size: 14pt, weight: "bold", fill: hb-text)
 #show heading.where(level: 3): set text(size: 11.5pt, weight: "bold", fill: hb-text)
@@ -84,8 +85,16 @@
 // Every front-matter page, chapter and appendix starts on a new page.
 #show heading.where(level: 1): it => {
   pagebreak(weak: true)
+  counter(figure.where(kind: "quarto-float-tbl")).update(0)
   it
 }
+
+// Table numbers follow the chapter, as they do in HTML and DOCX. Front matter
+// has no chapter number, so its tables keep the flat number.
+#set figure(numbering: n => {
+  let chapter = counter(heading).get().first()
+  if chapter == 0 { numbering("1", n) } else { numbering("1.1", chapter, n) }
+})
 
 // Contents -------------------------------------------------------------------
 // Document Control sits on its own page after the Contents and is not listed,
@@ -112,7 +121,7 @@
 
 // Captions -------------------------------------------------------------------
 #show figure.caption: it => align(center)[
-  #text(style: "italic", font: hb-font, size: 9pt, fill: hb-muted)[#it.body]
+  #text(style: "italic", font: hb-font, size: 9pt, fill: hb-muted)[#it.supplement #it.counter.display(it.numbering): #it.body]
 ]
 #show figure.where(kind: "quarto-float-tbl"): set figure.caption(position: bottom)
 #show figure.where(kind: "quarto-float-tbl"): set block(breakable: true)
