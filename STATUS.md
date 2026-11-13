@@ -20,7 +20,7 @@ Changes reach `main` only through pull requests (`HUB-DEC-018`), with up-to-date
 
 | Item | State |
 | --- | --- |
-| `main` | `97494ee2716ee28ae373c15d2685a6b1c3ebc666`; protected by pull request and CI, also for administrators (`HUB-DEC-018`), and requires up-to-date branches (`strict=true`, `HUB-DEC-026`). The rendered-detail fixes merged as PR 42 (design, `463bdb5`), PR 43 (toolkit `0.9.1`, `f1ffe9d`) and PR 44 (catalog `v0.4.1`, `97494ee`) |
+| `main` | Release state `97494ee2716ee28ae373c15d2685a6b1c3ebc666`, status record merged as PR 45 (`f297f92`); protected by pull request and CI, also for administrators (`HUB-DEC-018`), and requires up-to-date branches (`strict=true`, `HUB-DEC-026`). The rendered-detail fixes merged as PR 42 (design, `463bdb5`), PR 43 (toolkit `0.9.1`, `f1ffe9d`) and PR 44 (catalog `v0.4.1`, `97494ee`) |
 | GitHub repositories | [hub](https://github.com/cesarcastrocuba/handbooks-hub), [sample](https://github.com/cesarcastrocuba/handbook-sample-01) and [template](https://github.com/cesarcastrocuba/handbooks-template), all public. The template repository is a generated mirror of `template/book/`, marked as a template and tagged `template-v1.4.1` at `9238849` |
 | Reference handbook | Read-only at `6a15cc211f65e148afdaa75c71a063a8084d1910` |
 | Sample repository | `v0.4.1` is the current release, published by run 43472781256 from `e1ca349` (sample `DEC-026`). `v0.4.0` and older published editions remain available. `v0.2.2`, `v0.2.3` and earlier withdrawn editions keep their tags. Introduction, 8 chapters, 3 appendices and References |

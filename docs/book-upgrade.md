@@ -39,8 +39,8 @@ Migration (`HUB-DEC-014`):
 
 1. Update `toolkit` in `book.yaml` to `"0.9.1"` and the commit in `requirements.txt`.
 2. Remove any `Tables` entry from the book `navbar` in `publishing/_quarto.yml`. The build injects the
-   List of Tables link into the book sidebar below Document Control, so the navbar entry would
-   duplicate it.
+   List of Tables link into the book sidebar below Document Control only when the page has no Tables
+   entry; a leftover navbar entry suppresses the sidebar link instead of adding a second one.
 3. Run `make check` and `make full`; rebuild HTML, PDF and DOCX and inspect the sidebar Tables link,
    the callout boxes and the List of Tables page.
 4. A book that wants the neutral review box adds the `review` class to that callout, for example
