@@ -5,7 +5,7 @@ contracts, the versioned Python toolkit, the standard editorial profile, the boo
 catalog and the static portal. Each book repository owns its canonical manuscript and publishes its
 own reading site and release downloads.
 
-Status: **Phases 1 to 5 complete, with the unified design released in toolkit `0.8.0`.** See
+Status: **Phases 1 to 5 complete, with the unified design released in toolkit `0.9.0`.** See
 [`STATUS.md`](STATUS.md) and the [implementation plan](docs/implementation-plan.md).
 
 ## Who this is for
