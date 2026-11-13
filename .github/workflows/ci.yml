@@ -74,7 +74,7 @@ jobs:
           handbook-toolkit --root . validate-references book.yaml
           handbook-toolkit --root . validate-manuscript manuscript/chapters/01-example.qmd \
             --mode chapter --profile "$GITHUB_WORKSPACE/profiles/standard/profile.yaml"
-          test "$(handbook-toolkit version)" = "handbook-toolkit 0.9.0"
+          test "$(handbook-toolkit version)" = "handbook-toolkit 0.9.1"
 
   publication-build:
     runs-on: ubuntu-24.04
