@@ -540,6 +540,12 @@ def _style_docx_table_headers(path: Path) -> None:
         members = {name: archive.read(name) for name in archive.namelist()}
     root = ET.fromstring(members["word/document.xml"])
     for table in root.iter(f"{word}tbl"):
+        # Quarto wraps a captioned float in an outer one-cell table. Styling
+        # that wrapper would paint the caption and, through the recursive run
+        # walk, the nested content too. Leave wrappers alone; style the table
+        # that actually holds the data.
+        if any(node is not table and node.tag == f"{word}tbl" for node in table.iter()):
+            continue
         rows = table.findall(f"{word}tr")
         if not rows:
             continue
