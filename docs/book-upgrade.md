@@ -27,6 +27,29 @@ profile version change may require manuscript edits. When the changelog marks a 
 incompatible, upgrade in a dedicated branch, update the affected manuscript units, and record a
 rendered review before requesting approval.
 
+## Example: toolkit 0.7.0 to 0.8.0
+
+`0.8.0` changes the visual edition without changing the manuscript contract. It replaces Liberation
+Sans/Arial with Source Sans 3 for text and Source Serif 4 for headings, both bundled as OFL subsets;
+the PDF embeds the renamed fonts and the DOCX names the upstream families. The book HTML gains
+generated chrome for the navbar, sidebar, links, title block and callouts, a compact type scale, table
+captions below each table and a List of Tables. The DOCX reference gains `Contents`, page breaks before
+top-level sections, teal first-row table headers, callout styles and a List of Tables field. The table
+width algorithm now derives a floor from the longest unbreakable token.
+
+Migration (`HUB-DEC-014`):
+
+1. Update `toolkit` in `book.yaml` to `"0.8.0"`; keep the profile pin unchanged.
+2. Replace the hub commit in `requirements.txt` with the reviewed commit that contains `0.8.0`.
+3. Run `make check` and `make full`. No manuscript change is required.
+4. Inspect the HTML, PDF and DOCX. Word populates the TOC and List of Tables fields when it updates
+   fields; LibreOffice displays their titles but not the generated entries.
+5. If the book overrides `_quarto.yml`, keep the search/repository navigation and review its custom
+   CSS: the generated book stylesheet loads before book CSS, so book rules still win where they set a
+   value.
+
+Books that stay on `0.7.0` keep their previous rendering and remain publishable.
+
 ## Example: toolkit 0.6.0 to 0.7.0
 
 `0.7.0` changes the rendered output on every surface. It adds a packaged design-token contract and
