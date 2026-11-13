@@ -428,18 +428,18 @@ BOOK_CHROME = """
   break-inside: avoid;
   page-break-inside: avoid;
 }
-.callout-note.callout { border-left: 4px solid var(--callout-note-accent); background: var(--callout-note-tint); }
-.callout-tip.callout { border-left: 4px solid var(--callout-tip-accent); background: var(--callout-tip-tint); }
-.callout-warning.callout { border-left: 4px solid var(--callout-warning-accent); background: var(--callout-warning-tint); }
-.callout-important.callout { border-left: 4px solid var(--callout-important-accent); background: var(--callout-important-tint); }
+.callout-note.callout { border-left: 4px solid var(--callout-note-accent) !important; background: var(--callout-note-tint) !important; }
+.callout-tip.callout { border-left: 4px solid var(--callout-tip-accent) !important; background: var(--callout-tip-tint) !important; }
+.callout-warning.callout { border-left: 4px solid var(--callout-warning-accent) !important; background: var(--callout-warning-tint) !important; }
+.callout-important.callout { border-left: 4px solid var(--callout-important-accent) !important; background: var(--callout-important-tint) !important; }
 .callout-note .callout-title-container,
-.callout-note .callout-title { color: var(--callout-note-accent); }
+.callout-note .callout-title { color: var(--callout-note-accent) !important; }
 .callout-tip .callout-title-container,
-.callout-tip .callout-title { color: var(--callout-tip-accent); }
+.callout-tip .callout-title { color: var(--callout-tip-accent) !important; }
 .callout-warning .callout-title-container,
-.callout-warning .callout-title { color: var(--callout-warning-accent); }
+.callout-warning .callout-title { color: var(--callout-warning-accent) !important; }
 .callout-important .callout-title-container,
-.callout-important .callout-title { color: var(--callout-important-accent); }
+.callout-important .callout-title { color: var(--callout-important-accent) !important; }
 .callout-note .callout-body-container,
 .callout-tip .callout-body-container,
 .callout-warning .callout-body-container,

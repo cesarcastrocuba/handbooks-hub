@@ -47,7 +47,7 @@ families: light web, dark web and print.
 | --- | --- | --- | --- | --- |
 | `canvas` | `#F6F1E7` | `#141A1B` | `#F6F1E7` | Page background |
 | `surface` | `#FFFDF8` | `#1C2526` | `#FFFDF8` | Cards and raised areas |
-| `table_stripe` | `#F2ECE0` | `#1F2A2B` | `#F5EFE4` | Alternate table rows |
+| `table_stripe` | `#F2ECE0` | `#1F2A2B` | `#F2ECE0` | Alternate table rows |
 | `text` | `#1D2A2C` | `#EBE6DA` | `#1D2A2C` | Body copy |
 | `muted` | `#55666A` | `#A3B0B0` | `#55666A` | Secondary copy, captions and metadata |
 | `heading` | `#1D2A2C` | `#EBE6DA` | `#1D2A2C` | Headings and structural emphasis |

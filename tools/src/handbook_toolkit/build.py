@@ -518,7 +518,9 @@ def _inject_table_index(site: Path) -> None:
 <title>List of Tables — Handbook</title>
 <link rel="stylesheet" href=".handbook-render/html/design-tokens.css">
 <link rel="stylesheet" href=".handbook-render/html/handbook.css">
-</head><body><main id="quarto-document-content" class="content"
+</head><body class="quarto-light" style="background:#F6F1E7;color:#1D2A2C">
+<style>a{{color:#0B5D5F}} h1,h2{{color:#1D2A2C;font-family:"Handbook Serif",Georgia,serif}}</style>
+<main id="quarto-document-content" class="content"
  style="max-width:1040px;margin:0 auto;padding:2rem 1.25rem">
 <p><a href="./index.html">← Back to the handbook</a></p>
 <h1 class="title">List of Tables</h1>
@@ -587,7 +589,7 @@ def _paragraph_style(paragraph: ET.Element, word: str) -> str:
 
 def _set_paragraph_box(paragraph: ET.Element, word: str, accent: str, tint: str,
                        first: bool, last: bool, keep: bool) -> None:
-    properties = paragraph.find(f"{word}pPr")
+    properties = paragraph.find(f"./{word}pPr")
     if properties is None:
         properties = ET.Element(f"{word}pPr")
         paragraph.insert(0, properties)
@@ -623,6 +625,29 @@ def _set_paragraph_box(paragraph: ET.Element, word: str, accent: str, tint: str,
     ET.SubElement(properties, f"{word}keepLines")
 
 
+def _set_table_box(table: ET.Element, word: str, tint: str) -> None:
+    for row_index, row in enumerate(table.findall(f"{word}tr")):
+        row_properties = row.find(f"./{word}trPr")
+        if row_properties is None:
+            row_properties = ET.Element(f"{word}trPr")
+            row.insert(0, row_properties)
+        if row_properties.find(f"./{word}cantSplit") is None:
+            ET.SubElement(row_properties, f"{word}cantSplit")
+        if row_index == 0:
+            continue
+        for cell in row.findall(f"{word}tc"):
+            cell_properties = cell.find(f"./{word}tcPr")
+            if cell_properties is None:
+                cell_properties = ET.Element(f"{word}tcPr")
+                cell.insert(0, cell_properties)
+            shade = cell_properties.find(f"./{word}shd")
+            if shade is None:
+                shade = ET.SubElement(cell_properties, f"{word}shd")
+            shade.set(f"{word}val", "clear")
+            shade.set(f"{word}color", "auto")
+            shade.set(f"{word}fill", tint)
+
+
 def _style_docx_callouts(root: ET.Element, word: str) -> None:
     """Turn each callout paragraph group into a continuous shaded box.
 
@@ -652,23 +677,39 @@ def _style_docx_callouts(root: ET.Element, word: str) -> None:
             continue
         group = [child]
         cursor = index + 1
+        end_marker = None
         while cursor < len(children):
             candidate = children[cursor]
+            if candidate.tag == f"{word}tbl":
+                group.append(candidate)
+                cursor += 1
+                continue
             if candidate.tag != f"{word}p":
-                break
+                cursor += 1
+                continue
             candidate_style = _paragraph_style(candidate, word)
+            if candidate_style == "CalloutEnd":
+                end_marker = candidate
+                break
             if candidate_style.startswith("Heading") or candidate_style in names:
                 break
             group.append(candidate)
             cursor += 1
         accent = tokens[kind]["accent"]["print"].lstrip("#")
         tint = tokens[kind]["tint"]["print"].lstrip("#")
-        for position, paragraph in enumerate(group):
-            _set_paragraph_box(
-                paragraph, word, accent, tint,
-                first=position == 0, last=position == len(group) - 1,
-                keep=position < len(group) - 1,
-            )
+        units = 0
+        for position, block in enumerate(group):
+            if block.tag == f"{word}p":
+                _set_paragraph_box(
+                    block, word, accent, tint,
+                    first=position == 0, last=position == len(group) - 1,
+                    keep=position < len(group) - 1,
+                )
+            else:
+                _set_table_box(block, word, tint)
+        if end_marker is not None:
+            body.remove(end_marker)
+            children.remove(end_marker)
         index = cursor
 
 
@@ -680,11 +721,11 @@ def _style_docx_stripes(root: ET.Element, word: str) -> None:
         for row_index, row in enumerate(table.findall(f"{word}tr")[1:]):
             if row_index % 2 == 0:
                 continue
-            properties = row.find(f"{word}trPr")
+            properties = row.find(f"./{word}trPr")
             if properties is None:
                 properties = ET.Element(f"{word}trPr")
                 row.insert(0, properties)
-            shade = properties.find(f"{word}shd")
+            shade = properties.find(f"./{word}shd")
             if shade is None:
                 shade = ET.SubElement(properties, f"{word}shd")
             shade.set(f"{word}val", "clear")
@@ -716,33 +757,33 @@ def _style_docx_table_headers(path: Path) -> None:
         if not rows:
             continue
         header = rows[0]
-        properties = header.find(f"{word}trPr")
+        properties = header.find(f"./{word}trPr")
         if properties is None:
             properties = ET.Element(f"{word}trPr")
             header.insert(0, properties)
-        if properties.find(f"{word}tblHeader") is None:
+        if properties.find(f"./{word}tblHeader") is None:
             ET.SubElement(properties, f"{word}tblHeader")
         for cell in header.findall(f"{word}tc"):
-            cell_properties = cell.find(f"{word}tcPr")
+            cell_properties = cell.find(f"./{word}tcPr")
             if cell_properties is None:
                 cell_properties = ET.Element(f"{word}tcPr")
                 cell.insert(0, cell_properties)
-            shade = cell_properties.find(f"{word}shd")
+            shade = cell_properties.find(f"./{word}shd")
             if shade is None:
                 shade = ET.SubElement(cell_properties, f"{word}shd")
             shade.set(f"{word}val", "clear")
             shade.set(f"{word}color", "auto")
             shade.set(f"{word}fill", "0B5D5F")
             for run in cell.iter(f"{word}r"):
-                run_properties = run.find(f"{word}rPr")
+                run_properties = run.find(f"./{word}rPr")
                 if run_properties is None:
                     run_properties = ET.Element(f"{word}rPr")
                     run.insert(0, run_properties)
-                if run_properties.find(f"{word}b") is None:
+                if run_properties.find(f"./{word}b") is None:
                     ET.SubElement(run_properties, f"{word}b")
-                if run_properties.find(f"{word}bCs") is None:
+                if run_properties.find(f"./{word}bCs") is None:
                     ET.SubElement(run_properties, f"{word}bCs")
-                colour = run_properties.find(f"{word}color")
+                colour = run_properties.find(f"./{word}color")
                 if colour is None:
                     colour = ET.SubElement(run_properties, f"{word}color")
                 colour.set(f"{word}val", "FFFFFF")
@@ -756,13 +797,20 @@ def _style_docx_table_headers(path: Path) -> None:
         text = "".join(node.text or "" for node in paragraph.iter(f"{word}t")).strip()
         if not text.startswith("Table"):
             continue
-        properties = paragraph.find(f"{word}pPr")
-        if properties is None:
-            properties = ET.Element(f"{word}pPr")
-            paragraph.insert(0, properties)
-        for existing in properties.findall(f"{word}jc"):
-            properties.remove(existing)
-        align = ET.SubElement(properties, f"{word}jc")
+        properties = paragraph.findall(f"./{word}pPr")
+        if not properties:
+            properties = [ET.Element(f"{word}pPr")]
+            paragraph.insert(0, properties[0])
+        canonical = next(
+            (value for value in properties if value.find(f"./{word}pStyle") is not None),
+            properties[0],
+        )
+        for value in properties:
+            if value is not canonical:
+                paragraph.remove(value)
+        for existing in canonical.findall(f"./{word}jc"):
+            canonical.remove(existing)
+        align = ET.SubElement(canonical, f"{word}jc")
         align.set(f"{word}val", "center")
     background = ET.Element(f"{word}background")
     background.set(f"{word}color", "F6F1E7")

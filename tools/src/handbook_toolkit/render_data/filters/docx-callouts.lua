@@ -30,5 +30,9 @@ function Div(el)
     el.content,
     pandoc.Attr("", {}, { ["custom-style"] = "Callout" .. name .. "Body" })
   )
-  return pandoc.Div({ title, body })
+  local end_marker = pandoc.Div(
+    { pandoc.Para({ pandoc.Str(" ") }) },
+    pandoc.Attr("", {}, { ["custom-style"] = "CalloutEnd" })
+  )
+  return pandoc.Div({ title, body, end_marker })
 end
