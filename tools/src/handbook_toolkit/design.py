@@ -438,6 +438,12 @@ BOOK_CHROME = """
 .list-of-tables li { font-size: .8rem; color: var(--text); }
 .list-of-tables a { color: var(--accent); text-decoration: none; }
 .list-of-tables a:hover { text-decoration: underline; }
+@media (max-width: 600px) {
+  html, body { max-width: 100%; overflow-x: hidden; }
+  #quarto-document-content, main.content, .page-columns { min-width: 0; max-width: 100%; }
+  #quarto-document-content table { display: block; width: 100%; overflow-x: auto; }
+  #quarto-document-content pre { max-width: 100%; overflow-x: auto; }
+}
 """
 def portal_theme_css() -> str:
     """Return the portal stylesheet preamble: same-origin fonts plus both schemes."""

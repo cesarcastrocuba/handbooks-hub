@@ -22,11 +22,13 @@ import posixpath
 from html import escape
 import html
 import re
+import xml.etree.ElementTree as ET
 import shutil
 import subprocess
 import tempfile
 from typing import Any
 import zipfile
+from zipfile import ZIP_DEFLATED, ZipFile
 import zlib
 
 import yaml
@@ -515,11 +517,72 @@ def _inject_table_index(site: Path) -> None:
         f"<ul>{items}</ul></section>"
     )
     text = index.read_text(encoding="utf-8")
-    if "</header>" in text:
-        text = text.replace("</header>", "</header>\n" + section, 1)
+    main = text.find("<main")
+    section_at = text.find("<section", main if main >= 0 else 0)
+    if section_at >= 0:
+        text = text[:section_at] + section + "\n" + text[section_at:]
     elif "</main>" in text:
         text = text.replace("</main>", section + "\n</main>", 1)
     index.write_text(text, encoding="utf-8")
+
+
+def _style_docx_table_headers(path: Path) -> None:
+    """Apply direct header formatting to every DOCX table.
+
+    Word and LibreOffice treat table-style ``firstRow`` conditionals
+    differently. Direct run colour plus cell shading makes the header reliable
+    in both, and ``tblHeader`` repeats it across a page break.
+    """
+
+    namespace = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    word = "{%s}" % namespace
+    with ZipFile(path) as archive:
+        members = {name: archive.read(name) for name in archive.namelist()}
+    root = ET.fromstring(members["word/document.xml"])
+    for table in root.iter(f"{word}tbl"):
+        rows = table.findall(f"{word}tr")
+        if not rows:
+            continue
+        header = rows[0]
+        properties = header.find(f"{word}trPr")
+        if properties is None:
+            properties = ET.Element(f"{word}trPr")
+            header.insert(0, properties)
+        if properties.find(f"{word}tblHeader") is None:
+            ET.SubElement(properties, f"{word}tblHeader")
+        for cell in header.findall(f"{word}tc"):
+            cell_properties = cell.find(f"{word}tcPr")
+            if cell_properties is None:
+                cell_properties = ET.Element(f"{word}tcPr")
+                cell.insert(0, cell_properties)
+            shade = cell_properties.find(f"{word}shd")
+            if shade is None:
+                shade = ET.SubElement(cell_properties, f"{word}shd")
+            shade.set(f"{word}val", "clear")
+            shade.set(f"{word}color", "auto")
+            shade.set(f"{word}fill", "0B5D5F")
+            for run in cell.iter(f"{word}r"):
+                run_properties = run.find(f"{word}rPr")
+                if run_properties is None:
+                    run_properties = ET.Element(f"{word}rPr")
+                    run.insert(0, run_properties)
+                if run_properties.find(f"{word}b") is None:
+                    ET.SubElement(run_properties, f"{word}b")
+                if run_properties.find(f"{word}bCs") is None:
+                    ET.SubElement(run_properties, f"{word}bCs")
+                colour = run_properties.find(f"{word}color")
+                if colour is None:
+                    colour = ET.SubElement(run_properties, f"{word}color")
+                colour.set(f"{word}val", "FFFFFF")
+    ET.register_namespace("w", namespace)
+    members["word/document.xml"] = ET.tostring(
+        root, encoding="utf-8", xml_declaration=True
+    )
+    temporary = path.with_suffix(".tmp.docx")
+    with ZipFile(temporary, "w", ZIP_DEFLATED) as archive:
+        for name, data in members.items():
+            archive.writestr(name, data)
+    temporary.replace(path)
 
 
 def _payload_paths(workspace: Path, dist: Path, epoch: int) -> dict[str, Path]:
@@ -545,6 +608,7 @@ def _payload_paths(workspace: Path, dist: Path, epoch: int) -> dict[str, Path]:
     docx = _one_file(output, ".docx")
     shutil.copy2(pdf, dist / PAYLOADS["pdf"])
     shutil.copy2(docx, dist / PAYLOADS["docx"])
+    _style_docx_table_headers(dist / PAYLOADS["docx"])
     return {
         "html": dist / PAYLOADS["html"],
         "pdf": dist / PAYLOADS["pdf"],

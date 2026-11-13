@@ -404,6 +404,11 @@ class BuildTests(unittest.TestCase):
                 self.assertEqual(archive.comment.decode("ascii"), commit)
             with zipfile.ZipFile(output / "book-html.zip") as archive:
                 site = archive.read("index.html").decode("utf-8")
+            with zipfile.ZipFile(output / "book.docx") as archive:
+                document_xml = archive.read("word/document.xml").decode("utf-8")
+            self.assertIn("0B5D5F", document_xml)
+            self.assertIn("FFFFFF", document_xml)
+            self.assertIn("tblHeader", document_xml)
             self.assertIn("Table&nbsp;1.1", site)
             self.assertIn("List of Tables", site)
             self.assertIn('href="index.html#tbl-', site)
