@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 from pathlib import Path, PurePosixPath
+import posixpath
 import re
 from typing import Any
 import zipfile
 import yaml
 from . import design
 from .manuscript import validate_manuscript
+from .references import FENCE, IMAGE
 
 from .build_types import BuildError
 
@@ -125,12 +127,53 @@ def _transform_chapter(text: str, chapter_number: int) -> str:
             previous = line
     return "\n".join(output).rstrip() + "\n"
 
+def _is_local_path(target: str) -> bool:
+    return not (target.startswith(("/", "#")) or re.match(r"[A-Za-z][A-Za-z0-9+.-]*:", target))
+
+
+def _rebase_image(match: re.Match[str], directory: PurePosixPath) -> str:
+    target = match.group(1)
+    bare = target[1:-1] if target.startswith("<") else target
+    if not _is_local_path(bare):
+        return match.group(0)
+    rebased = posixpath.normpath((directory / bare).as_posix())
+    start, end = match.span(1)
+    replacement = f"<{rebased}>" if target.startswith("<") else rebased
+    return match.string[match.start():start] + replacement + match.string[end:match.end()]
+
+
+def _rebase_images(text: str, directory: PurePosixPath) -> str:
+    """Point the relative images of a page at *directory*, the place the page was written in.
+
+    The first page is staged at the project root as ``index.qmd``; its images still live next to
+    its source. Fenced code and inline code are left alone.
+    """
+
+    if directory == PurePosixPath("."):
+        return text
+    lines: list[str] = []
+    fence = ""
+    for line in text.split("\n"):
+        marker = FENCE.match(line)
+        if marker and not fence:
+            fence = marker.group(1)
+        elif marker and marker.group(1)[0] == fence[0] and len(marker.group(1)) >= len(fence):
+            fence = ""
+        elif not fence:
+            spans = line.split("`")
+            spans[::2] = [IMAGE.sub(lambda match: _rebase_image(match, directory), span) for span in spans[::2]]
+            line = "`".join(spans)
+        lines.append(line)
+    return "\n".join(lines)
+
+
 def _prepare_render(workspace: Path, entries: list[str]) -> list[str]:
     """Create root index and transformed chapter files for Quarto.
 
-    The first reading-order file becomes ``index.qmd`` so Quarto has a home page without a
-    separate generated chapter. Other chapter/appendix files are transformed in place in the
-    private staging workspace. Canonical source in the commit is untouched.
+    Every reading-order file is transformed in place in the private staging workspace. The first
+    one is also staged as ``index.qmd`` so Quarto has a home page without a separate generated
+    chapter; that copy has its images rebased, because it no longer sits in its source directory.
+    Canonical source in the commit is untouched.
     """
 
     if not entries:
@@ -142,8 +185,10 @@ def _prepare_render(workspace: Path, entries: list[str]) -> list[str]:
     except OSError as exc:
         raise BuildError(f"cannot read staged chapter {first}: {exc}") from exc
     index_text = _transform_chapter(first_text, 1)
-    (workspace / ".handbook-index-source-dir").write_text(str(PurePosixPath(first).parent))
-    (workspace / "index.qmd").write_text(index_text, encoding="utf-8")
+    first_path.write_text(index_text, encoding="utf-8")
+    (workspace / "index.qmd").write_text(
+        _rebase_images(index_text, PurePosixPath(first).parent), encoding="utf-8"
+    )
 
     rendered: list[str] = ["index.qmd"]
     chapter_number = 1
@@ -205,9 +250,6 @@ def _render_config(
             "at": "pre-ast",
             "path": resources["filters/index-resources.lua"].relative_to(workspace).as_posix(),
         })
-        origin = workspace / ".handbook-index-source-dir"
-        if origin.is_file():
-            config["handbook-index-source-dir"] = origin.read_text()
 
     def staged(name: str) -> str:
         return resources[name].relative_to(workspace).as_posix()

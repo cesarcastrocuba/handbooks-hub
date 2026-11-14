@@ -1,18 +1,7 @@
--- The first canonical page is staged as index.qmd. Rebase its relative images once,
--- before any writer consumes them, rather than repairing each rendered format.
-local base = ""
+-- A book whose own first page is the root index.qmd keeps that page under a web-only name,
+-- because the reading site's cover takes index.qmd. Links to it follow the new name.
+-- Images need no filter: the toolkit rebases the staged first page's images before rendering.
 local source_alias = ""
-local function rebase_image(image)
-  local input = quarto.doc.input_file
-  if pandoc.path.filename(input) ~= "index.qmd" or base == "" then
-    return nil
-  end
-  if image.src:match("^%a[%w+.-]*:") or image.src:sub(1, 1) == "/" then
-    return nil
-  end
-  image.src = pandoc.path.normalize(pandoc.path.join({base, image.src}))
-  return image
-end
 
 local function rebase_link(link)
   if not FORMAT:match("html") or source_alias == "" then return nil end
@@ -28,6 +17,5 @@ local function rebase_link(link)
 end
 
 return {{Meta = function(meta)
-  base = pandoc.utils.stringify(meta["handbook-index-source-dir"] or "")
   source_alias = pandoc.utils.stringify(meta["handbook-root-source-index"] or "")
-end}, {Image = rebase_image, Link = rebase_link}}
+end}, {Link = rebase_link}}
