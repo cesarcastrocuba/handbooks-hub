@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .books import validate_book
 from .catalog import validate_catalog
+from .doc_currency import check_documentation_currency
 from .profiles import validate_profile
 from .validation import CheckResult, DocumentError, Issue, load_schema_source
 
@@ -106,7 +107,7 @@ def verify_repository(
     """Run the hub's deterministic checks.
 
     Schemas come from the installed toolkit package unless *schemas* overrides the directory.
-    Full mode adds documentation links and manuscript completeness.
+    Full mode adds documentation links, documentation currency and manuscript completeness.
     """
 
     root = root.resolve()
@@ -133,5 +134,6 @@ def verify_repository(
 
     if full:
         results.append(check_documentation_links(root))
+        results.append(check_documentation_currency(root))
 
     return results
