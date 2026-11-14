@@ -20,7 +20,7 @@ pull requests (`HUB-DEC-018`), with up-to-date branches (`HUB-DEC-026`).
 
 | Item | State |
 | --- | --- |
-| `main` | Release state `2e294388ea4e4039744b14e4164301f6c085f587`, the merge of PR 49; protected by pull request and CI, also for administrators (`HUB-DEC-018`), and requires up-to-date branches (`strict=true`, `HUB-DEC-026`). The Word-field fixes merged as PR 46 to PR 49 (change `0029`) |
+| `main` | Release state `2e294388ea4e4039744b14e4164301f6c085f587`, the merge of PR 49; protected by pull request and CI, also for administrators (`HUB-DEC-018`), and requires up-to-date branches (`strict=true`, `HUB-DEC-026`). The Word-field fixes merged as PR 49 (change `0029`) |
 | GitHub repositories | [hub](https://github.com/cesarcastrocuba/handbooks-hub), [sample](https://github.com/cesarcastrocuba/handbook-sample-01) and [template](https://github.com/cesarcastrocuba/handbooks-template), all public. The template repository is a generated mirror of `template/book/`, marked as a template and tagged `template-v1.4.1` at `9238849`; tag `template-v1.4.2` is pending the export after this release |
 | Reference handbook | Read-only at `6a15cc211f65e148afdaa75c71a063a8084d1910` |
 | Sample repository | `v0.4.1` is the current release, published by run 43472781256 from `e1ca349` (sample `DEC-026`). `v0.4.0` and older published editions remain available. `v0.2.2`, `v0.2.3` and earlier withdrawn editions keep their tags. Its upgrade to toolkit `0.9.2` is pending. Introduction, 8 chapters, 3 appendices and References |
