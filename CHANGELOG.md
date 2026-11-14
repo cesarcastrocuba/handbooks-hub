@@ -3,6 +3,14 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
+## [1.5.0] - 2026-11-14
+
+Template release. Template `1.5.0` pins toolkit `0.10.1` (`d4480f9`) and adapts the shipped Quarto
+configuration to the new reading site: `publishing/_quarto.yml` already selects `dark: cosmo` and has
+no legacy navbar Tables entry, so the `0.9.2` to `0.10.0` upgrade note requires no further template
+change. Toolkit `0.10.0` was tagged but is not pinned by any template or book, because `0.10.1` fixes
+its figure-path defect in the PDF and DOCX editions (change `0037`).
+
 ## [0.10.1] - 2026-11-14
 
 ### Fixed
