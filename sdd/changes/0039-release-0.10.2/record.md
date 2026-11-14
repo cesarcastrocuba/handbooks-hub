@@ -20,8 +20,8 @@ Also on `main` since `0.10.1` and shipped in `0.10.2`:
 - The `design-preview` command that renders the living style guide from the packaged tokens.
 - Markdown figure and table numbering aligned with the other editions (change `0041`, PR 67).
 
-The development tooling merged in the same window does not change the toolkit API: CI actions are
-pinned by commit and `requirements-dev.txt` by version (change `0040`, PR 66).
+Change `0040` (PR 66, pinned CI actions and development dependencies) and change `0041` (PR 67,
+Markdown figure and table numbering) are part of `0.10.2`.
 
 Template `1.5.1` carries the pin and the version statements. The `0.10.1` to `0.10.2` note in
 `docs/book-upgrade.md` asks a book to install `libreoffice-writer` and pass
@@ -33,13 +33,17 @@ other template file changes.
 | File | Value |
 | --- | --- |
 | `template/book/book.yaml` | `toolkit: "0.10.2"` |
-| `template/book/requirements.txt` | `handbook-toolkit @ git+https://github.com/cesarcastrocuba/handbooks-hub.git@5e3c6b9c9e38bc17324fba1642fc8646f6f7f444#subdirectory=tools` |
+| `template/book/requirements.txt` | `handbook-toolkit @ git+https://github.com/cesarcastrocuba/handbooks-hub.git@efc4c40c9c22fb5e5d2f50bf4cde189f304d0146#subdirectory=tools` |
 | `template/book/README.md` | heading `# Book template 1.5.1`, pins toolkit `0.10.2` |
 | `.github/workflows/ci.yml` | no edit: `template-install` derives the expected version from `template/book/book.yaml` |
 
-`5e3c6b9c9e38bc17324fba1642fc8646f6f7f444` is the commit tag `toolkit-v0.10.2` points to. The tag
-is created only after the Owner opens the CI-built edition preview `book.docx` in desktop Word and
-confirms the indexes, F9 on each and the banding; the approved preview is the acceptance record.
+`efc4c40c9c22fb5e5d2f50bf4cde189f304d0146` is the commit tag `toolkit-v0.10.2` points to.
+
+The Owner tested the CI-built `book.docx` in desktop Word twice on 2026-11-14: the first build kept
+the indexes but Word emptied the caption lists on "Update entire table", and after the caption-marker
+fix of PR 70 the Owner accepted the new build. The two tests and their results are recorded in
+[change `0038`'s owner test](../0038-word-indexes/owner-test.md); that acceptance is why the tag
+exists.
 
 ## Steps still to run after merge
 

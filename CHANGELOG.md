@@ -5,7 +5,7 @@ semantic versioning once the toolkit is published.
 
 ## [1.5.1] - 2026-11-14
 
-Template release. Template `1.5.1` pins toolkit `0.10.2` (`5e3c6b9`). The release workflow already
+Template release. Template `1.5.1` pins toolkit `0.10.2` (`efc4c40`). The release workflow already
 installs LibreOffice and passes `--require-page-numbers` (change `0038`), so the book's indexes open
 with cached page numbers; no other template file changes for the `0.10.1` to `0.10.2` upgrade.
 
