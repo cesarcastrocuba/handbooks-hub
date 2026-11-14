@@ -3,6 +3,12 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
+## [1.5.1] - 2026-11-14
+
+Template release. Template `1.5.1` pins toolkit `0.10.2` (`5e3c6b9`). The release workflow already
+installs LibreOffice and passes `--require-page-numbers` (change `0038`), so the book's indexes open
+with cached page numbers; no other template file changes for the `0.10.1` to `0.10.2` upgrade.
+
 ## [0.10.2] - 2026-11-14
 
 The Markdown edition now uses native chapter-aware figure, table and listing labels and cross-
