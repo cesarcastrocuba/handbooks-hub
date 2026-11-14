@@ -27,6 +27,22 @@ profile version change may require manuscript edits. When the changelog marks a 
 incompatible, upgrade in a dedicated branch, update the affected manuscript units, and record a
 rendered review before requesting approval.
 
+## Example: toolkit 0.9.1 to 0.9.2
+
+Toolkit 0.9.2 fixes Word style definitions and replaces the static List of Tables with native
+contents/caption fields. Their linked cached entries are visible without updating fields.
+Until page numbers are known, each cached entry is its linked title only, with no dangling dot
+leader. Open the document in desktop Word and update fields to generate the paginated result. The package requests updates, but a viewer may require confirmation or an
+explicit update. Desktop Word was not available during implementation; structural validation
+and a LibreOffice conversion are evidence, not a guarantee of every Word viewer's behavior.
+
+Update the toolkit field in book.yaml to "0.9.2" and pin the reviewed toolkit commit in
+requirements.txt. Run make full, rebuild all editions, inspect callout titles and banded tables,
+and check Contents, List of Tables and (when the book has figures) List of Figures.
+No manuscript edit is required. Existing caption bookmarks are normalized to Word-compatible
+identifiers and internal hyperlinks/REF/PAGEREF fields are updated together. HTML labels are
+unchanged. Fonts are not embedded; install the brand fonts for the intended metrics.
+
 ## Example: toolkit 0.9.0 to 0.9.1
 
 `0.9.1` fixes the rendered details of the 0.9 design. The hub and book share a 1300 px desktop

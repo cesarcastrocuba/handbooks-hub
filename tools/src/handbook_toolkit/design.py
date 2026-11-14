@@ -449,9 +449,8 @@ div.callout.review { border-left-color: var(--callout-review-accent) !important;
 .callout-important .callout-body-container { background: transparent; }
 .page-navigation a { color: var(--accent); }
 .list-of-tables {
-  margin: 2rem 0;
-  padding-top: 1.4rem;
-  border-top: 1px solid var(--border);
+  margin: 0 0 2rem;
+  padding-top: 0;
 }
 .list-of-tables h2 {
   font-family: var(--font-display);
@@ -568,5 +567,18 @@ def docx_values() -> dict[str, str]:
         "accent": colour["accent"],
         "rule": colour["border"],
         "heading": colour["heading"],
+        "canvas": colour["canvas"],
+        "stripe": colour["table_stripe"],
+        "on_solid": colour["on_solid"],
+        "accent_solid": colour["accent_solid"],
+        **{f"callout_{kind}_{part}": values[part]["print"]
+           for kind, values in tokens["callout"].items() for part in ("accent", "tint")},
     }
 
+
+
+def docx_callout_styles() -> dict[str, dict[str, str]]:
+    """Names shared by the reference generator and staged Pandoc filter."""
+    return {kind: {part: f"Callout {kind.title()} {part.title()}"
+                   for part in ("title", "body")}
+            for kind in load_tokens()["callout"]}

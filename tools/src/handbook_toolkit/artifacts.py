@@ -16,6 +16,7 @@ import zlib
 import yaml
 
 from .books import READING_KEYS
+from .docx_validation import validate_docx
 from .validation import Issue, load_packaged_schema, schema_issues
 
 MAX_MEMBERS = 20000
@@ -256,6 +257,7 @@ def inspect_payload(
                         element.text and element.text.strip() for element in document.iter(namespace + "t")
                     ):
                         raise ValueError("DOCX has no Word document text")
+                    validate_docx(archive)
                 else:
                     _source(archive, names, source_commit)
         else:

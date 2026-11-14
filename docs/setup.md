@@ -82,7 +82,8 @@ make full
 `jsonschema`/`PyYAML` dependencies, plus `fonttools` and `brotli` for the font tests.
 
 - `make check` runs the unit tests and the fast validators.
-- `make full` runs the same checks plus documentation-link and full template checks.
+- `make full` runs the same checks plus documentation-link, documentation-currency and full
+  template checks.
 - `.venv/` is ignored by Git. The hub's checks do not scan it.
 
 The critical path note: an **external** temporary venv is not proof that this in-repo `.venv`

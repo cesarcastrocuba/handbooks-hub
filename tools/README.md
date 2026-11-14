@@ -55,7 +55,9 @@ Version `0.5.0` validates:
     are special sections and are exempt from the ordinary section shape;
   - fenced code is excluded with delimiter-length-aware fences; unclosed/malformed callouts,
     duplicates, missing body text and misordering/wrong forms are reported;
-- repository-required files and, in full mode, relative documentation links.
+- repository-required files and, in full mode, relative documentation links and documentation
+  currency: the toolkit, template and catalog versions stated in `README.md` and `STATUS.md` must
+  match the files that own them.
 
 The manuscript validator checks **structure only**. It does not judge meaning, factual accuracy, prose
 quality or whether a diagram/table is useful, and it never requires visuals. The local publication build supplies the packaged reference gate and render resources, requires the book toolkit pin to match the builder (use `--preview` only for an explicit non-release preview), validates staged manuscript structure with the book profile (packaged by default, explicit override available), renders only HTML/Typst/DOCX with `--no-execute`, and uses the shared publication/artifact modules. It stages only tracked files from an exact clean commit, renders HTML/Typst/DOCX once, inspects all payloads, writes and verifies the manifest/checksums, then atomically exposes the final directory. It does not publish. See [`docs/publication-build.md`](../docs/publication-build.md). The reference resolver and portal generator remain separate work.
