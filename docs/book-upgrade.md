@@ -209,3 +209,12 @@ Favicon, description, Open Graph, Twitter metadata and canonical links use nativ
 Motion uses native CSS progressively and is disabled by the reduced-motion preference. No script
 or external resource is added. The warning title accent is slightly darker to meet normal-text AA
 on its tint (4.57:1); the DOCX reference is regenerated from that same token.
+
+## Toolkit 0.10.0 to 0.10.1
+
+Toolkit `0.10.0` cannot build the PDF or the DOCX of a book that has a figure in any page other
+than the first while its first page lives in a different directory (for example an introduction
+under `front-matter/` and a figure in `chapters/`). Quarto stops with "file not found" for a path
+such as `manuscript/chapters/manuscript/front-matter/../images/figure.svg`. Do not pin `0.10.0`;
+pin `0.10.1`. No manuscript or configuration edit is required: image paths stay relative to the
+file that uses them.
