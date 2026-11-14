@@ -11,6 +11,13 @@ semantic versioning once the toolkit is published.
 - Render nonempty table, figure and listing indexes as native Quarto pages without HTML repair.
 - Separate publication orchestration, staging, identity and edition packaging into focused modules.
 
+## [1.4.2] - 2026-11-14
+
+Template release. Template `1.4.2` pins toolkit `0.9.2` (`2e29438`) and changes nothing else: the
+`0.9.1` to `0.9.2` upgrade note requires no manuscript or configuration edit. The hub
+`template-install` job derives the expected version from `template/book/book.yaml`, so the pin is the
+only update it needs.
+
 ## [0.9.2] - 2026-11-13
 
 ### Fixed
