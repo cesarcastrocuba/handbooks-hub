@@ -62,7 +62,18 @@ claim full schema validation of arbitrary external Word extensions. Development 
 the Open XML SDK OpenXmlValidator with the Office 2019 profile; the SDK is not a build dependency.
 
 The real-build fixture generates an original PNG and checks the PDF List of Figures, DOCX image
-part, and HTML image asset. When soffice and pdftotext are available, its smoke test converts
-the DOCX to PDF and checks that Contents, List of Tables and List of Figures each show their cached
-entries. Publication-build CI installs both tools; the conversion test explicitly skips when
-they are absent locally. This does not replace opening the document in desktop Word.
+part, and HTML image asset. Its smoke test converts the DOCX to PDF and checks that Contents, List of Tables and List of
+Figures each show their cached entries and that fresh named destinations match their numbers.
+Publication-build CI installs LibreOffice and Poppler; the conversion test skips only when
+soffice is absent locally (the real build itself requires Quarto and Poppler). This does not replace opening the document in desktop Word.
+
+Toolkit 0.10.2 also rejects every w:dirty attribute, TC result separators, empty/non-numeric
+PAGEREF caches in indexes, table cells whose last block is not a paragraph, and w:updateFields.
+Each invariant has passing and failing XML fixtures. A multi-page real-build fixture compares
+cached numbers against a fresh LibreOffice PDF's named destinations, not a caption-text search.
+Strict release builds require LibreOffice Writer and pdfinfo. Optional local builds report
+unavailable/failed probes on stderr and in the manifest and keep linked titles only. All builds
+reject nonconvergent caches. Decimal section restarts are mapped to logical pages; unsupported
+formats cannot produce guessed numbers. The Owner checks populated indexes without a prompt,
+F9 regeneration of all three, and visible banding in desktop Word before tagging. These caches
+reflect LibreOffice pagination, and F9 replaces them with Word's pagination.

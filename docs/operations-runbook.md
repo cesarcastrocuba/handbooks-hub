@@ -96,12 +96,15 @@ in `PREVIEW.md`; `--require-tools` turns a missing tool into a failure, as in CI
 release, the Owner downloads the artifact of the pull request that is about to merge
 (`gh run download RUN_ID -n edition-preview-sample`) and checks:
 
-1. **Word.** Open `edition/book.docx` in desktop Word and accept the prompt to update fields.
+1. **Word.** Open `edition/book.docx` in desktop Word: indexes must be populated without an update prompt.
    - Callout titles are bold and carry their role colour.
-   - "Contents" lists the headings with page numbers.
+   - "Contents" lists the headings with cached page numbers on open.
    - Each list (tables, figures) shows its entries with page numbers, and an entry jumps to its
      target.
    - Captioned tables show their banding; tables inside callouts do not.
+   - Click each of Contents, List of Tables and List of Figures and press F9 (Update entire table).
+     Each must regenerate correctly. The initial cached numbers use LibreOffice pagination with
+     packaged fonts; F9 gives desktop Word's pagination. Verify both states before tagging.
    - Text uses the brand fonts, or the declared fallback when they are not installed.
 2. **Other viewers.** `libreoffice/book-docx-as-libreoffice.pdf` shows "Contents" and the lists with
    entries, not empty headings.

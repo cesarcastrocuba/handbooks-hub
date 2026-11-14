@@ -133,6 +133,7 @@ def command_build(args: argparse.Namespace) -> int:
             quarto=args.quarto,
             mode=args.mode,
             preview=args.preview,
+            require_page_numbers=args.require_page_numbers,
         )
     except (BuildError, DocumentError, OSError, ValueError) as exc:
         print(f"BUILD: FAILED: {exc}", file=sys.stderr)
@@ -271,6 +272,8 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="explicit non-release preview: allow a book.yaml toolkit pin that differs from the builder",
     )
+    build.add_argument("--require-page-numbers", action="store_true",
+                       help="require verified LibreOffice page numbers in native Word indexes")
     build.set_defaults(func=command_build)
 
     references = subparsers.add_parser(

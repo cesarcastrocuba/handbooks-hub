@@ -158,11 +158,6 @@ def table_style() -> str:
         ET.SubElement(runs, W + "color", {W + "val": values["on_solid"]})
         ET.SubElement(ET.SubElement(first, W + "tcPr"), W + "shd", {
             W + "val": "clear", W + "color": "auto", W + "fill": values["accent_solid"]})
-        if identifier == "Table":
-            for band, color in (("band1Horz", values["canvas"]), ("band2Horz", values["stripe"])):
-                conditional = ET.SubElement(style, W + "tblStylePr", {W + "type": band})
-                ET.SubElement(ET.SubElement(conditional, W + "tcPr"), W + "shd", {
-                    W + "val": "clear", W + "color": "auto", W + "fill": color})
     register_namespaces()
     return "".join(ET.tostring(child, encoding="unicode") for child in root)
 

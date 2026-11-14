@@ -5,7 +5,7 @@ from xml.etree import ElementTree as ET
 from zipfile import ZipFile
 
 from .docx_fields import bookmark_name, reference_target
-from .docx_xml import W, ORDER, fields
+from .docx_xml import W, ORDER, fields, text_of, style_of
 
 
 def _properties(root: ET.Element) -> None:
@@ -86,4 +86,25 @@ def validate_docx(archive: ZipFile) -> None:
     _styles(roots, styles)
     for root in roots:
         _properties(root)
+        for node in root.iter():
+            if W + 'dirty' in node.attrib:
+                raise ValueError('DOCX must not mark fields dirty')
+            if node.tag == W + 'updateFields':
+                raise ValueError('DOCX must not request field updates on open')
+            if node.tag == W + 'tc':
+                blocks = [child for child in node if child.tag in {W + tag for tag in ('p', 'tbl', 'sdt', 'customXml', 'altChunk')}]
+                if not blocks or blocks[-1].tag != W + 'p':
+                    raise ValueError('DOCX table cell must end in a paragraph')
+        for paragraph in root.iter(W + 'p'):
+            if style_of(paragraph) in {'TOC1', 'TOC2', 'TOC3'}:
+                for simple in paragraph.iter(W + 'fldSimple'):
+                    if simple.get(W + 'instr', '').strip().startswith('PAGEREF ') and not text_of(simple).isdecimal():
+                        raise ValueError('DOCX cached PAGEREF must have a numeric result')
+        for item in fields(root):
+            if item.instruction.startswith('TC ') and item.separated:
+                raise ValueError('DOCX TC field must not have a separator')
+            if item.in_index and item.instruction.startswith('PAGEREF '):
+                result = ''.join(node.text or '' for node in item.result).strip()
+                if not result.isdecimal():
+                    raise ValueError('DOCX cached PAGEREF must have a numeric result')
     _references(roots)

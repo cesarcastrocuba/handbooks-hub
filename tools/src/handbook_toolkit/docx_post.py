@@ -203,8 +203,8 @@ def _normalise_cell_paragraph(paragraph: ET.Element, word: str) -> None:
         properties[0],
     )
     for value in properties:
-        if value is not canonical:
-            paragraph.remove(value)
+        paragraph.remove(value)
+    paragraph.insert(0, canonical)
     for existing in canonical.findall(f"./{word}jc"):
         canonical.remove(existing)
     align = ET.SubElement(canonical, f"{word}jc")
@@ -331,6 +331,34 @@ def _format_table_headers(root: ET.Element, word: str) -> None:
                 colour.set(f"{word}val", design.docx_values()["on_solid"].lstrip("#"))
 
 
+def _band_table_cells(root: ET.Element) -> None:
+    from .docx_xml import W
+    values = design.docx_values()
+    for table in root.iter(W + 'tbl'):
+        if any(child is not table for child in table.iter(W + 'tbl')):
+            continue
+        style = table.find(W + 'tblPr/' + W + 'tblStyle')
+        look = table.find(W + 'tblPr/' + W + 'tblLook')
+        # Pandoc also calls one-cell figure/layout wrappers Table. They are not data rows.
+        if (style is None or style.get(W + 'val') != 'Table' or look is None
+                or look.get(W + 'firstRow') not in {'1', 'true', 'on'}):
+            continue
+        rows = table.findall(W + 'tr')
+        for index, row in enumerate(rows):
+            if row.find(W + 'trPr/' + W + 'tblHeader') is not None:
+                continue
+            fill = values['stripe' if index % 2 == 0 else 'canvas'].lstrip('#')
+            for cell in row.findall(W + 'tc'):
+                properties = cell.find(W + 'tcPr')
+                if properties is None:
+                    properties = ET.Element(W + 'tcPr')
+                    cell.insert(0, properties)
+                for shade in properties.findall(W + 'shd'):
+                    properties.remove(shade)
+                ET.SubElement(properties, W + 'shd', {
+                    W + 'val': 'clear', W + 'color': 'auto', W + 'fill': fill})
+
+
 def _center_captions(root: ET.Element, word: str) -> None:
     for paragraph in root.iter(f"{word}p"):
         style = _paragraph_style(paragraph, word)
@@ -345,8 +373,8 @@ def _center_captions(root: ET.Element, word: str) -> None:
             properties[0],
         )
         for value in properties:
-            if value is not canonical:
-                paragraph.remove(value)
+            paragraph.remove(value)
+        paragraph.insert(0, canonical)
         for existing in canonical.findall(f"./{word}jc"):
             canonical.remove(existing)
         align = ET.SubElement(canonical, f"{word}jc")
@@ -359,7 +387,9 @@ def _display_options(members: dict[str, bytes], root: ET.Element, word: str) -> 
     root.insert(0, background)
     settings = ET.fromstring(members["word/settings.xml"]) if "word/settings.xml" in members else None
     if settings is not None:
-        for tag in ("updateFields", "displayBackgroundShape"):
+        for existing in settings.findall(f"{word}updateFields"):
+            settings.remove(existing)
+        for tag in ("displayBackgroundShape",):
             if settings.find(f"{word}{tag}") is None:
                 ET.SubElement(settings, f"{word}{tag}")
         register_namespaces()
@@ -390,11 +420,27 @@ def prepare_docx(path: Path) -> None:
     members["word/fontTable.xml"] = font_table(members.get("word/fontTable.xml"))
     _format_table_headers(root, word)
     _style_docx_callouts(root, word)
+    _band_table_cells(root)
     _left_align_docx_tables(root, word)
     _reflow_docx_licenses(root, word)
     add_indexes(root)
     _center_captions(root, word)
     _display_options(members, root, word)
+    # Pandoc can mark fields in any Word story, not only the body.
+    for name, data in list(members.items()):
+        if name.startswith('word/') and name.endswith('.xml') and name != 'word/document.xml':
+            part = ET.fromstring(data)
+            if not any(word + 'dirty' in node.attrib for node in part.iter()):
+                continue
+            for node in part.iter():
+                node.attrib.pop(word + 'dirty', None)
+            members[name] = ET.tostring(part, encoding='utf-8', xml_declaration=True)
+    for node in root.iter():
+        node.attrib.pop(word + 'dirty', None)
+    for cell in root.iter(word + 'tc'):
+        blocks = [node for node in cell if node.tag in {word + tag for tag in ('p', 'tbl', 'sdt', 'customXml', 'altChunk')}]
+        if not blocks or blocks[-1].tag != word + 'p':
+            ET.SubElement(cell, word + 'p')
     register_namespaces()
     order_properties(root)
     members["word/document.xml"] = ET.tostring(root, encoding="utf-8", xml_declaration=True)

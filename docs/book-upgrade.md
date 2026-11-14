@@ -27,14 +27,33 @@ profile version change may require manuscript edits. When the changelog marks a 
 incompatible, upgrade in a dedicated branch, update the affected manuscript units, and record a
 rendered review before requesting approval.
 
+## Example: toolkit 0.10.1 to 0.10.2
+
+Update `book.yaml` and the reviewed commit pin in `requirements.txt` to toolkit 0.10.2. Install
+`libreoffice-writer` alongside `poppler-utils` in the book's release workflow, and pass
+`--require-page-numbers` to `handbook-toolkit build-book`. Run local `make full`; a strict local
+build can use `make build BUILD_FLAGS=--require-page-numbers` with the current template Makefile.
+No manuscript edit or profile change is required. The template's released toolkit pin changes
+separately; copying the toolkit's implementation into a book is not an upgrade.
+
+Contents, List of Tables and List of Figures now open with cached page numbers and no update
+prompt. They are LibreOffice's pagination using the packaged fonts; updating each field with F9
+in desktop Word gives Word's pagination. The Owner's actual v0.5.0 Word check found the previous
+dirty-field caches empty on open; 0.10.2 removes every dirty marker and updateFields request.
+Table stripes now use direct cell shading because Word did not show the conditional banding.
+
+Without LibreOffice/pdfinfo, optional builds warn on stderr and record title-only caches in the
+manifest; they have no tabs or empty PAGEREF fields. Missing or failed probes block strict builds;
+nonconvergent page numbers block every build. Non-decimal/chapter-prefixed page formats are not
+silently treated as physical decimal pages. Inspect all three indexes and table banding in the
+PR's sample edition-preview artifact in desktop Word before a release is tagged.
+
 ## Example: toolkit 0.9.1 to 0.9.2
 
 Toolkit 0.9.2 fixes Word style definitions and replaces the static List of Tables with native
-contents/caption fields. Their linked cached entries are visible without updating fields.
-Until page numbers are known, each cached entry is its linked title only, with no dangling dot
-leader. Open the document in desktop Word and update fields to generate the paginated result. The package requests updates, but a viewer may require confirmation or an
-explicit update. Desktop Word was not available during implementation; structural validation
-and a LibreOffice conversion are evidence, not a guarantee of every Word viewer's behavior.
+contents/caption fields. It originally attempted to show linked title-only caches while requesting field updates.
+The Owner later found these caches empty on open in desktop Word for v0.5.0. Toolkit 0.10.2
+supersedes that approach with verified numeric caches and no forced update; see the upgrade above.
 
 Update the toolkit field in book.yaml to "0.9.2" and pin the reviewed toolkit commit in
 requirements.txt. Run make full, rebuild all editions, inspect callout titles and banded tables,

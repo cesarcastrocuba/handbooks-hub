@@ -67,20 +67,6 @@ def normalise_bookmarks(root: ET.Element) -> None:
             node.set(W + 'instr', ' '.join(tokens))
 
 
-def _paragraph_bookmarks(root: ET.Element) -> dict[ET.Element, list[str]]:
-    active: dict[str, str] = {}
-    result: dict[ET.Element, list[str]] = {}
-    for node in root.iter():
-        if node.tag == W + 'bookmarkStart':
-            active[node.get(W + 'id', '')] = node.get(W + 'name', '')
-        elif node.tag == W + 'bookmarkEnd':
-            active.pop(node.get(W + 'id', ''), None)
-        elif node.tag == W + 'p':
-            result[node] = list(active.values()) + [
-                n.get(W + 'name', '') for n in node.iter(W + 'bookmarkStart')]
-    return result
-
-
 def _ensure_bookmark(paragraph: ET.Element, root: ET.Element, name: str) -> str:
     existing = {node.get(W + 'name', '') for node in root.iter(W + 'bookmarkStart')}
     base, suffix = name, 1
@@ -109,13 +95,12 @@ def _tc_field(paragraph: ET.Element, text: str, letter: str) -> None:
     escaped = text.replace('\\', '\\\\').replace('"', '\\"')
     paragraph.extend((field_run('begin', hidden=True),
                       instruction_run(f'TC "{escaped}" \\f {letter} \\l 1', hidden=True),
-                      field_run('separate', hidden=True), field_run('end', hidden=True)))
+                      field_run('end', hidden=True)))
 
 
 def _collect_entries(root: ET.Element) -> tuple[dict[str, list[Entry]], list[Entry]]:
     captions: dict[str, list[Entry]] = {kind: [] for kind, _caption, _title, _letter in LISTS}
     headings: list[Entry] = []
-    marks = _paragraph_bookmarks(root)
     for index, paragraph in enumerate(list(root.iter(W + 'p'))):
         style = style_of(paragraph)
         kind = _caption_kind(paragraph)
@@ -125,13 +110,9 @@ def _collect_entries(root: ET.Element) -> tuple[dict[str, list[Entry]], list[Ent
         text = text_of(paragraph)
         if not text:
             continue
-        candidates = marks.get(paragraph, [])
-        if kind:
-            preferred = [v for v in candidates if v.startswith(kind + '-')]
-        else:
-            preferred = candidates[-1:]
-        bookmark = preferred[-1] if preferred else _ensure_bookmark(
-            paragraph, root, f'Caption_{index}' if kind else f'Heading_{index}')
+        # Point inside the actual heading/caption paragraph. LO can omit Pandoc's
+        # body-level ranges immediately following a float; never infer from text.
+        bookmark = _ensure_bookmark(paragraph, root, f'IndexTarget_{index}')
         entry = Entry(text, bookmark, int(style[-1]) if is_heading else 1)
         if kind:
             captions[kind].append(entry)
@@ -146,7 +127,7 @@ def _entry_paragraph(entry: Entry) -> ET.Element:
     paragraph = ET.Element(W + 'p')
     properties = ET.SubElement(paragraph, W + 'pPr')
     ET.SubElement(properties, W + 'pStyle', {W + 'val': f'TOC{entry.level}'})
-    link = ET.SubElement(paragraph, W + 'hyperlink', {W + 'anchor': entry.bookmark})
+    link = ET.SubElement(paragraph, W + 'hyperlink', {W + 'anchor': entry.bookmark, W + 'history': '1'})
     run = ET.SubElement(link, W + 'r')
     ET.SubElement(ET.SubElement(run, W + 'rPr'), W + 'rStyle', {W + 'val': 'Hyperlink'})
     ET.SubElement(run, W + 't', {XML_SPACE: 'preserve'}).text = entry.text
@@ -159,8 +140,35 @@ def cached_field(instruction: str, entries: list[Entry]) -> list[ET.Element]:
     offset = 1 if first.find(W + 'pPr') is not None else 0
     for node in reversed((field_run('begin'), instruction_run(instruction), field_run('separate'))):
         first.insert(offset, node)
-    paragraphs[-1].append(field_run('end'))
+    final = ET.Element(W + 'p')
+    final.append(field_run('end'))
+    paragraphs.append(final)
     return paragraphs
+
+
+def cached_links(root: ET.Element) -> list[ET.Element]:
+    """Only our cached index entries, never manuscript hyperlinks."""
+    return [link for paragraph in root.iter(W + 'p')
+            if style_of(paragraph) in {'TOC1', 'TOC2', 'TOC3'}
+            for link in paragraph.findall(W + 'hyperlink') if link.get(W + 'anchor')]
+
+
+def set_cached_pages(root: ET.Element, pages: dict[str, str] | None) -> None:
+    """Keep linked titles; append Word's tab/PAGEREF cache only when a page is known."""
+    for link in cached_links(root):
+        # The first run is the title authored by _entry_paragraph.
+        link[:] = list(link)[:1]
+        if pages is None:
+            continue
+        bookmark = link.get(W + 'anchor', '')
+        number = pages[bookmark]
+        if not number.isdecimal():
+            raise ValueError(f'DOCX cached page is not numeric: {bookmark}: {number}')
+        ET.SubElement(ET.SubElement(link, W + 'r'), W + 'tab')
+        link.extend((field_run('begin'), instruction_run(f'PAGEREF {bookmark} \\h'),
+                     field_run('separate')))
+        ET.SubElement(ET.SubElement(link, W + 'r'), W + 't').text = number
+        link.append(field_run('end'))
 
 
 def _title(text: str) -> ET.Element:
