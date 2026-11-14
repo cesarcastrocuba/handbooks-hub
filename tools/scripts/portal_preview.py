@@ -15,6 +15,7 @@ from threading import Thread
 from urllib.parse import urlsplit, unquote
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
+from handbook_toolkit import design
 from handbook_toolkit.portal import build_portal, _repository_url
 from handbook_toolkit.portal_catalog import read_catalog
 
@@ -32,7 +33,7 @@ class Links(HTMLParser):
 
 def weights(site: Path) -> dict[str,int]:
     return {suffix:sum(path.stat().st_size for path in site.rglob('*') if path.is_file() and path.suffix==suffix)
-            for suffix in ('.html','.css','.js','.woff2','.woff')}
+            for suffix in ('.html','.css','.js','.woff2','.woff','.ttf','.otf')}
 
 
 def link_parity(legacy: Path,candidate: Path) -> dict[str,object]:
@@ -79,15 +80,30 @@ def browser_checks(root: Path,fixture: bool) -> dict:
                             else:remote.append(route.request.url);route.abort()
                         context.route('**/*',guard)
                         page=context.new_page();loaded={}
-                        page.on('response',lambda response:loaded.update({response.url:int(response.headers.get('content-length','0'))}) if urlsplit(response.url).path.endswith(('.html','.css','.js','.woff2','.woff')) else None)
+                        page.on('response',lambda response:loaded.update({response.url:int(response.headers.get('content-length','0'))}) if urlsplit(response.url).path.endswith(('.html','.css','.js','.woff2','.woff','.ttf','.otf')) else None)
                         page.goto(base+engine+'/index.html',wait_until='networkidle');page.evaluate('document.fonts.ready')
                         key=f'{engine}:{label}:{scheme}'
                         result[key]={'width':page.evaluate('document.documentElement.scrollWidth'),'viewport':width,'loaded_bytes':sum(loaded.values())}
+                        pairs=page.evaluate("""() => {
+                          const bg=(e)=>{while(e){let c=getComputedStyle(e).backgroundColor;if(c!=='rgba(0, 0, 0, 0)'&&c!=='transparent')return c;e=e.parentElement;}throw Error('No canvas');};
+                          let pairs={};for(let [name,fg,b] of [['body','body','body'],['summary','.book .summary','.book'],['link','.book .links a','.book'],['selected','button[aria-pressed=true]','button[aria-pressed=true]'],['footer','footer','footer']]){
+                            let e=document.querySelector(fg),back=document.querySelector(b);if(e&&back)pairs[name]=[getComputedStyle(e).color,bg(back)];}
+                          return pairs;
+                        }""")
+                        ratios={}
+                        for role,pair in pairs.items():
+                            def rgb(value):
+                                return '#'+''.join(f'{int(float(channel.strip())):02X}' for channel in value.split('(',1)[1].split(')',1)[0].split(',')[:3])
+                            ratio=design.contrast_ratio(*map(rgb,pair))
+                            if ratio<4.5:raise ValueError(f'component contrast failed: {key} {role} {ratio:.2f}')
+                            ratios[role]=round(ratio,2)
+                        result[key]['contrast']=ratios
                         if engine=='quarto' and result[key]['width']>width:raise ValueError(f'candidate page overflow: {key}')
                         page.screenshot(path=str(screens/f'{key.replace(":",".")}.png'))
                         page.keyboard.press('Tab')
                         focused=page.evaluate('({tag:document.activeElement.tagName,text:document.activeElement.textContent,outline:getComputedStyle(document.activeElement).outlineStyle})')
                         if focused['tag']!='A' or 'Skip' not in focused['text']:raise ValueError(f'skip link is not first: {key}')
+                        if focused['outline']=='none':raise ValueError(f'no visible keyboard outline: {key}')
                         result[key]['skip']=True
                         if page.locator('#search').count():
                             for query,expected in [('missing-portal-fixture',0),('',len(read_catalog(root/'catalog.json')))]:
@@ -97,9 +113,32 @@ def browser_checks(root: Path,fixture: bool) -> dict:
                             for name in ('design','how-it-works'):
                                 page.goto(base+engine+'/'+name+'.html',wait_until='networkidle');page.evaluate('document.fonts.ready')
                                 page.screenshot(path=str(screens/f'{name}.{label}.{scheme}.png'))
+                                if name=='design':
+                                    for anchor,suffix in (('type-scale','components'),('buttons','controls')):
+                                        page.locator('#'+anchor).evaluate("el=>el.scrollIntoView({block:'start'})")
+                                        page.screenshot(path=str(screens/f'design-{suffix}.{label}.{scheme}.png'))
+                            page.locator('#quarto-search').click()
+                            page.locator('.aa-Input').fill('withdrawal')
+                            match=page.locator('.aa-Panel a[href*="publishing.html"]').first
+                            match.wait_for(state='visible')
+                            page.screenshot(path=str(screens/f'guide-search.{label}.{scheme}.png'))
+                            match.click();page.wait_for_load_state('networkidle')
+                            if not urlsplit(page.url).path.endswith('publishing.html'):
+                                raise ValueError('native guide search did not reach its page')
+                            result[key]['guide_search']=True
                         context.close()
                 if fixture:
+                    for width,label in ((1440,'desktop'),(390,'phone')):
+                        for scheme in ('light','dark'):
+                            context=browser.new_context(viewport={'width':width,'height':1800},color_scheme=scheme,reduced_motion='reduce')
+                            context.route('**/*',guard)
+                            tab=context.new_page();tab.goto(base+'fixture-'+engine+'/index.html',wait_until='networkidle');tab.evaluate('document.fonts.ready')
+                            if engine=='quarto' and tab.evaluate('document.documentElement.scrollWidth')>width:
+                                raise ValueError(f'two-book mobile overflow: {scheme}')
+                            tab.screenshot(path=str(screens/f'fixture.{engine}.{label}.{scheme}.png'))
+                            context.close()
                     page=browser.new_page(viewport={'width':1440,'height':1800})
+                    page.route('**/*',guard)
                     page.goto(base+'fixture-'+engine+'/index.html',wait_until='networkidle')
                     counts=[]
                     for query,expected in [('cafe',1),('CAFÉ',1),('zurich security',1),('missing',0),('',2)]:
@@ -115,7 +154,6 @@ def browser_checks(root: Path,fixture: bool) -> dict:
                     if titles!=['Zürich Security','Café Authoring']:raise ValueError('descending title sort failed')
                     page.locator('#sort').select_option('latest')
                     if page.locator('article.book:visible').first.get_attribute('data-title')!='Zürich Security':raise ValueError('latest sort failed')
-                    page.evaluate('window.scrollTo(0,0)');page.screenshot(path=str(screens/f'fixture.{engine}.desktop.light.png'))
                     result[engine+':fixture']={'counts':counts,'category':True,'sort':True}
                     page.close()
             if remote:raise ValueError('external resources requested: '+str(sorted(set(remote))))

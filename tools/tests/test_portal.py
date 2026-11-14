@@ -197,6 +197,19 @@ class QuartoPortalTests(unittest.TestCase):
         self.assertEqual(first.keys(),repeated.keys())
         self.assertEqual([str(name) for name in first if first[name]!=repeated[name]],[])
 
+    def test_empty_candidate_and_standalone_design_are_honest(self):
+        from handbook_toolkit.portal_quarto import build_quarto_portal
+        catalog=self.root/'empty.json';support.write_json(catalog,{'schema_version':'1.0','books':[]})
+        path=build_portal(catalog,self.root/'empty',engine='quarto')
+        tree=Document(path.read_text()).root
+        self.assertFalse(tree.find('article'))
+        self.assertIn('The first handbook is being prepared',tree.text())
+        single=build_quarto_portal(None,self.root/'design-only',design_only=True)
+        style=Document(single.read_text()).root
+        self.assertTrue(style.find('table'))
+        self.assertFalse(style.find('article'))
+        self.assertEqual({p.name for p in single.parent.glob('*.html')},{'index.html'})
+
     def test_design_page_contains_token_rows_and_every_role(self):
         tree=Document((self.site/'design.html').read_text()).root
         tables=tree.find('table')

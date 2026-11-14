@@ -22,6 +22,7 @@ input, button, select { max-width: 100%; min-width: 0; min-height: {{control}}; 
 .style-card { padding: {{card-padding}}; background: var(--surface); color: var(--text); border-color: var(--border); }
 .archived { color: var(--muted); font-weight: 700; }
 @media (max-width: {{phone}}) {
+  #quarto-document-content { padding-inline: 0; }
   .book { grid-template-columns: {{cover-small}} minmax(0,1fr); }
   .tools, .tools label { max-width: 100%; }
   .tools label { width: 100%; }

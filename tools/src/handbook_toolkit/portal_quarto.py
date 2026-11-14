@@ -45,7 +45,7 @@ def stage_theme(workspace: Path) -> dict[str, Any]:
     return {'theme':theme, 'css':[str(path.relative_to(workspace)) for path in sorted(folder.glob('*.css'))],
             'toc':True, 'respect-user-color-scheme':True,'canonical-url':True,
             'include-in-header':[{'text':resource('metadata.html').replace('{{light-canvas}}',design.load_tokens()['color']['canvas']['light']).replace('{{dark-canvas}}',design.load_tokens()['color']['canvas']['dark'])}],
-            'include-after-body':[{'text':resource('filter.html')}]}
+            'include-after-body':[{'text':resource('filter.html').replace('{{script}}',resource('filter.js'))}]}
 
 
 def stage_site(workspace: Path, books: list[dict[str, Any]], *, design_only: bool=False) -> None:
@@ -89,7 +89,10 @@ def _omit_sitemap_times(site: Path) -> None:
     path=site/'sitemap.xml'
     if not path.exists():
         return
-    tree=ET.parse(path)
+    try:
+        tree=ET.parse(path)
+    except ET.ParseError as exc:
+        raise ValueError(f'cannot parse Quarto sitemap: {exc}') from exc
     namespace='http://www.sitemaps.org/schemas/sitemap/0.9'
     for url in tree.getroot().findall('{'+namespace+'}url'):
         for timestamp in url.findall('{'+namespace+'}lastmod'):
@@ -107,6 +110,8 @@ def build_quarto_portal(catalog: Path | None, output: Path, *, design_only: bool
     staging=Path(tempfile.mkdtemp(prefix='.portal-',dir=output.parent))
     try:
         environment=dict(os.environ,SOURCE_DATE_EPOCH='0',TZ='UTC')
+        for name in ('GITHUB_TOKEN','GH_TOKEN'):
+            environment.pop(name,None)
         if _run(['quarto','--version'],staging,environment)!=QUARTO_VERSION:
             raise ValueError(f'Quarto {QUARTO_VERSION} is required for the Quarto portal')
         stage_site(staging,books,design_only=design_only)

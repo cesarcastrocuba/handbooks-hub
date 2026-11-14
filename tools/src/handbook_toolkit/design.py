@@ -491,10 +491,10 @@ def _callout_contrast_issues(tokens: dict[str, Any]) -> list[Issue]:
 
 
 PORTAL_METRICS = {'rule': '1px', 'column': '1300px', 'gutter': '1.25rem', 'gap': '1rem', 'cover': '8rem',
-                  'cover-small': '5rem', 'cover-padding': '.8rem', 'cover-radius': '6px',
+                  'cover-small': '6.5rem', 'cover-padding': '.8rem', 'cover-radius': '6px',
                   'card-radius': '8px', 'card-padding': '1.1rem', 'card-min': '30rem',
                   'small': '.85rem', 'fine': '.75rem', 'title': '1.25rem', 'control': '44px',
-                  'phone': '600px', 'cover-title': '1rem'}
+                  'phone': '600px', 'cover-title': '.82rem'}
 
 
 def portal_layout_css() -> str:

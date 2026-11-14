@@ -85,7 +85,7 @@ footer{border-top:1px solid var(--line);padding:2rem 0;color:var(--muted);font-s
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 """
 
-SCRIPT = resource_files("handbook_toolkit").joinpath("render_data/portal/filter.html").read_text()[8:-10]
+SCRIPT = resource_files("handbook_toolkit").joinpath("render_data/portal/filter.js").read_text()
 
 GUIDE = f"""
 <section id="how-it-works" aria-labelledby="how-title"><h2 id="how-title">How the platform works</h2>
