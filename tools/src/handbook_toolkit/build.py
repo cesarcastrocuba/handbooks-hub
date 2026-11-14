@@ -293,10 +293,12 @@ def build_book(
 
         # Lists are native HTML chapters; print and Markdown keep their own indexes.
         html_config = yaml.safe_load((workspace / "_quarto.yml").read_text())
-        restore_first_source(workspace, entries)
+        source_alias = restore_first_source(workspace, entries, groups)
+        if source_alias:
+            html_config["handbook-root-source-index"] = source_alias
         lists = generate_list_pages(workspace, entries)
         html_config = prepare_reading_site(workspace, html_config, book, metadata, groups,
-                                           entries, lists, fields, author, book_version,
+                                           lists, fields, author, book_version,
                                            date_str, preview)
         (workspace / "_quarto.yml").write_text(yaml.safe_dump(html_config), encoding="utf-8")
         _run([quarto, "render", ".", "--to", "html", "--no-clean", "--no-execute"],

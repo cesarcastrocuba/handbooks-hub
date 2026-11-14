@@ -1,6 +1,5 @@
 /* Native reading controls. Geometry and timing substitutions are supplied by design.py. */
-a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible,
-textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+:root :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: {{focus-width}} solid var(--accent);
   outline-offset: {{focus-offset}};
 }

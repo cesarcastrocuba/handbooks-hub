@@ -664,6 +664,27 @@ class BuildTests(unittest.TestCase):
                 self.assertFalse({"tables.html", "figures.html", "listings.html"} & set(archive.namelist()))
 
 
+    def test_canonical_root_index_survives_generated_web_cover(self) -> None:
+        import yaml
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)
+            repo,_=make_book(root)
+            source=repo/"manuscript/chapters/pilot.qmd"
+            (repo/"index.qmd").write_text(source.read_text().replace("../images/fixture.png","manuscript/images/fixture.png") + "\n[Back to this section](index.qmd#fig-fixture)\n")
+            source.unlink()
+            book=yaml.safe_load((repo/"book.yaml").read_text())
+            book["manuscript"]["root"]="."
+            (repo/"book.yaml").write_text(yaml.safe_dump(book))
+            (repo/"manuscript/book.yml").write_text("chapters: [index.qmd]\n")
+            commit=commit_all(repo)
+            build_book(repo,commit,root/"dist",profile=PROFILE,mode="section-pilot")
+            with zipfile.ZipFile(root/"dist/book-html.zip") as archive:
+                chapter=Document(archive.read("handbook-source-index.html").decode()).root
+                self.assertIn("A Pilot Section",chapter.text())
+                self.assertTrue(any(link.attrs.get("href","").endswith("handbook-source-index.html#fig-fixture") for link in chapter.find("a")))
+                cover=Document(archive.read("index.html").decode()).root
+                self.assertTrue(any(link.attrs.get("href","").endswith("handbook-source-index.html") for link in cover.find("a") if link.text()=="Start reading"))
+
     def test_toolkit_pin_mismatch_is_refused_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

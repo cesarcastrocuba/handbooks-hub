@@ -43,7 +43,7 @@ class ReadingSiteTests(unittest.TestCase):
             groups = {'front':[], 'chapters':['chapter.qmd'], 'back':[], 'appendices':[], 'references':[]}
             config = {'book':{}, 'format':{'html':{}}}
             result = prepare_reading_site(root, config, book, {'subtitle':'An edition'}, groups,
-                        ['chapter.qmd'], ['figures.qmd'], [('Version','1.0.0')], 'An Author',
+                        ['figures.qmd'], [('Version','1.0.0')], 'An Author',
                         '1.0.0', 'November 2026', False)
             chapters = result['book']['chapters']
             self.assertEqual(chapters, ['index.qmd', {'part':'Front matter','chapters':['document-control.qmd','figures.qmd']},

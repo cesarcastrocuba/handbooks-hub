@@ -87,14 +87,26 @@ def _write_cover(workspace: Path, book: dict[str, Any], metadata: dict[str, Any]
     (workspace / "index.qmd").write_text("\n".join(lines), encoding="utf-8")
 
 
-def restore_first_source(workspace: Path, entries: list[str]) -> None:
-    """Undo the print-only index alias before native web references are collected."""
-    (workspace / entries[0]).write_text((workspace / "index.qmd").read_text(), encoding="utf-8")
+def restore_first_source(workspace: Path, entries: list[str], groups: dict[str, list[str]]) -> str | None:
+    """Restore the print alias, preserving a canonical root index under a web-only name."""
+    source = workspace / entries[0]
+    alias = None
+    if source.resolve() == (workspace / "index.qmd").resolve():
+        alias = "handbook-source-index.qmd"
+        source = workspace / alias
+        if source.exists():
+            raise BuildError(f"generated source alias would replace source file: {alias}")
+        original = entries[0]
+        entries[0] = alias
+        for files in groups.values():
+            files[:] = [alias if entry == original else entry for entry in files]
+    source.write_text((workspace / "index.qmd").read_text(), encoding="utf-8")
+    return alias
 
 
 def prepare_reading_site(workspace: Path, config: dict[str, Any], book: dict[str, Any],
                          metadata: dict[str, Any], groups: dict[str, list[str]],
-                         entries: list[str], lists: list[str], fields: list[tuple[str, str]],
+                         lists: list[str], fields: list[tuple[str, str]],
                          author: str, version: str, date: str, preview: bool) -> dict[str, Any]:
     """Switch only HTML staging to cover + original pages grouped as native parts."""
     config.pop("handbook-index-source-dir", None)
