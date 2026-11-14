@@ -1,14 +1,28 @@
 #!/usr/bin/env python3
-"""Regenerate the self-hosted WOFF2 fonts with renamed internal identifiers.
+"""Regenerate the self-hosted WOFF2 fonts from the committed TTF files.
 
-The web fonts are modified subsets of Source Sans 3, Source Serif 4 and JetBrains Mono, all under
-the SIL Open Font License 1.1. The OFL requires a modified font with a Reserved Font Name to be renamed, and its
-copyright and license to travel with every copy. This script performs the subset, rewrites the
-internal family/full/PostScript names to ``Handbook Sans``/``Handbook Mono``, keeps the upstream
-copyright, and writes the OFL license text and URL into the name table.
+The toolkit ships three font families under ``render_data/fonts/``: Source Sans 3 (body text),
+Source Serif 4 (display) and JetBrains Mono (code), all under the SIL Open Font License 1.1. The OFL
+requires a modified font with a Reserved Font Name to be renamed, and its copyright and license to
+travel with every copy.
+
+The path from the upstream files to the shipped WOFF2 files is:
+
+1. The TTF files are committed in each family directory. The JetBrains Mono files keep their upstream
+   names. The Source Sans 3 and Source Serif 4 files are already renamed to ``Handbook Sans`` and
+   ``Handbook Serif`` when they enter the repository; obtaining and renaming them is manual and is
+   not scripted here.
+2. ``FONTS`` pairs each committed TTF with the WOFF2 file this script writes.
+3. For each pair the script subsets the glyphs to ``UNICODES`` while keeping the layout features and
+   every name record, rewrites name IDs 1, 2, 3, 4, 6, 16 and 17 to the Handbook family and style,
+   drops name IDs 18, 21 and 22, keeps the upstream copyright (name ID 0), and sets name IDs 13 and
+   14 to the OFL statement and URL. It saves the result as WOFF2.
+4. The committed ``OFL.txt`` in each family directory is what the build publishes beside the fonts.
 
 It is a maintenance tool, not a build step. It requires ``fonttools`` and ``brotli``; the generated
-WOFF2 files are committed.
+WOFF2 files are committed. Rerunning it reproduces the WOFF2 files from the committed TTF files only;
+it cannot reproduce the renamed Adobe TTF files, and the upstream download and hash check are not
+recorded.
 """
 from __future__ import annotations
 
