@@ -3,6 +3,14 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
+## [0.10.1] - 2026-11-14
+
+### Fixed
+
+- PDF and DOCX builds failed for a figure in any page other than the first when the first page
+  lives in a different directory: the image path was rebased for every chapter. The first page's
+  images are now rebased when it is staged, and the image part of the Pandoc filter is removed.
+
 ## [0.10.0] - 2026-11-14
 
 ### Changed

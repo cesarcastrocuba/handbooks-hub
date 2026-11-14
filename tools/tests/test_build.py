@@ -14,7 +14,8 @@ import struct
 import zlib
 import os
 import re
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+import posixpath
 import shutil
 import subprocess
 import sys
@@ -36,6 +37,7 @@ from handbook_toolkit.build import (  # noqa: E402
     _render_config,
     build_book,
 )
+from handbook_toolkit.build_staging import _prepare_render, _rebase_images
 from handbook_toolkit.docx_post import _reflow_license_paragraph
 from handbook_toolkit.docx_xml import W, fields, text_of
 from handbook_toolkit.docx_validation import validate_docx
@@ -184,7 +186,7 @@ status: draft
 profile:
   id: standard
   version: "1.0.0"
-toolkit: "0.10.0"
+toolkit: "0.10.1"
 license:
   content: CC-BY-SA-4.0
   code: MIT
@@ -246,6 +248,66 @@ format:
         "fixture",
     )
     return repo, _git(repo, "rev-parse", "HEAD")
+
+
+class FirstPageStagingTests(unittest.TestCase):
+    """The first page is staged at the project root; its images must still be found."""
+
+    def rebase(self, text: str, directory: str = "manuscript/front-matter") -> str:
+        return _rebase_images(text, PurePosixPath(directory))
+
+    def test_relative_images_point_at_the_source_directory(self) -> None:
+        self.assertEqual(
+            self.rebase("Text ![Alt text](../images/a.svg){#fig-a width=80%} and ![](b.png)."),
+            "Text ![Alt text](manuscript/images/a.svg){#fig-a width=80%} and "
+            "![](manuscript/front-matter/b.png).",
+        )
+        self.assertEqual(self.rebase("![A](<../images/a b.svg>)"), "![A](<manuscript/images/a b.svg>)")
+
+    def test_remote_absolute_and_anchor_targets_are_kept(self) -> None:
+        for target in ("https://example.org/a.png", "/abs/a.png", "data:image/png;base64,AAAA", "#fig-a"):
+            with self.subTest(target=target):
+                self.assertEqual(self.rebase(f"![A]({target})"), f"![A]({target})")
+
+    def test_code_is_not_rewritten(self) -> None:
+        text = "\n".join(
+            [
+                "Write `![A](a.png)` for an image.",
+                "```markdown",
+                "![A](a.png)",
+                "```",
+                "~~~~",
+                "![B](b.png)",
+                "~~~",
+                "![C](c.png)",
+                "~~~~",
+                "![D](d.png)",
+            ]
+        )
+        expected = text.replace("![D](d.png)", "![D](manuscript/front-matter/d.png)")
+        self.assertEqual(self.rebase(text), expected)
+
+    def test_a_first_page_at_the_root_is_unchanged(self) -> None:
+        text = "![A](images/a.png)"
+        self.assertEqual(self.rebase(text, "."), text)
+
+    def test_only_the_staged_index_is_rebased(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp)
+            for name in ("manuscript/front-matter/intro.qmd", "manuscript/chapters/one.qmd"):
+                path = workspace / name
+                path.parent.mkdir(parents=True)
+                path.write_text("# Page\n\n![A](../images/a.png)\n", encoding="utf-8")
+            rendered = _prepare_render(
+                workspace, ["manuscript/front-matter/intro.qmd", "manuscript/chapters/one.qmd"]
+            )
+            self.assertEqual(rendered, ["index.qmd", "manuscript/chapters/one.qmd"])
+            self.assertIn("![A](manuscript/images/a.png)", (workspace / "index.qmd").read_text())
+            for name in ("manuscript/front-matter/intro.qmd", "manuscript/chapters/one.qmd"):
+                self.assertIn("![A](../images/a.png)", (workspace / name).read_text())
+            self.assertEqual(
+                sorted(path.name for path in workspace.iterdir()), ["index.qmd", "manuscript"]
+            )
 
 
 class RenderConfigTests(unittest.TestCase):
@@ -664,6 +726,40 @@ class BuildTests(unittest.TestCase):
                 self.assertFalse({"tables.html", "figures.html", "listings.html"} & set(archive.namelist()))
 
 
+    def test_figures_outside_the_first_page_directory_build_in_every_edition(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, _ = make_book(root)
+            front = repo / "manuscript/front-matter"
+            front.mkdir()
+            (front / "introduction.qmd").write_text(
+                "# Introduction {.unnumbered}\n\nAn opening page.\n\n"
+                "![A figure on the first page.](../images/fixture.png){#fig-first}\n",
+                encoding="utf-8",
+            )
+            (repo / "manuscript/book.yml").write_text(
+                "front:\n  - front-matter/introduction.qmd\nchapters:\n  - chapters/pilot.qmd\n"
+                "back: []\nappendices: []\nreferences: []\n",
+                encoding="utf-8",
+            )
+            commit = commit_all(repo)
+            output = root / "dist"
+            build_book(repo, commit, output, profile=PROFILE, mode="section-pilot")
+
+            pdf = subprocess.check_output(["pdftotext", str(output / "book.pdf"), "-"], text=True)
+            for caption in ("A figure on the first page.", "An original fixture diagram."):
+                self.assertIn(caption, pdf)
+            with zipfile.ZipFile(output / "book.docx") as archive:
+                document = ET.fromstring(archive.read("word/document.xml"))
+            self.assertEqual(len(document.findall(".//" + W + "drawing")), 2)
+            with zipfile.ZipFile(output / "book-html.zip") as archive:
+                names = set(archive.namelist())
+                for page in ("manuscript/front-matter/introduction.html", "manuscript/chapters/pilot.html"):
+                    sources = [image.attrs["src"] for image in Document(archive.read(page).decode()).root.find("img")]
+                    self.assertEqual(len(sources), 1, page)
+                    resolved = posixpath.normpath(posixpath.join(posixpath.dirname(page), sources[0]))
+                    self.assertIn(resolved, names)
+
     def test_canonical_root_index_survives_generated_web_cover(self) -> None:
         import yaml
         with tempfile.TemporaryDirectory() as temp:
@@ -691,7 +787,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.10.0"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.10.1"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             commit = commit_all(repo, "mismatched toolkit pin")
@@ -753,7 +849,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.10.0"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.10.1"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             commit = commit_all(repo, "preview toolkit pin")
@@ -805,7 +901,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.10.0"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.10.1"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             _git(repo, "update-index", "--assume-unchanged", "book.yaml")
