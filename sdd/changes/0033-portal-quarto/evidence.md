@@ -44,14 +44,14 @@ responses from a fresh desktop Chromium context. No compression difference is us
 
 | Type | Legacy | Quarto candidate |
 | --- | ---: | ---: |
-| HTML | 25,538 | 306,257 |
-| CSS | 0 (inline in HTML) | 1,127,882 |
+| HTML | 25,538 | 306,465 |
+| CSS | 0 (inline in HTML) | 1,127,830 |
 | JavaScript | 0 (inline in HTML) | 355,447 |
 | WOFF2 | 456,120 | 456,120 |
 | WOFF | 0 | 180,288 |
 | TTF/OTF | 0 | 0 |
-| **Total** | **481,658** | **2,425,994** |
-| Initial library load | 253,846 | 1,925,403 |
+| **Total** | **481,658** | **2,426,150** |
+| Initial library load | 253,846 | 1,925,351 |
 
 **Result: FAIL.** The deployed default remains legacy. The new generator is opt-in, not a
 replacement approved by screenshots alone.
@@ -73,3 +73,29 @@ remote dependency was added. Existing catalogue library filtering remains a shar
 
 The final installed-wheel proof also passed in /tmp/wp5-installed-venv from /tmp, outside the
 checkout: seven QMD pages, ten WOFF2 files, generated Design data and all packaged templates.
+
+## Coordinator audit F1 — shared code colours
+
+Quarto's native inline code defaults were still purple on light grey in the dark Design page.
+The shared book_scss factory now binds code-color to the text token, and code-bg/code-block-bg
+to the code token for each scheme. There is no portal-only selector or private palette. Native
+syntax highlighting inside fenced blocks remains; both renderers share the base code surface.
+The contract declares the inline-code pair so validation and the generated Design table include it.
+
+- `python -m unittest discover -s tools/tests -p test_design.py -v`: 21 tests passed.
+- `python -m handbook_toolkit.portal catalog/catalog.json --output /tmp/wp5-f1-quarto --engine quarto`:
+  rebuilt successfully. Personally inspected dark design.html and its code block in Chromium.
+- `python tools/scripts/portal_preview.py --output /tmp/wp5-f1-preview`: passed all functional
+  checks at 1440/390 light/dark, including all 48 inline code specimens. Computed light pair:
+  #1D2A2C on #F1F3F5, 13.30:1; dark pair: #EBE6DA on #1B2426, 12.71:1.
+  The block background is #F1F3F5 / #1B2426 respectively. Dark token names and hex values are
+  clearly readable light text on the dark code surface; the old purple/grey styling is absent.
+- Screenshots: `screenshots/design.desktop.dark.png` and `design-controls.phone.dark.png` in
+  that preview; the template edition-preview artifact runs the same computed checks and captures.
+- Updated weight totals above include the added contrast rows; the weight gate still fails and
+  legacy remains deployed/default.
+
+Rollback boundary for F1: the three shared Sass defaults, declared contrast pair, its unit test and
+preview assertions; no changes to publication, deployment, versions or the other writer's files.
+Final `make full`: **386 tests passed in 226.638 s**, fast verify 5 checks/0 problems and
+full verify 7/0. CI results for the new commit are reported in the handoff.

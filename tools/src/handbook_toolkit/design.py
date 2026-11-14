@@ -429,6 +429,8 @@ def book_scss(scheme: str) -> str:
                  "navbar-padding-y": "1rem" if scheme == "dark" else "0.5rem",
                  "border-color": colors["chrome_rule"],
                  "body-bg": colors["canvas"], "body-color": colors["text"],
+                 "code-bg": colors["code"], "code-color": colors["text"],
+                 "code-block-bg": colors["code"],
                  "link-color": colors["accent"], "navbar-bg": colors["canvas"],
                  "navbar-fg": colors["text"], "sidebar-bg": colors["canvas"],
                  "sidebar-fg": colors["text"], "headings-color": colors["heading"],

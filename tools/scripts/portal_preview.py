@@ -114,6 +114,24 @@ def browser_checks(root: Path,fixture: bool) -> dict:
                                 page.goto(base+engine+'/'+name+'.html',wait_until='networkidle');page.evaluate('document.fonts.ready')
                                 page.screenshot(path=str(screens/f'{name}.{label}.{scheme}.png'))
                                 if name=='design':
+                                    styles=page.locator('main code').evaluate_all("""nodes => nodes
+                                      .filter(e => !e.closest('pre'))
+                                      .map(e => ({foreground:getComputedStyle(e).color,
+                                                 background:getComputedStyle(e).backgroundColor}))""")
+                                    colors=design.load_tokens()['color']
+                                    if not styles:raise ValueError('Design page has no inline code specimens')
+                                    for style in styles:
+                                        foreground,background=rgb(style['foreground']),rgb(style['background'])
+                                        if (foreground,background)!=(colors['text'][scheme],colors['code'][scheme]):
+                                            raise ValueError(f'inline code does not use shared tokens: {key} {style}')
+                                        if design.contrast_ratio(foreground,background)<design.MINIMUM_TEXT_CONTRAST:
+                                            raise ValueError(f'inline code contrast failed: {key}')
+                                    block=page.locator('div.sourceCode').first.evaluate('e=>getComputedStyle(e).backgroundColor')
+                                    if rgb(block)!=colors['code'][scheme]:
+                                        raise ValueError(f'block code does not use shared surface: {key}')
+                                    result[key]['code']={'inline_count':len(styles),
+                                                        'contrast':round(design.contrast_ratio(foreground,background),2),
+                                                        'block_background':rgb(block)}
                                     for anchor,suffix in (('type-scale','components'),('buttons','controls')):
                                         page.locator('#'+anchor).evaluate("el=>el.scrollIntoView({block:'start'})")
                                         page.screenshot(path=str(screens/f'design-{suffix}.{label}.{scheme}.png'))

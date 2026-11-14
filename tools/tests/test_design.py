@@ -54,6 +54,24 @@ class DesignTokenTests(unittest.TestCase):
         covered = {scheme for pair in self.tokens["contrast"] for scheme in pair["schemes"]}
         self.assertEqual(covered, set(design.SCHEMES))
 
+    def test_shared_inline_code_pair_uses_tokens_and_meets_contrast(self) -> None:
+        pair = next(pair for pair in self.tokens["contrast"]
+                    if pair["name"] == "inline code text on code")
+        self.assertEqual((pair["foreground"], pair["background"]), ("text", "code"))
+        self.assertEqual(set(pair["schemes"]), {"light", "dark"})
+        for scheme in ("light", "dark"):
+            with self.subTest(scheme=scheme):
+                foreground = self.tokens["color"]["text"][scheme]
+                background = self.tokens["color"]["code"][scheme]
+                theme = design.book_scss(scheme)
+                self.assertIn(f"$code-color: {foreground};", theme)
+                self.assertIn(f"$code-bg: {background};", theme)
+                self.assertIn(f"$code-block-bg: {background};", theme)
+                self.assertGreaterEqual(
+                    design.contrast_ratio(foreground, background),
+                    design.MINIMUM_TEXT_CONTRAST,
+                )
+
     def test_contrast_pairs_reference_declared_roles(self) -> None:
         roles = set(self.tokens["color"])
         for pair in self.tokens["contrast"]:

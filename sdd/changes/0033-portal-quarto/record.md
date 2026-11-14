@@ -49,7 +49,7 @@ in test_portal.py. Browser checks use real styles, keyboard focus and controls, 
 | llms.txt | PASS | Byte-identical structure and contents for the same catalog |
 | Offline resources | PASS | Browser rejects external requests; after disabling the inherited font import none are attempted; self-hosted fonts and all OFL notices retained |
 | Deterministic output | PASS | Repeated real Quarto render: identical file inventory and bytes, including the normalized native sitemap |
-| Page weight | **FAIL** | HTML + CSS + JS + fonts: **481,658 → 2,425,994 bytes**; initial library load **253,846 → 1,925,403 bytes** |
+| Page weight | **FAIL** | HTML + CSS + JS + fonts: **481,658 → 2,426,150 bytes**; initial library load **253,846 → 1,925,351 bytes** |
 
 The weight comparison includes both compiled theme layers and Quarto's local runtime/icon font,
 not only the library HTML. New guide pages explain some of the increase, but the initial-page load
