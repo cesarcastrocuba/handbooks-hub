@@ -25,4 +25,4 @@ include-package-data = true
 where = ["src"]
 
 [tool.setuptools.package-data]
-handbook_toolkit = ["schemas/*.json", "design/*.json", "profile_data/*.yaml", "render_data/filters/*.lua", "render_data/typst/*.typ", "render_data/docx/*.docx", "render_data/html/*.css", "render_data/html/*.svg", "render_data/figures/*.svg", "render_data/fonts/*/*.ttf", "render_data/fonts/*/*.woff2", "render_data/fonts/*/*.txt"]
+handbook_toolkit = ["schemas/*.json", "design/*.json", "profile_data/*.yaml", "render_data/filters/*.lua", "render_data/typst/*.typ", "render_data/docx/*.docx", "render_data/html/*.css", "render_data/html/*.svg", "render_data/figures/*.svg", "render_data/portal/*.html", "render_data/portal/*.qmd", "render_data/portal/*.css", "render_data/fonts/*/*.ttf", "render_data/fonts/*/*.woff2", "render_data/fonts/*/*.txt"]

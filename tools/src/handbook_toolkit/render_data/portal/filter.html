@@ -1,0 +1,26 @@
+<script>
+const grid=document.querySelector('.grid');
+if(grid){
+ const cards=Array.from(grid.querySelectorAll('.book'));
+ const search=document.querySelector('#search');
+ const normalize=(value)=>value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+ let category='all';
+ function update(){
+  const mode=document.querySelector('#sort').value;
+  const words=normalize(search.value).split(/\s+/).filter(Boolean);
+  cards.sort((a,b)=>mode==='latest'?b.dataset.date.localeCompare(a.dataset.date)||a.dataset.title.localeCompare(b.dataset.title,'en'):mode==='za'?b.dataset.title.localeCompare(a.dataset.title,'en'):a.dataset.title.localeCompare(b.dataset.title,'en'));
+  let shown=0;
+  for(const card of cards){
+   const text=normalize(card.querySelector('.details').textContent);
+   card.hidden=(category!=='all'&&!card.dataset.categories.split(' ').includes(category))||!words.every(word=>text.includes(word));
+   if(!card.hidden)shown++;grid.append(card);
+  }
+  document.querySelector('#results').textContent=`Showing ${shown} of ${cards.length} ${cards.length===1?'handbook':'handbooks'}`;
+ }
+ for(const button of document.querySelectorAll('[data-filter]')){
+  button.addEventListener('click',()=>{category=button.dataset.filter;for(const item of document.querySelectorAll('[data-filter]'))item.setAttribute('aria-pressed',String(item===button));update();});
+ }
+ document.querySelector('#sort').addEventListener('change',update);
+ search.addEventListener('input',update);
+}
+</script>

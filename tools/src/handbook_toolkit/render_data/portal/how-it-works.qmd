@@ -1,0 +1,19 @@
+---
+title: How the platform works
+---
+
+Every handbook lives in its own repository and is built by the same pinned toolkit. The hub lists
+a book only after its release has been verified and approved.
+
+| Part | Responsibility |
+| --- | --- |
+| Book repository | Owns the manuscript, its reviews and its releases. Nothing is copied into the hub. |
+| Toolkit | One versioned tool validates the manuscript and builds every edition the same way for every book. |
+| Release | Built once from an approved commit: HTML, PDF, DOCX, Markdown and sources, with a manifest and checksums. |
+| Catalog and portal | The catalog records approved releases. This site links to the exact published files. |
+
+1. **Write.** Authors write chapters in Quarto Markdown in the book repository.
+2. **Check.** Automatic checks validate structure, references and the editorial profile.
+3. **Release.** The book publishes a verified release and its reading site.
+4. **Review.** A reviewer who did not write the change verifies the published bytes.
+5. **List.** The hub owner approves the catalog change and this library updates itself.

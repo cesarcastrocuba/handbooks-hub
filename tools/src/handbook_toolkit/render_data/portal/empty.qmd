@@ -1,0 +1,6 @@
+::: {.empty}
+## The first handbook is being prepared.
+
+Handbooks appear here after an approved release and artifact verification. Each book will have its
+own reading site, source repository and downloadable editions.
+:::

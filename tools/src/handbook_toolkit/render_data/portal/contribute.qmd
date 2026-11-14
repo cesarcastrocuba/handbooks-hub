@@ -1,0 +1,13 @@
+---
+title: Contribute to an existing book
+---
+
+Each handbook accepts corrections and proposals in its own repository.
+
+1. Open the book's reading site and follow its source-repository link.
+2. Open an issue for an error or proposal, or send a pull request.
+3. The book's checks run and a maintainer reviews the change.
+4. Accepted changes appear in the next release and then in this library.
+
+To improve the toolkit, template or portal, contribute to the
+[hub repository](https://github.com/cesarcastrocuba/handbooks-hub).

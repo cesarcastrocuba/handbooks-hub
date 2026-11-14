@@ -1,0 +1,26 @@
+---
+title: Publishing and withdrawal
+---
+
+Nothing reaches this library without a person approving it. Anything listed can be withdrawn
+through the same reviewed path.
+
+## Publishing
+
+1. The author releases a version from an approved book commit.
+2. The author opens a [listing request](https://github.com/cesarcastrocuba/handbooks-hub/issues/new?template=request-listing.yml) with the repository and release tag.
+3. A catalog change is prepared. Published files are verified against the manifest and checksums.
+4. A reviewer who did not prepare the change checks it.
+5. The hub owner merges. The library is rebuilt and deployed automatically.
+
+## Withdrawal
+
+1. Anyone can open a [withdrawal request](https://github.com/cesarcastrocuba/handbooks-hub/issues/new?template=request-withdrawal.yml) with the book and reason.
+2. If a release is defective or infringing, the entry is removed first so readers stop being sent to it.
+3. If a corrected release exists, the catalog moves to it before the old one is removed.
+4. The owner approves the change. Release files are deleted; the version tag stays as a record.
+
+::: {.callout-note title="Why the owner gate?"}
+Checksums prove that files are the ones that were built. They do not prove content was reviewed.
+That decision stays with a person and is recorded.
+:::
