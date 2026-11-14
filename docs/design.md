@@ -6,8 +6,8 @@ HTML, the Typst/PDF edition and the DOCX edition must share.
 
 **Status:** Phases 0 to 4 implemented, with the 0.9 design polish adding compact web chrome, cream Word pages, unified callout boxes and table stripes. The portal, the book
 stylesheet, the Typst theme and the DOCX reference document take their values from this contract;
-the template exposes search, repository actions and a light/dark book theme. Release publication and
-the sample upgrade remain owner-gated.
+the template exposes search, repository actions and a light/dark book theme. The design shipped in
+toolkit `0.9.1` and template `1.4.1`, and sample `v0.4.1` is published with it.
 
 **Date:** 2026-11-13
 
@@ -19,6 +19,7 @@ the sample upgrade remain owner-gated.
 | `tools/src/handbook_toolkit/schemas/design-tokens.schema.json` | Shape contract for the token document | MIT, as toolkit code |
 | `tools/src/handbook_toolkit/design.py` | Loader, role checks and WCAG contrast validation | MIT, as toolkit code |
 | `tools/tests/test_design.py` | Completeness, contrast and packaging tests | MIT, as toolkit code |
+| `tools/tests/test_design_conformance.py` | Conformance of every generated surface with the tokens | MIT, as toolkit code |
 | `docs/design.md` | This contract and its rationale | CC BY-SA 4.0 |
 
 The tokens ship inside the installed toolkit package. A book receives them with its pinned toolkit
@@ -34,8 +35,8 @@ and never imports a hub checkout or copies a shared stylesheet.
   canvas marks the platform.
 - No borrowed identity. Values are original; no external theme catalogue, brand stylesheet or
   hosted design asset enters the product.
-- Native capabilities first. Web uses system font stacks and the book's pinned Quarto features;
-  print keeps the already-approved OFL fonts.
+- Native capabilities first. Web uses the packaged WOFF2 subsets and the book's pinned Quarto
+  features; print embeds the same approved OFL families.
 - No action depends on hover. Keyboard and touch paths are the primary paths.
 
 ## Colour roles
@@ -129,14 +130,15 @@ tools page applies `--measure`; the portal keeps its responsive card grid.
 
 | Surface | How it consumes the contract |
 | --- | --- |
-| Portal | Generated `:root` variables in the single HTML page plus seven same-origin WOFF2 files |
+| Portal | Generated `:root` variables in the single HTML page plus the ten same-origin WOFF2 files |
 | Book HTML | Generated `design-tokens.css` loaded before the layout stylesheet; dark values on `body.quarto-dark` and on the OS media query |
 | PDF | Generated `design-tokens.typ` constants read by the Typst theme and print layout |
 | DOCX | `generate_reference_docx.py` reads the tokens at generation time; Source Sans 3 for body text, Source Serif 4 for headings and JetBrains Mono for code |
 
 The Typst theme, the print layout and the DOCX reference no longer carry private palette constants.
-The alert colours used by Quarto callouts remain component colours and are not part of the brand
-palette.
+The callout accent and tint values are defined in the token document under `callout`, with a light,
+dark and print entry for each role, so they are part of the contract like every other colour role.
+Web, PDF and DOCX read them from there; they are not a separate component palette.
 
 ## Changing the contract
 
@@ -145,19 +147,16 @@ palette.
 - A new or changed type role requires both a web and a print value; a font addition requires a prior
   rights review and a `NOTICE.md` entry.
 - Renderers may not introduce a raw colour or size that is absent from the tokens. The conformance
-  tests added in the next phase enforce that rule.
+  tests in `tools/tests/test_design_conformance.py` enforce that rule on every generated surface.
 - Existing books keep their pinned toolkit until they upgrade through the documented path. A design
   change is not retroactive.
 - Values that serve only one medium, such as a print rule colour, stay in the token document as an
   explicit per-scheme value rather than as a hidden constant in a renderer.
 
-## Implemented and pending
+## Implemented
 
-Implemented on the branch: packaged tokens and contrast tests, generated portal CSS and self-hosted
-WOFF2 assets, generated book stylesheet with a Quarto light/dark theme, Typst constants, DOCX style
-values, portal source links, accent-insensitive search, book search and repository actions in the
-template, and issue forms for corrections and proposals.
-
-Pending, and deliberately not claimed here: the sample book upgrade and release, the catalog update,
-the Pages deployment, the independent review record and the owner merge. Those steps run through the
-repository's reviewed release path.
+Implemented and released in toolkit `0.9.1`, template `1.4.1` and sample `v0.4.1`: packaged tokens
+and their contrast tests, generated portal CSS and self-hosted WOFF2 assets, generated book
+stylesheet with a Quarto light/dark theme, Typst constants, DOCX style values, portal source links,
+book search and repository actions in the template, and issue forms for corrections and proposals.
+The catalog lists the release and `portal-pages` serves the portal built from it.
