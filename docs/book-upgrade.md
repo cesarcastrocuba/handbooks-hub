@@ -177,3 +177,13 @@ make full
 The template `1.0.0` already carries these pins, `publishing/_quarto.yml`, the licenses and the
 `check`/`build`/`full` Makefile targets. A book copied from an older template can adopt those files
 from the new template, but it must keep its own content, attribution and catalog metadata.
+
+## Toolkit 0.9.2 to 0.10.0
+
+The reading site uses the same Cosmo base for both schemes, with generated token Sass layers and
+a packaged layout stylesheet. In publishing/_quarto.yml, replace dark: darkly with dark: cosmo.
+The toolkit stages the final light/dark theme layers; books should remove any legacy navbar Tables
+entry. Nonempty table, figure and listing indexes are native Quarto chapters immediately after the
+first page, participating in search, breadcrumbs and sidebar navigation. The old post-render Tables
+page and sidebar injection are gone. Manuscript edits are not required. Print and Markdown retain
+their existing independent indexes. Template release pins are updated separately.

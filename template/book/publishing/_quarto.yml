@@ -24,7 +24,7 @@ format:
     toc-depth: 3
     theme:
       light: cosmo
-      dark: darkly
+      dark: cosmo
     respect-user-color-scheme: true
   typst:
     papersize: a4

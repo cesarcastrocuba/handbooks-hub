@@ -275,217 +275,54 @@ def _aliases(scheme: str) -> str:
     return "\n".join(alias.format(warn=warn) for alias in LEGACY_ALIASES)
 
 
-BOOK_CHROME = """
+# Geometry inherited from the released book layout; palette and type roles remain tokens.
+BOOK_METRICS = {'book-metric-0': '1rem',
+ 'book-metric-1': '1.25rem',
+ 'book-metric-2': '0.94rem',
+ 'book-metric-3': '0.45rem',
+ 'book-metric-4': '0.9rem',
+ 'book-metric-5': '1px',
+ 'book-metric-6': '0.55rem',
+ 'book-metric-7': '0.75rem',
+ 'book-metric-8': '0.5rem',
+ 'book-metric-9': '1.1rem',
+ 'book-metric-10': '0.4rem',
+ 'book-metric-11': '1300px',
+ 'book-metric-12': '56px',
+ 'book-metric-13': '1.02rem',
+ 'book-metric-14': '-.01em',
+ 'book-metric-15': '.2rem',
+ 'book-metric-16': '.55rem',
+ 'book-metric-17': '.84rem',
+ 'book-metric-18': '.8rem',
+ 'book-metric-19': '1.4rem',
+ 'book-metric-20': '1.2rem',
+ 'book-metric-21': '2rem',
+ 'book-metric-22': '4vw',
+ 'book-metric-23': '3rem',
+ 'book-metric-24': '62ch',
+ 'book-metric-25': '.68rem',
+ 'book-metric-26': '.1em',
+ 'book-metric-27': '.82rem',
+ 'book-metric-28': '2px',
+ 'book-metric-29': '.45rem',
+ 'book-metric-30': '4px',
+ 'book-metric-31': '1.35rem',
+ 'book-metric-32': '.7rem',
+ 'book-metric-33': '22rem',
+ 'book-metric-34': '.35rem',
+ 'book-metric-35': '1.5rem',
+ 'book-metric-36': '600px'}
 
-/* Book chrome. The reading site uses Quarto's Bootstrap shell; these rules keep that shell on the
-   same canvas, type and accent as the content. */
-#quarto-header .navbar-container {
-  max-width: 1300px;
-  margin: 0 auto;
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
-}
-#quarto-header .navbar,
-#quarto-header .navbar[data-bs-theme="dark"] {
-  background: var(--canvas) !important;
-  color: var(--text) !important;
-  min-height: 56px;
-  border-bottom: 1px solid var(--border);
-  box-shadow: none;
-  --bs-navbar-color: var(--text);
-  --bs-navbar-hover-color: var(--accent);
-  --bs-navbar-active-color: var(--accent);
-  --bs-navbar-brand-color: var(--heading);
-  --bs-navbar-brand-hover-color: var(--accent);
-}
-#quarto-header .navbar .navbar-brand,
-#quarto-header .navbar .navbar-title {
-  color: var(--heading) !important;
-  font-family: var(--font-display);
-  font-size: 1.02rem;
-  font-weight: 700;
-  letter-spacing: -.01em;
-}
-#quarto-header .navbar .navbar-nav {
-  gap: .2rem;
-}
-#quarto-header .navbar .nav-link {
-  padding-left: .55rem;
-  padding-right: .55rem;
-}
-#quarto-header .navbar .nav-link,
-#quarto-header .navbar .dropdown-toggle {
-  color: var(--text) !important;
-  font-size: .84rem;
-}
-#quarto-header .navbar .nav-link:hover,
-#quarto-header .navbar .nav-link.active {
-  color: var(--accent) !important;
-}
-#quarto-header .quarto-secondary-nav,
-#quarto-header .quarto-page-breadcrumbs {
-  background: var(--canvas);
-  border-bottom: 1px solid var(--border);
-  color: var(--muted);
-  font-size: .8rem;
-}
-#title-block-header {
-  background: var(--canvas);
-  border-bottom: 1px solid var(--border);
-  padding: 1.4rem 0 1.2rem;
-  margin-bottom: 1.4rem;
-}
-#title-block-header .title {
-  color: var(--heading);
-  font-family: var(--font-display);
-  font-size: clamp(2rem, 4vw, 3rem);
-  line-height: 1.08;
-}
-#title-block-header .subtitle {
-  color: var(--muted);
-  font-size: 1rem;
-  max-width: 62ch;
-}
-#title-block-header .quarto-title-meta-heading {
-  color: var(--muted);
-  font-size: .68rem;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-}
-#title-block-header .quarto-title-meta-contents {
-  color: var(--text);
-  font-size: .82rem;
-}
-#quarto-sidebar,
-#quarto-margin-sidebar,
-#TOC,
-.sidebar-navigation {
-  background: var(--canvas) !important;
-  color: var(--text);
-}
-#quarto-sidebar {
-  border-right: 1px solid var(--border);
-}
-.sidebar-title,
-#toc-title {
-  color: var(--muted);
-  font-size: .68rem;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  font-weight: 700;
-}
-.sidebar-navigation a,
-#TOC a,
-.sidebar-item-text {
-  color: var(--text);
-  font-size: .82rem;
-}
-.sidebar-navigation a:hover,
-#TOC a:hover {
-  color: var(--accent);
-}
-.sidebar-navigation a.active,
-#TOC a.active,
-.sidebar-item-container .active {
-  color: var(--accent) !important;
-  border-left: 2px solid var(--accent);
-  padding-left: .55rem;
-  font-weight: 600;
-}
-#quarto-document-content h1,
-#quarto-document-content h2,
-#quarto-document-content h3,
-#quarto-document-content h4,
-#quarto-document-content .title {
-  color: var(--heading);
-  font-family: var(--font-display);
-}
-#quarto-document-content a,
-#quarto-document-content .nav-link,
-#quarto-document-content .quarto-xref {
-  color: var(--accent);
-}
-#quarto-document-content table thead th {
-  background: var(--accent-solid) !important;
-  color: var(--on-solid) !important;
-  border-color: var(--accent-solid) !important;
-  font-weight: 600;
-}
-#quarto-document-content table caption,
-#quarto-document-content .quarto-float-caption,
-#quarto-document-content figcaption {
-  color: var(--muted);
-  font-family: var(--font-sans);
-  font-size: .8rem;
-  font-style: italic;
-  text-align: center;
-  padding-top: .45rem;
-}
-.callout.callout-style-simple {
-  border-left-width: 4px;
-  border-left-style: solid;
-  background: var(--surface);
-  break-inside: avoid;
-  page-break-inside: avoid;
-}
-div.callout.callout-note { border-left-color: var(--callout-note-accent) !important; background: var(--callout-note-tint) !important; }
-div.callout.callout-tip { border-left-color: var(--callout-tip-accent) !important; background: var(--callout-tip-tint) !important; }
-div.callout.callout-warning { border-left-color: var(--callout-warning-accent) !important; background: var(--callout-warning-tint) !important; }
-div.callout.callout-important { border-left-color: var(--callout-important-accent) !important; background: var(--callout-important-tint) !important; }
-div.callout.review { border-left-color: var(--callout-review-accent) !important; background: var(--callout-review-tint) !important; }
-.callout-note .callout-title-container,
-.callout-note .callout-title { color: var(--callout-note-accent) !important; }
-.callout-tip .callout-title-container,
-.callout-tip .callout-title { color: var(--callout-tip-accent) !important; }
-.callout-warning .callout-title-container,
-.callout-warning .callout-title { color: var(--callout-warning-accent) !important; }
-.callout-important .callout-title-container,
-.callout-important .callout-title { color: var(--callout-important-accent) !important; }
-.callout.review .callout-title-container,
-.callout.review .callout-title { color: var(--callout-review-accent) !important; }
-.callout-note .callout-body-container,
-.callout-tip .callout-body-container,
-.callout-warning .callout-body-container,
-.callout-important .callout-body-container { background: transparent; }
-.page-navigation a { color: var(--accent); }
-.list-of-tables {
-  margin: 0 0 2rem;
-  padding-top: 0;
-}
-.list-of-tables h2 {
-  font-family: var(--font-display);
-  color: var(--heading);
-  font-size: 1.35rem;
-  margin: 0 0 .7rem;
-}
-.list-of-tables ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
-  gap: .35rem 1.5rem;
-}
-.list-of-tables li { font-size: .8rem; color: var(--text); }
-.list-of-tables a { color: var(--accent); text-decoration: none; }
-.list-of-tables a:hover { text-decoration: underline; }
-#quarto-document-content pre.text,
-#quarto-document-content div.sourceCode,
-#quarto-document-content pre.sourceCode {
-  background: var(--code);
-  border-radius: 4px;
-  padding: .7rem 1rem;
-}
-#quarto-document-content .callout table tbody tr:nth-child(even) {
-  background-color: transparent;
-}
-@media (max-width: 600px) {
-  html, body { max-width: 100%; overflow-x: hidden; }
-  #quarto-document-content, main.content, .page-columns { min-width: 0; max-width: 100%; }
-  #quarto-document-content table { display: block; width: 100%; overflow-x: auto; }
-  #quarto-document-content pre { max-width: 100%; overflow-x: auto; }
-}
-"""
+
+def book_layout_css() -> str:
+    """Expand the packaged layout using central design measurements."""
+    css = resource_files("handbook_toolkit").joinpath("render_data/html/handbook.css").read_text()
+    for name, value in BOOK_METRICS.items():
+        css = css.replace("{{" + name + "}}", value)
+    return css
+
+
 def portal_theme_css() -> str:
     """Return the portal stylesheet preamble: same-origin fonts plus both schemes."""
 
@@ -526,7 +363,6 @@ def book_theme_css() -> str:
         + "\n"
         + "\n".join(BOOTSTRAP_ALIASES)
         + "\n}}"
-        + BOOK_CHROME
     )
 
 
@@ -582,3 +418,24 @@ def docx_callout_styles() -> dict[str, dict[str, str]]:
     return {kind: {part: f"Callout {kind.title()} {part.title()}"
                    for part in ("title", "body")}
             for kind in load_tokens()["callout"]}
+
+
+def book_scss(scheme: str) -> str:
+    """Generate deterministic Bootstrap/Quarto defaults for the same base theme."""
+    tokens = load_tokens()
+    colors = {name: values[scheme] for name, values in tokens["color"].items()}
+    variables = {"navbar-padding-y": "1rem" if scheme == "dark" else "0.5rem",
+                 "border-color": colors["chrome_rule"],
+                 "body-bg": colors["canvas"], "body-color": colors["text"],
+                 "link-color": colors["accent"], "navbar-bg": colors["canvas"],
+                 "navbar-fg": colors["text"], "sidebar-bg": colors["canvas"],
+                 "sidebar-fg": colors["text"], "headings-color": colors["heading"],
+                 "font-family-sans-serif": '"Handbook Sans"',
+                 "font-family-monospace": '"Handbook Mono"',
+                 "headings-font-family": '"Handbook Serif"'}
+    for kind, roles in tokens["callout"].items():
+        if kind != "review":
+            variables["callout-color-" + kind] = roles["accent"][scheme]
+    return ("/*-- scss:defaults --*/\n" +
+            "\n".join(f"${name}: {value};" for name, value in sorted(variables.items())) +
+            "\n/*-- scss:rules --*/\n")
