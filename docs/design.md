@@ -153,7 +153,8 @@ has no band1Horz/band2Horz conditional formatting. The toolkit writes no row-lev
 come from design.docx_values(); the conformance gate scans every toolkit module.
 
 Contents and caption lists are complex fields with cached hyperlinks. One registry covers tables,
-figures and listings. Hidden caption TC fields select entries with portable field identifiers;
+figures and listings. A TC field at the start of each caption, never formatted as hidden text, selects entries with
+portable field identifiers;
 the list uses TOC with its field-identifier switch, not a localized style-list separator.
 A private LibreOffice probe maps authored paragraph bookmarks to PDF destinations, caches numeric
 PAGEREF results and verifies their pages by another conversion. There are no dirty flags or

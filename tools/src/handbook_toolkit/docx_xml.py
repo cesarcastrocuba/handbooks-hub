@@ -140,17 +140,13 @@ def fields(root: ET.Element) -> list[Field]:
     return result
 
 
-def field_run(kind: str, *, hidden: bool = False) -> ET.Element:
+def field_run(kind: str) -> ET.Element:
     run = ET.Element(W + 'r')
-    if hidden:
-        ET.SubElement(ET.SubElement(run, W + 'rPr'), W + 'vanish')
     ET.SubElement(run, W + 'fldChar', {W + 'fldCharType': kind})
     return run
 
 
-def instruction_run(instruction: str, *, hidden: bool = False) -> ET.Element:
+def instruction_run(instruction: str) -> ET.Element:
     run = ET.Element(W + 'r')
-    if hidden:
-        ET.SubElement(ET.SubElement(run, W + 'rPr'), W + 'vanish')
     ET.SubElement(run, W + 'instrText', {XML_SPACE: 'preserve'}).text = ' ' + instruction + ' '
     return run

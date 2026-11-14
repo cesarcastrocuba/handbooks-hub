@@ -76,6 +76,12 @@ def _references(roots: list[ET.Element]) -> None:
                 raise ValueError(f'DOCX reference field has no bookmark: {target}')
 
 
+def _is_hidden_field_run(run: ET.Element) -> bool:
+    """Desktop Word skips a hidden field when it rebuilds an index from its markers."""
+    marks_field = run.find(W + 'fldChar') is not None or run.find(W + 'instrText') is not None
+    return marks_field and run.find(W + 'rPr/' + W + 'vanish') is not None
+
+
 def validate_docx(archive: ZipFile) -> None:
     """Raise ValueError for a malformed style, property, field or reference."""
     if 'word/styles.xml' not in archive.namelist():
@@ -91,6 +97,8 @@ def validate_docx(archive: ZipFile) -> None:
                 raise ValueError('DOCX must not mark fields dirty')
             if node.tag == W + 'updateFields':
                 raise ValueError('DOCX must not request field updates on open')
+            if node.tag == W + 'r' and _is_hidden_field_run(node):
+                raise ValueError('DOCX field must not be formatted as hidden text')
             if node.tag == W + 'tc':
                 blocks = [child for child in node if child.tag in {W + tag for tag in ('p', 'tbl', 'sdt', 'customXml', 'altChunk')}]
                 if not blocks or blocks[-1].tag != W + 'p':

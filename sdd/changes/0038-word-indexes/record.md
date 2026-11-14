@@ -18,8 +18,9 @@ and leaves Word's field update under reader control.
 
 ## Method
 
-- Remove dirty attributes from every Word XML part and remove updateFields. Hidden TC fields have
-  begin/instruction/end only. Each index ends in a separate final paragraph.
+- Remove dirty attributes from every Word XML part and remove updateFields. TC fields have
+  begin/instruction/end only (the first build formatted them as hidden text; see the Owner's second
+  test in `owner-test.md`). Each index ends in a separate final paragraph.
 - Cache entries as history=1 anchored hyperlinks containing the title and, only for known pages,
   a tab and native PAGEREF with numeric result. Contents keeps Pandoc's selected heading depth;
   caption indexes come from the existing shared registry.
