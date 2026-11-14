@@ -1,25 +1,29 @@
 # Handbook portal
 
-The deployed portal remains the deterministic single-page generator. A complete Quarto website is
-available for preview with `--engine quarto`, behind the parity gate in `HUB-DEC-039`. Its page
-weight exceeds the current portal, so this change does not switch the deployed engine. See
-[change 0033](../sdd/changes/0033-portal-quarto/record.md) for the measured parity table.
+The deployed portal is the Quarto website generated from the catalog. `HUB-DEC-041` switched the
+deployed engine from the single-page generator to `--engine quarto`, and the legacy generator stays
+in the toolkit as `--engine legacy` for rollback. The Owner accepted the measured page weight.
+See [change 0033](../sdd/changes/0033-portal-quarto/record.md) for the parity table.
+
+> **2026-11-14 — deployed engine changed.** `HUB-DEC-041` deploys the Quarto website. The parity
+> evidence of change `0033` is unchanged; its page-weight row (481,658 to 2,425,994 bytes) is the
+> cost the Owner accepted.
 
 ## Build locally
 
-The current engine needs the installed toolkit and no renderer:
-
-```sh
-handbook-toolkit build-portal --catalog catalog/catalog.json --output /tmp/handbook-portal
-# The workflow-compatible entry point remains supported:
-python3 -m handbook_toolkit.portal catalog/catalog.json --output /tmp/handbook-portal-module
-```
-
-The Quarto candidate requires **Quarto 1.11.9**:
+The deployed Quarto engine requires **Quarto 1.11.9**:
 
 ```sh
 handbook-toolkit build-portal --catalog catalog/catalog.json --output /tmp/handbook-portal-quarto --engine quarto
 handbook-toolkit design-preview --output /tmp/handbook-design
+```
+
+The legacy generator needs the installed toolkit and no renderer; it is kept for rollback:
+
+```sh
+handbook-toolkit build-portal --catalog catalog/catalog.json --output /tmp/handbook-portal --engine legacy
+# The workflow-compatible entry point remains supported:
+python3 -m handbook_toolkit.portal catalog/catalog.json --output /tmp/handbook-portal-module
 ```
 
 Every output must be new. Generation validates the catalog, stages only packaged resources in a
@@ -28,7 +32,7 @@ no network request. Quarto's optional sitemap modification times are omitted thr
 step: staging filesystem times are not content history and change between otherwise identical
 builds. No rendered HTML is edited. Repeat-render tests compare every published file byte for byte.
 
-## Candidate structure
+## Site structure
 
 | Page/resource | Source and behavior |
 | --- | --- |
@@ -80,7 +84,8 @@ The template edition-preview CI artifact includes these portal screenshots and e
 ## Deployment
 
 `portal-pages` retains its catalog-only push trigger on `main`, manual build/deploy input,
-permissions and deploy gate. It installs pinned Quarto 1.11.9 and renders both engines, but uploads
-only the legacy `_site` directory to Pages. The candidate `_quarto_candidate` is not deployed.
-Switching the default awaits page-weight parity or an explicit owner decision accepting the cost.
-The book publication and release workflows remain independent.
+permissions, deploy gate and `GITHUB_TOKEN` for the release verification. It installs pinned Quarto
+1.11.9 (the same action commit as `ci.yml`) and renders the site with `--engine quarto` into `_site`,
+which is the directory uploaded to Pages. To roll back, set the engine back to `legacy` in the
+workflow through a reviewed pull request (`HUB-DEC-041`). The book publication and release workflows
+remain independent.
