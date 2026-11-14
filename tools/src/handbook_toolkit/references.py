@@ -54,8 +54,8 @@ def _strip_inline_code(line: str) -> str:
     return "".join(output)
 
 
-def _visible_lines(text: str):
-    """Yield lines outside fenced code, multiline comments and inline code."""
+def _visible_lines(text: str, *, fence_attributes: bool = False):
+    """Yield prose, optionally opening-fence attributes; never fenced code bodies."""
     in_fence = False
     fence_char = ""
     fence_length = 0
@@ -68,6 +68,8 @@ def _visible_lines(text: str):
                 in_fence = True
                 fence_char = marker[0]
                 fence_length = len(marker)
+                if fence_attributes:
+                    yield number, line
                 continue
             if marker[0] == fence_char and len(marker) >= fence_length:
                 in_fence = False
@@ -203,7 +205,7 @@ def validate_references(book_path: Path, book_schema: dict) -> CheckResult:
             continue
         lines = list(_visible_lines(text))
         parsed.append((path, lines))
-        for line_number, line in lines:
+        for line_number, line in _visible_lines(text, fence_attributes=True):
             for match in LABEL.finditer(line):
                 label = match.group(1)
                 labels_by_file.setdefault(path, set()).add(label)

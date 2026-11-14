@@ -6,7 +6,7 @@ from urllib.parse import quote
 import re
 
 from .indexes import LISTS
-from .references import LABEL, FENCE, _visible_lines
+from .references import LABEL, _visible_lines
 from .build_types import BuildError
 
 PAGE_NAMES = {"tbl": "tables.qmd", "fig": "figures.qmd", "lst": "listings.qmd"}
@@ -14,21 +14,8 @@ PAGE_NAMES = {"tbl": "tables.qmd", "fig": "figures.qmd", "lst": "listings.qmd"}
 
 def caption_references(text: str) -> list[tuple[str, str]]:
     """Reuse source-label parsing; code contents never declare captions."""
-    visible = dict(_visible_lines(text))
-    # A listing's attributes belong to its opening fence, not to its code body.
-    inside = False
-    delimiter = ""
-    for number, line in enumerate(text.splitlines(), 1):
-        fence = FENCE.match(line)
-        if fence:
-            marker = fence.group(1)
-            if not inside:
-                inside, delimiter = True, marker
-                visible[number] = line
-            elif marker[0] == delimiter[0] and len(marker) >= len(delimiter):
-                inside = False
     result = []
-    for _, line in sorted(visible.items()):
+    for _, line in _visible_lines(text, fence_attributes=True):
         for match in LABEL.finditer(line):
             label = match.group(1)
             if label.split("-", 1)[0] not in PAGE_NAMES:

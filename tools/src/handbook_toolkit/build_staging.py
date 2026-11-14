@@ -75,7 +75,7 @@ def _validate_manuscripts(
 def _strip_heading_number(title: str) -> str:
     return re.sub(r"^\d+(?:\.\d+)*[ .]+", "", title).strip()
 
-def _transform_chapter(text: str, chapter_number: int) -> str:
+def _transform_chapter(text: str, chapter_number: int, *, strip_heading_numbers: bool = True) -> str:
     """Stage a chapter wrapper and explicit table captions without changing source."""
 
     front: dict[str, Any] = {}
@@ -99,7 +99,9 @@ def _transform_chapter(text: str, chapter_number: int) -> str:
     if first is None:
         raise BuildError("staged chapter has no heading to use as the rendered chapter title")
     heading = lines[first]
-    title = _strip_heading_number(re.sub(r"^#{1,3}\s+", "", heading))
+    title = re.sub(r"^#{1,3}\s+", "", heading)
+    if strip_heading_numbers:
+        title = _strip_heading_number(title)
     if len(re.findall(r"[A-Za-z]", title)) < 3:
         raise BuildError("staged chapter heading is not meaningful")
     remaining = lines[:first] + lines[first + 1 :]
@@ -111,7 +113,7 @@ def _transform_chapter(text: str, chapter_number: int) -> str:
     previous = ""
     for line in remaining:
         heading_match = re.match(r"^(#{1,6})\s+(.*)$", line)
-        if heading_match:
+        if heading_match and strip_heading_numbers:
             line = f"{heading_match.group(1)} {_strip_heading_number(heading_match.group(2))}"
         caption = re.match(r"^(?::|Table:)\s+(.*\S)\s*$", line)
         if caption and previous.lstrip().startswith("|"):

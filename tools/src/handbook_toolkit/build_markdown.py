@@ -12,6 +12,7 @@ from .print_layout import (
 )
 
 from .build_types import BuildError, _run
+from .build_staging import _transform_chapter
 
 MARKDOWN_ENTRY = "book-markdown.qmd"
 
@@ -30,7 +31,7 @@ OMITTED_FIGURE = "*(figure image not included in the Markdown edition)*"
 MARKDOWN_NOTE = (
     "> Markdown edition: the whole book in reading order, generated from the same source commit as "
     "the other payloads. Figures appear as their captions only; use the HTML, PDF or DOCX payload "
-    "for the images. Table and figure counters run sequentially in this file."
+    "for the images. Figure, table and listing labels match the other editions."
 )
 
 def _markdown_sources(workspace: Path, entries: list[str]) -> str:
@@ -38,19 +39,20 @@ def _markdown_sources(workspace: Path, entries: list[str]) -> str:
 
     The Markdown edition is one file, so the per-file front matter of the reading order is
     dropped and include shortcodes are resolved against the combined document at the project
-    root. The canonical sources are read before the render staging rewrites their headings.
+    root. Canonical sources use the shared chapter/table wrapper while retaining title text.
     """
 
     parts: list[str] = []
-    for entry in entries:
+    for chapter_number, entry in enumerate(entries, 1):
         try:
             text = (workspace / entry).read_text(encoding="utf-8")
         except OSError as exc:
             raise BuildError(f"cannot read staged chapter {entry}: {exc}") from exc
+        # Use the same chapter wrapper and automatic table IDs as the other writers,
+        # keeping the canonical title numbers because GFM does not print section numbers.
+        text = _transform_chapter(text, chapter_number, strip_heading_numbers=False)
         match = FRONT_MATTER_BLOCK.match(text)
         body = (text[match.end():] if match else text).strip()
-        if not body:
-            continue
         parts.append(_rewrite_includes(body, entry))
     if not parts:
         raise BuildError("the reading order contains no manuscript content for the Markdown edition")
@@ -219,6 +221,9 @@ def _render_markdown(
     resources: dict[str, Path],
     quarto: str,
     environment: dict[str, str],
+    *,
+    crossref: dict[str, Any] | None = None,
+    language: str = 'en',
 ) -> str:
     """Render one gfm document from the prepared source and return its raw Markdown."""
 
@@ -226,6 +231,9 @@ def _render_markdown(
     config = {
         "project": {"type": "default", "output-dir": MARKDOWN_DIR, "render": [MARKDOWN_ENTRY]},
         "format": {"gfm": {"wrap": "none"}},
+        "number-sections": True,
+        "crossref": {"chapters": True, **(crossref or {})},
+        "lang": language,
         "filters": [
             {"at": "pre-ast", "path": resources["filters/table-layout.lua"].relative_to(workspace).as_posix()},
             {"at": "pre-ast", "path": resources["filters/task-checkbox.lua"].relative_to(workspace).as_posix()},
