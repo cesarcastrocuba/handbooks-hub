@@ -92,10 +92,17 @@ def _caption_kind(paragraph: ET.Element) -> str | None:
 
 
 def _tc_field(paragraph: ET.Element, text: str, letter: str) -> None:
+    """Mark a caption as an entry of its list, in the shape desktop Word rebuilds the list from.
+
+    The field has no result, so it shows nothing. It must not be formatted as hidden text: Word
+    then skips it when it rebuilds the whole list and leaves the list empty.
+    """
     escaped = text.replace('\\', '\\\\').replace('"', '\\"')
-    paragraph.extend((field_run('begin', hidden=True),
-                      instruction_run(f'TC "{escaped}" \\f {letter} \\l 1', hidden=True),
-                      field_run('end', hidden=True)))
+    marker = (field_run('begin'), instruction_run(f'TC "{escaped}" \\f {letter} \\l "1"'),
+              field_run('end'))
+    start = 1 if paragraph.find(W + 'pPr') is not None else 0
+    for offset, run in enumerate(marker):
+        paragraph.insert(start + offset, run)
 
 
 def _collect_entries(root: ET.Element) -> tuple[dict[str, list[Entry]], list[Entry]]:

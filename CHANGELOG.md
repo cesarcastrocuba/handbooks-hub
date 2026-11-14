@@ -16,7 +16,9 @@ references matching the other editions, including unnumbered front matter and ap
 
 Native Word indexes now open with linked, cached page numbers obtained from a private LibreOffice
 bookmark probe and verified by a second conversion. No fields are marked dirty and the document
-requests no update on open. F9 remains available to repaginate each index in desktop Word.
+requests no update on open. F9 remains available to repaginate each index in desktop Word, and
+"Update entire table" rebuilds each list: the caption markers are not formatted as hidden text,
+which made desktop Word skip them.
 Captioned data tables use direct cell banding; callout tables stay plain. Releases require the
 probe with `build-book --require-page-numbers`; local builds without it warn and record title-only
 caches. Decimal page-number restarts are respected; unsupported formats fail a required probe.

@@ -133,6 +133,14 @@ class DocxValidatorTests(unittest.TestCase):
         p.insert(len(p) - 1, field_run('separate'))
         self.check(valid=False)
 
+    def test_field_runs_must_not_be_hidden(self):
+        p = self.root.find('.//' + W + 'p')
+        p.extend((field_run('begin'), instruction_run('TC "Fixture" \\f T \\l "1"'), field_run('end')))
+        self.check(valid=True)
+        marker = [run for run in p if run.find(W + 'instrText') is not None][-1]
+        ET.SubElement(ET.SubElement(marker, W + 'rPr'), W + 'vanish')
+        self.check(valid=False)
+
     def test_cached_pageref_result_must_be_numeric_or_omitted(self):
         self.root.find(W + 'body').extend(cached_field('TOC \\h \\z \\f T', [Entry('Fixture', 'Target')]))
         self.check(valid=True)  # Honest title-only fallback.
@@ -320,6 +328,13 @@ class NativeFieldTests(unittest.TestCase):
             self.assertIn('TOC \\h \\z \\f ' + letter, instructions)
         self.assertIn('TOC \\o "1-3" \\h \\z \\u', instructions)
         self.assertTrue(any('Code \\"quoted\\" \\\\ path' in value for value in instructions))
+        markers = [p for p in body if any((node.text or '').strip().startswith('TC ') for node in p.iter(W + 'instrText'))]
+        self.assertEqual(len(markers), 3)
+        for caption in markers:
+            first = [child for child in caption if child.tag != W + 'pPr'][:3]
+            self.assertEqual([run.find(W + 'fldChar') is not None for run in first], [True, False, True])
+            self.assertTrue(first[1].find(W + 'instrText').text.strip().endswith('\\l "1"'))
+            self.assertEqual(list(caption.iter(W + 'vanish')), [])
         for link in root.iter(W + 'hyperlink'):
             self.assertTrue(link.get(W + 'anchor'))
         self.assertFalse(any(value.startswith('PAGEREF') for value in instructions))

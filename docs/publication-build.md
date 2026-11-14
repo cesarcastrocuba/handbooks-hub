@@ -130,7 +130,7 @@ renderer responsibilities and require visual review.
 
 The build prepares the Word package in docx_post, using parsed XML, registered namespace prefixes,
 schema-ordered properties and deterministic ZIP metadata. It normalizes caption/heading bookmarks,
-adds hidden TC fields, and caches Contents and caption-list entries as internal hyperlinks.
+adds a TC field at the start of each caption (not formatted as hidden text), and caches Contents and caption-list entries as internal hyperlinks.
 The build uses a private LibreOffice profile and fontconfig configuration pointing only at the
 staged toolkit fonts. It exports named destinations, maps them from authored bookmark names and
 writes numeric PAGEREF caches. A final conversion must agree with every cached page or the build
