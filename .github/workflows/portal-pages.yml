@@ -40,6 +40,10 @@ jobs:
           python -m pip install -r requirements-dev.txt
           make full
       - name: Build the approved-release catalog
+        env:
+          # Authenticates the read-only GitHub API calls of the release verification, which
+          # otherwise share the anonymous rate limit of the runner's address.
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           python -m handbook_toolkit.catalog_verification catalog/catalog.json
           python -m handbook_toolkit.portal catalog/catalog.json --output _site

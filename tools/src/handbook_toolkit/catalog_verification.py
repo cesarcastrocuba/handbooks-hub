@@ -7,6 +7,7 @@ import hashlib
 import http.client
 import ipaddress
 import json
+import os
 from pathlib import Path
 import re
 import socket
@@ -21,6 +22,9 @@ from .publication import CHECKSUMS, MANIFEST, verify_publication
 from .validation import CheckResult, Issue, load_document, load_packaged_schema, schema_issues
 
 MAX_DOWNLOAD = 512 * 1024 * 1024
+API_HOST = "api.github.com"
+TOKEN_VARIABLE = "GITHUB_TOKEN"
+RATE_LIMITED = {403, 429}
 
 
 def _public_addresses(host: str) -> list[str]:
@@ -50,6 +54,29 @@ class _PinnedHTTPSConnection(http.client.HTTPSConnection):
             raise
 
 
+def _request_headers(host: str) -> dict[str, str]:
+    """Headers for one request. The token, when set, goes to the GitHub API host and nowhere else."""
+
+    headers = {"User-Agent": "handbook-toolkit-release-verifier"}
+    if host != API_HOST:
+        return headers
+    headers.update({"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"})
+    token = os.environ.get(TOKEN_VARIABLE)
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
+
+
+def _failure(host: str, response: http.client.HTTPResponse) -> ValueError:
+    message = f"remote asset returned HTTP {response.status} from {host}"
+    if response.status in RATE_LIMITED and response.getheader("X-RateLimit-Remaining") == "0":
+        message += (
+            f": the GitHub API rate limit is exhausted; set {TOKEN_VARIABLE} to authenticate "
+            "the requests"
+        )
+    return ValueError(message)
+
+
 def _download(url: str, destination: Path, limit: int) -> None:
     for _ in range(6):
         parsed = urlsplit(url)
@@ -71,13 +98,10 @@ def _download(url: str, destination: Path, limit: int) -> None:
         if connection is None:
             raise OSError("cannot connect to a verified public destination")
         try:
-            headers = {"User-Agent": "handbook-toolkit-release-verifier"}
-            if host == "api.github.com":
-                headers.update({"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"})
             target = quote(parsed.path or "/", safe="/%:@-._~!$&'()*+,;=")
             if parsed.query:
                 target += "?" + quote(parsed.query, safe="=&%:+,;/?@-._~")
-            connection.request("GET", target, headers=headers)
+            connection.request("GET", target, headers=_request_headers(host))
             response = connection.getresponse()
             if response.status in {301, 302, 303, 307, 308}:
                 location = response.getheader("Location")
@@ -86,7 +110,7 @@ def _download(url: str, destination: Path, limit: int) -> None:
                 url = urljoin(url, location)
                 continue  # the next target is resolved, checked and pinned again
             if response.status != 200:
-                raise ValueError(f"remote asset returned HTTP {response.status}")
+                raise _failure(host, response)
             with destination.open("xb") as stream:
                 size = 0
                 while chunk := response.read(64 * 1024):
