@@ -75,6 +75,7 @@ def validate_tokens(
         return sorted(issues)
     issues.extend(_reference_issues(tokens))
     issues.extend(_contrast_issues(tokens))
+    issues.extend(_callout_contrast_issues(tokens))
     return sorted(issues)
 
 
@@ -439,3 +440,50 @@ def book_scss(scheme: str) -> str:
     return ("/*-- scss:defaults --*/\n" +
             "\n".join(f"${name}: {value};" for name, value in sorted(variables.items())) +
             "\n/*-- scss:rules --*/\n")
+
+
+READING_METRICS = {"focus-width": "3px", "focus-offset": "3px", "progress-height": "3px",
+                   "cover-space": "1rem", "cover-radius": "6px", "reveal-distance": "8px",
+                   "favicon-viewbox": "0 0 64 64"}
+
+
+def reading_css() -> str:
+    """Expand the packaged reading controls from central geometry and motion tokens."""
+    css = resource_files("handbook_toolkit").joinpath("render_data/html/reading.css").read_text()
+    tokens = load_tokens()
+    values = dict(READING_METRICS)
+    values.update({"motion-fast": str(tokens["motion"]["fast_ms"]) + "ms",
+                   "motion-normal": str(tokens["motion"]["normal_ms"]) + "ms",
+                   "motion-ease": tokens["motion"]["easing"]})
+    for name, value in values.items():
+        css = css.replace("{{" + name + "}}", value)
+    return css
+
+
+def favicon_svg() -> str:
+    """Render the toolkit's original book mark from approved light palette roles."""
+    svg = resource_files("handbook_toolkit").joinpath("render_data/html/favicon.svg").read_text()
+    colors = load_tokens()["color"]
+    for role in ("accent_solid", "on_solid"):
+        svg = svg.replace("{{" + role + "}}", colors[role]["light"])
+    return svg.replace("{{viewbox}}", READING_METRICS["favicon-viewbox"])
+
+
+def example_figure_svg() -> str:
+    """Generate original template artwork with portable, token-derived print colors."""
+    svg = resource_files("handbook_toolkit").joinpath("render_data/figures/section-structure.svg").read_text()
+    for role in ("canvas", "text"):
+        svg = svg.replace("{{" + role + "}}", load_tokens()["color"][role]["print"])
+    return svg
+
+
+def _callout_contrast_issues(tokens: dict[str, Any]) -> list[Issue]:
+    """Callout titles use their accent on their tint, including small web titles."""
+    issues = []
+    for name, role in tokens["callout"].items():
+        for scheme in SCHEMES:
+            ratio = contrast_ratio(role["accent"][scheme], role["tint"][scheme])
+            if ratio < MINIMUM_TEXT_CONTRAST:
+                issues.append(Issue(f"$.callout.{name}.{scheme}",
+                                    f"title contrast {ratio:.2f}:1 is below the required {MINIMUM_TEXT_CONTRAST}:1"))
+    return issues

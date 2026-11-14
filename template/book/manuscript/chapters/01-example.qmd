@@ -23,6 +23,9 @@ A chapter is a reviewed decision record, not a collection of pages.
 **Why it is needed.** Without a complete example, authors copy an incomplete shape.
 
 **Example.** An illustrative handbook names one reader, one outcome and one excluded subject.
+@fig-section-structure shows how the section moves from scope to evidence and review.
+
+![An argument moves from scope and purpose to a worked example, then a decision and review.](../images/section-structure.svg){#fig-section-structure fig-alt="Three connected boxes: define scope and purpose; show a worked example; decide, then review." width="90%"}
 
 ::: {.callout-warning appearance="simple" icon=false title="Common Pitfall"}
 Treating the template text as publishable content instead of replacing it.

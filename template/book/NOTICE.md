@@ -32,3 +32,9 @@ The toolkit renders PDF editions with the bundled Source Sans 3, Source Serif 4 
 distributed under the SIL Open Font License 1.1 and embedded as subsets. The font license does not
 extend to the document that uses them. If a book distributes the font files themselves, it must
 include the license files shipped with the toolkit.
+
+## Original example figure
+
+manuscript/images/section-structure.svg is original Handbook Hub artwork distributed as template
+content under CC BY-SA 4.0. It is generated from the shared design tokens; no third-party diagram
+was imported. Adapt it with the same attribution as the example prose, or replace it with your own.

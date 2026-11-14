@@ -191,7 +191,8 @@ def _style_docx_callouts(root: ET.Element, word: str) -> None:
 
 
 def _normalise_cell_paragraph(paragraph: ET.Element, word: str) -> None:
-    if _paragraph_style(paragraph, word) in {"ImageCaption", "TableCaption", "Caption", "ListingCaption"}:
+    if (_paragraph_style(paragraph, word) in {"ImageCaption", "TableCaption", "Caption", "ListingCaption"}
+            or paragraph.find(f".//{word}drawing") is not None):
         return
     properties = paragraph.findall(f"./{word}pPr")
     if not properties:
@@ -289,6 +290,10 @@ def _format_table_headers(root: ET.Element, word: str) -> None:
         # walk, the nested content too. Leave wrappers alone; style the table
         # that actually holds the data.
         if any(node is not table and node.tag == f"{word}tbl" for node in table.iter()):
+            continue
+        # Pandoc marks genuine header rows; figure/layout wrappers explicitly opt out.
+        look = table.find(f"./{word}tblPr/{word}tblLook")
+        if look is None or look.get(f"{word}firstRow") not in {"1", "true", "on"}:
             continue
         rows = table.findall(f"{word}tr")
         if not rows:

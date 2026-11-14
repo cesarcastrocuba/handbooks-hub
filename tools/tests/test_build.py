@@ -453,7 +453,7 @@ class BuildTests(unittest.TestCase):
             with zipfile.ZipFile(output / "book-source.zip") as archive:
                 self.assertEqual(archive.comment.decode("ascii"), commit)
             with zipfile.ZipFile(output / "book-html.zip") as archive:
-                site = archive.read("index.html").decode("utf-8")
+                site = archive.read("manuscript/chapters/pilot.html").decode("utf-8")
             with zipfile.ZipFile(output / "book.docx") as archive:
                 document_xml = archive.read("word/document.xml").decode("utf-8")
                 settings_xml = archive.read("word/settings.xml").decode("utf-8")
@@ -509,7 +509,7 @@ class BuildTests(unittest.TestCase):
             with zipfile.ZipFile(output / "book-html.zip") as archive:
                 for name, label in (("figures.html", "fig-fixture"), ("listings.html", "lst-fixture")):
                     page = archive.read(name).decode()
-                    self.assertIn('index.html#' + label, page)
+                    self.assertIn('manuscript/chapters/pilot.html#' + label, page)
                     self.assertIn('quarto-sidebar', page)
                     self.assertIn('quarto-xref', page)
             tree = Document(tables_page).root
@@ -517,13 +517,26 @@ class BuildTests(unittest.TestCase):
             target_links = [link for link in links if "quarto-xref" in (link.attrs.get("class") or "").split()]
             self.assertEqual(len(target_links), 1)
             self.assertEqual(target_links[0].text().replace(chr(160), " "), "Table 1.1")
-            self.assertTrue(target_links[0].attrs["href"].startswith("index.html#tbl-"))
+            self.assertTrue(target_links[0].attrs["href"].startswith("manuscript/chapters/pilot.html#tbl-"))
             self.assertEqual(tree.find("main")[0].find("h1")[0].text().strip(), "List of Tables")
             self.assertIn("List of Tables", tables_page)
-            self.assertIn('href="index.html#tbl-', tables_page)
+            self.assertIn('href="manuscript/chapters/pilot.html#tbl-', tables_page)
             self.assertIn('menu-text">List of Tables</span>', tables_page)
             self.assertIn('menu-text">List of Tables</span>', index_page)
             self.assertIn('class="sidebar-item-text sidebar-link"', index_page)
+            cover = Document(index_page).root
+            self.assertEqual(len([a for a in cover.find("a") if a.text().strip() == "Start reading"]),1)
+            self.assertTrue(cover.find("a", id="quarto-skip-link"))
+            for script in cover.find("script"):
+                source = script.attrs.get("src")
+                if source:
+                    self.assertTrue(source.lstrip("./").startswith("site_libs/"), source)
+                elif script.attrs.get("id"):
+                    self.assertIn(script.attrs["id"], {"quarto-search-options", "quarto-html-before-body", "quarto-html-after-body"})
+                else:
+                    self.assertTrue(script.text().strip().startswith("window.quartoScrollableRegionsLabels ="))
+            footer = cover.find("footer")[0]
+            self.assertIn("1.0.0-preview", footer.text())
             self.assertIn("A Pilot Section", site)
             markdown = (output / "book.md").read_text(encoding="utf-8")
             self.assertTrue(markdown.startswith("# Build Fixture\n"))
@@ -650,6 +663,27 @@ class BuildTests(unittest.TestCase):
             with zipfile.ZipFile(output / "book-html.zip") as archive:
                 self.assertFalse({"tables.html", "figures.html", "listings.html"} & set(archive.namelist()))
 
+
+    def test_canonical_root_index_survives_generated_web_cover(self) -> None:
+        import yaml
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)
+            repo,_=make_book(root)
+            source=repo/"manuscript/chapters/pilot.qmd"
+            (repo/"index.qmd").write_text(source.read_text().replace("../images/fixture.png","manuscript/images/fixture.png") + "\n[Back to this section](index.qmd#fig-fixture)\n")
+            source.unlink()
+            book=yaml.safe_load((repo/"book.yaml").read_text())
+            book["manuscript"]["root"]="."
+            (repo/"book.yaml").write_text(yaml.safe_dump(book))
+            (repo/"manuscript/book.yml").write_text("chapters: [index.qmd]\n")
+            commit=commit_all(repo)
+            build_book(repo,commit,root/"dist",profile=PROFILE,mode="section-pilot")
+            with zipfile.ZipFile(root/"dist/book-html.zip") as archive:
+                chapter=Document(archive.read("handbook-source-index.html").decode()).root
+                self.assertIn("A Pilot Section",chapter.text())
+                self.assertTrue(any(link.attrs.get("href","").endswith("handbook-source-index.html#fig-fixture") for link in chapter.find("a")))
+                cover=Document(archive.read("index.html").decode()).root
+                self.assertTrue(any(link.attrs.get("href","").endswith("handbook-source-index.html") for link in cover.find("a") if link.text()=="Start reading"))
 
     def test_toolkit_pin_mismatch_is_refused_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

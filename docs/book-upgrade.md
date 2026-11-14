@@ -187,3 +187,25 @@ entry. Nonempty table, figure and listing indexes are native Quarto chapters imm
 first page, participating in search, breadcrumbs and sidebar navigation. The old post-render Tables
 page and sidebar injection are gone. Manuscript edits are not required. Print and Markdown retain
 their existing independent indexes. Template release pins are updated separately.
+
+### Reading experience in 0.10.0
+
+The toolkit generates a web cover and keeps Document Control on a separate page. It groups the
+sidebar by the existing reading-order groups and places caption lists in front matter. No manual
+cover, list chapter, sidebar entry or footer needs to be added to publishing/_quarto.yml. Remove a
+legacy navbar Tables entry if present. PDF, DOCX and Markdown retain their existing reading order.
+
+The summary comes from book.yaml catalog.summary; publishing/metadata.yaml may provide subtitle,
+author and status. The footer carries the edition, source-derived date and licence on every page.
+For a custom publication domain set site_url in metadata (or book.site-url in the Quarto config).
+GitHub repository URLs use the publication pipeline's standard owner.github.io/repository/ URL.
+Placeholder or non-GitHub repositories need an explicit site URL for canonical links.
+
+Only known URLs should be supplied as release_url and edition_urls in metadata; edition_urls may
+map pdf, html, docx, markdown and source to immutable asset URLs. Unknown links and all release
+links in preview builds are omitted. The toolkit never invents a release URL from a future version.
+Favicon, description, Open Graph, Twitter metadata and canonical links use native Quarto options.
+
+Motion uses native CSS progressively and is disabled by the reduced-motion preference. No script
+or external resource is added. The warning title accent is slightly darker to meet normal-text AA
+on its tint (4.57:1); the DOCX reference is regenerated from that same token.

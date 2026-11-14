@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 180" role="img" aria-labelledby="title desc">
+  <title id="title">The argument of a handbook section</title>
+  <desc id="desc">Definition and purpose lead to a worked example, followed by a decision and a review checklist.</desc>
+  <rect width="720" height="180" fill="#F6F1E7"/>
+  <g fill="none" stroke="#1D2A2C" stroke-width="2">
+    <rect x="20" y="40" width="200" height="100" rx="8"/>
+    <rect x="260" y="40" width="200" height="100" rx="8"/>
+    <rect x="500" y="40" width="200" height="100" rx="8"/>
+    <path d="M220 90h40m-10-8 10 8-10 8M460 90h40m-10-8 10 8-10 8"/>
+  </g>
+  <g fill="#1D2A2C" font-family="sans-serif" text-anchor="middle" font-size="18">
+    <text x="120" y="83">Define the scope</text><text x="120" y="111">and purpose</text>
+    <text x="360" y="83">Show a worked</text><text x="360" y="111">example</text>
+    <text x="600" y="83">Decide, then</text><text x="600" y="111">review</text>
+  </g>
+</svg>

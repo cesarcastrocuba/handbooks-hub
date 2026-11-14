@@ -61,3 +61,10 @@ The review, file hashes and the replacements made are in
 Unless a book's owner records an exception, handbook content defaults to CC BY-SA 4.0 and book
 software defaults to MIT. Every book must carry its own `LICENSE`, `LICENSE-CODE` and `NOTICE` before
 publication, and must complete a third-party rights review for imported material.
+
+## Original reading-site artwork
+
+The toolkit favicon and the template section-structure illustration are original project artwork,
+not imported third-party material. Their packaged drawing sources and generator are toolkit code
+under MIT. The generated illustration distributed in the book template is template content under
+CC BY-SA 4.0. Its palette is generated from the shared design tokens.

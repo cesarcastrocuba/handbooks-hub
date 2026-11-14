@@ -273,6 +273,8 @@ def _render_config(
         stylesheets = [existing_css]
     else:
         stylesheets = list(existing_css)
+    if "html/reading.css" in resources:
+        stylesheets.append(staged("html/reading.css"))
     html_format["css"] = [tokens_css] + [sheet for sheet in stylesheets if sheet != tokens_css]
     execute = config.setdefault("execute", {})
     if not isinstance(execute, dict):

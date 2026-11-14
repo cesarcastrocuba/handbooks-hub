@@ -10,6 +10,9 @@ semantic versioning once the toolkit is published.
 - Generate reading-site theme layers from tokens with one base in light and dark; package layout CSS.
 - Render nonempty table, figure and listing indexes as native Quarto pages without HTML repair.
 - Separate publication orchestration, staging, identity and edition packaging into focused modules.
+- Add a generated web cover, native part navigation, edition footer, favicon and social metadata.
+- Add an original SVG example figure and native CSS motion that respects reduced-motion preferences.
+- Validate component contrast; darken the light/print warning accent for accessible small titles.
 
 ## [1.4.2] - 2026-11-14
 
