@@ -60,7 +60,7 @@ class GeneratedSurfaceTests(unittest.TestCase):
 
     def test_all_packaged_book_styles_use_central_values(self) -> None:
         dimensions = re.compile(r"(?<![\w-])-?(?:\d*\.)?\d+(?:px|rem|em|ch|vw)\b")
-        for path in (RENDER / "html").glob("*.css"):
+        for path in RENDER.rglob("*.css"):
             with self.subTest(resource=path.name):
                 source = path.read_text()
                 self.assertEqual(HEX.findall(source), [])

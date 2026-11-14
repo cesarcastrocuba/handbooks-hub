@@ -177,6 +177,12 @@ class EditionPreviewJobTests(unittest.TestCase):
         self.assertFalse(strategy["fail-fast"])
         self.assertEqual([entry["book"] for entry in strategy["matrix"]["include"]], ["template", "sample"])
 
+    def test_template_job_uploads_portal_parity_and_screenshots(self) -> None:
+        step=next(step for step in self.job['steps'] if step.get('name')=='Preview both portal engines and their parity')
+        self.assertEqual(step['if'],"matrix.book == 'template'")
+        self.assertIn('tools/scripts/portal_preview.py',step['run'])
+        self.assertIn('$RUNNER_TEMP/edition-preview/portal',step['run'])
+
     def test_every_action_is_pinned_to_a_commit(self) -> None:
         actions = [step["uses"] for step in self.job["steps"] if "uses" in step]
         self.assertTrue(actions)
