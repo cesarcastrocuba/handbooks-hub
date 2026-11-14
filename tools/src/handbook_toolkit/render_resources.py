@@ -4,7 +4,7 @@ from importlib.resources import files
 from pathlib import Path
 import shutil
 import json
-from .design import docx_callout_styles
+from .design import docx_callout_styles, book_layout_css
 
 RESOURCE_NAMES = (
     "filters/index-resources.lua",
@@ -65,6 +65,8 @@ def stage_render_resources(destination: Path) -> dict[str, Path]:
                     for kind, names in docx_callout_styles().items()
                 )
                 target.write_text(target.read_text().replace("local styles = {}", "local styles = {\n" + entries + "\n}"))
+            if name == "html/handbook.css":
+                target.write_text(book_layout_css(), encoding="utf-8")
             staged[name] = target
         return staged
     except Exception:

@@ -26,6 +26,7 @@ import zipfile
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import support  # noqa: E402
+from html_support import Document
 from handbook_toolkit.build import (  # noqa: E402
     BuildError,
     _clean_markdown,
@@ -33,7 +34,6 @@ from handbook_toolkit.build import (  # noqa: E402
     _markdown_sources,
     _reject_local_paths,
     _render_config,
-    _inject_table_index,
     build_book,
 )
 from handbook_toolkit.docx_post import _reflow_license_paragraph
@@ -67,6 +67,10 @@ PILOT = """\
 : Fixture table caption.
 
 ![An original fixture diagram.](../images/fixture.png){#fig-fixture}
+
+```{#lst-fixture .python lst-cap="Fixture listing"}
+print("fixture")
+```
 
 ::: {.callout-warning appearance="simple" icon=false title="Common Pitfall"}
 Treating a successful render as editorial approval.
@@ -180,7 +184,7 @@ status: draft
 profile:
   id: standard
   version: "1.0.0"
-toolkit: "0.9.2"
+toolkit: "0.10.0"
 license:
   content: CC-BY-SA-4.0
   code: MIT
@@ -399,34 +403,6 @@ class MarkdownEditionTests(unittest.TestCase):
         self.assertIn("| Content license | CC BY-SA 4.0 |", header)
 
 
-class TablesPageTests(unittest.TestCase):
-    def test_title_with_regex_syntax_is_escaped_not_interpreted(self) -> None:
-        with tempfile.TemporaryDirectory() as temp:
-            site = Path(temp)
-            (site / "index.html").write_text(
-                "<html><head><title>Handbook \\T</title></head><body>"
-                '<nav id="quarto-sidebar"><div class="sidebar-menu-container">'
-                '<ul class="list-unstyled mt-1"><li class="sidebar-item">'
-                '<div class="sidebar-item-container"><a href="./index.html" '
-                'class="sidebar-item-text sidebar-link active">'
-                '<span class="menu-text">Document Control</span></a></div></li></ul>'
-                "</div></nav><main class=\"content\"><p>Document Control</p></main>"
-                "</body></html>",
-                encoding="utf-8",
-            )
-            chapter = site / "manuscript/chapters"
-            chapter.mkdir(parents=True)
-            (chapter / "ch02.html").write_text(
-                '<div id="tbl-1" class="quarto-float"><figcaption>Table 1: Routes</figcaption></div>',
-                encoding="utf-8",
-            )
-            _inject_table_index(site)
-            page = (site / "tables.html").read_text(encoding="utf-8")
-            self.assertIn("<title>List of Tables — Handbook \\T</title>", page)
-            self.assertIn("Table 1: Routes", page)
-            self.assertIn('href="manuscript/chapters/ch02.html#tbl-1"', page)
-
-
 WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 W = "{%s}" % WORD_NS
 
@@ -493,7 +469,7 @@ class BuildTests(unittest.TestCase):
             self.assertEqual(len(ids), len(set(ids)))
             instructions = [item.instruction for item in fields(document)]
             self.assertTrue(any(value.startswith("TOC ") and "\\o" in value for value in instructions))
-            for letter in ("T", "F"):
+            for letter in ("T", "F", "L"):
                 self.assertTrue(any(value == f"TOC \\h \\z \\f {letter}" for value in instructions))
             self.assertTrue(any(value.startswith("TC ") for value in instructions))
             self.assertFalse(any(value.startswith("PAGEREF") for value in instructions))
@@ -530,10 +506,23 @@ class BuildTests(unittest.TestCase):
             with zipfile.ZipFile(output / "book-html.zip") as archive:
                 tables_page = archive.read("tables.html").decode("utf-8")
                 index_page = archive.read("index.html").decode("utf-8")
+            with zipfile.ZipFile(output / "book-html.zip") as archive:
+                for name, label in (("figures.html", "fig-fixture"), ("listings.html", "lst-fixture")):
+                    page = archive.read(name).decode()
+                    self.assertIn('index.html#' + label, page)
+                    self.assertIn('quarto-sidebar', page)
+                    self.assertIn('quarto-xref', page)
+            tree = Document(tables_page).root
+            links = tree.find("a")
+            target_links = [link for link in links if "quarto-xref" in (link.attrs.get("class") or "").split()]
+            self.assertEqual(len(target_links), 1)
+            self.assertEqual(target_links[0].text().replace(chr(160), " "), "Table 1.1")
+            self.assertTrue(target_links[0].attrs["href"].startswith("index.html#tbl-"))
+            self.assertEqual(tree.find("main")[0].find("h1")[0].text().strip(), "List of Tables")
             self.assertIn("List of Tables", tables_page)
             self.assertIn('href="index.html#tbl-', tables_page)
-            self.assertIn('menu-text">Tables</span>', tables_page)
-            self.assertIn('menu-text">Tables</span>', index_page)
+            self.assertIn('menu-text">List of Tables</span>', tables_page)
+            self.assertIn('menu-text">List of Tables</span>', index_page)
             self.assertIn('class="sidebar-item-text sidebar-link"', index_page)
             self.assertIn("A Pilot Section", site)
             markdown = (output / "book.md").read_text(encoding="utf-8")
@@ -658,6 +647,9 @@ class BuildTests(unittest.TestCase):
             result = build_book(repo, commit, output)
             self.assertTrue(result.output.is_dir())
             self.assertTrue(verify_publication(output).ok)
+            with zipfile.ZipFile(output / "book-html.zip") as archive:
+                self.assertFalse({"tables.html", "figures.html", "listings.html"} & set(archive.namelist()))
+
 
     def test_toolkit_pin_mismatch_is_refused_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -665,7 +657,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.9.2"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.10.0"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             commit = commit_all(repo, "mismatched toolkit pin")
@@ -727,7 +719,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.9.2"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.10.0"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             commit = commit_all(repo, "preview toolkit pin")
@@ -779,7 +771,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.9.2"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.10.0"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             _git(repo, "update-index", "--assume-unchanged", "book.yaml")

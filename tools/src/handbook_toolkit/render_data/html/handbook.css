@@ -25,8 +25,8 @@ table.table, main table {
   width: 100%;
   border-collapse: collapse;
   border: 0;
-  margin: 1rem auto 1.25rem auto;
-  font-size: 0.94rem;
+  margin: {{book-metric-0}} auto {{book-metric-1}} auto;
+  font-size: {{book-metric-2}};
 }
 
 table.caption-top, table.table, main table {
@@ -37,8 +37,8 @@ table caption {
   color: var(--muted);
   font-style: italic;
   text-align: center;
-  padding: 0.45rem 0 0 0;
-  font-size: 0.9rem;
+  padding: {{book-metric-3}} 0 0 0;
+  font-size: {{book-metric-4}};
 }
 
 figure, .quarto-figure, .quarto-float {
@@ -56,15 +56,15 @@ table.table thead th, main table thead th {
   color: var(--on-solid);
   font-weight: 600;
   border: 0;
-  border-bottom: 1px solid var(--accent-solid);
-  padding: 0.55rem 0.75rem;
+  border-bottom: {{book-metric-5}} solid var(--accent-solid);
+  padding: {{book-metric-6}} {{book-metric-7}};
   text-align: left;
 }
 
 table.table tbody td, main table tbody td {
   border: 0;
-  border-bottom: 1px solid var(--border);
-  padding: 0.5rem 0.75rem;
+  border-bottom: {{book-metric-5}} solid var(--border);
+  padding: {{book-metric-8}} {{book-metric-7}};
   vertical-align: top;
 }
 
@@ -79,13 +79,226 @@ figcaption, .figure-caption {
 }
 
 .list-of-tables ul {
-  padding-left: 1.1rem;
+  padding-left: {{book-metric-9}};
 }
 
 .list-of-tables li {
-  margin: 0.4rem 0;
+  margin: {{book-metric-10}} 0;
 }
 
 .callout table tbody tr:nth-child(even) {
   background-color: transparent;
 }
+
+
+/* Book chrome. The reading site uses Quarto's Bootstrap shell; these rules keep that shell on the
+   same canvas, type and accent as the content. */
+#quarto-header .navbar-container {
+  max-width: {{book-metric-11}};
+  margin: 0 auto;
+  padding-left: {{book-metric-1}};
+  padding-right: {{book-metric-1}};
+}
+#quarto-header .navbar,
+#quarto-header .navbar[data-bs-theme="dark"] {
+  background: var(--canvas);
+  color: var(--text);
+  min-height: {{book-metric-12}};
+  border-bottom: {{book-metric-5}} solid var(--border);
+  box-shadow: none;
+  --bs-navbar-color: var(--text);
+  --bs-navbar-hover-color: var(--accent);
+  --bs-navbar-active-color: var(--accent);
+  --bs-navbar-brand-color: var(--heading);
+  --bs-navbar-brand-hover-color: var(--accent);
+}
+#quarto-header .navbar .navbar-brand,
+#quarto-header .navbar .navbar-title {
+  color: var(--heading);
+  font-family: var(--font-display);
+  font-size: {{book-metric-13}};
+  font-weight: 700;
+  letter-spacing: {{book-metric-14}};
+}
+#quarto-header .navbar .navbar-nav {
+  gap: {{book-metric-15}};
+}
+#quarto-header .navbar .nav-link {
+  padding-left: {{book-metric-16}};
+  padding-right: {{book-metric-16}};
+}
+#quarto-header .navbar .nav-link,
+#quarto-header .navbar .dropdown-toggle {
+  color: var(--text);
+  font-size: {{book-metric-17}};
+}
+#quarto-header .navbar .nav-link:hover,
+#quarto-header .navbar .nav-link.active {
+  color: var(--accent);
+}
+#quarto-header .quarto-secondary-nav,
+#quarto-header .quarto-page-breadcrumbs {
+  background: var(--canvas);
+  border-bottom: {{book-metric-5}} solid var(--border);
+  color: var(--muted);
+  font-size: {{book-metric-18}};
+}
+#title-block-header {
+  background: var(--canvas);
+  border-bottom: {{book-metric-5}} solid var(--border);
+  padding: {{book-metric-19}} 0 {{book-metric-20}};
+  margin-bottom: {{book-metric-19}};
+}
+#title-block-header .title {
+  color: var(--heading);
+  font-family: var(--font-display);
+  font-size: clamp({{book-metric-21}}, {{book-metric-22}}, {{book-metric-23}});
+  line-height: 1.08;
+}
+#title-block-header .subtitle {
+  color: var(--muted);
+  font-size: {{book-metric-0}};
+  max-width: {{book-metric-24}};
+}
+#title-block-header .quarto-title-meta-heading {
+  color: var(--muted);
+  font-size: {{book-metric-25}};
+  letter-spacing: {{book-metric-26}};
+  text-transform: uppercase;
+}
+#title-block-header .quarto-title-meta-contents {
+  color: var(--text);
+  font-size: {{book-metric-27}};
+}
+#quarto-sidebar,
+#quarto-margin-sidebar,
+#TOC,
+.sidebar-navigation {
+  background: var(--canvas);
+  color: var(--text);
+}
+#quarto-sidebar {
+  border-right: {{book-metric-5}} solid var(--border);
+}
+.sidebar-title,
+#toc-title {
+  color: var(--muted);
+  font-size: {{book-metric-25}};
+  letter-spacing: {{book-metric-26}};
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.sidebar-navigation a,
+#TOC a,
+.sidebar-item-text {
+  color: var(--text);
+  font-size: {{book-metric-27}};
+}
+.sidebar-navigation a:hover,
+#TOC a:hover {
+  color: var(--accent);
+}
+.sidebar-navigation a.active,
+#TOC a.active,
+.sidebar-item-container .active {
+  color: var(--accent);
+  border-left: {{book-metric-28}} solid var(--accent);
+  padding-left: {{book-metric-16}};
+  font-weight: 600;
+}
+#quarto-document-content h1,
+#quarto-document-content h2,
+#quarto-document-content h3,
+#quarto-document-content h4,
+#quarto-document-content .title {
+  color: var(--heading);
+  font-family: var(--font-display);
+}
+#quarto-document-content a,
+#quarto-document-content .nav-link,
+#quarto-document-content .quarto-xref {
+  color: var(--accent);
+}
+#quarto-document-content table thead th {
+  background: var(--accent-solid);
+  color: var(--on-solid);
+  border-color: var(--accent-solid);
+  font-weight: 600;
+}
+#quarto-document-content table caption,
+#quarto-document-content .quarto-float-caption,
+#quarto-document-content figcaption {
+  color: var(--muted);
+  font-family: var(--font-sans);
+  font-size: {{book-metric-18}};
+  font-style: italic;
+  text-align: center;
+  padding-top: {{book-metric-29}};
+}
+.callout.callout-style-simple {
+  border-left-width: {{book-metric-30}};
+  border-left-style: solid;
+  background: var(--surface);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+div.callout.callout-note { border-left-color: var(--callout-note-accent); background: var(--callout-note-tint); }
+div.callout.callout-tip { border-left-color: var(--callout-tip-accent); background: var(--callout-tip-tint); }
+div.callout.callout-warning { border-left-color: var(--callout-warning-accent); background: var(--callout-warning-tint); }
+div.callout.callout-important { border-left-color: var(--callout-important-accent); background: var(--callout-important-tint); }
+div.callout.review { border-left-color: var(--callout-review-accent); background: var(--callout-review-tint); }
+.callout-note .callout-title-container,
+.callout-note .callout-title { color: var(--callout-note-accent); }
+.callout-tip .callout-title-container,
+.callout-tip .callout-title { color: var(--callout-tip-accent); }
+.callout-warning .callout-title-container,
+.callout-warning .callout-title { color: var(--callout-warning-accent); }
+.callout-important .callout-title-container,
+.callout-important .callout-title { color: var(--callout-important-accent); }
+.callout.review .callout-title-container,
+.callout.review .callout-title { color: var(--callout-review-accent); }
+.callout-note .callout-body-container,
+.callout-tip .callout-body-container,
+.callout-warning .callout-body-container,
+.callout-important .callout-body-container { background: transparent; }
+.page-navigation a { color: var(--accent); }
+.list-of-tables {
+  margin: 0 0 {{book-metric-21}};
+  padding-top: 0;
+}
+.list-of-tables h2 {
+  font-family: var(--font-display);
+  color: var(--heading);
+  font-size: {{book-metric-31}};
+  margin: 0 0 {{book-metric-32}};
+}
+.list-of-tables ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, {{book-metric-33}}), 1fr));
+  gap: {{book-metric-34}} {{book-metric-35}};
+}
+.list-of-tables li { font-size: {{book-metric-18}}; color: var(--text); }
+.list-of-tables a { color: var(--accent); text-decoration: none; }
+.list-of-tables a:hover { text-decoration: underline; }
+#quarto-document-content pre.text,
+#quarto-document-content div.sourceCode,
+#quarto-document-content pre.sourceCode {
+  background: var(--code);
+  border-radius: {{book-metric-30}};
+  padding: {{book-metric-32}} {{book-metric-0}};
+}
+#quarto-document-content .callout table tbody tr:nth-child(even) {
+  background-color: transparent;
+}
+@media (max-width: {{book-metric-36}}) {
+  html, body { max-width: 100%; overflow-x: hidden; }
+  #quarto-document-content, main.content, .page-columns { min-width: 0; max-width: 100%; }
+  #quarto-document-content table { display: block; width: 100%; overflow-x: auto; }
+  #quarto-document-content pre { max-width: 100%; overflow-x: auto; }
+}
+
+/* Native title blocks omit the bottom title margin used by the former list page. */
+body:has(.list-of-tables) #title-block-header .title { margin-bottom: {{book-metric-0}}; }

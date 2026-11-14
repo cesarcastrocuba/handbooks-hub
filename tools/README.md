@@ -75,3 +75,10 @@ subcommand fails the suite.
 GitHub Actions additionally builds a wheel, verifies that the three schemas are inside it, installs
 the wheel in an isolated virtual environment and validates a copy of the template book outside the
 hub checkout. That job is not a publication step.
+
+## Reading-site internals
+
+Toolkit 0.10.0 generates same-base light/dark Sass from the design tokens, stages the packaged
+HTML stylesheet, and creates nonempty table/figure/listing pages before Quarto renders HTML.
+The native pages provide search, sidebar and breadcrumbs. build.py retains the public build API;
+build_staging, build_identity, build_html and build_markdown own the separate pipeline concerns.

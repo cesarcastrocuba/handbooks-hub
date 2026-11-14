@@ -111,7 +111,7 @@ def _transform_chapter(text: str, chapter_number: int) -> str:
         heading_match = re.match(r"^(#{1,6})\s+(.*)$", line)
         if heading_match:
             line = f"{heading_match.group(1)} {_strip_heading_number(heading_match.group(2))}"
-        caption = re.match(r"^:\s+(.*\S)\s*$", line)
+        caption = re.match(r"^(?::|Table:)\s+(.*\S)\s*$", line)
         if caption and previous.lstrip().startswith("|"):
             table_number += 1
             if not re.search(r"\{#tbl-[^}]+\}\s*$", caption.group(1)):
@@ -257,6 +257,12 @@ def _render_config(
 
     html_format = config["format"]["html"]
     html_format.setdefault("toc-title", "Contents")
+    themes = {}
+    for scheme in ("light", "dark"):
+        theme = workspace / f"handbook-{scheme}.scss"
+        theme.write_text(design.book_scss(scheme), encoding="utf-8")
+        themes[scheme] = ["cosmo", theme.name]
+    html_format["theme"] = themes
     html_tokens = resources["html/handbook.css"].parent / "design-tokens.css"
     html_tokens.write_text(design.book_theme_css(), encoding="utf-8")
     tokens_css = html_tokens.relative_to(workspace).as_posix()

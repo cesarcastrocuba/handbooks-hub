@@ -44,7 +44,8 @@
         "accent_solid": { "$ref": "#/$defs/color_role" },
         "on_solid": { "$ref": "#/$defs/color_role" },
         "border": { "$ref": "#/$defs/color_role" },
-        "code": { "$ref": "#/$defs/color_role" }
+        "code": { "$ref": "#/$defs/color_role" },
+        "chrome_rule": { "$ref": "#/$defs/color_role" }
       }
     },
     "type": {

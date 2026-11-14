@@ -58,6 +58,15 @@ class GeneratedSurfaceTests(unittest.TestCase):
         self.assertIn("var(--accent-solid)", css)
         self.assertIn("var(--font-sans)", css)
 
+    def test_all_packaged_book_styles_use_central_values(self) -> None:
+        dimensions = re.compile(r"(?<![\w-])-?(?:\d*\.)?\d+(?:px|rem|em|ch|vw)\b")
+        for path in (RENDER / "html").glob("*.css"):
+            with self.subTest(resource=path.name):
+                source = path.read_text()
+                self.assertEqual(HEX.findall(source), [])
+                self.assertEqual(dimensions.findall(source), [])
+        self.assertNotIn("{{book-metric-", design.book_layout_css())
+
     def test_typst_theme_uses_generated_constants(self) -> None:
         theme = (RENDER / "typst" / "handbook-typst.typ").read_text(encoding="utf-8")
         self.assertIn("hb-font", theme)

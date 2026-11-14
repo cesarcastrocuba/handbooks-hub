@@ -56,8 +56,8 @@ from .build_staging import (
     _render_config,
     _extract_source,
 )
+from .web_lists import generate_list_pages
 from .build_html import (
-    _inject_table_index,
     _payload_paths,
 )
 from .build_markdown import (
@@ -68,7 +68,7 @@ from .build_markdown import (
     _render_markdown,
 )
 
-__all__ = ["build_book", "BuildError", "BuildResult", "PAYLOADS", "ROLES", "_render_config", "_clean_markdown", "_markdown_header", "_markdown_sources", "_reject_local_paths", "_inject_table_index"]
+__all__ = ["build_book", "BuildError", "BuildResult", "PAYLOADS", "ROLES", "_render_config", "_clean_markdown", "_markdown_header", "_markdown_sources", "_reject_local_paths"]
 
 def build_book(
     repo: Path,
@@ -286,11 +286,17 @@ def build_book(
         )
         environment = os.environ.copy()
         environment["SOURCE_DATE_EPOCH"] = str(source_epoch)
-        _run(
-            [quarto, "render", ".", "--no-execute"],
-            cwd=workspace,
-            env=environment,
-        )
+        for print_format in ("typst", "docx"):
+            _run([quarto, "render", ".", "--to", print_format, "--no-clean", "--no-execute"],
+                 cwd=workspace, env=environment)
+
+        # Lists are native HTML chapters; print and Markdown keep their own indexes.
+        html_config = yaml.safe_load((workspace / "_quarto.yml").read_text())
+        lists = generate_list_pages(workspace, rendered_entries)
+        html_config["book"]["chapters"] = [rendered_entries[0], *lists, *rendered_entries[1:]]
+        (workspace / "_quarto.yml").write_text(yaml.safe_dump(html_config), encoding="utf-8")
+        _run([quarto, "render", ".", "--to", "html", "--no-clean", "--no-execute"],
+             cwd=workspace, env=environment)
 
         payloads = _payload_paths(workspace, dist, source_epoch)
         markdown_text = _markdown_header(book, fields, commit) + _clean_markdown(

@@ -395,7 +395,7 @@ class TemplateWorkflowTests(unittest.TestCase):
             "https://github.com/OWNER/REPOSITORY/tree/main/manuscript",
         )
         self.assertEqual(
-            quarto["format"]["html"]["theme"], {"light": "cosmo", "dark": "darkly"}
+            quarto["format"]["html"]["theme"], {"light": "cosmo", "dark": "cosmo"}
         )
         self.assertTrue(quarto["format"]["html"]["respect-user-color-scheme"])
         for name, title in (

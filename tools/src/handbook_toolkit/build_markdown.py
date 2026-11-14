@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 from pathlib import Path
+from html.parser import HTMLParser
 import posixpath
 import re
 from typing import Any
@@ -19,12 +20,6 @@ MARKDOWN_DIR = "_markdown"
 FRONT_MATTER_BLOCK = re.compile(r"\A---[ \t]*\n.*?\n---[ \t]*\n", re.DOTALL)
 
 INCLUDE_SHORTCODE = re.compile(r"\{\{<[ \t]*include[ \t]+([^>\s]+)[ \t]*>\}\}")
-
-XREF_LINK = re.compile(r'<a href="[^"]*" class="quarto-xref">(.*?)</a>', re.DOTALL)
-
-FIGURE_BLOCK = re.compile(r'<div id="fig-[^"]*">\s*(.*?)\s*</div>', re.DOTALL)
-
-TABLE_BLOCK = re.compile(r'<div id="tbl-[^"]*">\s*(.*?)\s*</div>', re.DOTALL)
 
 IMAGE = re.compile(r"!\[([^\]]*)\]\([^)]*\)")
 
@@ -101,6 +96,71 @@ def _figure_caption(body: str) -> str:
     text = caption or alternative
     return f"*{text}*" if text else OMITTED_FIGURE
 
+class _MarkdownHTML(HTMLParser):
+    """Unwrap Quarto structural HTML without matching markup with regexes."""
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=False)
+        self.output: list[str] = []
+        self.divs: list[str] = []
+        self.anchors: list[bool] = []
+        self.figure: list[str] | None = None
+
+    def append(self, text: str) -> None:
+        (self.figure if self.figure is not None else self.output).append(text)
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attributes = dict(attrs)
+        if tag == "a":
+            unwrap = "quarto-xref" in (attributes.get("class") or "").split()
+            self.anchors.append(unwrap)
+            if unwrap:
+                return
+        if tag == "div":
+            identity = attributes.get("id") or ""
+            kind = "figure" if identity.startswith("fig-") else "table" if identity.startswith(("tbl-", "lst-")) else ""
+            self.divs.append(kind)
+            if kind == "figure" and self.figure is None:
+                self.figure = []
+                return
+            if kind == "table":
+                self.append("\n\n")
+                return
+        self.append(self.get_starttag_text())
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "a" and self.anchors and self.anchors.pop():
+            return
+        if tag == "div" and self.divs:
+            kind = self.divs.pop()
+            if kind == "figure" and self.figure is not None:
+                body = "".join(self.figure)
+                self.figure = None
+                self.output.append("\n\n" + _figure_caption(body) + "\n\n")
+                return
+            if kind == "table":
+                self.append("\n\n")
+                return
+        self.append(f"</{tag}>")
+
+    def handle_comment(self, data: str) -> None:
+        self.append("<!--" + data + "-->")
+
+    def handle_decl(self, decl: str) -> None:
+        self.append("<!" + decl + ">")
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.append(self.get_starttag_text())
+
+    def handle_data(self, data: str) -> None:
+        self.append(data)
+
+    def handle_entityref(self, name: str) -> None:
+        self.append(f"&{name};")
+
+    def handle_charref(self, name: str) -> None:
+        self.append(f"&#{name};")
+
+
 def _clean_markdown(text: str) -> str:
     """Turn the Quarto gfm output into plain GitHub-flavoured Markdown.
 
@@ -110,9 +170,10 @@ def _clean_markdown(text: str) -> str:
     """
 
     text = text.replace("\r\n", "\n")
-    text = XREF_LINK.sub(r"\1", text)
-    text = FIGURE_BLOCK.sub(lambda match: f"\n\n{_figure_caption(match.group(1))}\n\n", text)
-    text = TABLE_BLOCK.sub(lambda match: f"\n\n{match.group(1).strip()}\n\n", text)
+    parser = _MarkdownHTML()
+    parser.feed(text)
+    parser.close()
+    text = "".join(parser.output)
     text = IMAGE.sub(
         lambda match: f"*{match.group(1).strip()}*" if match.group(1).strip() else OMITTED_FIGURE,
         text,

@@ -42,7 +42,7 @@ class DesignTokenTests(unittest.TestCase):
                     self.assertEqual(sorted(part), sorted(design.SCHEMES))
 
     def test_book_chrome_shares_width_callouts_and_code_surfaces(self) -> None:
-        chrome = design.BOOK_CHROME
+        chrome = design.book_layout_css()
         self.assertIn("max-width: 1300px", chrome)
         self.assertIn("div.callout.review", chrome)
         self.assertIn("#quarto-document-content pre.text", chrome)
