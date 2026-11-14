@@ -80,6 +80,8 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
       - name: Verify the published bytes of every listed release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: python3 -m handbook_toolkit.catalog_verification catalog/catalog.json
       - name: Run the full repository checks
         run: make full

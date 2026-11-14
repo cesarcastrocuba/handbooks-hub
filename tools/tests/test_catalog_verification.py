@@ -7,12 +7,18 @@ from pathlib import Path
 import tempfile
 import socket
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from zipfile import ZipFile
 import zlib
 
 import support
-from handbook_toolkit.catalog_verification import _PinnedHTTPSConnection, _download, _public_addresses, verify_catalog_releases
+from handbook_toolkit.catalog_verification import (
+    _PinnedHTTPSConnection,
+    _download,
+    _public_addresses,
+    _request_headers,
+    verify_catalog_releases,
+)
 from handbook_toolkit.publication import write_manifest
 
 
@@ -213,6 +219,49 @@ class CatalogVerificationTests(unittest.TestCase):
                 _download("https://public.example/loop", destination, 100)
             self.assertEqual(connection.call_count, 6)
             self.assertFalse(destination.exists())
+
+    def test_the_token_is_sent_to_the_github_api_host_and_to_no_other(self):
+        with patch.dict("os.environ", {"GITHUB_TOKEN": "secret-value"}):
+            self.assertEqual(_request_headers("api.github.com")["Authorization"], "Bearer secret-value")
+            for host in ("github.com", "objects.githubusercontent.com", "api.github.com.example"):
+                with self.subTest(host=host):
+                    self.assertNotIn("Authorization", _request_headers(host))
+        with patch.dict("os.environ", {}, clear=True):
+            self.assertNotIn("Authorization", _request_headers("api.github.com"))
+
+    def test_a_redirect_away_from_the_api_drops_the_token(self):
+        destination = Path(self.temp.name) / "redirected"
+        with patch.dict("os.environ", {"GITHUB_TOKEN": "secret-value"}), patch(
+            "handbook_toolkit.catalog_verification._public_addresses", return_value=["93.184.216.34"]
+        ), patch("handbook_toolkit.catalog_verification._PinnedHTTPSConnection") as connection:
+            first, second = MagicMock(), MagicMock()
+            connection.return_value.getresponse.side_effect = [first, second]
+            first.status = 302
+            first.getheader.return_value = "https://objects.example/asset"
+            second.status = 200
+            second.read.side_effect = [b"bytes", b""]
+            _download("https://api.github.com/repos/o/r/releases/assets/1", destination, 100)
+        sent = [call.kwargs["headers"] for call in connection.return_value.request.call_args_list]
+        self.assertEqual(sent[0]["Authorization"], "Bearer secret-value")
+        self.assertNotIn("Authorization", sent[1])
+        self.assertEqual(destination.read_bytes(), b"bytes")
+
+    def test_an_exhausted_rate_limit_is_named_with_its_host_and_remedy(self):
+        destination = Path(self.temp.name) / "limited"
+        with patch("handbook_toolkit.catalog_verification._public_addresses", return_value=["93.184.216.34"]), patch(
+            "handbook_toolkit.catalog_verification._PinnedHTTPSConnection"
+        ) as connection:
+            response = connection.return_value.getresponse.return_value
+            response.status = 403
+            response.getheader.side_effect = {"X-RateLimit-Remaining": "0"}.get
+            with self.assertRaisesRegex(
+                ValueError, r"HTTP 403 from api\.github\.com: the GitHub API rate limit is exhausted; set GITHUB_TOKEN"
+            ):
+                _download("https://api.github.com/repos/o/r", destination, 100)
+            response.getheader.side_effect = {}.get
+            with self.assertRaisesRegex(ValueError, r"HTTP 403 from api\.github\.com$"):
+                _download("https://api.github.com/repos/o/r", destination, 100)
+        self.assertFalse(destination.exists())
 
     def test_pinned_connection_preserves_tls_hostname_without_resolving_again(self):
         connection = _PinnedHTTPSConnection("public.example", "93.184.216.34")
