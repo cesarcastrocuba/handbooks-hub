@@ -49,6 +49,11 @@ Operations distinguish between two verification gates:
      PYTHONPATH=tools/src python3 -m handbook_toolkit.catalog_verification catalog/catalog.json
      ```
    - Connects over HTTPS (port 443) using pinned public IP addresses.
+   - Reads release metadata from the GitHub API. When `GITHUB_TOKEN` is set, the request to
+     `api.github.com` is authenticated; the token is sent to no other host. The `portal-pages` and
+     `catalog-update` workflows set it, because anonymous requests share the rate limit of the
+     runner's address. An exhausted limit is reported as
+     `remote asset returned HTTP 403 from api.github.com: the GitHub API rate limit is exhausted`.
    - Verifies GitHub release status, tag-to-commit resolution, manifest presence, payload integrity,
      every release asset declared by the manifest, format markers, and byte-for-byte parity of live
      reading sites against the released HTML archive. The asset count follows the manifest schema:
@@ -244,7 +249,7 @@ Reverting a catalog entry to a previous release requires extreme caution due to 
 > (such as `v0.1.0` through `v0.2.0` under `HUB-DEC-021`), offline checks will pass with 0 problems.
 > However, online verification will fail immediately:
 > ```text
-> handbook-authoring-and-publishing: remote asset returned HTTP 404
+> handbook-authoring-and-publishing: remote asset returned HTTP 404 from api.github.com
 > release verification: FAILED
 > ```
 > Therefore:
