@@ -4,7 +4,7 @@ from importlib.resources import files
 from pathlib import Path
 import shutil
 import json
-from .design import docx_callout_styles, book_layout_css
+from .design import docx_callout_styles, book_layout_css, reading_css, favicon_svg
 
 RESOURCE_NAMES = (
     "filters/index-resources.lua",
@@ -16,6 +16,8 @@ RESOURCE_NAMES = (
     "typst/typst-show.typ",
     "docx/reference.docx",
     "html/handbook.css",
+    "html/reading.css",
+    "html/favicon.svg",
     "fonts/source-sans3/HandbookSans-Regular.ttf",
     "fonts/source-sans3/HandbookSans-Bold.ttf",
     "fonts/source-sans3/HandbookSans-Italic.ttf",
@@ -67,6 +69,10 @@ def stage_render_resources(destination: Path) -> dict[str, Path]:
                 target.write_text(target.read_text().replace("local styles = {}", "local styles = {\n" + entries + "\n}"))
             if name == "html/handbook.css":
                 target.write_text(book_layout_css(), encoding="utf-8")
+            if name == "html/reading.css":
+                target.write_text(reading_css(), encoding="utf-8")
+            if name == "html/favicon.svg":
+                target.write_text(favicon_svg(), encoding="utf-8")
             staged[name] = target
         return staged
     except Exception:

@@ -56,6 +56,7 @@ from .build_staging import (
     _render_config,
     _extract_source,
 )
+from .reading_site import prepare_reading_site, restore_first_source
 from .web_lists import generate_list_pages
 from .build_html import (
     _payload_paths,
@@ -292,8 +293,11 @@ def build_book(
 
         # Lists are native HTML chapters; print and Markdown keep their own indexes.
         html_config = yaml.safe_load((workspace / "_quarto.yml").read_text())
-        lists = generate_list_pages(workspace, rendered_entries)
-        html_config["book"]["chapters"] = [rendered_entries[0], *lists, *rendered_entries[1:]]
+        restore_first_source(workspace, entries)
+        lists = generate_list_pages(workspace, entries)
+        html_config = prepare_reading_site(workspace, html_config, book, metadata, groups,
+                                           entries, lists, fields, author, book_version,
+                                           date_str, preview)
         (workspace / "_quarto.yml").write_text(yaml.safe_dump(html_config), encoding="utf-8")
         _run([quarto, "render", ".", "--to", "html", "--no-clean", "--no-execute"],
              cwd=workspace, env=environment)

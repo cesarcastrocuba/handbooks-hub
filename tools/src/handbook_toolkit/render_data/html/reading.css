@@ -1,0 +1,65 @@
+/* Native reading controls. Geometry and timing substitutions are supplied by design.py. */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible,
+textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+  outline: {{focus-width}} solid var(--accent);
+  outline-offset: {{focus-offset}};
+}
+.handbook-cover { color: var(--text); }
+.cover-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: {{cover-space}};
+  margin-block: {{cover-space}};
+}
+.cover-actions .btn { border-radius: {{cover-radius}}; }
+#quarto-document-content .cover-actions .btn-primary {
+  background: var(--accent-solid);
+  border-color: var(--accent-solid);
+  color: var(--on-solid);
+}
+#quarto-document-content table thead th a { color: var(--on-solid); }
+.cover-actions .btn-outline-primary { color: var(--accent); border-color: var(--accent); }
+footer.footer, footer.footer .nav-footer {
+  background: var(--canvas);
+  color: var(--muted);
+  border-color: var(--border);
+}
+footer.footer .nav-footer a { color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+  a, button, summary, .handbook-cover, .cover-actions .btn {
+    transition: color {{motion-fast}} {{motion-ease}},
+                background-color {{motion-fast}} {{motion-ease}},
+                outline-offset {{motion-fast}} {{motion-ease}};
+  }
+  details::details-content { transition: content-visibility {{motion-normal}} {{motion-ease}}; }
+  @supports (animation-timeline: view()) {
+    @keyframes handbook-reveal {
+      from { opacity: 0; transform: translateY({{reveal-distance}}); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    main section.level2, .handbook-cover, .card {
+      animation: handbook-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 15%;
+    }
+  }
+  @supports (animation-timeline: scroll()) {
+    @keyframes handbook-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0 0 auto;
+      height: {{progress-height}};
+      background: var(--accent);
+      z-index: 2000;
+      transform-origin: left;
+      animation: handbook-progress linear both;
+      animation-timeline: scroll();
+      pointer-events: none;
+    }
+  }
+}
+
+/* Quarto repeats book.description in the title block; the cover has its own summary. */
+.quarto-title-block .description { display: none; }

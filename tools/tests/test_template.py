@@ -22,12 +22,16 @@ import sys
 import tempfile
 import unittest
 import zipfile
+import xml.etree.ElementTree as ET
 
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import support  # noqa: E402
+from html_support import Document
+from handbook_toolkit.docx_xml import W, fields
+from handbook_toolkit.docx_validation import validate_docx
 from handbook_toolkit import __version__
 
 TEMPLATE = support.REPO_ROOT / "template/book"
@@ -264,12 +268,29 @@ class TemplateTests(unittest.TestCase):
             self.assertIn("| Version | 0.1.0-preview |", markdown)
             self.assertIn(f"| Commit | {_git(book, 'rev-parse', 'HEAD')} |", markdown)
             self.assertIn("Example Chapter", markdown)
+            self.assertIn("An argument moves from scope and purpose", markdown)
+            self.assertNotIn("![", markdown)
+            with zipfile.ZipFile(output / "book-html.zip") as archive:
+                page = Document(archive.read("manuscript/chapters/01-example.html").decode()).root
+                self.assertTrue(page.find("img"))
+                alt = [image.attrs.get("alt") for image in page.find("img")]
+                self.assertTrue(any(value and "Three connected boxes" in value for value in alt))
+                figures = Document(archive.read("figures.html").decode()).root
+                self.assertTrue(any("#fig-section-structure" in (link.attrs.get("href") or "") for link in figures.find("a")))
+            with zipfile.ZipFile(output / "book.docx") as archive:
+                validate_docx(archive)
+                document = ET.fromstring(archive.read("word/document.xml"))
+                self.assertTrue(any(field.instruction == "TOC \\h \\z \\f F" for field in fields(document)))
+                self.assertTrue(any(name.endswith(".svg") for name in archive.namelist()))
+
 
             if PDFTOTEXT is not None:
                 text = subprocess.check_output(
                     [PDFTOTEXT, str(output / "book.pdf"), "-"], text=True
                 )
                 self.assertIn("Example Chapter", text)
+                self.assertIn("List of Figures", text)
+                self.assertIn("An argument moves", text)
 
 
 class TemplateWorkflowTests(unittest.TestCase):
