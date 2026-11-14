@@ -5,10 +5,19 @@ semantic versioning once the toolkit is published.
 
 ## [1.5.0] - 2026-11-14
 
-Template release. Template `1.5.0` pins toolkit `0.10.0` (`dcfd8c8`) and adapts the shipped Quarto
+Template release. Template `1.5.0` pins toolkit `0.10.1` (`d4480f9`) and adapts the shipped Quarto
 configuration to the new reading site: `publishing/_quarto.yml` already selects `dark: cosmo` and has
 no legacy navbar Tables entry, so the `0.9.2` to `0.10.0` upgrade note requires no further template
-change.
+change. Toolkit `0.10.0` was tagged but is not pinned by any template or book, because `0.10.1` fixes
+its figure-path defect in the PDF and DOCX editions (change `0037`).
+
+## [0.10.1] - 2026-11-14
+
+### Fixed
+
+- PDF and DOCX builds failed for a figure in any page other than the first when the first page
+  lives in a different directory: the image path was rebased for every chapter. The first page's
+  images are now rebased when it is staged, and the image part of the Pandoc filter is removed.
 
 ## [0.10.0] - 2026-11-14
 

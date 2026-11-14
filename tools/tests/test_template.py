@@ -210,7 +210,7 @@ class TemplateTests(unittest.TestCase):
 
     def test_template_pins_are_exact_and_current(self) -> None:
         descriptor = _load(TEMPLATE / "book.yaml")
-        self.assertEqual(descriptor["toolkit"], "0.10.0")
+        self.assertEqual(descriptor["toolkit"], "0.10.1")
         self.assertRegex(descriptor["toolkit"], r"^\d+\.\d+\.\d+$")
         self.assertRegex(descriptor["profile"]["version"], r"^\d+\.\d+\.\d+$")
         requirements = (TEMPLATE / "requirements.txt").read_text(encoding="utf-8")
@@ -483,7 +483,7 @@ class InitializeBookTests(unittest.TestCase):
                 "# Book descriptor. Replace the identifiers and summary before the first commit.",
                 "# Keep toolkit and profile versions exact: ranges are rejected by the schema.",
                 'schema_version: "1.0"',
-                'toolkit: "0.10.0"',
+                'toolkit: "0.10.1"',
                 'version: "1.0.0"',
                 "default_branch: main",
             ):
