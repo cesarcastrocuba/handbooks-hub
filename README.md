@@ -12,13 +12,16 @@ Status: **Phases 1 to 5 complete, with the unified design released in toolkit `0
 
 | Reader | Installation needed? | Start here |
 | --- | --- | --- |
-| Reader of a published handbook | **No** | Use the book's reading site or release downloads. The catalog currently lists `handbook-authoring-and-publishing` `v0.2.7`. |
+| Reader of a published handbook | **No** | Use the book's reading site or release downloads. The catalog currently lists `handbook-authoring-and-publishing` `v0.4.1`. |
 | Contributor to this hub | **Yes** — Git, Python 3.11+, pip, venv | [Quick start](#quick-start-hub-contributors) or [`docs/setup.md`](docs/setup.md) |
 | Hub maintainer | **Yes** — the contributor setup plus `make` and CI knowledge | [`docs/setup.md`](docs/setup.md) |
 | Author of an independent book | **Yes** — Python, venv and the pinned toolkit | [`template/book/README.md`](template/book/README.md) |
 
-Current validators need **Python only**. Quarto, Graphviz, PDF and DOCX rendering belong to the
-future publication pipeline and are **not** required to run the checks described here.
+The checks need **Python** and the packages in `requirements-dev.txt`: the toolkit with `jsonschema`
+and `PyYAML`, plus `fonttools` and `brotli` for the font tests. Rendering ships in the same toolkit:
+`handbook-toolkit build-book` builds the HTML site, the PDF, the DOCX edition, the Markdown edition
+and the source bundle, and needs Quarto `1.11.9` and Poppler `pdfinfo`. Those tools are **not**
+required to run the checks described here.
 
 ## Quick start (hub contributors)
 
@@ -65,9 +68,14 @@ activation and troubleshooting, start with [`docs/setup.md`](docs/setup.md).
 
 ## Scope and non-goals
 
-The hub and sample repositories exist on GitHub and their CI has passed. This repository does not
-merge, deploy a site, publish a release, edit the sample book repository or migrate the existing
-handbook. Pilot approval and any release remain owner-gated steps.
+The hub and sample repositories exist on GitHub and their CI has passed. Books own their manuscript,
+their reading site and their release assets; publication runs in the book repository. This repository
+deploys the portal: `portal-pages` builds and deploys the generated site after a catalog change on
+`main`. `catalog-update` moves an already listed book to a newer release, verifies the published
+bytes, pushes a `catalog/<slug>-<tag>` branch and triggers `ci.yml` on it; it cannot open the pull
+request, so the Owner opens and merges it (see [`docs/catalog-automation.md`](docs/catalog-automation.md)).
+The hub does not edit the sample book repository or migrate the existing handbook. Pilot approval and
+any release remain owner-gated steps.
 
 ## Licensing
 

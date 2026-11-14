@@ -8,13 +8,13 @@ published handbook needs no installation.
 | Role | Needs | Does not need |
 | --- | --- | --- |
 | Reader of a published handbook | A browser and the book's reading site or release downloads | Python, Git, Quarto |
-| Contributor to this hub | Git, Python 3.11+, pip, venv; `make` unless using the no-make path | Quarto, Graphviz, PDF/DOCX tools |
+| Contributor to this hub | Git, Python 3.11+, pip, venv; `make` unless using the no-make path | Quarto, Poppler, PDF/DOCX tools |
 | Hub maintainer | The contributor setup plus CI and toolkit knowledge | A local publication toolchain |
 | Independent book author | Python, venv, Git and the pinned `handbook-toolkit` | A hub checkout, copied toolkit code or schemas |
 
 The current validators check contracts, catalog/profile/book descriptors and repository files. The
-Quarto/Graphviz/PDF/DOCX publication toolchain is **future publication setup**, described separately
-in section 7. It is not required and is not exercised by the commands on this page.
+render toolchain (Quarto, Poppler `pdfinfo`, PDF/DOCX rendering) is the optional build described in
+section 7. It is not required for, and is not exercised by, the commands on this page.
 
 ## 2. Tested platforms and prerequisites
 
@@ -78,8 +78,8 @@ make check
 make full
 ```
 
-`requirements-dev.txt` installs the editable local toolkit (`-e ./tools`) and its
-`jsonschema`/`PyYAML` dependencies.
+`requirements-dev.txt` installs the editable local toolkit (`-e ./tools`) with its
+`jsonschema`/`PyYAML` dependencies, plus `fonttools` and `brotli` for the font tests.
 
 - `make check` runs the unit tests and the fast validators.
 - `make full` runs the same checks plus documentation-link and full template checks.
@@ -220,7 +220,7 @@ quality, factual accuracy and visual usefulness remain review responsibilities.
 ### Optional publication build
 
 The separate `handbook-toolkit build-book` command renders HTML/Typst/DOCX, creates source and HTML
-ZIPs, inspects payloads, writes the manifest/checksums and atomically exposes a verified six-file
+ZIPs, inspects payloads, writes the manifest/checksums and atomically exposes a verified seven-file
 directory. It requires Quarto `1.11.9`, Poppler `pdfinfo` and a clean source commit; the profile resolves from
 the installed package by default, with `--profile` as an explicit override. None of that is installed
 by `requirements-dev.txt` or `requirements.txt` and none is required for the checks above. See [`publication-build.md`](publication-build.md). It does not

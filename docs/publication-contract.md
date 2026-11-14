@@ -1,7 +1,8 @@
 # Publication contract
 
-> **Status: planned.** No publication pipeline exists in the Phase 1 scaffold. This document fixes the
-> target contract so the toolkit, template, book repositories and catalog can be designed against it.
+> **Status: in force.** `handbook-toolkit build-book` produces and verifies the artifact set below,
+> and the sample book is published under it. This document fixes the contract that the toolkit,
+> template, book repositories and catalog follow.
 
 ## Artifact set
 
@@ -43,7 +44,7 @@ does not produce a partial catalog entry.
 - A rebuild may differ in non-semantic metadata; the manifest must state which artifacts are
   bit-identical and which are semantically verified.
 
-## Manifest (planned shape)
+## Manifest shape
 
 ```json
 {

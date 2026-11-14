@@ -28,7 +28,7 @@ Changes reach `main` only through pull requests (`HUB-DEC-018`), with up-to-date
 | Template | `1.4.1`, tag `template-v1.4.1` at `9238849`; pins toolkit `0.9.1` at `298d703`. It carries the aligned chrome, sidebar Tables link, neutral review callouts and the rebuilt Word layout |
 | CI | Sample `v0.4.1` release run 43472781256 succeeded from `e1ca349` and deployed the reading site. Catalog real run 43473399400 verified the published bytes and pushed the branch merged as PR 44 (`97494ee`). `portal-pages` run 43474125855 deployed `v0.4.1` after a transient asset 403 was retried. Design CI on PR 42 and release CI on PR 43/44 passed |
 | Standard profile | `1.0.0`, **Approved** 2026-11-06; `0.2.0` remains resolvable |
-| Licensing | CC BY-SA 4.0 content, MIT code. Bundled third-party render resources reviewed and replaced where in doubt (`HUB-DEC-020`). The web fonts are renamed OFL subsets, published with their `OFL.txt` notices. Sample `v0.2.7` names Franz César Castro Cuba and includes a third-party notices page |
+| Licensing | CC BY-SA 4.0 content, MIT code. Bundled third-party render resources reviewed and replaced where in doubt (`HUB-DEC-020`). The web fonts are renamed OFL subsets, published with their `OFL.txt` notices. The published sample names Franz César Castro Cuba and includes a third-party notices page (`HUB-DEC-023`) |
 | Catalog | `schema_version` `1.1`, 1 approved release: `handbook-authoring-and-publishing` `v0.4.1` with download links for `pdf`, `html`, `docx`, `markdown` and `source` (sample `DEC-026`) |
 | Publication | Reading site live at https://cesarcastrocuba.github.io/handbook-sample-01/ and serving `v0.4.1` |
 | Portal | Library design live at https://cesarcastrocuba.github.io/handbooks-hub/, showing `v0.4.1` with a generated cover per category and five edition buttons (PDF, HTML, DOCX, Markdown, Source); `llms.txt` lists the `book.md` of `v0.4.1` |
@@ -36,10 +36,8 @@ Changes reach `main` only through pull requests (`HUB-DEC-018`), with up-to-date
 
 ## Next actions
 
-1. Owner deletes the throwaway repository and its public Pages site: `gh repo delete cesarcastrocuba/handbook-template-dryrun-delete-me --yes`; the delegated token has no `delete_repo` scope.
-2. Phase 6: migration evaluation of `solutions-architecture-handbook`, including its copies of the replaced fonts and DOCX reference; needs an owner decision.
+1. Phase 6: migration evaluation of `solutions-architecture-handbook`, including its copies of the replaced fonts and DOCX reference; needs an owner decision.
 
 ## Blockers and open owner decisions
 
-- The throwaway repository `cesarcastrocuba/handbook-template-dryrun-delete-me` and its public Pages site still exist and need the Owner's deletion.
 - Phase 6 has not started and needs an owner decision.
