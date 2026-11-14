@@ -33,11 +33,9 @@ def reference_target(instruction: str) -> str | None:
     if not command or command[0].upper() not in {"REF", "PAGEREF"}:
         return None
     tokens = shlex.split(instruction, posix=False)
-    if tokens and tokens[0].upper() in {'REF', 'PAGEREF'}:
-        if len(tokens) < 2:
-            raise ValueError('DOCX reference field has no target')
-        return tokens[1].strip('"')
-    return None
+    if len(tokens) < 2:
+        raise ValueError('DOCX reference field has no target')
+    return tokens[1].strip('"')
 
 
 def normalise_bookmarks(root: ET.Element) -> None:
