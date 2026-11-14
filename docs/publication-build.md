@@ -132,7 +132,8 @@ The build prepares the Word package in docx_post, using parsed XML, registered n
 schema-ordered properties and deterministic ZIP metadata. It normalizes caption/heading bookmarks,
 adds hidden TC fields, and caches Contents and caption-list entries as internal hyperlinks.
 While pagination is unknown, cached entries are linked titles only, with no tabs or empty PAGEREF
-fields. Word may regenerate the paginated outer-field result after the reader confirms an update. Caption lists are omitted when there are no entries. The Typst front matter also
+fields. Word may regenerate the paginated outer-field result after the reader confirms an update.
+Caption lists are omitted when there are no entries. The Typst front matter also
 emits conditional table/figure/listing outlines from the shared registry.
 
 The first canonical page is rendered as index.qmd. A native Pandoc image filter rebases its local

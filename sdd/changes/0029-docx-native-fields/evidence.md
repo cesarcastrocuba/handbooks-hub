@@ -98,6 +98,25 @@ The registry now declares kind, caption label, display title and field letter in
 Its import is at module scope and reference_target performs one field-name check.
 PRs 48 and 50 are merged from origin/main; published commits were not rebased.
 
-The final local gate results are added after execution. The PR handoff comment records the CI
-run and inspection of its downloaded edition-preview-sample artifact after upload. Desktop Word
-was not opened.
+### Corrected runtime verification
+
+Runtime candidate: 0fa79cba65fe2fa780985c0954452d0f98f9803c.
+
+| Command | Result |
+| --- | --- |
+| Activate .venv, then make full | 352 tests passed in 93.436 s; VERIFY 5 checks/0 problems, full 6 checks/0 problems |
+| python3 -m unittest discover -s tools/tests -p test_build.py -v | 24 passed in 59.959 s, including the populated-list/no-dangling-leader LibreOffice assertion |
+| Native field/validator suite | 25 passed |
+| Print-layout suite | 5 passed |
+| git diff --check | Passed |
+
+The nested-field validator fixture now constructs an explicit nested PAGEREF with a known result;
+removing unknown-page cache references does not remove nested-field validation coverage.
+
+Local logs: /tmp/wp1-corrections-full.log, /tmp/wp1-corrections-build.log,
+/tmp/wp1-r1-red.log, /tmp/wp1-r1-lo.log, /tmp/wp1-r3-native.log and /tmp/wp1-r3-print.log.
+The evidence update after this runtime candidate changes documentation only.
+
+The PR handoff comment records the new CI run and inspection of its downloaded
+edition-preview-sample artifact after upload, avoiding a source commit that tries to name its own
+future CI run. Desktop Word was not opened.

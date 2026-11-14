@@ -155,7 +155,8 @@ Contents and caption lists are complex fields with cached hyperlinks. One regist
 figures and listings. Hidden caption TC fields select entries with portable field identifiers;
 the list uses TOC with its field-identifier switch, not a localized style-list separator.
 When pagination is unknown, cached entries contain only the linked title, with no tab or PAGEREF
-field. Updating the outer TOC field regenerates the paginated result. Bookmark normalization preserves internal links. Empty lists are omitted.
+field. Updating the outer TOC field regenerates the paginated result. Bookmark normalization
+preserves internal links. Empty lists are omitted.
 
 Word font declarations include single-name alternate-font chains: Source Sans 3 → Segoe UI →
 Calibri → Arial, Source Serif 4 → Georgia → Cambria, and JetBrains Mono → Consolas → Courier New.
