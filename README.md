@@ -12,7 +12,7 @@ Status: **Phases 1 to 5 complete, with the unified design released in toolkit `0
 
 | Reader | Installation needed? | Start here |
 | --- | --- | --- |
-| Reader of a published handbook | **No** | Use the book's reading site or release downloads. The catalog currently lists `handbook-authoring-and-publishing` `v0.4.1`. |
+| Reader of a published handbook | **No** | Use the book's reading site or release downloads. The [catalog](catalog/catalog.json) and the portal list each book's current release. |
 | Contributor to this hub | **Yes** — Git, Python 3.11+, pip, venv | [Quick start](#quick-start-hub-contributors) or [`docs/setup.md`](docs/setup.md) |
 | Hub maintainer | **Yes** — the contributor setup plus `make` and CI knowledge | [`docs/setup.md`](docs/setup.md) |
 | Author of an independent book | **Yes** — Python, venv and the pinned toolkit | [`template/book/README.md`](template/book/README.md) |

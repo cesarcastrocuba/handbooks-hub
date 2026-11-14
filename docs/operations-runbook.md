@@ -38,7 +38,7 @@ Operations distinguish between two verification gates:
 
 1. **Offline verification (`make check`, `make full`)**:
    - `make check` executes local unit tests, JSON schema validation, profile checks, and descriptor checks.
-   - `make full` runs all fast checks plus full repository validation; only `make full` resolves and verifies documentation links and template completeness.
+   - `make full` runs all fast checks plus full repository validation; only `make full` resolves and verifies documentation links, documentation currency and template completeness.
    - Requires no network access.
    - **Limitation**: Offline checks validate only syntax, local files, and schema structures. They
      do **not** verify whether external URLs, release tags, download assets, or live Pages sites
@@ -241,7 +241,7 @@ Reverting a catalog entry to a previous release requires extreme caution due to 
 > Offline checks (`make check`, `make full`) **do not catch a rollback to a withdrawn release**.
 > Offline verification checks only the JSON structure and schema conformance of `catalog/catalog.json`.
 > If a catalog entry is reverted to point to a release whose assets or release pages have been deleted
-> (such as `v0.1.0` through `v0.2.0` under `HUB-DEC-021`), offline checks will pass (6 checks, 0 problems).
+> (such as `v0.1.0` through `v0.2.0` under `HUB-DEC-021`), offline checks will pass with 0 problems.
 > However, online verification will fail immediately:
 > ```text
 > handbook-authoring-and-publishing: remote asset returned HTTP 404
