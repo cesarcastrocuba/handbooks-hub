@@ -126,13 +126,20 @@ chapter-title block without hiding links. Table column widths and callout pagina
 renderer responsibilities and require visual review.
 
 
-## Word field and rendering gate (toolkit 0.9.2)
+## Word field and rendering gate (toolkit 0.10.2)
 
 The build prepares the Word package in docx_post, using parsed XML, registered namespace prefixes,
 schema-ordered properties and deterministic ZIP metadata. It normalizes caption/heading bookmarks,
 adds hidden TC fields, and caches Contents and caption-list entries as internal hyperlinks.
-While pagination is unknown, cached entries are linked titles only, with no tabs or empty PAGEREF
-fields. Word may regenerate the paginated outer-field result after the reader confirms an update.
+The build uses a private LibreOffice profile and fontconfig configuration pointing only at the
+staged toolkit fonts. It exports named destinations, maps them from authored bookmark names and
+writes numeric PAGEREF caches. A final conversion must agree with every cached page or the build
+fails. Decimal section restarts are respected; unsupported numbering formats block a required probe.
+No dirty attribute or updateFields setting is published. Cached numbers are LibreOffice
+pagination; F9 in Word regenerates Word's pagination. Optional builds without a working probe
+warn and record title-only caches in build.tool_versions.docx_page_numbers, never blank PAGEREF
+results. build.tool_versions also records the LibreOffice version. Release workflows must install
+libreoffice-writer and pass --require-page-numbers; missing or failed probes then block publication.
 Caption lists are omitted when there are no entries. The Typst front matter also
 emits conditional table/figure/listing outlines from the shared registry.
 

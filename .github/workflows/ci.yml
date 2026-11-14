@@ -79,6 +79,8 @@ jobs:
 
   publication-build:
     runs-on: ubuntu-24.04
+    env:
+      HANDBOOK_REQUIRE_PAGE_NUMBERS: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

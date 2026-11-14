@@ -35,13 +35,18 @@ from handbook_toolkit.build import (  # noqa: E402
     _markdown_sources,
     _reject_local_paths,
     _render_config,
-    build_book,
+    build_book as _build_book,
 )
 from handbook_toolkit.build_staging import _prepare_render, _rebase_images
 from handbook_toolkit.docx_post import _reflow_license_paragraph
 from handbook_toolkit.docx_xml import W, fields, text_of
 from handbook_toolkit.docx_validation import validate_docx
 from handbook_toolkit.publication import verify_publication  # noqa: E402
+
+
+def build_book(repo: Path, commit: str, output: Path, **kwargs):
+    kwargs.setdefault("require_page_numbers", os.environ.get("HANDBOOK_REQUIRE_PAGE_NUMBERS") == "1")
+    return _build_book(repo, commit, output, **kwargs)
 
 QUARTO = shutil.which("quarto")
 PDFINFO = shutil.which("pdfinfo")
@@ -186,7 +191,7 @@ status: draft
 profile:
   id: standard
   version: "1.0.0"
-toolkit: "0.10.1"
+toolkit: "0.10.2"
 license:
   content: CC-BY-SA-4.0
   code: MIT
@@ -522,7 +527,7 @@ class BuildTests(unittest.TestCase):
             document = ET.fromstring(document_xml)
             settings = ET.fromstring(settings_xml)
             self.assertIsNotNone(document.find(W + "background"))
-            self.assertIsNotNone(settings.find(W + "updateFields"))
+            self.assertIsNone(settings.find(W + "updateFields"))
             self.assertIsNotNone(settings.find(W + "displayBackgroundShape"))
             with zipfile.ZipFile(output / "book.docx") as archive:
                 validate_docx(archive)
@@ -534,7 +539,7 @@ class BuildTests(unittest.TestCase):
             for letter in ("T", "F", "L"):
                 self.assertTrue(any(value == f"TOC \\h \\z \\f {letter}" for value in instructions))
             self.assertTrue(any(value.startswith("TC ") for value in instructions))
-            self.assertFalse(any(value.startswith("PAGEREF") for value in instructions))
+            self.assertEqual(any(value.startswith("PAGEREF") for value in instructions), bool(shutil.which("soffice")))
             self.assertTrue(document.findall(".//" + W + "tblHeader"))
             self.assertFalse(document.findall(".//" + W + "trPr/" + W + "shd"))
             callout = styles.find(f"{W}style[@{W}styleId='CalloutReviewTitle']")
@@ -609,21 +614,39 @@ class BuildTests(unittest.TestCase):
             self.assertTrue(verify_publication(output).ok)
             self.assertIn("**Definition.**", (repo / "manuscript/chapters/pilot.qmd").read_text())
 
-    @unittest.skipUnless(shutil.which("soffice") and shutil.which("pdftotext"),
-                         "LibreOffice and pdftotext are required for the smoke conversion")
+    @unittest.skipUnless(shutil.which("soffice"), "LibreOffice is required for the smoke conversion")
     def test_libreoffice_displays_cached_contents_tables_and_figures(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             repo, commit = make_book(root)
+            manuscript = repo / "manuscript/chapters/pilot.qmd"
+            filler = ("This original pagination fixture explains a bounded review decision and its evidence. " * 25 + "\n\n") * 9
+            manuscript.write_text(PILOT.replace("| Field | Detail |", filler + "| Field | Detail |")
+                                  .replace("![An original fixture diagram.]", filler + "![An original fixture diagram.]"))
+            commit = commit_all(repo, "space the heading table and figure across pages")
             output = root / "dist"
-            build_book(repo, commit, output, profile=PROFILE, mode="section-pilot")
+            build_book(repo, commit, output, profile=PROFILE, mode="section-pilot", require_page_numbers=True)
+            from handbook_toolkit.docx_pages import destination_pages, export_pdf, font_environment
+            from handbook_toolkit.docx_fields import cached_links
+            from handbook_toolkit.render_resources import stage_render_resources
+            resources = stage_render_resources(root / 'probe-resources')
+            environment = font_environment(resources['fonts/source-sans3/HandbookSans-Regular.ttf'].parent.parent, root)
             converted = root / "converted"
-            converted.mkdir()
-            subprocess.run([
-                shutil.which("soffice"),
-                "-env:UserInstallation=" + (root / "lo-profile").as_uri(),
-                "--headless", "--convert-to", "pdf", "--outdir", str(converted),
-                str(output / "book.docx")], check=True, capture_output=True, text=True, timeout=90)
+            fresh_pdf = export_pdf(output / 'book.docx', converted, env=environment)
+            with zipfile.ZipFile(output / 'book.docx') as archive:
+                built = ET.fromstring(archive.read('word/document.xml'))
+            cached = {link.get(W + 'anchor'): next(
+                ''.join(node.text or '' for node in field.result) for field in fields(link)
+                if field.instruction.startswith('PAGEREF ')) for link in cached_links(built)}
+            physical = destination_pages(fresh_pdf, set(cached))
+            self.assertEqual(cached, {name: str(page) for name, page in physical.items()})
+            self.assertGreater(len(set(cached.values())), 1, cached)
+            named = {text_of(link[0]): cached[link.get(W + 'anchor')] for link in cached_links(built)}
+            distinct = [next(page for title, page in named.items() if fragment in title)
+                        for fragment in ('A Pilot Section', 'Fixture table caption', 'An original fixture diagram')]
+            self.assertEqual(len(set(distinct)), 3, named)
+
+
             text = subprocess.check_output(
                 ["pdftotext", "-layout", str(converted / "book.pdf"), "-"],
                 text=True, timeout=30)
@@ -787,7 +810,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.10.1"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.10.2"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             commit = commit_all(repo, "mismatched toolkit pin")
@@ -849,7 +872,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.10.1"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.10.2"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             commit = commit_all(repo, "preview toolkit pin")
@@ -901,7 +924,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.10.1"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.10.2"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             _git(repo, "update-index", "--assume-unchanged", "book.yaml")

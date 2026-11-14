@@ -82,6 +82,7 @@ def build_book(
     quarto: str = "quarto",
     mode: str = "chapter",
     preview: bool = False,
+    require_page_numbers: bool = False,
 ) -> BuildResult:
     """Build a verified seven-file publication directory at *output*.
 
@@ -305,6 +306,9 @@ def build_book(
              cwd=workspace, env=environment)
 
         payloads = _payload_paths(workspace, dist, source_epoch)
+        from .docx_pages import cache_page_numbers
+        tool_versions.update(cache_page_numbers(
+            payloads["docx"], workspace / ".handbook-render/fonts", required=require_page_numbers))
         markdown_text = _markdown_header(book, fields, commit) + _clean_markdown(
             _render_markdown(workspace, markdown_source, resources, quarto, environment)
         )
@@ -338,7 +342,8 @@ def build_book(
                 "command": "handbook-toolkit build-book --commit "
                 + commit
                 + f" --mode {mode}"
-                + (" --preview" if preview else ""),
+                + (" --preview" if preview else "")
+                + (" --require-page-numbers" if require_page_numbers else ""),
                 "source_date_epoch": source_epoch,
                 "tool_versions": tool_versions,
             },

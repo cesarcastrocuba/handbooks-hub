@@ -101,6 +101,8 @@ class Field:
     begin: ET.Element
     instructions: list[ET.Element] = field(default_factory=list)
     separated: bool = False
+    result: list[ET.Element] = field(default_factory=list)
+    in_index: bool = False
 
     @property
     def instruction(self) -> str:
@@ -115,7 +117,8 @@ def fields(root: ET.Element) -> list[Field]:
         if node.tag == W + 'fldChar':
             kind = node.get(W + 'fldCharType')
             if kind == 'begin':
-                stack.append(Field(node))
+                stack.append(Field(node, in_index=any(
+                    item.instruction.startswith('TOC ') for item in stack)))
             elif kind == 'separate':
                 if not stack or stack[-1].separated:
                     raise ValueError('DOCX field separator has no unmatched begin')
@@ -130,6 +133,8 @@ def fields(root: ET.Element) -> list[Field]:
             if not stack or stack[-1].separated:
                 raise ValueError('DOCX field instruction is outside its instruction range')
             stack[-1].instructions.append(node)
+        elif node.tag == W + 't' and stack and stack[-1].separated:
+            stack[-1].result.append(node)
     if stack:
         raise ValueError('DOCX field is missing its end')
     return result
@@ -139,9 +144,7 @@ def field_run(kind: str, *, hidden: bool = False) -> ET.Element:
     run = ET.Element(W + 'r')
     if hidden:
         ET.SubElement(ET.SubElement(run, W + 'rPr'), W + 'vanish')
-    marker = ET.SubElement(run, W + 'fldChar', {W + 'fldCharType': kind})
-    if kind == 'begin':
-        marker.set(W + 'dirty', 'true')
+    ET.SubElement(run, W + 'fldChar', {W + 'fldCharType': kind})
     return run
 
 

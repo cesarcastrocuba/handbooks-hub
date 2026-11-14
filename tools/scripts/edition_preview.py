@@ -33,6 +33,8 @@ sys.path.insert(0, str(SCRIPTS))
 import export_template  # noqa: E402
 
 from handbook_toolkit.build import PAYLOADS, BuildError, build_book  # noqa: E402
+from handbook_toolkit.docx_pages import export_pdf, font_environment  # noqa: E402
+from handbook_toolkit.render_resources import stage_render_resources  # noqa: E402
 
 PREVIEW_SUFFIX = "-preview"
 VIEWPORTS = {"desktop": (1440, 1800), "phone": (390, 1800)}
@@ -127,26 +129,14 @@ def unpack_site(archive: Path, site: Path) -> None:
 def convert_with_libreoffice(docx: Path, directory: Path) -> None:
     """Convert the DOCX to PDF with LibreOffice, using a private profile directory."""
 
-    directory.mkdir(parents=True)
-    with tempfile.TemporaryDirectory() as profile:
-        result = subprocess.run(
-            [
-                "soffice",
-                f"-env:UserInstallation={Path(profile).as_uri()}",
-                "--headless",
-                "--convert-to",
-                "pdf",
-                "--outdir",
-                str(directory),
-                str(docx),
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    converted = directory / (docx.stem + ".pdf")
-    if result.returncode or not converted.is_file():
-        raise PreviewError(f"LibreOffice conversion failed: {result.stderr.strip() or result.stdout.strip()}")
+    try:
+        with tempfile.TemporaryDirectory(prefix="edition-fonts-") as temporary:
+            private = Path(temporary)
+            stage_render_resources(private / "resources")
+            environment = font_environment(private / "resources/fonts", private)
+            converted = export_pdf(docx, directory, env=environment)
+    except BuildError as exc:
+        raise PreviewError(str(exc)) from exc
     converted.rename(directory / "book-docx-as-libreoffice.pdf")
 
 
@@ -217,7 +207,8 @@ def build_preview(repo: Path, output: Path, *, quarto: str, require_tools: bool)
     output.mkdir(parents=True)
     edition = output / "edition"
     try:
-        build_book(repo, commit, edition, version=version, quarto=quarto, preview=True)
+        build_book(repo, commit, edition, version=version, quarto=quarto, preview=True,
+                   require_page_numbers=require_tools)
     except BuildError as exc:
         raise PreviewError(f"build-book failed: {exc}") from exc
 

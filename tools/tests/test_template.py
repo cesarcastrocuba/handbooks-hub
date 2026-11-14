@@ -16,6 +16,7 @@ import json
 import os
 from pathlib import Path
 import re
+import os
 import shutil
 import subprocess
 import sys
@@ -247,7 +248,8 @@ class TemplateTests(unittest.TestCase):
             book = _copy_template(root, toolkit_version=__version__)
             output = root / "dist"
 
-            result = _run(["make", "build", f"OUTPUT={output}"], book)
+            result = _run(["make", "build", f"OUTPUT={output}",
+                           "BUILD_FLAGS=--require-page-numbers" if os.environ.get("HANDBOOK_REQUIRE_PAGE_NUMBERS") else "BUILD_FLAGS="], book)
             self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
             self.assertEqual({path.name for path in output.iterdir()}, PAYLOADS)
 

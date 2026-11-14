@@ -11,8 +11,8 @@ from zipfile import ZipFile
 
 import support
 from handbook_toolkit.artifacts import inspect_payload
-from handbook_toolkit.docx_post import prepare_docx, _format_table_headers
-from handbook_toolkit.docx_fields import add_indexes, bookmark_name, cached_field, Entry
+from handbook_toolkit.docx_post import prepare_docx, _format_table_headers, _band_table_cells, _center_captions
+from handbook_toolkit.docx_fields import add_indexes, bookmark_name, cached_field, Entry, set_cached_pages
 from handbook_toolkit.docx_fonts import font_table
 from handbook_toolkit.docx_xml import W, fields, field_run, instruction_run, text_of
 from handbook_toolkit.docx_validation import validate_docx
@@ -43,6 +43,16 @@ def fixture() -> tuple[ET.Element, ET.Element]:
 
 
 class TableHeaderTests(unittest.TestCase):
+    def test_caption_properties_stay_first_when_point_bookmark_precedes_canonical_properties(self):
+        root = ET.Element(W + 'document')
+        p = paragraph(root, 'Caption', 'ImageCaption')
+        p.insert(0, ET.Element(W + 'pPr'))
+        p.insert(1, ET.Element(W + 'bookmarkStart', {W + 'id': '1', W + 'name': 'Caption'}))
+        _center_captions(root, W)
+        self.assertEqual(p[0].tag, W + 'pPr')
+        self.assertEqual(len(p.findall(W + 'pPr')), 1)
+        self.assertEqual(p[0].find(W + 'pStyle').get(W + 'val'), 'ImageCaption')
+
     def test_figure_wrapper_is_not_a_header_but_data_header_is(self):
         root=ET.Element(W+'document')
         for header in (False,True):
@@ -63,10 +73,35 @@ class TableHeaderTests(unittest.TestCase):
         self.assertTrue(data.findall('.//'+W+'shd'))
         self.assertTrue(data.findall('.//'+W+'b'))
 
+    def test_direct_banding_skips_plain_tables_and_keeps_headers(self):
+        from handbook_toolkit import design
+        root = ET.Element(W + 'document')
+        for style in ('Table', 'TablePlain'):
+            table = ET.SubElement(root, W + 'tbl')
+            props = ET.SubElement(table, W + 'tblPr')
+            ET.SubElement(props, W + 'tblStyle', {W + 'val': style})
+            ET.SubElement(props, W + 'tblLook', {W + 'firstRow': '1'})
+            for i in range(4):
+                row = ET.SubElement(table, W + 'tr')
+                for j in range(2):
+                    paragraph(ET.SubElement(row, W + 'tc'), f'{i}/{j}')
+        _format_table_headers(root, W)
+        _band_table_cells(root)
+        data, plain = root.findall(W + 'tbl')
+        values = design.docx_values()
+        for index, row in enumerate(data.findall(W + 'tr')):
+            role = 'accent_solid' if index == 0 else ('canvas' if index % 2 else 'stripe')
+            for cell in row.findall(W + 'tc'):
+                self.assertEqual(cell.find(W + 'tcPr/' + W + 'shd').get(W + 'fill'), values[role].lstrip('#'))
+        for row in plain.findall(W + 'tr')[1:]:
+            self.assertFalse(row.findall('.//' + W + 'shd'))
+
+
 
 class DocxValidatorTests(unittest.TestCase):
     def setUp(self):
         self.root, self.styles = fixture()
+        self.settings = ET.Element(W + "settings")
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
 
@@ -77,8 +112,53 @@ class DocxValidatorTests(unittest.TestCase):
             archive.writestr('_rels/.rels', '<Relationships/>')
             archive.writestr('word/document.xml', ET.tostring(self.root))
             archive.writestr('word/styles.xml', ET.tostring(self.styles))
+            archive.writestr('word/settings.xml', ET.tostring(self.settings))
         issues = inspect_payload(path, 'docx')
         self.assertEqual(not issues, valid, [str(issue) for issue in issues])
+
+    def test_dirty_attribute_is_forbidden(self):
+        self.check(valid=True)
+        self.root.find('.//' + W + 'r').set(W + 'dirty', 'false')
+        self.check(valid=False)
+
+    def test_settings_must_not_update_fields_on_open(self):
+        self.check(valid=True)
+        ET.SubElement(self.settings, W + 'updateFields', {W + 'val': 'false'})
+        self.check(valid=False)
+
+    def test_tc_has_no_result_separator(self):
+        p = self.root.find('.//' + W + 'p')
+        p.extend((field_run('begin'), instruction_run('TC "Fixture" \\f T'), field_run('end')))
+        self.check(valid=True)
+        p.insert(len(p) - 1, field_run('separate'))
+        self.check(valid=False)
+
+    def test_cached_pageref_result_must_be_numeric_or_omitted(self):
+        self.root.find(W + 'body').extend(cached_field('TOC \\h \\z \\f T', [Entry('Fixture', 'Target')]))
+        self.check(valid=True)  # Honest title-only fallback.
+        set_cached_pages(self.root, {'Target': '12'})
+        self.check(valid=True)
+        field = next(item for item in fields(self.root) if item.instruction.startswith('PAGEREF '))
+        for invalid in ('', 'unknown'):
+            field.result[0].text = invalid
+            self.check(valid=False)
+
+    def test_simple_pageref_in_cache_also_needs_a_number(self):
+        self.root.find(W + 'body').extend(cached_field('TOC \\h \\z \\f T', [Entry('Fixture', 'Target')]))
+        link = next(self.root.iter(W + 'hyperlink'))
+        simple = ET.SubElement(link, W + 'fldSimple', {W + 'instr': 'PAGEREF Target \\h'})
+        ET.SubElement(ET.SubElement(simple, W + 'r'), W + 't').text = '3'
+        self.check(valid=True)
+        simple.find('.//' + W + 't').text = ''
+        self.check(valid=False)
+
+    def test_table_cell_must_end_with_paragraph(self):
+        cell = ET.SubElement(ET.SubElement(ET.SubElement(self.root.find(W + 'body'), W + 'tbl'), W + 'tr'), W + 'tc')
+        paragraph(cell, 'Body')
+        ET.SubElement(cell, W + 'bookmarkEnd', {W + 'id': '9'})
+        self.check(valid=True)
+        ET.SubElement(cell, W + 'tbl')
+        self.check(valid=False)
 
     def test_unique_style_ids(self):
         self.check(valid=True)
@@ -134,7 +214,7 @@ class DocxValidatorTests(unittest.TestCase):
     def test_balanced_nested_fields(self):
         body = self.root.find(W + 'body')
         body.extend(cached_field('TOC \\h \\z \\f T', [Entry('Caption', 'Target')]))
-        link = body[-1].find(W + 'hyperlink')
+        link = body[-2].find(W + 'hyperlink')
         result = ET.Element(W + 'r')
         ET.SubElement(result, W + 't').text = '7'
         link.extend((field_run('begin'), instruction_run('PAGEREF Target \\h'),

@@ -3,6 +3,19 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
+## [0.10.2] - 2026-11-14
+
+Native Word indexes now open with linked, cached page numbers obtained from a private LibreOffice
+bookmark probe and verified by a second conversion. No fields are marked dirty and the document
+requests no update on open. F9 remains available to repaginate each index in desktop Word.
+Captioned data tables use direct cell banding; callout tables stay plain. Releases require the
+probe with `build-book --require-page-numbers`; local builds without it warn and record title-only
+caches. Decimal page-number restarts are respected; unsupported formats fail a required probe.
+
+Also included since 0.10.1: an opt-in generated Quarto portal (`build-portal --engine quarto`) and
+`design-preview`, with shared token-driven code colours. Portal deployment and its page-weight
+exception are governed separately by change 0033.
+
 ## [1.5.0] - 2026-11-14
 
 Template release. Template `1.5.0` pins toolkit `0.10.1` (`d4480f9`) and adapts the shipped Quarto

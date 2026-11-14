@@ -77,7 +77,7 @@ jobs:
       - name: Install system inspection dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends poppler-utils
+          sudo apt-get install -y --no-install-recommends poppler-utils libreoffice-writer
 
       - name: Verify the Quarto version
         run: test "$(quarto --version)" = "1.11.9"
@@ -112,7 +112,8 @@ jobs:
             --commit "$SOURCE_COMMIT" \
             --output "$RELEASE_DIR" \
             --version "$VERSION" \
-            --quarto "$(command -v quarto)"
+            --quarto "$(command -v quarto)" \
+            --require-page-numbers
 
       - name: Verify every byte in the release directory
         env:

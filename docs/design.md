@@ -147,16 +147,19 @@ The reference generator and Pandoc callout filter obtain human-readable style na
 design.docx_callout_styles(), so titles inherit their bold face and token color from one style
 definition. Callout boxes use a single non-splitting row within the text column.
 
-Table stripes live in the reference style's band1Horz/band2Horz conditionals. Plain tables inside
-callouts have no banding. The toolkit writes no row-level shading. Print colors in toolkit Python
+Table stripes use direct tcPr/shd cell shading from the canvas/stripe tokens. Header fill stays
+direct teal; plain TablePlain tables inside callouts have no body banding. The reference document
+has no band1Horz/band2Horz conditional formatting. The toolkit writes no row-level shading. Print colors in toolkit Python
 come from design.docx_values(); the conformance gate scans every toolkit module.
 
 Contents and caption lists are complex fields with cached hyperlinks. One registry covers tables,
 figures and listings. Hidden caption TC fields select entries with portable field identifiers;
 the list uses TOC with its field-identifier switch, not a localized style-list separator.
-When pagination is unknown, cached entries contain only the linked title, with no tab or PAGEREF
-field. Updating the outer TOC field regenerates the paginated result. Bookmark normalization
-preserves internal links. Empty lists are omitted.
+A private LibreOffice probe maps authored paragraph bookmarks to PDF destinations, caches numeric
+PAGEREF results and verifies their pages by another conversion. There are no dirty flags or
+update-on-open requests. Optional builds without a working probe contain linked titles only, no
+tabs or PAGEREF fields. F9 repaginates each index in Word. Cached numbers reflect LibreOffice,
+not a claim of identical Word pagination. Empty lists are omitted.
 
 Word font declarations include single-name alternate-font chains: Source Sans 3 → Segoe UI →
 Calibri → Arial, Source Serif 4 → Georgia → Cambria, and JetBrains Mono → Consolas → Courier New.
