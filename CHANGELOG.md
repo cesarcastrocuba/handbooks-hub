@@ -3,6 +3,14 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
+## [0.10.0] - 2026-11-14
+
+### Changed
+
+- Generate reading-site theme layers from tokens with one base in light and dark; package layout CSS.
+- Render nonempty table, figure and listing indexes as native Quarto pages without HTML repair.
+- Separate publication orchestration, staging, identity and edition packaging into focused modules.
+
 ## [0.9.2] - 2026-11-13
 
 ### Fixed

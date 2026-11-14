@@ -183,3 +183,19 @@ and their contrast tests, generated portal CSS and self-hosted WOFF2 assets, gen
 stylesheet with a Quarto light/dark theme, Typst constants, DOCX style values, portal source links,
 book search and repository actions in the template, and issue forms for corrections and proposals.
 The catalog lists the release and `portal-pages` serves the portal built from it.
+
+## Native reading-site rendering (0.10.0)
+
+Both schemes use Cosmo plus a deterministic handbook-light.scss or handbook-dark.scss generated
+from the packaged contract. Quarto brand YAML was evaluated first: its dual-scheme background and
+type worked, but Cosmo retained its default body foreground and navbar background.
+Sass defaults therefore map the Bootstrap/Quarto variables; semantic CSS variables remain the
+shared interface. Packaged html/handbook.css supplies layout; its geometry substitutions resolve
+from design.py. No handwritten layout CSS lives in a Python string.
+
+Caption lists are generated QMD pages before HTML rendering. Quarto owns their navigation and
+cross-reference numbering. There are no edits of rendered reading-site HTML. Font OFL notices
+are copied as packaging resources. Markdown HTML wrappers are read with HTMLParser.
+
+The chrome_rule token preserves the inherited Quarto outline/heading rules in each scheme when
+using one base theme. It is distinct from the platform border token; no palette change is intended.

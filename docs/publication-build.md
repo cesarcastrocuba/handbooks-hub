@@ -145,3 +145,11 @@ original generated image, checks the three populated lists in a LibreOffice PDF 
 passes the DOCX through the structural artifact gate. Desktop Word must still be opened during
 Owner acceptance; it was not opened by an agent. See [artifact inspection](artifact-inspection.md)
 for the validator boundary.
+
+## Native HTML staging
+
+The build orchestration delegates source/configuration staging, identity checks, HTML packaging
+and the Markdown edition to separate modules. HTML lists are native nonempty registry chapters,
+generated from staged source labels. Print renders use the canonical reading order; the later HTML
+render adds the lists, using Quarto --no-clean to retain print outputs. Generated list pages never
+enter the source archive or Markdown source. Caption numbering and links are resolved by Quarto.
