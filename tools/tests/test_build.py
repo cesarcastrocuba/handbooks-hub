@@ -13,6 +13,7 @@ import json
 import struct
 import zlib
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -495,9 +496,7 @@ class BuildTests(unittest.TestCase):
             for letter in ("T", "F"):
                 self.assertTrue(any(value == f"TOC \\h \\z \\f {letter}" for value in instructions))
             self.assertTrue(any(value.startswith("TC ") for value in instructions))
-            for item in fields(document):
-                if item.instruction.startswith("PAGEREF"):
-                    self.assertEqual(item.begin.get(W + "dirty"), "true")
+            self.assertFalse(any(value.startswith("PAGEREF") for value in instructions))
             self.assertTrue(document.findall(".//" + W + "tblHeader"))
             self.assertFalse(document.findall(".//" + W + "trPr/" + W + "shd"))
             callout = styles.find(f"{W}style[@{W}styleId='CalloutReviewTitle']")
@@ -571,6 +570,14 @@ class BuildTests(unittest.TestCase):
                 matching = [page for page in pages if page.startswith(title)]
                 self.assertEqual(len(matching), 1, pages)
                 self.assertIn(entry, matching[0])
+            for page in text.split("\f"):
+                lines = [line.strip() for line in page.splitlines() if line.strip()]
+                if lines and lines[0] in {"Contents", "List of Tables", "List of Figures"}:
+                    for line in lines[1:]:
+                        self.assertIsNone(
+                            re.search(r"(?:[.·]\s*){2,}$|…\s*$", line),
+                            f"Cached entry has a dangling leader without a page number: {line}",
+                        )
             pdf = subprocess.check_output(["pdftotext", str(output / "book.pdf"), "-"], text=True)
             self.assertIn("List of Figures", pdf)
             self.assertIn("An original fixture diagram", pdf)

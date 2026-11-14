@@ -152,9 +152,6 @@ def _entry_paragraph(entry: Entry) -> ET.Element:
     run = ET.SubElement(link, W + 'r')
     ET.SubElement(ET.SubElement(run, W + 'rPr'), W + 'rStyle', {W + 'val': 'Hyperlink'})
     ET.SubElement(run, W + 't', {XML_SPACE: 'preserve'}).text = entry.text
-    ET.SubElement(ET.SubElement(link, W + 'r'), W + 'tab')
-    link.extend((field_run('begin'), instruction_run(f'PAGEREF {entry.bookmark} \\h'),
-                 field_run('separate'), field_run('end')))
     return paragraph
 
 

@@ -8,8 +8,8 @@ semantic versioning once the toolkit is published.
 ### Fixed
 
 - Word callouts use the reference document's real style names, with one definition per style.
-- Contents and caption lists are native Word fields with linked cached entries. Unknown page
-  references stay empty and dirty until a viewer updates the fields; no page numbers are invented.
+- Contents and caption lists are native Word fields with linked cached entries. Until a viewer updates the fields, cached entries contain linked titles only,
+  without tabs, empty page references or dangling dot leaders; no page numbers are invented.
 - Lists of Tables, Figures and Listings share one registry and appear only for existing entries.
   The PDF now includes a conditional List of Figures.
 - Word table banding comes from reference styles, callout tables stay unbanded, font aliases are

@@ -111,6 +111,11 @@ class DocxValidatorTests(unittest.TestCase):
     def test_balanced_nested_fields(self):
         body = self.root.find(W + 'body')
         body.extend(cached_field('TOC \\h \\z \\f T', [Entry('Caption', 'Target')]))
+        link = body[-1].find(W + 'hyperlink')
+        result = ET.Element(W + 'r')
+        ET.SubElement(result, W + 't').text = '7'
+        link.extend((field_run('begin'), instruction_run('PAGEREF Target \\h'),
+                     field_run('separate'), result, field_run('end')))
         self.check(valid=True)
         body[-1].remove(body[-1][-1])
         self.check(valid=False)
@@ -174,6 +179,16 @@ class DocxValidatorTests(unittest.TestCase):
 
 
 class NativeFieldTests(unittest.TestCase):
+    def test_unknown_page_cache_is_linked_title_without_tab_or_pageref(self):
+        root = ET.Element(W + 'document')
+        entries = [Entry('Introduction', 'Intro'), Entry('Table 1: Routes', 'Routes')]
+        root.extend(cached_field('TOC \\h \\z \\f T', entries))
+        links = list(root.iter(W + 'hyperlink'))
+        self.assertEqual([text_of(link) for link in links], [entry.text for entry in entries])
+        self.assertEqual([link.get(W + 'anchor') for link in links], ['Intro', 'Routes'])
+        self.assertEqual(list(root.iter(W + 'tab')), [])
+        self.assertFalse(any(item.instruction.startswith('PAGEREF') for item in fields(root)))
+
     def test_caption_registry_and_contents_cache(self):
         root, styles = fixture()
         body = root.find(W + 'body')
@@ -194,10 +209,8 @@ class NativeFieldTests(unittest.TestCase):
         self.assertTrue(any('Code \\"quoted\\" \\\\ path' in value for value in instructions))
         for link in root.iter(W + 'hyperlink'):
             self.assertTrue(link.get(W + 'anchor'))
-        # Unknown page numbers are empty, never invented or copied from another renderer.
-        for item in fields(root):
-            if item.instruction.startswith('PAGEREF'):
-                self.assertEqual(item.begin.get(W + 'dirty'), 'true')
+        self.assertFalse(any(value.startswith('PAGEREF') for value in instructions))
+        self.assertEqual(list(root.iter(W + 'tab')), [])
         self.assertIn('Chapter one', text_of(content))
         self.assertIn('Nested section', text_of(content))
         self.assertEqual(len([p for p in body if text_of(p) == 'List of Figures']), 1)

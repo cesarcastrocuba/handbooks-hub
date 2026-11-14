@@ -31,8 +31,8 @@ rendered review before requesting approval.
 
 Toolkit 0.9.2 fixes Word style definitions and replaces the static List of Tables with native
 contents/caption fields. Their linked cached entries are visible without updating fields.
-Unknown page numbers are deliberately empty: open the document in desktop Word and update fields
-to calculate them. The package requests updates, but a viewer may require confirmation or an
+Until page numbers are known, each cached entry is its linked title only, with no dangling dot
+leader. Open the document in desktop Word and update fields to generate the paginated result. The package requests updates, but a viewer may require confirmation or an
 explicit update. Desktop Word was not available during implementation; structural validation
 and a LibreOffice conversion are evidence, not a guarantee of every Word viewer's behavior.
 
