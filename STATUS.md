@@ -9,8 +9,8 @@ only in [`docs/decisions.md`](docs/decisions.md); the plan lives in
 `1.4.2` and sample `v0.4.2` (change `0027`, `HUB-DEC-040`). Phase 6 has not started and needs an
 owner decision.
 **State:** The sample book is published at `v0.4.2`, and the catalog and portal list it with download
-links; `portal-pages` deployed `v0.4.2` on its third attempt after two transient asset `403` failures
-in `catalog_verification`. `v0.4.1` and older published editions remain available (`HUB-DEC-031`).
+links; `portal-pages` deployed `v0.4.2` on its third attempt after two attempts failed with HTTP `403`
+from the GitHub API rate limit in `catalog_verification` (change `0035` authenticates those requests). `v0.4.1` and older published editions remain available (`HUB-DEC-031`).
 Toolkit `0.9.2` is tagged `toolkit-v0.9.2` and fixes the Word callout styles, the native Contents and
 caption-list fields, table banding, font fallbacks, the DOCX validators and the List of Tables page
 rule. Template `1.4.2` is on `main` and pins toolkit `0.9.2`; the mirror
@@ -27,7 +27,7 @@ pull requests (`HUB-DEC-018`), with up-to-date branches (`HUB-DEC-026`).
 | Sample repository | `v0.4.2` is the current release, published by run 43579133589 from `a59185e` (sample `DEC-027`). `v0.4.1` and older published editions remain available (`HUB-DEC-031`). `v0.2.2`, `v0.2.3` and earlier withdrawn editions keep their tags. Introduction, 8 chapters, 3 appendices and References |
 | Toolkit | `0.9.2`, tag `toolkit-v0.9.2` at `2e29438`, 359 unit tests. It ships Word callout styles with one definition each, native Contents and caption-list fields with cached entries, table banding from reference styles, font fallbacks, the DOCX validators and the List of Tables page rule |
 | Template | `1.4.2`, merged as PR 53 (`2b679f5`); pins toolkit `0.9.2` at `2e29438`, and the mirror tag `template-v1.4.2` is at `b7ca872`. Its content is unchanged beyond the pin and the version statements, because the `0.9.1` to `0.9.2` upgrade note requires no manuscript or configuration edit |
-| CI | Sample `v0.4.2` release run 43579133589 succeeded from `a59185e` and deployed the reading site. Catalog real run 43579293962 verified the published bytes and pushed the branch merged as PR 54 (`66a6a0a`). `portal-pages` run 43579566245 deployed `v0.4.2` on its third attempt; the first two failed with `remote asset returned HTTP 403` in `catalog_verification`. Every pull request that changes the toolkit or the template builds an edition preview (`HUB-DEC-036`) |
+| CI | Sample `v0.4.2` release run 43579133589 succeeded from `a59185e` and deployed the reading site. Catalog real run 43579293962 verified the published bytes and pushed the branch merged as PR 54 (`66a6a0a`). `portal-pages` run 43579566245 deployed `v0.4.2` on its third attempt; the first two failed with `remote asset returned HTTP 403`, the GitHub API anonymous rate limit in `catalog_verification` (change `0035`, PR 56, not merged). Every pull request that changes the toolkit or the template builds an edition preview (`HUB-DEC-036`) |
 | Standard profile | `1.0.0`, **Approved** 2026-11-06; `0.2.0` remains resolvable |
 | Licensing | CC BY-SA 4.0 content, MIT code. Bundled third-party render resources reviewed and replaced where in doubt (`HUB-DEC-020`). The web fonts are renamed OFL subsets, published with their `OFL.txt` notices. The published sample names Franz César Castro Cuba and includes a third-party notices page (`HUB-DEC-023`) |
 | Catalog | `schema_version` `1.1`, 1 approved release: `handbook-authoring-and-publishing` `v0.4.2` with download links for `pdf`, `html`, `docx`, `markdown` and `source` (sample `DEC-027`) |
@@ -39,7 +39,7 @@ pull requests (`HUB-DEC-018`), with up-to-date branches (`HUB-DEC-026`).
 
 1. Owner opens `book.docx` of `v0.4.2` in desktop Word and runs the acceptance checklist of the operations runbook, because no agent could do it (`HUB-DEC-040`).
 2. Work packages WP3, WP4 and WP5 of change `0027` are in progress.
-3. Add a bounded retry to `catalog_verification` for the transient asset HTTP `403` seen in `portal-pages` for `v0.4.1` and `v0.4.2`.
+3. Merge change `0035` (PR 56), which authenticates the `catalog_verification` requests that the GitHub API rate limit rejected with HTTP `403`; the next catalog change proves it.
 4. Phase 6: migration evaluation of `solutions-architecture-handbook`, including its copies of the replaced fonts and DOCX reference; needs an owner decision.
 
 ## Blockers and open owner decisions
