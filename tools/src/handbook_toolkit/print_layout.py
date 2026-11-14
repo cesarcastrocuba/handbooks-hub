@@ -189,7 +189,7 @@ def typst_front(
     ]
     from .indexes import LISTS
 
-    for prefix, title, _letter in LISTS:
+    for prefix, _caption, title, _letter in LISTS:
         target = f'figure.where(kind: "quarto-float-{prefix}")'
         lines += [
             f"#context {{ if query({target}).len() > 0 {{",

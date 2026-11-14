@@ -101,8 +101,8 @@ def _caption_kind(paragraph: ET.Element) -> str | None:
     if style_of(paragraph) not in {'Caption', 'TableCaption', 'ImageCaption', 'ListingCaption'}:
         return None
     text = text_of(paragraph)
-    for prefix, label, _letter in LISTS:
-        if text.startswith(label.removeprefix('List of ').rstrip('s')):
+    for prefix, caption_label, _title, _letter in LISTS:
+        if text.startswith(caption_label):
             return prefix
     return {'TableCaption': 'tbl', 'ImageCaption': 'fig', 'ListingCaption': 'lst'}.get(style_of(paragraph))
 
@@ -115,7 +115,7 @@ def _tc_field(paragraph: ET.Element, text: str, letter: str) -> None:
 
 
 def _collect_entries(root: ET.Element) -> tuple[dict[str, list[Entry]], list[Entry]]:
-    captions: dict[str, list[Entry]] = {kind: [] for kind, _title, _letter in LISTS}
+    captions: dict[str, list[Entry]] = {kind: [] for kind, _caption, _title, _letter in LISTS}
     headings: list[Entry] = []
     marks = _paragraph_bookmarks(root)
     for index, paragraph in enumerate(list(root.iter(W + 'p'))):
@@ -137,7 +137,7 @@ def _collect_entries(root: ET.Element) -> tuple[dict[str, list[Entry]], list[Ent
         entry = Entry(text, bookmark, int(style[-1]) if is_heading else 1)
         if kind:
             captions[kind].append(entry)
-            letter = next(letter for prefix, _label, letter in LISTS if prefix == kind)
+            letter = next(letter for prefix, _caption, _title, letter in LISTS if prefix == kind)
             _tc_field(paragraph, text, letter)
         else:
             headings.append(entry)
@@ -207,7 +207,7 @@ def add_indexes(root: ET.Element) -> None:
         index = next((i for i, child in enumerate(body)
                       if child.tag == W + 'bookmarkStart' or style_of(child).startswith('Heading')),
                      len(body) - (1 if body.find(W + 'sectPr') is not None else 0))
-    for prefix, label, letter in LISTS:
+    for prefix, _caption, label, letter in LISTS:
         if captions[prefix]:
             blocks = [_title(label), *cached_field(f'TOC \\h \\z \\f {letter}', captions[prefix])]
             for block in blocks:

@@ -5,6 +5,7 @@ from copy import deepcopy
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 from xml.etree import ElementTree as ET
 from zipfile import ZipFile
 
@@ -179,6 +180,16 @@ class DocxValidatorTests(unittest.TestCase):
 
 
 class NativeFieldTests(unittest.TestCase):
+    def test_caption_label_is_independent_of_list_title(self):
+        root, _styles = fixture()
+        body = root.find(W + 'body')
+        paragraph(body, 'Table 1: Routes', 'Caption')
+        with patch('handbook_toolkit.docx_fields.LISTS', (('tbl', 'Table', 'Indexes', 'T'),)):
+            add_indexes(root)
+        self.assertTrue(any(text_of(node) == 'Indexes' for node in body))
+        self.assertEqual([text_of(link) for link in root.iter(W + 'hyperlink')], ['Table 1: Routes'])
+        self.assertIn('TOC \\h \\z \\f T', [item.instruction for item in fields(root)])
+
     def test_unknown_page_cache_is_linked_title_without_tab_or_pageref(self):
         root = ET.Element(W + 'document')
         entries = [Entry('Introduction', 'Intro'), Entry('Table 1: Routes', 'Routes')]
