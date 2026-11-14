@@ -57,6 +57,7 @@ activation and troubleshooting, start with [`docs/setup.md`](docs/setup.md).
 | `tools/src/handbook_toolkit/schemas/` | JSON Schema contracts for books, profiles and the catalog, shipped inside the toolkit package |
 | `template/book/` | Book template `1.4.2` with publishing config, licenses, workflows, search/contribution actions and `make check`/`build`/`full` |
 | `catalog/` | Catalog of approved book releases |
+| `tools/src/handbook_toolkit/render_data/portal/` | Packaged Quarto guide pages, living Design page and library templates; opt-in candidate behind the page-weight parity gate |
 | `docs/publication-build.md` | Local seven-file build with staging, payload inspection and atomic finalization |
 | `docs/book-upgrade.md` | Supported toolkit/profile upgrade path for an independent book |
 | `docs/operations-runbook.md` | Upgrade, rollback, release withdrawal and incident procedures |

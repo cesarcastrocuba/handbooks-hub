@@ -1,69 +1,86 @@
-# Static handbook catalog
+# Handbook portal
 
-Build a fresh static portal from the Git-tracked approved-release catalog:
+The deployed portal remains the deterministic single-page generator. A complete Quarto website is
+available for preview with `--engine quarto`, behind the parity gate in `HUB-DEC-039`. Its page
+weight exceeds the current portal, so this change does not switch the deployed engine. See
+[change 0033](../sdd/changes/0033-portal-quarto/record.md) for the measured parity table.
+
+## Build locally
+
+The current engine needs the installed toolkit and no renderer:
 
 ```sh
-python3 -m handbook_toolkit.portal catalog/catalog.json --output /tmp/handbook-portal
+handbook-toolkit build-portal --catalog catalog/catalog.json --output /tmp/handbook-portal
+# The workflow-compatible entry point remains supported:
+python3 -m handbook_toolkit.portal catalog/catalog.json --output /tmp/handbook-portal-module
 ```
 
-The output directory holds `index.html`, a single responsive page with embedded
-styles and JavaScript, `llms.txt`, a plain-text index for AI tools, and a
-`fonts/` directory with the self-hosted WOFF2 files the page requests.
+The Quarto candidate requires **Quarto 1.11.9**:
 
-`index.html` contains:
+```sh
+handbook-toolkit build-portal --catalog catalog/catalog.json --output /tmp/handbook-portal-quarto --engine quarto
+handbook-toolkit design-preview --output /tmp/handbook-design
+```
 
-- **The library.** One card per book with a cover generated from its title and first category,
-  category filters, title/release sorting, a text search over the cards, and reading, release,
-  manifest and checksum links. A release whose catalog entry lists `assets` also gets one download
-  button per edition (PDF, HTML, DOCX, Markdown, Source); other releases keep only the "Release
-  downloads" link.
-- **Guide sections.** How the platform works, how to create a handbook in five steps, how a book
-  is published and withdrawn, how to contribute to a book, and questions and answers. They are
-  static text and link to the template repository, the author guide and the hub issue forms.
+Every output must be new. Generation validates the catalog, stages only packaged resources in a
+private directory, disables execution and atomically exposes a complete result. Generation makes
+no network request. Quarto's optional sitemap modification times are omitted through a parsed XML
+step: staging filesystem times are not content history and change between otherwise identical
+builds. No rendered HTML is edited. Repeat-render tests compare every published file byte for byte.
 
-The page loads no external script, style, font or image, follows the reader's light or dark
-preference and contains no book manuscript or download proxy. Empty catalogs show an honest
-preparation message; planned topics are marked as planned rather than populated with fictitious
-books.
+## Candidate structure
 
-`llms.txt` follows the llms.txt convention: a title, a summary and one link per book. The link is
-the Markdown edition when the release lists one and the reading site otherwise.
+| Page/resource | Source and behavior |
+| --- | --- |
+| Library | Validated catalog data bound to packaged templates; generated category cover, title, summary, release date/version and only declared edition buttons |
+| Guides | Five packaged Markdown pages: how the platform works, creating a handbook, publishing/withdrawal, contributing and questions/answers |
+| Design | Living style guide generated from packaged tokens: role swatches, recomputed contrast, type, callouts, tables, code, buttons and cards |
+| Navigation, search, metadata | Native Quarto website navbar, site search, light/dark toggle, description, favicon, social metadata and canonical URLs |
+| Library controls | Shared packaged inline filter, without a hosted script/library: case/accent-insensitive multiword search, category intersection and title/latest sorting |
+| Theme and motion | The book's exact generated Sass, CSS and self-hosted fonts; native CSS motion respects reduced motion |
+| `llms.txt` | Same bytes and structure as the current generator; Markdown-edition link when declared, reading-site link otherwise |
 
-Catalog entries require an explicit HTTPS `reading_url`: Pages URLs cannot be
-reliably inferred from a release URL or a custom domain. The category vocabulary
-is now enforced by the schema. This tightens the initial, unreleased catalog
-contract. New categories require a deliberate
-schema and portal vocabulary update.
-Reading URLs use port 443 and contain no query string or credentials; a fragment
-may identify a section of the landing page.
+The catalog does not carry each book's licence. Cards link readers to the handbook's declaration;
+the generator does not assume the platform's content licence applies to every book. Empty catalogs
+stay empty, and planned topics never become fictional entries. Generated covers need no remote
+image. Existing guide fragments and public font-notice URLs remain available.
 
-The generator is offline and deterministic. It validates catalog shape/invariants,
-escapes untrusted text and refuses to overwrite an existing output directory.
-Before generation/deployment, the workflow runs:
+The single-page generator's templates remain while it is deployed. Its shared filter resource was
+extracted without changing the generated page bytes. The new guides, markup and styles are package
+data rather than Python strings. Both consumers use the same theme factories; the portal carries
+only its own layout rules. Cosmo's Google Fonts import is explicitly disabled in the shared Sass;
+all type assets are self-hosted and all three OFL notices travel with them.
+
+## Verify and inspect
+
+The online catalog gate remains separate and mandatory before deployment:
 
 ```sh
 python3 -m handbook_toolkit.catalog_verification catalog/catalog.json
+python3 -m unittest discover -s tools/tests -p test_portal.py -v
 ```
 
-For each entry this online gate requires a published stable GitHub release,
-resolves its tag to the exact source commit, verifies manifest identity and every
-release asset, checks each catalog download link against the manifest, checks their formats, and verifies that every released HTML-site file
-is present and byte-identical live. Extra live files are not enumerated.
-Missing/mixed-release assets and changed bytes fail.
-An empty catalog makes no network requests. Payload downloads are limited to
-512 MiB each; API/identity responses to 2 MiB. Public GitHub API rate limits apply.
-Editorial approval remains a human decision recorded before catalog acceptance;
-neither checksums nor a published GitHub release prove that decision.
-All requests and redirects require HTTPS on port 443 and public unicast IPs.
-Connections are pinned to the checked IP while TLS verifies the original hostname;
-DNS rebinding cannot substitute a second unchecked address during connection.
-Internal, loopback, link-local and reserved destinations fail before fetching.
+That gate verifies stable releases, tag/source identity, manifests, checksums, download URLs and
+published asset/site bytes. HTTPS, public-IP, redirect and size protections are unchanged. The
+workflow still passes its read-only `GITHUB_TOKEN` to authenticate GitHub API reads.
 
-The Pages workflow builds from the checked-out catalog; it deploys on a catalog change on `main`
-or by manual dispatch (`HUB-DEC-024`). Deployment
-requires Pages configured with the GitHub Actions build type. Reading-site and
-book-release publication remain independent workflows.
+For browser evidence install `tools/scripts/requirements-edition-preview.txt` and Chromium, then run:
 
-Verification: `python3 -m unittest discover -s tools/tests -p test_portal.py`.
-Rollback removes portal generation/tests/workflow and reverts the unreleased
-reading-URL/category schema changes; existing book sources are unaffected.
+```sh
+python3 tools/scripts/portal_preview.py --catalog catalog/catalog.json --output /tmp/portal-preview
+```
+
+It builds both engines, checks legacy links and `llms.txt`, exercises search/filter/sort with clearly
+marked two-book fixtures, checks keyboard focus and real component contrast, records byte counts,
+and captures light/dark screenshots at 1440/390. The local inspection server binds only loopback;
+external browser requests are blocked and fail the check. Both real site trees, fixture trees,
+`parity.json` and `PREVIEW.md` are retained. Fixture entries are never deployed or verified releases.
+The template edition-preview CI artifact includes these portal screenshots and evidence.
+
+## Deployment
+
+`portal-pages` retains its catalog-only push trigger on `main`, manual build/deploy input,
+permissions and deploy gate. It installs pinned Quarto 1.11.9 and renders both engines, but uploads
+only the legacy `_site` directory to Pages. The candidate `_quarto_candidate` is not deployed.
+Switching the default awaits page-weight parity or an explicit owner decision accepting the cost.
+The book publication and release workflows remain independent.
