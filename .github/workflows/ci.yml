@@ -166,3 +166,65 @@ jobs:
 
 # The wheel-install job checks the installed-package boundary; it is not a publication or release
 # step.
+
+  # Not a required check: it shows reviewers and the Owner what the editions look like before
+  # anything is tagged (HUB-DEC-036). The books are built with this pull request's toolkit.
+  edition-preview:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - book: template
+          - book: sample
+            repository: cesarcastrocuba/handbook-sample-01
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check out the book to preview
+        if: matrix.repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ matrix.repository }}
+          path: preview-book
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - uses: quarto-dev/quarto-actions/setup@8a96df13519ee81fd526f2dfca5962811136661b # v2.2.0
+        with:
+          version: "1.11.9"
+      - name: Install the inspection tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends poppler-utils libreoffice-writer
+      - name: Install the toolkit of this pull request and the screenshot browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt -r tools/scripts/requirements-edition-preview.txt
+          python -m playwright install --with-deps chromium
+      - name: Build the edition preview
+        env:
+          BOOK: ${{ matrix.book }}
+        run: |
+          if [ "$BOOK" = template ]; then
+            set -- --template
+          else
+            set -- --repo "$GITHUB_WORKSPACE/preview-book"
+          fi
+          python3 tools/scripts/edition_preview.py "$@" \
+            --output "$RUNNER_TEMP/edition-preview" --require-tools >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload the edition preview
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: edition-preview-${{ matrix.book }}
+          path: |
+            ${{ runner.temp }}/edition-preview
+            !${{ runner.temp }}/edition-preview/site
+          if-no-files-found: error
+          retention-days: 14
