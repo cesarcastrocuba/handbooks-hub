@@ -55,6 +55,58 @@ Operations distinguish between two verification gates:
      six assets for `1.0` (published before toolkit `0.6.0`) and seven for `1.1`, which adds
      `book.md`.
 
+### Edition preview and Owner acceptance before tagging
+
+Neither gate above shows what a reader will see. A release is immutable, so the editions are
+inspected before anything is tagged (`HUB-DEC-036`).
+
+Every pull request runs the `edition-preview` job of `ci.yml`. It builds the template book and the
+sample book with the pull request's toolkit, as a `--preview` build that cannot pass for a release,
+and uploads one artifact per book, `edition-preview-template` and `edition-preview-sample`, kept for
+14 days:
+
+| Path in the artifact | What it is |
+| --- | --- |
+| `PREVIEW.md` | Source commit, preview version, file list and any step that was not run |
+| `edition/` | The seven files `build-book` produces, including `book.pdf`, `book.docx` and `book-html.zip` |
+| `libreoffice/book-docx-as-libreoffice.pdf` | The DOCX as LibreOffice renders it: what a viewer other than Word shows |
+| `screenshots/` | The reading site's top-level pages and its largest page, at 1440 px and 390 px, light and dark |
+
+The job is not a required check. A failed sample preview means the pull request's toolkit cannot
+build the published sample as it is; say so in the pull request, with the reason.
+
+The same preview runs locally:
+
+```bash
+python3 -m pip install -r requirements-dev.txt -r tools/scripts/requirements-edition-preview.txt
+python3 -m playwright install chromium
+python3 tools/scripts/edition_preview.py --template --output /tmp/edition-preview
+python3 tools/scripts/edition_preview.py --repo PATH_TO_BOOK --output /tmp/edition-preview-book
+```
+
+Without LibreOffice or Playwright the script still builds the editions and records the skipped step
+in `PREVIEW.md`; `--require-tools` turns a missing tool into a failure, as in CI.
+
+**Owner acceptance checklist.** Before tagging a toolkit or template release, or dispatching a book
+release, the Owner downloads the artifact of the pull request that is about to merge
+(`gh run download RUN_ID -n edition-preview-sample`) and checks:
+
+1. **Word.** Open `edition/book.docx` in desktop Word and accept the prompt to update fields.
+   - Callout titles are bold and carry their role colour.
+   - "Contents" lists the headings with page numbers.
+   - Each list (tables, figures) shows its entries with page numbers, and an entry jumps to its
+     target.
+   - Captioned tables show their banding; tables inside callouts do not.
+   - Text uses the brand fonts, or the declared fallback when they are not installed.
+2. **Other viewers.** `libreoffice/book-docx-as-libreoffice.pdf` shows "Contents" and the lists with
+   entries, not empty headings.
+3. **PDF.** `edition/book.pdf` has the cover, contents, lists and running headers in place.
+4. **Reading site.** The screenshots are legible in light and dark at both widths: no overflow, no
+   doubled rules, no unreadable contrast.
+
+A defect found here is fixed in the same pull request or the next one. Visual corrections are
+grouped into one release per round instead of one release per correction.
+
 ---
 
 ## 2. Procedure: Toolkit and profile upgrade in a book
