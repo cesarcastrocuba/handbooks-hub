@@ -11,10 +11,16 @@ Usage: python3 tools/scripts/generate_reference_docx.py [output.docx]
 from __future__ import annotations
 
 import json
+import xml.etree.ElementTree as ET
 import sys
 import zipfile
 from pathlib import Path
 from xml.sax.saxutils import quoteattr
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from handbook_toolkit.design import docx_callout_styles, docx_values
+from handbook_toolkit.docx_fonts import font_table
+from handbook_toolkit.docx_xml import W, register_namespaces
 
 TOKENS = Path(__file__).resolve().parents[1] / "src/handbook_toolkit/design/tokens.json"
 _TOKENS = json.loads(TOKENS.read_text(encoding="utf-8"))
@@ -124,34 +130,41 @@ def character_style(style_id, name, based="DefaultParagraphFont", rpr="", custom
 
 
 def table_style() -> str:
-    borders = "".join(
-        f'<w:{side} w:val="nil"/>' for side in ("top", "left", "bottom", "right")
-    ) + (
-        f'<w:insideH w:val="single" w:sz="4" w:space="0" w:color="{RULE}"/>'
-        '<w:insideV w:val="nil"/>'
-    )
-    margins = "".join(
-        f'<w:{side} w:w="{width}" w:type="dxa"/>'
-        for side, width in (("top", 0), ("left", 60), ("bottom", 0), ("right", 60))
-    )
-    return (
-        '<w:style w:type="table" w:default="1" w:styleId="Table"><w:name w:val="Table"/><w:qFormat/>'
-        f'<w:tblPr><w:tblInd w:w="0" w:type="dxa"/><w:tblBorders>{borders}</w:tblBorders>'
-        f"<w:tblCellMar>{margins}</w:tblCellMar></w:tblPr>"
-        f'<w:tblStylePr w:type="firstRow"><w:rPr><w:b/><w:bCs/><w:color w:val="FFFFFF"/></w:rPr>'
-        f'<w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="{BLUE}"/></w:tcPr></w:tblStylePr>'
-        "</w:style>"
-        '<w:style w:type="table" w:styleId="TablePlain"><w:name w:val="Table Plain"/><w:qFormat/>'
-        '<w:basedOn w:val="Table"/>'
-        f'<w:tblPr><w:tblBorders>{borders}</w:tblBorders></w:tblPr></w:style>'
-        '<w:style w:type="table" w:styleId="CalloutBox"><w:name w:val="Callout Box"/><w:qFormat/>'
-        '<w:tblPr><w:tblBorders>'
-        + "".join(
-            f'<w:{side} w:val="nil"/>'
-            for side in ("top", "left", "bottom", "right", "insideH", "insideV")
-        )
-        + "</w:tblBorders></w:tblPr></w:style>"
-    )
+    root = ET.Element("styles")
+    values = {key: value.lstrip("#") for key, value in docx_values().items()}
+    for identifier, name in (("Table", "Table"), ("TablePlain", "Table Plain"), ("CalloutBox", "Callout Box")):
+        style = ET.SubElement(root, W + "style", {W + "type": "table", W + "styleId": identifier})
+        if identifier == "Table":
+            style.set(W + "default", "1")
+        ET.SubElement(style, W + "name", {W + "val": name})
+        ET.SubElement(style, W + "qFormat")
+        properties = ET.SubElement(style, W + "tblPr")
+        ET.SubElement(properties, W + "tblInd", {W + "w": "0", W + "type": "dxa"})
+        borders = ET.SubElement(properties, W + "tblBorders")
+        for side in ("top", "left", "bottom", "right", "insideH", "insideV"):
+            attrs = {W + "val": "nil"}
+            if side == "insideH" and identifier != "CalloutBox":
+                attrs = {W + "val": "single", W + "sz": "4", W + "space": "0", W + "color": values["rule"]}
+            ET.SubElement(borders, W + side, attrs)
+        margins = ET.SubElement(properties, W + "tblCellMar")
+        for side, width in (("top", 0), ("left", 60), ("bottom", 0), ("right", 60)):
+            ET.SubElement(margins, W + side, {W + "w": str(width), W + "type": "dxa"})
+        if identifier == "CalloutBox":
+            continue
+        first = ET.SubElement(style, W + "tblStylePr", {W + "type": "firstRow"})
+        runs = ET.SubElement(first, W + "rPr")
+        ET.SubElement(runs, W + "b")
+        ET.SubElement(runs, W + "bCs")
+        ET.SubElement(runs, W + "color", {W + "val": values["on_solid"]})
+        ET.SubElement(ET.SubElement(first, W + "tcPr"), W + "shd", {
+            W + "val": "clear", W + "color": "auto", W + "fill": values["accent_solid"]})
+        if identifier == "Table":
+            for band, color in (("band1Horz", values["canvas"]), ("band2Horz", values["stripe"])):
+                conditional = ET.SubElement(style, W + "tblStylePr", {W + "type": band})
+                ET.SubElement(ET.SubElement(conditional, W + "tcPr"), W + "shd", {
+                    W + "val": "clear", W + "color": "auto", W + "fill": color})
+    register_namespaces()
+    return "".join(ET.tostring(child, encoding="unicode") for child in root)
 
 
 def heading_styles() -> list[str]:
@@ -182,12 +195,12 @@ def callout_styles() -> list[str]:
     styles = []
     for name, (accent, tint) in CALLOUTS.items():
         styles.append(paragraph_style(
-            f"Callout{name}Title", f"Callout {name} Title", follow=f"Callout{name}Body",
+            f"Callout{name}Title", docx_callout_styles()[name.lower()]["title"], follow=f"Callout{name}Body",
             ppr=para(keep=True, lines=True, before=0, after=0),
             rpr=run(font=DISPLAY_FONT, bold=True, color=accent, size=21), custom=True,
         ))
         styles.append(paragraph_style(
-            f"Callout{name}Body", f"Callout {name} Body", based="BodyText", follow="BodyText",
+            f"Callout{name}Body", docx_callout_styles()[name.lower()]["body"], based="BodyText", follow="BodyText",
             ppr=para(before=0, after=80),
             rpr=run(color=INK, size=21), custom=True,
         ))
@@ -249,6 +262,8 @@ def styles_xml() -> str:
                         ppr=para(keep=True, before=0, after=240, outline=9),
                         rpr=run(font=DISPLAY_FONT, bold=False, color=INK, size=36)),
         paragraph_style("TOC1", "toc 1", follow="Normal", ppr=para(tab=9400, before=40, after=20)),
+        paragraph_style("TOC3", "toc 3", based="TOC1", follow="Normal",
+                        ppr=para(tab=9400, before=20, after=20, left=480), rpr=run(size=19)),
         paragraph_style("TOC2", "toc 2", based="TOC1", follow="Normal",
                         ppr=para(tab=9400, before=20, after=20, left=240), rpr=run(size=19)),
         paragraph_style("CoverSeries", "Cover Series", follow="BodyText",
@@ -316,6 +331,19 @@ PARTS = {
 
 def write_reference(output: Path) -> None:
     parts = {**PARTS, "word/document.xml": document_xml(), "word/styles.xml": styles_xml()}
+    parts["word/fontTable.xml"] = font_table().decode("utf-8")
+    content_types = ET.fromstring(parts["[Content_Types].xml"])
+    ct = "{http://schemas.openxmlformats.org/package/2006/content-types}"
+    ET.SubElement(content_types, ct + "Override", {
+        "PartName": "/word/fontTable.xml",
+        "ContentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml"})
+    parts["[Content_Types].xml"] = ET.tostring(content_types, encoding="unicode")
+    relationships = ET.fromstring(parts["word/_rels/document.xml.rels"])
+    rel = "{http://schemas.openxmlformats.org/package/2006/relationships}"
+    ET.SubElement(relationships, rel + "Relationship", {
+        "Id": "rIdFonts", "Type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable",
+        "Target": "fontTable.xml"})
+    parts["word/_rels/document.xml.rels"] = ET.tostring(relationships, encoding="unicode")
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
         for name in sorted(parts):
             info = zipfile.ZipInfo(name, FIXED_TIME)

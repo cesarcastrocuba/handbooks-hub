@@ -18,6 +18,8 @@ from datetime import datetime, timezone
 import re
 from typing import Any, Iterable
 
+from .indexes import LISTS
+
 FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
 HEADING = re.compile(r"^(#{1,6})\s+\S")
 DOCUMENT_CONTROL = re.compile(r"^#\s+Document Control\b[^\n]*$", re.MULTILINE)
@@ -184,8 +186,15 @@ def typst_front(
     lines += [
         "#pagebreak()",
         f"#outline(title: [Contents], depth: {depth})",
-        "#pagebreak()",
-        '#outline(title: [List of Tables], target: figure.where(kind: "quarto-float-tbl"))',
+
         "",
     ]
+    for prefix, _caption, title, _letter in LISTS:
+        target = f'figure.where(kind: "quarto-float-{prefix}")'
+        lines += [
+            f"#context {{ if query({target}).len() > 0 {{",
+            "  pagebreak()",
+            f"  outline(title: [{title}], target: {target})",
+            "} }",
+        ]
     return "\n".join(lines)

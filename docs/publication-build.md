@@ -124,3 +124,24 @@ manual cross-reference numbers inside that pilot are not renumbered. The staged 
 white brand primary and explicit black link color, which suppresses the overflowing orange-book
 chapter-title block without hiding links. Table column widths and callout pagination remain shared
 renderer responsibilities and require visual review.
+
+
+## Word field and rendering gate (toolkit 0.9.2)
+
+The build prepares the Word package in docx_post, using parsed XML, registered namespace prefixes,
+schema-ordered properties and deterministic ZIP metadata. It normalizes caption/heading bookmarks,
+adds hidden TC fields, and caches Contents and caption-list entries as internal hyperlinks.
+While pagination is unknown, cached entries are linked titles only, with no tabs or empty PAGEREF
+fields. Word may regenerate the paginated outer-field result after the reader confirms an update.
+Caption lists are omitted when there are no entries. The Typst front matter also
+emits conditional table/figure/listing outlines from the shared registry.
+
+The first canonical page is rendered as index.qmd. A native Pandoc image filter rebases its local
+image references against that page's original directory before the HTML, PDF and DOCX writers run.
+The canonical sources and their image paths are unchanged.
+
+Publication-build CI installs LibreOffice Writer as well as Poppler. Its real build uses an
+original generated image, checks the three populated lists in a LibreOffice PDF conversion, and
+passes the DOCX through the structural artifact gate. Desktop Word must still be opened during
+Owner acceptance; it was not opened by an agent. See [artifact inspection](artifact-inspection.md)
+for the validator boundary.
