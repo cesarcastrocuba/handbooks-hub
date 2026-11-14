@@ -5,7 +5,7 @@ contracts, the versioned Python toolkit, the standard editorial profile, the boo
 catalog and the static portal. Each book repository owns its canonical manuscript and publishes its
 own reading site and release downloads.
 
-Status: **Phases 1 to 5 complete, with the Word-field release in toolkit `0.9.2`.** See
+Status: **Phases 1 to 5 complete, with the native reading-experience release in toolkit `0.10.0`.** See
 [`STATUS.md`](STATUS.md) and the [implementation plan](docs/implementation-plan.md).
 
 ## Who this is for
@@ -55,7 +55,7 @@ activation and troubleshooting, start with [`docs/setup.md`](docs/setup.md).
 | `profiles/standard/` | Approved standard editorial profile `1.0.0` with per-rule validation classification |
 | `tools/` | Versioned `handbook-toolkit` package with deterministic validators and tests |
 | `tools/src/handbook_toolkit/schemas/` | JSON Schema contracts for books, profiles and the catalog, shipped inside the toolkit package |
-| `template/book/` | Book template `1.4.2` with publishing config, licenses, workflows, search/contribution actions and `make check`/`build`/`full` |
+| `template/book/` | Book template `1.5.0` with publishing config, licenses, workflows, search/contribution actions and `make check`/`build`/`full` |
 | `catalog/` | Catalog of approved book releases |
 | `docs/publication-build.md` | Local seven-file build with staging, payload inspection and atomic finalization |
 | `docs/book-upgrade.md` | Supported toolkit/profile upgrade path for an independent book |

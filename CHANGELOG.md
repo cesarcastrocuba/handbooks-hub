@@ -3,6 +3,13 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
+## [1.5.0] - 2026-11-14
+
+Template release. Template `1.5.0` pins toolkit `0.10.0` (`dcfd8c8`) and adapts the shipped Quarto
+configuration to the new reading site: `publishing/_quarto.yml` already selects `dark: cosmo` and has
+no legacy navbar Tables entry, so the `0.9.2` to `0.10.0` upgrade note requires no further template
+change.
+
 ## [0.10.0] - 2026-11-14
 
 ### Changed

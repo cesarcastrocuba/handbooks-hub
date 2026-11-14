@@ -1,4 +1,4 @@
-# Book template 1.4.2
+# Book template 1.5.0
 
 A starting point for an independent handbook repository. Copy this directory into a new repository,
 then replace the identifiers and content. The copy is owned by the book; the hub does not update it
@@ -8,7 +8,7 @@ in place.
 covers creating the repository from the template, the one-time repository settings, the Initialize
 book workflow, the first release and the catalog listing request, with no prior knowledge assumed.
 
-The template pins toolkit `0.9.2` and standard profile `1.0.0`. It contains no copied toolkit source
+The template pins toolkit `0.10.0` and standard profile `1.0.0`. It contains no copied toolkit source
 and never imports a parent hub checkout.
 
 ## What is included
