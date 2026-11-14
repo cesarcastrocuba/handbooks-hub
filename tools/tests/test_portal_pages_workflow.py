@@ -82,6 +82,16 @@ class PortalPagesWorkflowTests(unittest.TestCase):
             {"pages": "write", "id-token": "write"},
         )
 
+    def test_quarto_is_pinned_and_only_the_legacy_output_is_deployed(self) -> None:
+        setup = next(step for step in self.steps() if step.get("uses", "").startswith("quarto-dev/quarto-actions/setup@"))
+        self.assertEqual(setup["with"]["version"], "1.11.9")
+        build = next(step for step in self.steps() if step.get("name") == "Build the approved-release catalog")
+        self.assertEqual(build["env"]["GITHUB_TOKEN"], "${{ github.token }}")
+        self.assertIn("--output _quarto_candidate --engine quarto", build["run"])
+        self.assertIn("--output _site\n", build["run"])
+        upload = next(step for step in self.steps() if step.get("uses", "").startswith("actions/upload-pages-artifact@"))
+        self.assertEqual(upload["with"]["path"], "_site")
+
     def test_actions_are_pinned_and_no_new_action_is_added(self) -> None:
         names = set()
         for step in self.steps():
@@ -97,6 +107,7 @@ class PortalPagesWorkflowTests(unittest.TestCase):
                 "actions/configure-pages",
                 "actions/upload-pages-artifact",
                 "actions/deploy-pages",
+                "quarto-dev/quarto-actions/setup",
             },
         )
 

@@ -218,3 +218,17 @@ The original favicon is generated from accent_solid/on_solid. The template's ori
 is generated from print canvas/text values, so it remains portable in Typst and Word. System CSS
 colors were tested and rejected because Typst rendered them black. Generated SVG source parity is
 checked against its packaged drawing and the tokens.
+
+## Living design page and portal parity
+
+`handbook-toolkit design-preview --output DIR` renders the living contract with Quarto 1.11.9.
+The same page is `design.html` in the opt-in portal website. Colour swatches and measured ratios,
+type scale and component specimens come from the packaged contract, with light/dark controls and
+no separate preview palette. Source is versioned under `render_data/portal/`, replacing a private,
+out-of-repository preview. The portal uses the existing book Sass/CSS factories and motion guard;
+only library layout is portal-specific. The shared Sass disables Cosmo's otherwise unused Google
+Fonts import so no browser request reaches a third-party font host.
+
+The current single-page portal remains deployed because the Quarto candidate is heavier. The
+[parity table](../sdd/changes/0033-portal-quarto/record.md) separates functional parity from page
+weight. Neither a working new renderer nor prettier screenshots bypass that gate.

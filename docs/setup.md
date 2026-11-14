@@ -14,7 +14,7 @@ published handbook needs no installation.
 
 The current validators check contracts, catalog/profile/book descriptors and repository files. The
 render toolchain (Quarto, Poppler `pdfinfo`, PDF/DOCX rendering) is the optional build described in
-section 7. It is not required for, and is not exercised by, the commands on this page.
+section 7. It is not required for validator-only work. When Quarto is installed, `make full` also runs real renderer tests.
 
 ## 2. Tested platforms and prerequisites
 
@@ -227,7 +227,32 @@ the installed package by default, with `--profile` as an explicit override. None
 by `requirements-dev.txt` or `requirements.txt` and none is required for the checks above. See [`publication-build.md`](publication-build.md). It does not
 publish, deploy or release anything.
 
-## 8. Where to go next
+## 8. Portal and design preview
+
+The deployed single-page portal needs only the toolkit. Building the opt-in Quarto candidate or
+living Design page additionally requires Quarto **1.11.9**; no PDF or Word tool is needed for the
+portal itself. Use new output directories:
+
+```sh
+handbook-toolkit build-portal --catalog catalog/catalog.json --output /tmp/hub-portal
+handbook-toolkit build-portal --catalog catalog/catalog.json --output /tmp/hub-portal-quarto --engine quarto
+handbook-toolkit design-preview --output /tmp/hub-design
+```
+
+For screenshots, activate the contributor venv, then:
+
+```sh
+python3 -m pip install -r tools/scripts/requirements-edition-preview.txt
+python3 -m playwright install chromium
+python3 tools/scripts/portal_preview.py --output /tmp/hub-portal-preview
+```
+
+On a machine missing browser system libraries, Playwright's `install --with-deps chromium` installs
+those operating-system dependencies too. The preview uses a temporary loopback HTTP server and
+rejects external browser resources. See [portal.md](portal.md) for the parity/deployment gate and
+online catalog verification. Neither preview command deploys or releases anything.
+
+## 9. Where to go next
 
 - Hub contributors: [`../CONTRIBUTING.md`](../CONTRIBUTING.md), [`../AGENTS.md`](../AGENTS.md)
 - Book authors: [`../template/book/README.md`](../template/book/README.md)

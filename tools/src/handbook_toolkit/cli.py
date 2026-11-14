@@ -157,6 +157,26 @@ def command_references(args: argparse.Namespace) -> int:
     return 0 if result.ok else 1
 
 
+def command_portal(args: argparse.Namespace) -> int:
+    from .portal import build_portal
+    try:
+        print(build_portal(Path(args.catalog),Path(args.output),engine=args.engine))
+    except (OSError,ValueError) as exc:
+        print(f"PORTAL: FAILED: {exc}",file=sys.stderr)
+        return 1
+    return 0
+
+
+def command_design_preview(args: argparse.Namespace) -> int:
+    from .portal_quarto import build_quarto_portal
+    try:
+        print(build_quarto_portal(None,Path(args.output),design_only=True))
+    except (OSError,ValueError) as exc:
+        print(f"DESIGN PREVIEW: FAILED: {exc}",file=sys.stderr)
+        return 1
+    return 0
+
+
 def command_version(_args: argparse.Namespace) -> int:
     print(f"handbook-toolkit {__version__}")
     return 0
@@ -177,6 +197,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="optional schema directory override (default: schemas bundled with the installed toolkit)",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    portal = subparsers.add_parser("build-portal",help="build the offline catalog portal")
+    portal.add_argument("--catalog",default=DEFAULT_CATALOG)
+    portal.add_argument("--output",required=True)
+    portal.add_argument("--engine",choices=("legacy","quarto"),default="legacy")
+    portal.set_defaults(func=command_portal)
+    preview = subparsers.add_parser("design-preview",help="render the packaged living design contract")
+    preview.add_argument("--output",required=True)
+    preview.set_defaults(func=command_design_preview)
 
     verify = subparsers.add_parser("verify", help="run all repository validations")
     verify.add_argument(

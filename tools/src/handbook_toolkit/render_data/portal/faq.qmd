@@ -1,0 +1,35 @@
+---
+title: Questions and answers
+---
+
+## Which formats does a handbook have?
+
+A reading site and downloadable PDF, DOCX, HTML, Markdown and sources. Older releases may offer
+fewer formats; each card shows what its release provides.
+
+## Can an AI tool read a handbook?
+
+Current-toolkit releases include one Markdown file with the whole book. [llms.txt](llms.txt) lists
+every handbook and its Markdown edition.
+
+## What does verified release mean?
+
+Published files are downloaded and compared with the manifest and checksums. The reading site is
+compared with the released HTML before a book is listed.
+
+## Who decides what is listed?
+
+The owner approves every catalog change after independent review. Authors keep control of their
+repositories.
+
+## Under which license are books published?
+
+Content defaults to CC BY-SA 4.0 and code to MIT. Each book states its license and third-party notices.
+
+## Does the hub host my manuscript?
+
+No. Your repository holds the manuscript and releases; the hub stores the approved-release entry.
+
+## What does it cost?
+
+Nothing. The platform uses public repositories, their release pages and static sites.

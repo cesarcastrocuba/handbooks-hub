@@ -1,0 +1,61 @@
+---
+title: Design contract
+description: The living style guide generated from the packaged design tokens.
+---
+
+This page is generated from the same packaged contract as the book theme. Use Quarto's light/dark
+toggle to inspect the components in both schemes. Values are not a separate palette.
+
+## Colour roles
+
+{{colors}}
+
+## Contrast
+
+Ratios are recomputed using the toolkit's WCAG helper. Component pairs include callout titles on
+their tints, table links, and footer text; small text must meet 4.5:1.
+
+{{contrast}}
+
+## Type scale
+
+{{type}}
+
+### Display sample
+
+Body copy supports long-form reading. **Strong text** and *emphasis* preserve the hierarchy.
+
+## Callouts
+
+{{callouts}}
+
+## Tables
+
+| Decision | Evidence |
+| --- | --- |
+| [Use a shared contract](#colour-roles) | One source for every surface |
+| [Check the actual components](#contrast) | Light and dark contrast |
+
+: An illustrative style-guide table.
+
+## Code
+
+```python
+print("A handbook is a reviewed decision record.")
+```
+
+## Buttons {#buttons}
+
+::: {.cover-actions}
+[Primary action](#buttons){.btn .btn-primary}
+[Secondary action](#buttons){.btn .btn-outline-primary}
+:::
+
+## Cards
+
+::: {.card .style-card}
+### Example card
+
+A style specimen, not a listed handbook or a release. Cards remain readable and actionable without
+hover. [Inspect the type scale](#type-scale).
+:::

@@ -425,9 +425,12 @@ def book_scss(scheme: str) -> str:
     """Generate deterministic Bootstrap/Quarto defaults for the same base theme."""
     tokens = load_tokens()
     colors = {name: values[scheme] for name, values in tokens["color"].items()}
-    variables = {"navbar-padding-y": "1rem" if scheme == "dark" else "0.5rem",
+    variables = {"web-font-path": "false",
+                 "navbar-padding-y": "1rem" if scheme == "dark" else "0.5rem",
                  "border-color": colors["chrome_rule"],
                  "body-bg": colors["canvas"], "body-color": colors["text"],
+                 "code-bg": colors["code"], "code-color": colors["text"],
+                 "code-block-bg": colors["code"],
                  "link-color": colors["accent"], "navbar-bg": colors["canvas"],
                  "navbar-fg": colors["text"], "sidebar-bg": colors["canvas"],
                  "sidebar-fg": colors["text"], "headings-color": colors["heading"],
@@ -487,3 +490,18 @@ def _callout_contrast_issues(tokens: dict[str, Any]) -> list[Issue]:
                 issues.append(Issue(f"$.callout.{name}.{scheme}",
                                     f"title contrast {ratio:.2f}:1 is below the required {MINIMUM_TEXT_CONTRAST}:1"))
     return issues
+
+
+PORTAL_METRICS = {'rule': '1px', 'column': '1300px', 'gutter': '1.25rem', 'gap': '1rem', 'cover': '8rem',
+                  'cover-small': '6.5rem', 'cover-padding': '.8rem', 'cover-radius': '6px',
+                  'card-radius': '8px', 'card-padding': '1.1rem', 'card-min': '30rem',
+                  'small': '.85rem', 'fine': '.75rem', 'title': '1.25rem', 'control': '44px',
+                  'phone': '600px', 'cover-title': '.82rem'}
+
+
+def portal_layout_css() -> str:
+    """Expand portal-only geometry; the shared book theme supplies type and palette."""
+    css=resource_files('handbook_toolkit').joinpath('render_data/portal/portal.css').read_text()
+    for name,value in PORTAL_METRICS.items():
+        css=css.replace('{{'+name+'}}',value)
+    return css

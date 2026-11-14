@@ -1,0 +1,52 @@
+---
+title: "Knowledge worth keeping. Handbooks worth sharing."
+toc: false
+page-layout: full
+---
+
+An open library of practical technical handbooks. Read online, download an edition, or write the
+next one.
+
+[Browse the library](#library){.btn .btn-primary}
+[Create your handbook](#create){.btn .btn-outline-primary}
+
+::: {#library}
+## Explore the library
+
+{{library}}
+
+{{planned}}
+:::
+
+::: {#how-it-works}
+## How the platform works
+
+Independent repositories, one versioned toolkit and verified editions.
+[How the platform works](how-it-works.qmd).
+:::
+
+::: {#create}
+## Create your handbook in five steps
+
+Start with the template, initialize, write, release and request listing.
+[Create a handbook](create.qmd).
+:::
+
+::: {#publishing}
+## Publishing and withdrawal
+
+Approval and verification stay with a person.
+[Publishing and withdrawal](publishing.qmd).
+:::
+
+::: {#contribute}
+## Contribute to a handbook
+
+Each book owns its corrections and proposals. [Contribute](contribute.qmd).
+:::
+
+::: {#faq}
+## Questions and answers
+
+Formats, verification, ownership and licensing. [Questions and answers](faq.qmd).
+:::

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from importlib.resources import files as resource_files
 from html import escape
 from pathlib import Path
 import shutil
@@ -10,8 +11,7 @@ import tempfile
 from urllib.parse import urlsplit
 
 from . import design
-from .catalog import validate_catalog
-from .validation import load_document, load_packaged_schema
+from .portal_catalog import read_catalog
 
 CATEGORIES = {"architecture", "authoring", "cloud", "data", "engineering",
               "governance", "publishing", "security"}
@@ -85,32 +85,7 @@ footer{border-top:1px solid var(--line);padding:2rem 0;color:var(--muted);font-s
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 """
 
-SCRIPT = """
-const grid=document.querySelector('.grid');
-if(grid){
- const cards=Array.from(grid.querySelectorAll('.book'));
- const search=document.querySelector('#search');
- const normalize=(value)=>value.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');
- let category='all';
- function update(){
-  const mode=document.querySelector('#sort').value;
-  const words=normalize(search.value).split(/\\s+/).filter(Boolean);
-  cards.sort((a,b)=>mode==='latest'?b.dataset.date.localeCompare(a.dataset.date)||a.dataset.title.localeCompare(b.dataset.title,'en'):mode==='za'?b.dataset.title.localeCompare(a.dataset.title,'en'):a.dataset.title.localeCompare(b.dataset.title,'en'));
-  let shown=0;
-  for(const card of cards){
-   const text=normalize(card.querySelector('.details').textContent);
-   card.hidden=(category!=='all'&&!card.dataset.categories.split(' ').includes(category))||!words.every(word=>text.includes(word));
-   if(!card.hidden)shown++;grid.append(card);
-  }
-  document.querySelector('#results').textContent=`Showing ${shown} of ${cards.length} ${cards.length===1?'handbook':'handbooks'}`;
- }
- for(const button of document.querySelectorAll('[data-filter]')){
-  button.addEventListener('click',()=>{category=button.dataset.filter;for(const item of document.querySelectorAll('[data-filter]'))item.setAttribute('aria-pressed',String(item===button));update();});
- }
- document.querySelector('#sort').addEventListener('change',update);
- search.addEventListener('input',update);
-}
-"""
+SCRIPT = resource_files("handbook_toolkit").joinpath("render_data/portal/filter.js").read_text()
 
 GUIDE = f"""
 <section id="how-it-works" aria-labelledby="how-title"><h2 id="how-title">How the platform works</h2>
@@ -241,16 +216,18 @@ def llms_text(books: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def build_portal(catalog: Path, output: Path) -> Path:
+def build_portal(catalog: Path, output: Path, *, engine: str = "legacy") -> Path:
     """Build a fresh static directory from a validated catalog; never fetch drafts.
 
     This offline build checks structure. Release bytes and URLs must independently
     verify before the catalog update is accepted and this directory is deployed.
     """
-    result = validate_catalog(catalog, load_packaged_schema("catalog.schema.json"))
-    if not result.ok:
-        raise ValueError("invalid catalog: " + "; ".join(map(str, result.issues)))
-    books = sorted(load_document(catalog)["books"], key=lambda book: book["title"].casefold())
+    if engine == "quarto":
+        from .portal_quarto import build_quarto_portal
+        return build_quarto_portal(catalog, output)
+    if engine != "legacy":
+        raise ValueError(f"unknown portal engine: {engine}")
+    books = read_catalog(catalog)
     categories = sorted({category for book in books for category in book["categories"]})
     unknown = set(categories) - CATEGORIES
     if unknown:
@@ -303,9 +280,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Build the static approved-release handbook library")
     parser.add_argument("catalog", type=Path)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--engine", choices=("legacy", "quarto"), default="legacy")
     args = parser.parse_args()
     try:
-        print(build_portal(args.catalog, args.output))
+        print(build_portal(args.catalog, args.output, engine=args.engine))
     except (OSError, ValueError) as error:
         parser.exit(1, f"portal build failed: {error}\n")
     return 0

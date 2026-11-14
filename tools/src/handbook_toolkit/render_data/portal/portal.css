@@ -1,0 +1,32 @@
+/* Portal layout only; the book factories own shared type, colors, focus and motion. */
+#quarto-document-content { max-width: {{column}}; width: 100%; margin-inline: auto; padding-inline: {{gutter}}; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,{{card-min}}),1fr)); gap: {{gap}}; }
+.book { display: grid; grid-template-columns: {{cover}} minmax(0,1fr); gap: {{gap}}; padding: {{card-padding}}; background: var(--surface); border: {{rule}} solid var(--border); border-radius: {{card-radius}}; }
+.book[hidden] { display: none; }
+.cover { display: flex; flex-direction: column; justify-content: space-between; align-self: start; aspect-ratio: 3/4; padding: {{cover-padding}}; background: var(--accent-solid); color: var(--on-solid); border-radius: {{cover-radius}}; overflow-wrap: anywhere; }
+.cover-title { font-family: var(--font-display); font-size: {{cover-title}}; font-weight: 700; }
+.cover-kicker, .cover-foot { font-size: {{fine}}; }
+.book h2 { font-size: {{title}}; }
+.details { min-width: 0; }
+.summary, .version, .results, .planned { color: var(--muted); }
+.version, .assets, .tag { font-size: {{fine}}; }
+.tags, .links, .formats, .assets, .filters, .tools, .toolbar { display: flex; gap: {{gap}}; flex-wrap: wrap; }
+.toolbar { justify-content: space-between; margin-block: {{gap}}; }
+.tools label { display: flex; gap: {{gap}}; align-items: center; }
+input, button, select { max-width: 100%; min-width: 0; min-height: {{control}}; border: {{rule}} solid var(--border); border-radius: var(--control-radius); color: var(--text); background: var(--surface); }
+#quarto-document-content button[aria-pressed=true] { background: var(--accent-solid); color: var(--on-solid); border-color: var(--accent-solid); }
+#quarto-document-content .btn-primary { background: var(--accent-solid); color: var(--on-solid); border-color: var(--accent-solid); }
+#quarto-document-content .btn-outline-primary { color: var(--accent); border-color: var(--accent); background: var(--canvas); }
+.links, .formats, .assets { margin-block-start: {{gap}}; font-size: {{small}}; }
+.fmt, .tag { padding: {{cover-padding}}; border: {{rule}} solid var(--border); border-radius: var(--control-radius); background: var(--canvas); }
+.style-card { padding: {{card-padding}}; background: var(--surface); color: var(--text); border-color: var(--border); }
+.archived { color: var(--muted); font-weight: 700; }
+@media (max-width: {{phone}}) {
+  #quarto-document-content { padding-inline: 0; }
+  .book { grid-template-columns: {{cover-small}} minmax(0,1fr); }
+  .tools, .tools label { max-width: 100%; }
+  .tools label { width: 100%; }
+  .tools input { flex: 1; }
+}
+
+.style-swatch { display: inline-block; width: {{gap}}; height: {{gap}}; border: {{rule}} solid var(--border); vertical-align: middle; }

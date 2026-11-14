@@ -151,6 +151,17 @@ jobs:
           previous = load_profile("standard", "0.2.0")
           assert current["status"] == "approved", current
           assert previous["status"] == "approved", previous
+          import tempfile
+          import yaml
+          from handbook_toolkit.portal_quarto import stage_site
+          with tempfile.TemporaryDirectory() as directory:
+              site = pathlib.Path(directory) / "portal"
+              stage_site(site, [])
+              config = yaml.safe_load((site / "_quarto.yml").read_text())
+              assert config["project"]["type"] == "website"
+              assert (site / "design.qmd").is_file()
+              assert len(list(site.glob("*.qmd"))) == 7
+              assert len(list((site / ".handbook-render/fonts").rglob("*.woff2"))) == 10
           PY
       - name: Validate an independent book outside the checkout
         run: |
@@ -219,6 +230,11 @@ jobs:
           fi
           python3 tools/scripts/edition_preview.py "$@" \
             --output "$RUNNER_TEMP/edition-preview" --require-tools >> "$GITHUB_STEP_SUMMARY"
+      - name: Preview both portal engines and their parity
+        if: matrix.book == 'template'
+        run: |
+          python3 tools/scripts/portal_preview.py --catalog catalog/catalog.json \
+            --output "$RUNNER_TEMP/edition-preview/portal" >> "$GITHUB_STEP_SUMMARY"
       - name: Upload the edition preview
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

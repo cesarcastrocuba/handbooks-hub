@@ -1,0 +1,15 @@
+---
+title: Create your handbook in five steps
+---
+
+You need a GitHub account and a topic you know well. The template brings the structure, checks and
+release workflow.
+
+1. **Use the template.** Open the template repository and choose *Use this template* to create your book.
+2. **Initialize.** Run *Initialize book* with your title, identifier, author and license. Review and merge its branch.
+3. **Write.** Add chapters under `manuscript/`. Every push runs the checks and tells you what to fix.
+4. **Release.** Run the release workflow on an approved commit. It builds, verifies and publishes every edition and the reading site.
+5. **Request listing.** Open a listing request. After review and owner approval your book appears in the library.
+
+[Open the handbook template](https://github.com/cesarcastrocuba/handbooks-template){.btn .btn-primary}
+[Read the author guide](https://github.com/cesarcastrocuba/handbooks-hub/blob/main/docs/author-guide.md){.btn .btn-outline-primary}
