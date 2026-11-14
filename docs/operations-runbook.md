@@ -280,6 +280,8 @@ Reverting a catalog entry to a previous release requires extreme caution due to 
 4. **Review and merge [Reviewer & Owner]**:
    Reviewer independently verifies the online release gate pass. Owner merges the PR to `main`.
    The catalog push triggers `portal-pages`, which rebuilds and deploys automatically (`HUB-DEC-024`).
+   The deployed engine is the Quarto website; to roll back, set `--engine legacy` in the workflow
+   through a reviewed pull request (`HUB-DEC-041`).
 
 #### Case 2: Prior release was withdrawn (Roll forward required)
 

@@ -82,13 +82,18 @@ class PortalPagesWorkflowTests(unittest.TestCase):
             {"pages": "write", "id-token": "write"},
         )
 
-    def test_quarto_is_pinned_and_only_the_legacy_output_is_deployed(self) -> None:
+    def test_quarto_is_pinned_and_builds_the_deployed_site(self) -> None:
         setup = next(step for step in self.steps() if step.get("uses", "").startswith("quarto-dev/quarto-actions/setup@"))
         self.assertEqual(setup["with"]["version"], "1.11.9")
+        ci = (support.REPO_ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+        pinned = re.search(r"quarto-dev/quarto-actions/setup@([0-9a-f]{40})", ci)
+        self.assertIsNotNone(pinned)
+        self.assertEqual(setup["uses"], f"quarto-dev/quarto-actions/setup@{pinned.group(1)}")
         build = next(step for step in self.steps() if step.get("name") == "Build the approved-release catalog")
         self.assertEqual(build["env"]["GITHUB_TOKEN"], "${{ github.token }}")
-        self.assertIn("--output _quarto_candidate --engine quarto", build["run"])
-        self.assertIn("--output _site\n", build["run"])
+        self.assertIn("--output _site --engine quarto", build["run"])
+        self.assertNotIn("_quarto_candidate", build["run"])
+        self.assertNotRegex(build["run"], r"--output _site\s*\n")
         upload = next(step for step in self.steps() if step.get("uses", "").startswith("actions/upload-pages-artifact@"))
         self.assertEqual(upload["with"]["path"], "_site")
 
