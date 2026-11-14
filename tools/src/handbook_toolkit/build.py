@@ -310,7 +310,8 @@ def build_book(
         tool_versions.update(cache_page_numbers(
             payloads["docx"], workspace / ".handbook-render/fonts", required=require_page_numbers))
         markdown_text = _markdown_header(book, fields, commit) + _clean_markdown(
-            _render_markdown(workspace, markdown_source, resources, quarto, environment)
+            _render_markdown(workspace, markdown_source, resources, quarto, environment,
+                             crossref=html_config.get('crossref'), language=language)
         )
         _reject_local_paths(
             markdown_text,

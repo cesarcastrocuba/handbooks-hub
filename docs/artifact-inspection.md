@@ -10,7 +10,9 @@ The toolkit's `artifacts` module complements publication byte integrity.
   unique Word-compatible bookmarks (ASCII letter first, at most 40 letters/digits/underscores);
   and existing bookmark targets for internal hyperlinks and REF/PAGEREF fields.
 - HTML site ZIP: root index, ZIP/CRC and local page, fragment and asset targets.
-- Markdown edition: valid UTF-8 and non-empty, opened by a level-one heading and the
+- Markdown edition: float captions and their cross-reference texts use the same labels as HTML,
+  PDF and DOCX, including chapters, unnumbered front matter and appendices. A real-build parity
+  test compares parsed captions and reference sentences. Structural inspection checks valid UTF-8 and non-empty, opened by a level-one heading and the
   document-control table, with a `Version` field matching the manifest version and a
   `Commit` field matching the source commit. A raw `<script` in prose is rejected, because
   it would render as HTML. Fenced code blocks and inline code spans are documentation and

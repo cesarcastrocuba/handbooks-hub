@@ -411,6 +411,17 @@ class MarkdownEditionTests(unittest.TestCase):
             self.assertNotIn("profile: standard", source)
             self.assertIn("{{< include manuscript/chapters/_parts/section.qmd >}}", source)
 
+    def test_source_wrapper_preserves_unnumbered_headings_and_shared_table_ids(self):
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp)
+            (workspace / 'intro.qmd').write_text(
+                '---\ntitle: Introduction\n---\n# Introduction {#sec-intro .unnumbered}\n\n'
+                '| A | B |\n| --- | --- |\n| C | D |\n\n: Routes\n')
+            source = _markdown_sources(workspace, ['intro.qmd'])
+            self.assertIn('# Introduction {#sec-intro .unnumbered}', source)
+            self.assertIn('{#tbl-1-1}', source)
+            self.assertFalse(source.startswith('---'))
+
     def test_clean_markdown_keeps_text_and_drops_rendered_html(self):
         rendered = (
             'See <a href="#sec-x" class="quarto-xref">Section 2</a>.\n\n'
@@ -917,6 +928,64 @@ class BuildTests(unittest.TestCase):
                 build_book(repo, commit, output, profile=PROFILE, mode="section-pilot")
             self.assertFalse(target.exists())
             self.assertTrue(output.is_symlink())
+
+    def test_markdown_float_labels_and_references_match_the_reading_site(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, _commit = make_book(root, chapter=True)
+            front = repo / 'manuscript/front'
+            front.mkdir()
+            (front / 'intro.qmd').write_text(
+                '# Introduction {.unnumbered}\n\n'
+                '| Front | Evidence |\n| --- | --- |\n| Scope | Bounded |\n\n'
+                ': Front table {#tbl-front}\n\nFront reference: @tbl-front and @fig-main.\n')
+            def floats(suffix: str) -> str:
+                return ('\n\n| Data | Evidence |\n| --- | --- |\n| Scope | Bounded |\n\n'
+                        f': {suffix} table {{#tbl-{suffix}}}\n\n'
+                        f'![{suffix} figure](../images/fixture.png){{#fig-{suffix}}}\n\n'
+                        f'```{{#lst-{suffix} .python lst-cap="{suffix} listing"}}\nprint("fixture")\n```\n\n')
+            chapter = repo / 'manuscript/chapters/pilot.qmd'
+            chapter.write_text(CHAPTER.replace('**Example.** A labeled example.',
+                '**Example.** A labeled example.' + floats('main') +
+                'Comparison: @tbl-front, @tbl-main, @fig-main, @lst-main, '
+                '@tbl-appendix, @fig-appendix and @lst-appendix.\n'))
+            appendix = repo / 'manuscript/appendices'
+            appendix.mkdir()
+            (appendix / 'evidence.qmd').write_text(CHAPTER.replace('A Build Chapter', 'Appendix Evidence')
+                .replace('**Example.** A labeled example.', '**Example.** A labeled example.' + floats('appendix')))
+            (repo / 'manuscript/book.yml').write_text(
+                'front: [front/intro.qmd]\nchapters: [chapters/pilot.qmd]\nback: []\n'
+                'appendices: [appendices/evidence.qmd]\nreferences: []\n')
+            commit = commit_all(repo, 'exercise float and reference parity across reading groups')
+            output = root / 'dist'
+            build_book(repo, commit, output, profile=PROFILE)
+            markdown = subprocess.check_output(
+                [QUARTO, 'pandoc', str(output / 'book.md'), '--from', 'gfm', '--to', 'html'],
+                text=True, timeout=30)
+            md = Document(markdown).root
+            plain = lambda text: ' '.join(text.split())
+            md_paragraphs = [plain(node.text()) for node in md.find('p')]
+            references = []
+            with zipfile.ZipFile(output / 'book-html.zip') as archive:
+                for name, suffix in [('manuscript/front/intro.html', 'front'),
+                                     ('manuscript/chapters/pilot.html', 'main'),
+                                     ('manuscript/appendices/evidence.html', 'appendix')]:
+                    html = Document(archive.read(name).decode()).root
+                    for kind in (('tbl',) if suffix == 'front' else ('tbl', 'fig', 'lst')):
+                        label = kind + '-' + suffix
+                        container = next(node for node in html.walk() if node.attrs.get('id') == label)
+                        caption = next(node for node in container.walk()
+                                       if str(node.attrs.get('id', '')).startswith(label + '-caption'))
+                        expected = plain(caption.text())
+                        self.assertIn(expected, md_paragraphs, label)
+                    references.extend(plain(node.text()) for node in html.find('p')
+                                      if node.text().startswith(('Comparison:', 'Front reference:')))
+            self.assertEqual(len(references), 2)
+            for reference in references:
+                self.assertIn(reference, md_paragraphs)
+            self.assertIn('Table 1: Front table', md_paragraphs)
+            self.assertIn('Figure 1.1: main figure', md_paragraphs)
+            self.assertIn('Listing 1.1: main listing', md_paragraphs)
 
     def test_build_reads_book_and_reading_order_from_the_commit(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

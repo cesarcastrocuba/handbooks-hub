@@ -5,6 +5,9 @@ semantic versioning once the toolkit is published.
 
 ## [0.10.2] - 2026-11-14
 
+The Markdown edition now uses native chapter-aware figure, table and listing labels and cross-
+references matching the other editions, including unnumbered front matter and appendices.
+
 Native Word indexes now open with linked, cached page numbers obtained from a private LibreOffice
 bookmark probe and verified by a second conversion. No fields are marked dirty and the document
 requests no update on open. F9 remains available to repaginate each index in desktop Word.

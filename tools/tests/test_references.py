@@ -52,6 +52,13 @@ class ReferenceValidationTests(unittest.TestCase):
         self.write_book(one, two)
         return validate_references(self.book, self.schema)
 
+    def test_listing_opening_attributes_are_labels_but_code_contents_are_not(self) -> None:
+        one = '# One\n\n```{#lst-one .python lst-cap="Listing"}\n# fake {#fig-fake}\n```\n'
+        result = self.check(one, '# Two\n\nSee @lst-one.\n')
+        self.assertTrue(result.ok, result.issues)
+        result = self.check(one, '# Two\n\nSee @fig-fake.\n')
+        self.assertFalse(result.ok)
+
     def test_valid_cross_file_labels_images_and_external_links(self) -> None:
         one = """\
 # 1. One {#sec-one}
