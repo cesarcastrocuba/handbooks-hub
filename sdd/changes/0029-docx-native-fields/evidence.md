@@ -2,7 +2,7 @@
 
 Desktop Word: **not opened**. No publication, tag, release or deployment dispatched.
 
-## Completed focused checks
+## Previous candidate checks (before coordinator acceptance audit)
 
 - Fresh local venv created with python3 -m venv .venv; requirements-dev.txt installed successfully.
 - Extraction boundary 2ee437c: two focused DOCX helper tests passed.
@@ -15,9 +15,9 @@ Desktop Word: **not opened**. No publication, tag, release or deployment dispatc
   **0 errors** for the real figure-build DOCX. The published v0.4.1 baseline reports 125 errors.
   No Word rendering behavior is inferred from this schema check.
 
-## Final candidate verification
+## Previous candidate verification (before R1–R3)
 
-Runtime candidate: 3311565. The final evidence commit changes this Markdown file only.
+Runtime candidate: 3311565. These historical results apply before the corrected cache behavior below.
 
 | Command / boundary | Result |
 | --- | --- |
@@ -25,7 +25,7 @@ Runtime candidate: 3311565. The final evidence commit changes this Markdown file
 | python3 -m unittest discover -s tools/tests -p test_build.py -v | 24 passed in 61.476 s, including the LibreOffice smoke; no skips |
 | Original figure fixture built twice from the same source commit | Both seven-file builds passed; DOCX bytes identical |
 | sha256sum -c SHA256SUMS.txt in the fixture release directory | All six entries OK |
-| OpenXmlValidator Office2019, final generated DOCX | 0 errors |
+| OpenXmlValidator Office2019, previous candidate DOCX | 0 errors |
 | Chromium 1440px, generated tables.html | Header bottom rule 1px; list border-top, padding-top and margin-top all 0px |
 | git diff --check | Passed |
 
@@ -75,7 +75,29 @@ Desktop Word, macOS Word and Windows font substitution: not run. No claim is mad
 field-update prompt or exact font fallback chosen by a viewer. The optional SDK check is evidence,
 not a new toolkit dependency.
 
-Deviations from the brief: none. The first-page Image filter is the bounded fix required to make
+The original implementation followed the initial brief. Coordinator R1 subsequently corrects its
+empty-PAGEREF requirement, as described below. The first-page Image filter is the bounded fix required to make
 the requested real figure build pass; it does not migrate the HTML architecture. Font fallbacks
 use single-name alternate chains because altName describes one alternate font, not a CSS list.
 The coordinator still owns the template/release pin bump and independent review.
+
+## R1–R3 correction behavior
+
+Unknown-page cached entries are linked titles only, with no tab or PAGEREF and therefore no
+dangling leaders. The surrounding native TOC instruction remains available for the viewer to
+regenerate a paginated result. The unit test rejects tabs and PAGEREF in unknown-page caches;
+the LibreOffice smoke now rejects leader-only endings on Contents/list lines.
+
+Focused corrections completed:
+- R1 red test: failed against the old cache, then passed with title-only entries.
+- Native field/validator suite: 25 tests passed after R1–R3.
+- Print-layout suite: 5 tests passed.
+- R1 LibreOffice smoke: passed with the new no-dangling-leader assertion.
+
+The registry now declares kind, caption label, display title and field letter independently.
+Its import is at module scope and reference_target performs one field-name check.
+PRs 48 and 50 are merged from origin/main; published commits were not rebased.
+
+The final local gate results are added after execution. The PR handoff comment records the CI
+run and inspection of its downloaded edition-preview-sample artifact after upload. Desktop Word
+was not opened.

@@ -10,9 +10,11 @@ This pull request neither releases nor deploys anything. A different agent must 
   behavior (commit 2ee437c). The two focused helper tests passed at that boundary.
 - Obtain human-readable callout style names from one design function shared by the reference
   generator and staged Lua filter. Remove the direct callout-title color repair.
-- Use one caption registry for tables, figures and listings. Hidden TC fields index captions;
-  native TOC fields contain linked cached entries and nested PAGEREF fields. Contents preserves
-  Pandoc's instruction and caches headings 1–3. Unknown page results stay empty and dirty.
+- Use one caption registry for tables, figures and listings, with explicit caption labels separate
+  from display titles. Hidden TC fields index captions;
+  native TOC fields contain linked cached entries. Contents preserves Pandoc's instruction and
+  selected heading depth. When a page is unknown, the cached entry is the linked title only,
+  with no tab and no PAGEREF. Updating the outer field regenerates the paginated result.
   Empty caption lists are omitted, and an explicitly disabled Contents is respected.
 - Normalize bookmark names to Word's ASCII/40-character contract, preserving internal hyperlink
   and REF/PAGEREF targets. A digest suffix prevents normalized identifiers from colliding.
@@ -51,3 +53,24 @@ Word or another capable viewer must calculate missing page numbers, possibly aft
 The built-in validator is deliberately bounded to the OOXML containers/invariants the toolkit owns;
 the Open XML SDK supplies independent full-schema evidence, not a runtime dependency.
 No architecture migration, portal rewrite or reference-handbook edit is included.
+
+## Coordinator acceptance corrections
+
+The acceptance audit at ceeeb585f368f2cbb6872eb018daddc963e44b68 requested R1–R3.
+R1 corrects the initial brief: an empty PAGEREF after a tab produces a dangling dot leader in
+viewers that do not update fields. Cached entries now contain only their linked titles. The
+outer TOC remains a native field and can generate page numbers when updated.
+
+A regression test first failed on the old tabs, then passed after their removal. The LibreOffice
+smoke checks populated Contents, List of Tables and List of Figures and rejects lines ending in
+dot leaders without a page number. REF/PAGEREF validation remains for ordinary document fields
+and for fields a viewer may regenerate; the cache builder emits neither for unknown pages.
+
+R2 makes caption labels explicit in the shared registry, so changing a list title to "Indexes"
+does not alter caption collection. R3 moves the registry import to module scope and leaves a
+single field-name decision in reference parsing.
+
+These corrections are new commits after the original extraction/behavior/evidence commits.
+origin/main, including PRs 48 and 50, is merged without rebasing published commits. This brings
+the edition-preview CI matrix into this PR. Final CI artifact inspection is recorded in the
+handoff comment; this implementation is not merged by its author.
