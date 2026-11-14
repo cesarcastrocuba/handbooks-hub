@@ -69,7 +69,8 @@ Figures each show their cached entries and that fresh named destinations match t
 Publication-build CI installs LibreOffice and Poppler; the conversion test skips only when
 soffice is absent locally (the real build itself requires Quarto and Poppler). This does not replace opening the document in desktop Word.
 
-Toolkit 0.10.2 also rejects every w:dirty attribute, TC result separators, empty/non-numeric
+Toolkit 0.10.2 also rejects every w:dirty attribute, field runs formatted as hidden text, TC
+result separators, empty/non-numeric
 PAGEREF caches in indexes, table cells whose last block is not a paragraph, and w:updateFields.
 Each invariant has passing and failing XML fixtures. A multi-page real-build fixture compares
 cached numbers against a fresh LibreOffice PDF's named destinations, not a caption-text search.
