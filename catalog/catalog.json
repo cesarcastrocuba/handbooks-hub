@@ -13,18 +13,18 @@
       ],
       "status": "published",
       "latest_release": {
-        "version": "0.4.2",
-        "tag": "v0.4.2",
-        "url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/tag/v0.4.2",
+        "version": "0.5.0",
+        "tag": "v0.5.0",
+        "url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/tag/v0.5.0",
         "published_at": "2026-11-14",
-        "manifest_url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.4.2/publication-manifest.json",
-        "checksums_url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.4.2/SHA256SUMS.txt",
+        "manifest_url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.5.0/publication-manifest.json",
+        "checksums_url": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.5.0/SHA256SUMS.txt",
         "assets": {
-          "pdf": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.4.2/book.pdf",
-          "html": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.4.2/book-html.zip",
-          "docx": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.4.2/book.docx",
-          "markdown": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.4.2/book.md",
-          "source": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.4.2/book-source.zip"
+          "pdf": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.5.0/book.pdf",
+          "html": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.5.0/book-html.zip",
+          "docx": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.5.0/book.docx",
+          "markdown": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.5.0/book.md",
+          "source": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.5.0/book-source.zip"
         }
       }
     }
