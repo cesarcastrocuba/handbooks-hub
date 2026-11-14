@@ -52,6 +52,8 @@ footer.footer .nav-footer a { color: var(--accent); }
       height: {{progress-height}};
       background: var(--accent);
       z-index: 2000;
+      /* Hidden unless the scroll timeline is active: a page that does not scroll shows no bar. */
+      transform: scaleX(0);
       transform-origin: left;
       animation: handbook-progress linear both;
       animation-timeline: scroll();

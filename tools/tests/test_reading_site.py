@@ -31,6 +31,25 @@ def motion_violations(css):
     return violations
 
 
+def rule_declarations(css, selector):
+    """Declarations of the first rule with this selector, at any nesting depth."""
+    def walk(rules):
+        for rule in rules:
+            if rule.type == 'qualified-rule' and tinycss2.serialize(rule.prelude).strip() == selector:
+                return {declaration.name: tinycss2.serialize(declaration.value).strip()
+                        for declaration in tinycss2.parse_declaration_list(rule.content)
+                        if declaration.type == 'declaration'}
+            if rule.type == 'at-rule' and rule.content:
+                found = walk(tinycss2.parse_rule_list(rule.content))
+                if found is not None:
+                    return found
+        return None
+    found = walk(tinycss2.parse_stylesheet(css))
+    if found is None:
+        raise AssertionError(f'no rule for {selector}')
+    return found
+
+
 class ReadingSiteTests(unittest.TestCase):
     def test_cover_parts_footer_and_native_metadata(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -47,7 +66,7 @@ class ReadingSiteTests(unittest.TestCase):
                         '1.0.0', 'November 2026', False)
             chapters = result['book']['chapters']
             self.assertEqual(chapters, ['index.qmd', {'part':'Front matter','chapters':['document-control.qmd','figures.qmd']},
-                                      {'part':'Chapters','chapters':['chapter.qmd']}])
+                                      'chapter.qmd'])
             front = yaml.safe_load((root/'index.qmd').read_text().split('---',2)[1])
             self.assertEqual(front['title'], '# Handbook \\T {.unnumbered}')
             self.assertFalse(front['numbered'])
@@ -61,6 +80,58 @@ class ReadingSiteTests(unittest.TestCase):
             self.assertEqual(result['book']['twitter-card']['card-style'], 'summary')
             self.assertIn('1.0.0', result['book']['page-footer']['center'])
             self.assertTrue((root / result['book']['favicon']).is_file())
+
+    def _prepare(self, root, summary, subtitle, groups):
+        (root / '.handbook-render/html').mkdir(parents=True)
+        for files in groups.values():
+            for name in files:
+                (root / name).write_text('# ' + name + '\n')
+        book = {'title': 'Handbook', 'status': 'draft', 'catalog': {'summary': summary},
+                'license': {'content': 'CC-BY-SA-4.0'}, 'repository': {'url': None}}
+        config = {'book': {}, 'format': {'html': {}}}
+        return prepare_reading_site(root, config, book, {'subtitle': subtitle}, groups, [],
+                                    [('Version', '1.0.0')], 'An Author', '1.0.0', 'November 2026', False)
+
+    def test_a_group_is_a_part_only_when_it_has_several_pages(self):
+        groups = {'front': ['intro.qmd'], 'chapters': ['one.qmd', 'two.qmd'], 'back': ['notices.qmd'],
+                  'appendices': ['a.qmd', 'b.qmd'], 'references': ['references.qmd']}
+        with tempfile.TemporaryDirectory() as folder:
+            result = self._prepare(Path(folder), 'A summary.', 'A subtitle', groups)
+        self.assertEqual(result['book']['chapters'], [
+            'index.qmd',
+            {'part': 'Front matter', 'chapters': ['document-control.qmd', 'intro.qmd']},
+            {'part': 'Chapters', 'chapters': ['one.qmd', 'two.qmd']},
+            'notices.qmd',
+            {'part': 'Appendices', 'chapters': ['a.qmd', 'b.qmd']},
+            'references.qmd',
+        ])
+
+    def test_the_cover_states_the_summary_once(self):
+        groups = {'front': [], 'chapters': ['one.qmd'], 'back': [], 'appendices': [], 'references': []}
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            self._prepare(root, 'A practical guide.', 'a practical guide', groups)
+            repeated = (root / 'index.qmd').read_text().split('---', 2)[2]
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            self._prepare(root, 'What the book promises.', 'A practical guide', groups)
+            distinct = (root / 'index.qmd').read_text().split('---', 2)[2]
+        self.assertNotIn('practical guide', repeated.casefold())
+        self.assertIn('What the book promises.', distinct)
+
+    def test_the_cover_keeps_the_page_grid_of_the_other_pages(self):
+        groups = {'front': [], 'chapters': ['one.qmd'], 'back': [], 'appendices': [], 'references': []}
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            self._prepare(root, 'A summary.', 'A subtitle', groups)
+            front = yaml.safe_load((root / 'index.qmd').read_text().split('---', 2)[1])
+        self.assertNotIn('toc', front)
+
+    def test_the_progress_bar_is_hidden_until_the_scroll_timeline_drives_it(self):
+        css = (support.SRC / 'handbook_toolkit/render_data/html/reading.css').read_text()
+        declarations = rule_declarations(css, 'body::before')
+        self.assertEqual(declarations['transform'], 'scaleX(0)')
+        self.assertEqual(declarations['animation-timeline'], 'scroll()')
 
     def test_release_urls_are_explicit_and_omitted_in_preview(self):
         metadata={'release_url':'https://example.org/releases/v1', 'edition_urls':{'pdf':'https://example.org/book.pdf'}}

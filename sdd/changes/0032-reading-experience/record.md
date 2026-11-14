@@ -55,3 +55,20 @@ figure path, not a Word architecture migration.
 See evidence.md. No requested feature is deferred. Download links are intentionally absent when
 unknown or when previewing. Desktop Word is unavailable; native fields, validators and LibreOffice
 are verified, while Word's pagination/field update remains a human publication check.
+
+## Refinements after the coordinator's acceptance audit
+
+The coordinator built the template and the sample with this branch and inspected the screenshots.
+Four visible defects were corrected in follow-up commits by the coordinator, who is therefore a
+co-implementer of this change and does not review or merge it:
+
+- **One statement of the summary.** When the catalog summary and the subtitle say the same thing
+  (the sample's do), the cover printed it twice. The summary paragraph is omitted in that case.
+- **No one-item groups.** A reading-order group with a single page ("References" holding only
+  "References", "Back matter" holding only the notices, a one-chapter book) was rendered as a part
+  with one child. A group is a part only when it has several pages; a single page stands on its own.
+- **The cover keeps the page grid.** The cover disabled the table of contents, which made Quarto
+  drop the margin column and shift the sidebar and the text away from the header's alignment. The
+  cover no longer disables it, so moving from the cover to a chapter does not move the sidebar.
+- **No progress bar on a page that does not scroll.** Without an active scroll timeline the bar was
+  drawn at full width. It now starts at zero width and only the timeline extends it.

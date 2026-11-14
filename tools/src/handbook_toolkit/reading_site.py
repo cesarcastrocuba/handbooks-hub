@@ -71,14 +71,29 @@ def release_links(metadata: dict[str, Any], preview: bool) -> tuple[str | None, 
     return release, checked
 
 
+def _same_statement(first: str, second: str) -> bool:
+    """Two metadata texts say the same thing when they differ only in case or a final full stop."""
+    return first.strip().rstrip(".").casefold() == second.strip().rstrip(".").casefold()
+
+
+def _navigation_entries(title: str, files: list[str]) -> list[Any]:
+    """A part groups several pages; a single page stands on its own, not in a one-item group."""
+    if len(files) > 1:
+        return [{"part": title, "chapters": files}]
+    return list(files)
+
+
 def _write_cover(workspace: Path, book: dict[str, Any], metadata: dict[str, Any],
                  first_chapter: str, author: str, version: str, date: str,
                  status: str, license_text: str, downloads: dict[str, str]) -> None:
-    front = {"title": "# " + book["title"] + " {.unnumbered}", "subtitle": str(metadata.get("subtitle") or ""),
-             "author": author, "date": date, "numbered": False, "number-sections": False, "toc": False}
-    lines = ["---", yaml.safe_dump(front, sort_keys=True).strip(), "---", "", "::: {.handbook-cover}",
-             _literal(book["catalog"]["summary"]), "",
-             f"**Edition {_literal(version)}** · {_literal(date)} · {_literal(status)}", "",
+    subtitle = str(metadata.get("subtitle") or "")
+    summary = str(book["catalog"]["summary"])
+    front = {"title": "# " + book["title"] + " {.unnumbered}", "subtitle": subtitle,
+             "author": author, "date": date, "numbered": False, "number-sections": False}
+    lines = ["---", yaml.safe_dump(front, sort_keys=True).strip(), "---", "", "::: {.handbook-cover}"]
+    if not _same_statement(summary, subtitle):
+        lines += [_literal(summary), ""]
+    lines += [f"**Edition {_literal(version)}** · {_literal(date)} · {_literal(status)}", "",
              _literal(license_text), "", "::: {.cover-actions}",
              f'<a class="btn btn-primary" href="{escape(quote(first_chapter.removesuffix(".qmd") + ".html", safe="/"), quote=True)}">Start reading</a>']
     for role, url in downloads.items():
@@ -123,9 +138,7 @@ def prepare_reading_site(workspace: Path, config: dict[str, Any], book: dict[str
     front[1:1] = lists
     chapters: list[Any] = ["index.qmd"]
     for group, title in PARTS:
-        files = front if group == "front" else groups[group]
-        if files:
-            chapters.append({"part": title, "chapters": files})
+        chapters.extend(_navigation_entries(title, front if group == "front" else groups[group]))
     license_text = license_label(book["license"]["content"])
     status = "Preview — not a released edition" if preview else str(metadata.get("status") or book["status"])
     release, downloads = release_links(metadata, preview)
