@@ -282,6 +282,13 @@ class TemplateTests(unittest.TestCase):
                 document = ET.fromstring(archive.read("word/document.xml"))
                 self.assertTrue(any(field.instruction == "TOC \\h \\z \\f F" for field in fields(document)))
                 self.assertTrue(any(name.endswith(".svg") for name in archive.namelist()))
+                figures = [table for table in document.iter(W+"tbl") if table.find(".//"+W+"drawing") is not None]
+                self.assertEqual(len(figures),1)
+                self.assertFalse(figures[0].findall(".//"+W+"tblHeader"))
+                self.assertFalse(figures[0].findall(".//"+W+"tcPr/"+W+"shd"))
+                captions = [p for p in figures[0].iter(W+"p") if p.find(W+"pPr/"+W+"pStyle") is not None and p.find(W+"pPr/"+W+"pStyle").get(W+"val") == "ImageCaption"]
+                self.assertTrue(captions)
+                self.assertFalse(captions[0].findall(".//"+W+"b"))
 
 
             if PDFTOTEXT is not None:

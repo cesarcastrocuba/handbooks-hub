@@ -11,7 +11,7 @@ from zipfile import ZipFile
 
 import support
 from handbook_toolkit.artifacts import inspect_payload
-from handbook_toolkit.docx_post import prepare_docx
+from handbook_toolkit.docx_post import prepare_docx, _format_table_headers
 from handbook_toolkit.docx_fields import add_indexes, bookmark_name, cached_field, Entry
 from handbook_toolkit.docx_fonts import font_table
 from handbook_toolkit.docx_xml import W, fields, field_run, instruction_run, text_of
@@ -40,6 +40,28 @@ def fixture() -> tuple[ET.Element, ET.Element]:
         node = ET.SubElement(styles, W + 'style', {W + 'styleId': name, W + 'type': kind})
         ET.SubElement(node, W + 'name', {W + 'val': name})
     return root, styles
+
+
+class TableHeaderTests(unittest.TestCase):
+    def test_figure_wrapper_is_not_a_header_but_data_header_is(self):
+        root=ET.Element(W+'document')
+        for header in (False,True):
+            table=ET.SubElement(root,W+'tbl')
+            properties=ET.SubElement(table,W+'tblPr')
+            ET.SubElement(properties,W+'tblLook',{W+'firstRow':'1' if header else '0'})
+            row=ET.SubElement(table,W+'tr')
+            cell=ET.SubElement(row,W+'tc')
+            p=paragraph(cell,'Data header' if header else 'Figure caption','Normal' if header else 'ImageCaption')
+            if not header:
+                ET.SubElement(ET.SubElement(p,W+'r'),W+'drawing')
+        _format_table_headers(root,W)
+        figure,data=root.findall(W+'tbl')
+        self.assertFalse(figure.findall('.//'+W+'tblHeader'))
+        self.assertFalse(figure.findall('.//'+W+'shd'))
+        self.assertFalse(figure.findall('.//'+W+'b'))
+        self.assertTrue(data.findall('.//'+W+'tblHeader'))
+        self.assertTrue(data.findall('.//'+W+'shd'))
+        self.assertTrue(data.findall('.//'+W+'b'))
 
 
 class DocxValidatorTests(unittest.TestCase):
