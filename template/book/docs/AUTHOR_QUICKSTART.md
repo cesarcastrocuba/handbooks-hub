@@ -116,3 +116,10 @@ instead of replacing files.
 - [Book upgrade guide](https://github.com/cesarcastrocuba/handbooks-hub/blob/main/docs/book-upgrade.md):
   upgrade the toolkit pin deliberately.
 - [README](../README.md): the file map, the build commands and the repository rules.
+
+The toolkit supplies a web cover, part groups, caption list pages, edition footer and social
+metadata. Keep the canonical reading order focused on your manuscript; do not add generated pages
+to manuscript/book.yml. See [Figures](figures.md) for the original example illustration and image
+format/alt-text guidance. Metadata subtitle/author/status and optional site_url, release_url and
+edition_urls belong in publishing/metadata.yaml. Supply release/download URLs only after they are
+known; preview builds omit them.

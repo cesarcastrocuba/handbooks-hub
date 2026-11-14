@@ -67,7 +67,7 @@ introducing a separate heading colour.
 | --- | --- | --- |
 | Note | `#0065B3` | `#EFF6FC` |
 | Tip | `#107C10` | `#F1FAF1` |
-| Warning | `#D83B01` | `#FDF3F0` |
+| Warning | `#CE3901` | `#FDF3F0` |
 | Important | `#5C2D91` | `#F5F0FA` |
 | Review | `#55666A` | `#F2F1ED` |
 
@@ -199,3 +199,22 @@ are copied as packaging resources. Markdown HTML wrappers are read with HTMLPars
 
 The chrome_rule token preserves the inherited Quarto outline/heading rules in each scheme when
 using one base theme. It is distinct from the platform border token; no palette change is intended.
+
+## Reading experience (0.10.0)
+
+A metadata-driven, unnumbered cover precedes the front matter in HTML only. Quarto owns part groups,
+caption list pages, search, breadcrumbs, canonical metadata and the edition page-footer. The cover
+button and table-header links use on_solid on accent_solid. Footer copy uses muted on canvas.
+Callout title contrast is validated on its actual tint in every scheme. The light/print warning
+accent is now #CE3901 (4.57:1 on #FDF3F0); its previous accent measured 4.24:1 for small title text.
+
+Native view transitions, view-timeline reveals and a scroll-timeline progress bar are progressive
+CSS. All motion declarations are inside prefers-reduced-motion: no-preference; unsupported browsers
+keep static, visible content. Durations and easing come from the motion tokens. The packaged
+reading stylesheet provides visible keyboard focus; Quarto supplies the skip link and native tab
+order. No custom script, library or external font/image is added.
+
+The original favicon is generated from accent_solid/on_solid. The template's original SVG diagram
+is generated from print canvas/text values, so it remains portable in Typst and Word. System CSS
+colors were tested and rejected because Typst rendered them black. Generated SVG source parity is
+checked against its packaged drawing and the tokens.
