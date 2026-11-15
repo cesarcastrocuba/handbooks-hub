@@ -40,7 +40,7 @@ How much template content should remain? Keep the structure; replace the subject
 *In practice:* A team starts with this template, replaces the chapter title and section content, and
 keeps the structure while reviewing the new material.
 
-::: {.callout-important appearance="simple" icon=false title="Review Checklist — Example Chapter"}
+::: {.callout-note .review appearance="simple" icon=false title="Review Checklist — Example Chapter"}
 - The chapter opens with When to Use This Chapter and Key Takeaway.
 - The section has the required labels and closing elements.
 - The worked example and review checklist are present.

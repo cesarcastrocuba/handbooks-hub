@@ -135,8 +135,6 @@
         "enter_easing",
         "entry_px",
         "lift_px",
-        "arrow_px",
-        "arrow_gap_px",
         "underline_px",
         "sweep_percent",
         "highlight_percent",
@@ -193,8 +191,6 @@
         },
         "entry_px": { "type": "integer", "minimum": 0, "maximum": 24 },
         "lift_px": { "type": "integer", "minimum": 0, "maximum": 24 },
-        "arrow_px": { "type": "integer", "minimum": 0, "maximum": 24 },
-        "arrow_gap_px": { "type": "integer", "minimum": 0, "maximum": 24 },
         "underline_px": { "type": "integer", "minimum": 0, "maximum": 24 },
         "sweep_percent": {
           "type": "integer",

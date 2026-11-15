@@ -250,10 +250,8 @@ class NativeMotionBrowserTests(unittest.TestCase):
                 if preference=='reduce':self.assertEqual(translate,'none')
                 else:
                     self.assertIn('-'+str(motion['lift_px'])+'px',translate)
-                    self.assertEqual(page.locator('#start').evaluate('e=>getComputedStyle(e,"::after").opacity'),'1')
-                    accent=tokens['color']['accent']['light']
-                    rgb=', '.join(str(int(accent[i:i+2],16)) for i in (1,3,5))
-                    self.assertEqual(page.locator('#start').evaluate('e=>getComputedStyle(e,"::after").color'),'rgb('+rgb+')')
+                self.assertIn(page.locator('#start').evaluate('e=>getComputedStyle(e,"::after").content'),
+                              ('none', 'normal', '\"\"'))
                 page.mouse.move(0,0);page.wait_for_timeout(motion['fast_ms']+50)
                 self.assertEqual(page.locator('#start').evaluate('e=>getComputedStyle(e).position'),'static')
                 closed=page.locator('details').bounding_box()['height']

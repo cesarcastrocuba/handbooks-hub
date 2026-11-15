@@ -248,3 +248,8 @@ The portal home hero has its own token scale, `clamp(1.75rem, 3.2vw, 2.5rem)`, w
 measure and bold weight. Other page titles retain the general 2–3 rem scale. Print border and
 chrome-rule colors both match the light web border, `#DDD3C0`. Table-cell paragraphs are left
 aligned in PDF while running prose remains justified.
+
+Buttons keep their guarded hover/focus lift and visible focus outline without generated arrows.
+Guide-card arrows and the explicit “Read handbook →” link text remain part of their content.
+The template Review Checklist uses `.callout-note .review`; its full title also selects the
+neutral PDF role by the existing `Review Checklist` substring matcher.

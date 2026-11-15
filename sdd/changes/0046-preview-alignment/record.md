@@ -76,3 +76,16 @@ addresses all four together, with the existing STATUS/decisions write exclusion 
 
 Updated visual, PDF and DOCX evidence is in evidence.md. The correction can be rolled back as
 one commit without reverting the original implementation or coordinator-owned state changes.
+
+## Owner acceptance follow-up
+
+The Owner accepted the sample DOCX in desktop Word and the preview direction on 2026-11-15, with
+button hover arrows and the template's purple Review Checklist as follow-ups. See
+[owner-acceptance.md](owner-acceptance.md) for the exact quote and acceptance boundary.
+
+The button-generated arrow and unused arrow motion tokens are removed, preserving lift/focus and
+content arrows. The template checklist now opts into `.callout-note .review`; its existing suffixed
+title already matches the neutral PDF role. Source and real-render regressions cover the role.
+The root CHANGELOG records this content correction without a template version/pin bump; the
+separate template 1.6.0 release remains later work. The correction can be rolled back as one commit
+without reverting the accepted visual alignment or the coordinator's STATUS/decision commit.

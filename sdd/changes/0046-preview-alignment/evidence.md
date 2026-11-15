@@ -190,3 +190,69 @@ failures remain the CLI full-verification, repository-currency and repository-fu
 reporting the same STATUS.md lines 10, 37 and 47. Every browser/layout, print, DOCX, cached-index,
 reference-byte and contrast check passed. The coordinator will synchronize STATUS and add the
 new decision after this push, as directed in the review. The full gate is not claimed green here.
+
+## Owner acceptance follow-up
+
+The Owner reviewed the portal, template and sample previews and accepted the sample DOCX in
+Word on 2026-11-15. [owner-acceptance.md](owner-acceptance.md) records the exact feedback and the
+accepted artifact identity. The two requested corrections remove generated button hover arrows
+and apply the neutral review role to the template checklist. No template version or pin is bumped.
+
+A fresh sample build with required tools was compared with the actual accepted CI artifact:
+
+```bash
+gh run download 43734028505 --repo cesarcastrocuba/handbooks-hub --name edition-preview-sample --dir .venv/owner-accepted-sample
+.venv/bin/python tools/scripts/edition_preview.py --repo /home/ubuntu/github/handbook-sample-01 --output .venv/owner77-sample --require-tools
+sha256sum .venv/owner-accepted-sample/edition/book.docx .venv/owner77-sample/edition/book.docx
+```
+
+**The sample DOCX did not change: every byte matches.** Both SHA-256 hashes are
+`744deb27b1837fe64956e69ee1c7464a9e1bfbca7869303a00dc8dba90a56a83`.
+The accepted file is from run 43734028505, artifact 14169259876, source book commit
+`a75046b4407383fddbbee02eeb47d4fbc68bc59b`. The follow-up does not change the sample manuscript or
+DOCX processing; its HTML archive changes because the shared button CSS changes.
+
+The template DOCX was compared with `.venv/review77-head-template/edition/book.docx` from before
+this follow-up. Visible `w:t` text is identical. In `word/document.xml` only three attributes differ:
+checklist left border `5C2D91` → `55666A`, fill `F5F0FA` → `F2F1ED`, and title paragraph style
+`CalloutImportantTitle` → `CalloutReviewTitle`. `docProps/core.xml` also changes the normal created/
+modified timestamps of the separately exported template build; every other ZIP member is identical.
+Thus the content change is the checklist's callout style only, with ordinary build timestamp changes.
+The template version remains 1.5.1 and its toolkit pin remains 0.10.3, pending the separate release PR.
+
+The updated template preview was built with:
+
+```bash
+.venv/bin/python tools/scripts/edition_preview.py --template --output .venv/owner77-template --require-tools
+.venv/bin/python -m handbook_toolkit.portal catalog/catalog.json --output .venv/owner77-portal --engine quarto
+```
+
+All three editions were inspected. HTML computed review colors are light **rgb(85, 102, 106)**
+accent/title on **rgb(242, 241, 237)**, dark **rgb(163, 176, 176)** on **rgb(29, 38, 40)**.
+The PDF retains the full suffixed title on page **4**, using the neutral accent/tint; Poppler's SVG
+contains `rgb(94.902039%, 94.509888%, 92.941284%)` (`#F2F1ED`) and neutral title text. The existing
+`"Review Checklist" in label` matcher already handles the suffix and was preserved. The DOCX box
+uses `CalloutReviewTitle`, border `55666A` and fill `F2F1ED`; its LibreOffice conversion was inspected
+on page **5**. This records an Implementer's inspection, not a new desktop Word acceptance claim.
+
+At 1280 and 390 px in both schemes, hovering each home button produces `::after` content **none**
+and retains **translateY(-2px)**. All five guide-arrow spans and the explicit “Read handbook →”
+text remain. The focus-outline rule is unchanged. Raw screenshots and computed data are in
+`.venv/owner77-inspection/`; the compact [owner follow-up sheet](owner-followup.webp) accompanies this record.
+
+An isolated motion test run during simultaneous edition/browser builds hit the existing 30 ms
+mid-reveal timing assertion (`position` had already returned to static after a separate running-state
+read). The final full-suite run on stable sources is recorded below; the motion behavior or its timing
+assertions were not weakened to hide that result.
+
+Owner follow-up final gate: `make full PYTHON=.venv/bin/python` **passed**: **434 tests in
+487.846 s**, no failures, errors or skips; fast validator **5 checks / 0 problems**; full
+validator **7 checks / 0 problems**, including documentation currency. The final run includes the
+updated hover/no-arrow regression, original motion checks and the real template HTML/DOCX
+neutral-review assertions. `git diff --check` passed. STATUS/decisions were not modified by this
+follow-up; the coordinator's preceding `b1cac26` commit fixed their earlier currency failures.
+
+After committing and pushing this follow-up, the portal and template previews are rebuilt from
+that HEAD into `.venv/owner77-head-portal/` and `.venv/owner77-head-template/site/`, served on
+127.0.0.1:8766 and :8767. Their authored CSS is compared with current source factories, and the
+local asset checks are rerun. The Owner's sample preview on port 8768 is not changed.
