@@ -97,6 +97,22 @@ class PortalPagesWorkflowTests(unittest.TestCase):
         upload = next(step for step in self.steps() if step.get("uses", "").startswith("actions/upload-pages-artifact@"))
         self.assertEqual(upload["with"]["path"], "_site")
 
+    def test_the_deployed_site_is_checked_from_the_outside(self) -> None:
+        deploy = self.workflow["jobs"]["deploy"]
+        verify = self.workflow["jobs"]["verify"]
+        self.assertEqual(deploy["outputs"], {"page_url": "${{ steps.deployment.outputs.page_url }}"})
+        self.assertEqual(verify["if"], DEPLOY_CONDITION)
+        self.assertEqual(verify["needs"], "deploy")
+        self.assertEqual(verify["permissions"], {"contents": "read"})
+        checkout, check = verify["steps"]
+        self.assertTrue(checkout["uses"].startswith("actions/checkout@"))
+        self.assertIs(checkout["with"]["persist-credentials"], False)
+        self.assertEqual(check["env"]["PAGE_URL"], "${{ needs.deploy.outputs.page_url }}")
+        self.assertNotIn("${{", check["run"])
+        self.assertIn('python3 -m handbook_toolkit.site_check "$PAGE_URL"', check["run"])
+        for page in ("design.html", "create.html"):
+            self.assertIn(f"--page {page}", check["run"])
+
     def test_actions_are_pinned_and_no_new_action_is_added(self) -> None:
         names = set()
         for step in self.steps():
