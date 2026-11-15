@@ -80,3 +80,17 @@ reject nonconvergent caches. Decimal section restarts are mapped to logical page
 formats cannot produce guessed numbers. The Owner checks populated indexes without a prompt,
 F9 regeneration of all three, and visible banding in desktop Word before tagging. These caches
 reflect LibreOffice pagination, and F9 replaces them with Word's pagination.
+
+## Two gates: build invariants and the published-release gate
+
+`inspect_payload(..., build_invariants=True)` is the build gate. Besides format, it enforces what
+this toolkit version guarantees about its own output: the Word structure rules of
+`docx_validation` and a reading site without hidden paths. `build-book` always uses it.
+
+`catalog_verification` passes `build_invariants=False`. A published release was accepted by the
+gate of the toolkit that built it; the release gate proves that its bytes are the manifest's
+bytes, that each payload is the format it claims and that the site's local targets resolve. A rule
+added in a later toolkit version does not reject an edition that was valid when it was published.
+Without this, `portal-pages` could not deploy for any catalog change until every listed book had
+been released again with the newest toolkit (run 43666966237 failed that way on `v0.5.0`).
+

@@ -7,9 +7,19 @@ semantic versioning once the toolkit is published.
 
 Template release. Template `1.5.1` pins toolkit `0.10.3` (`58384af`). The release workflow already
 installs LibreOffice and passes `--require-page-numbers` (change `0038`), so the book's indexes open
-with cached page numbers; no other template file changes. Toolkit `0.10.2` was tagged but is not
+with cached page numbers; no other template file changes. Toolkit 0.10.2 was tagged but is not
 pinned by any template or book, because the reading site it builds loads its stylesheets from a
 hidden directory that static hosts do not publish (change `0042`).
+
+## [0.10.4] - 2026-11-15
+
+### Fixed
+
+- The online release gate (`catalog_verification`) applied the build invariants of the current
+  toolkit to releases built by older versions, so a new Word or site rule rejected an edition that
+  was valid when it was published and blocked the portal deployment. `inspect_payload` now takes
+  `build_invariants`; the release gate checks integrity, format and local targets only. This
+  change is hub-side: books do not need `0.10.4`.
 
 ## [0.10.3] - 2026-11-15
 

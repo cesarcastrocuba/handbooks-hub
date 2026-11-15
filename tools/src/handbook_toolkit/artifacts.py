@@ -150,10 +150,10 @@ def hidden_site_paths(names: Iterable[str]) -> list[str]:
     )
 
 
-def _html(archive: ZipFile, names: set[str]) -> None:
+def _html(archive: ZipFile, names: set[str], build_invariants: bool) -> None:
     if "index.html" not in names:
         raise ValueError("HTML site archive must contain index.html at its root")
-    hidden = hidden_site_paths(names)
+    hidden = hidden_site_paths(names) if build_invariants else []
     if hidden:
         raise ValueError(
             "HTML site archive has paths that static hosts do not publish: " + ", ".join(hidden[:5])
@@ -230,9 +230,20 @@ def _markdown(path: Path, commit: str | None, version: str | None) -> None:
 
 
 def inspect_payload(
-    path: Path, role: str, *, source_commit: str | None = None, version: str | None = None
+    path: Path,
+    role: str,
+    *,
+    source_commit: str | None = None,
+    version: str | None = None,
+    build_invariants: bool = True,
 ) -> list[Issue]:
     """Open PDF, DOCX, HTML/site ZIP, Markdown or source ZIP and report format failures.
+
+    ``build_invariants`` selects the gate. A build (the default) also enforces what this toolkit
+    version guarantees about its own output: the Word structure rules and a site without hidden
+    paths. A published release was accepted by the toolkit that built it, so the release gate
+    passes ``False`` and checks format and local targets only; a rule added in a later version
+    must not reject an edition that was valid when it was published.
 
     PDF inspection requires Poppler's pdfinfo. This inspects structure and local
     HTML targets; factual accuracy and visual layout still require human review.
@@ -259,7 +270,7 @@ def inspect_payload(
             with ZipFile(path) as archive:
                 names = _zip_members(archive)
                 if role == "html":
-                    _html(archive, names)
+                    _html(archive, names, build_invariants)
                 elif role == "docx":
                     required = {"[Content_Types].xml", "_rels/.rels", "word/document.xml"}
                     if not required <= names:
@@ -270,7 +281,8 @@ def inspect_payload(
                         element.text and element.text.strip() for element in document.iter(namespace + "t")
                     ):
                         raise ValueError("DOCX has no Word document text")
-                    validate_docx(archive)
+                    if build_invariants:
+                        validate_docx(archive)
                 else:
                     _source(archive, names, source_commit)
         else:
