@@ -1,4 +1,4 @@
-# Book template 1.5.1
+# Book template 1.6.0
 
 A starting point for an independent handbook repository. Copy this directory into a new repository,
 then replace the identifiers and content. The copy is owned by the book; the hub does not update it
@@ -8,7 +8,7 @@ in place.
 covers creating the repository from the template, the one-time repository settings, the Initialize
 book workflow, the first release and the catalog listing request, with no prior knowledge assumed.
 
-The template pins toolkit `0.10.3` and standard profile `1.0.0`. It contains no copied toolkit source
+The template pins toolkit `0.11.0` and standard profile `1.0.0`. It contains no copied toolkit source
 and never imports a parent hub checkout.
 
 ## What is included
@@ -37,6 +37,10 @@ and never imports a parent hub checkout.
   file. The Initialize book workflow replaces the `OWNER/REPOSITORY` placeholder.
 - Two issue forms ask for the page or section, the problem and the evidence, so a report is
   actionable without knowing the internal review process.
+
+The release workflow checks the deployed reading site's local stylesheets, scripts and images
+using the pinned toolkit's `site_check` command after Pages deployment. A missing asset fails the
+workflow; publication and deployment alone do not count as a successful release check.
 
 ## Install the pinned toolkit
 

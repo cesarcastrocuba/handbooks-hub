@@ -3,6 +3,15 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
+## [1.6.0] - 2026-11-15
+
+Template release. Template `1.6.0` pins toolkit `0.11.0` at
+`d4bef53af4c70f86fecdb13d1924c79353dde32f` (`toolkit-v0.11.0`). It carries the preview-aligned
+scale and controls, uniform cream table bodies without stripes in every edition, no page
+transition, and the example chapter's neutral Review Checklist role. The release workflow checks
+the deployed reading site's assets with `site_check` in a read-only job after Pages deployment.
+The template mirror and tag are published by the coordinator after this change is merged.
+
 ## [0.11.0] - Unreleased
 
 ### Changed

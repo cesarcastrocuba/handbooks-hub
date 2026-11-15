@@ -220,7 +220,7 @@ class TemplateTests(unittest.TestCase):
 
     def test_template_pins_are_exact_and_current(self) -> None:
         descriptor = _load(TEMPLATE / "book.yaml")
-        self.assertEqual(descriptor["toolkit"], "0.10.3")
+        self.assertEqual(descriptor["toolkit"], "0.11.0")
         self.assertRegex(descriptor["toolkit"], r"^\d+\.\d+\.\d+$")
         self.assertRegex(descriptor["profile"]["version"], r"^\d+\.\d+\.\d+$")
         requirements = (TEMPLATE / "requirements.txt").read_text(encoding="utf-8")
@@ -344,6 +344,20 @@ class TemplateWorkflowTests(unittest.TestCase):
                 match = USES.match(f"  uses: {uses}")
                 self.assertIsNotNone(match, f"{path.name}: action is not pinned: {uses}")
                 self.assertIn(match.group(2), hub_shas, f"{path.name}: SHA is not used by the hub")
+
+    def test_release_checks_the_actual_deployed_site_with_read_only_permissions(self) -> None:
+        jobs = _load(TEMPLATE_WORKFLOWS / 'release.yml')['jobs']
+        self.assertEqual(jobs['deploy']['outputs']['page_url'], '${{ steps.deployment.outputs.page_url }}')
+        verify = jobs['verify']
+        self.assertEqual(verify['needs'], 'deploy')
+        self.assertEqual(verify['permissions'], {'contents': 'read'})
+        checkout = next(step for step in verify['steps'] if step.get('uses', '').startswith('actions/checkout@'))
+        self.assertIs(checkout['with']['persist-credentials'], False)
+        install = next(step for step in verify['steps'] if 'pip install' in step.get('run', ''))
+        self.assertIn('-r requirements.txt', install['run'])
+        check = next(step for step in verify['steps'] if 'handbook_toolkit.site_check' in step.get('run', ''))
+        self.assertEqual(check['env']['PAGE_URL'], '${{ needs.deploy.outputs.page_url }}')
+        self.assertEqual(check['run'], 'python3 -m handbook_toolkit.site_check "$PAGE_URL"')
 
     def test_no_expression_is_interpolated_into_a_shell_script(self) -> None:
         for path in sorted(TEMPLATE_WORKFLOWS.glob("*.yml")):
@@ -510,7 +524,7 @@ class InitializeBookTests(unittest.TestCase):
                 "# Book descriptor. Replace the identifiers and summary before the first commit.",
                 "# Keep toolkit and profile versions exact: ranges are rejected by the schema.",
                 'schema_version: "1.0"',
-                'toolkit: "0.10.3"',
+                'toolkit: "0.11.0"',
                 'version: "1.0.0"',
                 "default_branch: main",
             ):
