@@ -3,6 +3,27 @@
 Books pin exact toolkit and profile versions. Upgrades are deliberate changes reviewed like any
 other contribution; nothing upgrades automatically.
 
+## Example: toolkit 0.10.3 to 0.11.0
+
+1. Set `toolkit: "0.11.0"` in `book.yaml` and pin
+   `d4bef53af4c70f86fecdb13d1924c79353dde32f` (`toolkit-v0.11.0`) in `requirements.txt`.
+2. Update the book's release workflow from template 1.6.0: export `page_url` from the deploy job,
+   then add its dependent, read-only `verify` job. It checks out without persisted credentials,
+   installs the pinned toolkit, passes `needs.deploy.outputs.page_url` through `PAGE_URL`, and
+   runs `python3 -m handbook_toolkit.site_check "$PAGE_URL"`. Do not import hub scripts or add
+   a second deployment; the check inspects the site that was just deployed.
+3. For neutral review checklists, use
+   `::: {.callout-note .review appearance="simple" icon=false title="Review Checklist"}`.
+   Existing suffixed titles such as “Review Checklist — Example Chapter” retain the neutral PDF
+   role; HTML and DOCX require the `review` class. Other manuscript content needs no migration.
+4. Reinstall dependencies, run the book's checks and build its editions once. Inspect the compact
+   web controls, uniform cream table rows and rules in HTML/PDF/DOCX, grey review boxes and cached
+   Word indexes. Page transitions are removed; guarded reveals, progress and hover/focus remain.
+
+Keep the existing LibreOffice installation and `--require-page-numbers` gate. A successful Pages
+upload is followed by the deployed asset check; a missing stylesheet, script or image makes the
+release workflow fail. The hub template release does not publish or redeploy an existing book.
+
 ## Supported upgrade path
 
 1. Read the hub `CHANGELOG.md` for the target toolkit version and every version in between.
