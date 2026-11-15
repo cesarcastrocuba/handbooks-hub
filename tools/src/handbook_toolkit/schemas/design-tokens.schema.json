@@ -140,7 +140,9 @@
         "sweep_percent",
         "highlight_percent",
         "shadow",
-        "progress_easing"
+        "progress_easing",
+        "cover_entry_px",
+        "cover_entry_end_percent"
       ],
       "properties": {
         "fast_ms": {
@@ -308,6 +310,16 @@
           "enum": [
             "linear"
           ]
+        },
+        "cover_entry_px": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 24
+        },
+        "cover_entry_end_percent": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
         }
       }
     },

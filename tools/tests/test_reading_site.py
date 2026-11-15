@@ -155,6 +155,8 @@ class ReadingSiteTests(unittest.TestCase):
     def test_motion_is_guarded_by_reduced_motion_query(self):
         self.assertEqual(motion_violations(design.reading_css()), [])
         self.assertEqual(motion_violations(design.book_layout_css()), [])
+        self.assertEqual(motion_violations(design.book_theme_css()), [])
+        self.assertEqual(motion_violations(design.portal_layout_css()), [])
         for path in (support.SRC / 'handbook_toolkit/render_data').rglob('*.css'):
             with self.subTest(stylesheet=path.name):
                 self.assertEqual(motion_violations(path.read_text()), [])
@@ -252,8 +254,8 @@ class NativeMotionBrowserTests(unittest.TestCase):
         markup='''<style>body{color:var(--text);background:var(--canvas)}
           .btn{display:inline-block;padding:6px 12px;background:var(--accent-solid);color:var(--on-solid)}
           .space{height:1200px}section,.callout{height:200px}.cover{height:70px}.book{padding:20px;background:var(--surface)}
-          </style><header id="quarto-header"><nav class="navbar" style="height:20px;background:var(--canvas)"></nav></header><main id="quarto-document-content"><h1 style="color:var(--text)">Theme heading</h1>
-          <div class="handbook-cover" id="initial" style="height:20px;background:var(--accent-solid)"></div>
+          </style><header id="quarto-header"><nav class="navbar" style="height:20px;background:var(--canvas)"><button class="quarto-color-scheme-toggle" type="button">Theme</button></nav></header><main id="quarto-document-content"><h1 style="color:var(--text)">Theme heading</h1>
+          <div class="callout" id="initial" style="height:20px;background:var(--accent-solid)"></div>
           <div class="cover-actions"><a id="start" class="btn btn-primary" href="#target">Start reading</a></div>
           <details><summary>Details</summary><p>Expanded content</p></details>
           <div class="space"></div><div class="callout" id="target">Reading callout</div>
@@ -330,6 +332,7 @@ class NativeMotionBrowserTests(unittest.TestCase):
                 progress=page.evaluate('getComputedStyle(document.body,"::before").transform')
                 if preference=='reduce':self.assertEqual(progress,'none')
                 else:self.assertAlmostEqual(float(progress.split('(')[1].split(',')[0]),1,places=5)
+                page.locator('.quarto-color-scheme-toggle').focus()
                 initial=page.evaluate('[document.body,document.querySelector(".book"),document.querySelector(".navbar"),document.querySelector(".nav-footer")].map(e=>getComputedStyle(e).backgroundColor).concat(getComputedStyle(document.querySelector("h1")).color)')
                 page.evaluate('document.body.classList.add("quarto-dark")')
                 page.wait_for_timeout(motion['fast_ms']//2)

@@ -475,7 +475,7 @@ READING_METRICS = {"focus-width": "3px", "focus-offset": "3px", "progress-height
 
 def reading_header() -> str:
     """Wait for Quarto's complete body before taking native page-transition snapshots."""
-    return '<link rel="expect" blocking="render" href="#quarto-html-after-body">'
+    return '<link rel="expect" blocking="render" href="#quarto-html-after-body" media="(prefers-reduced-motion: no-preference)">'
 
 
 def reading_css() -> str:

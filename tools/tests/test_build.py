@@ -547,6 +547,7 @@ class BuildTests(unittest.TestCase):
                     self.assertEqual(len(ready), 1)
                     self.assertEqual(ready[0].attrs.get("href"), "#quarto-html-after-body")
                     self.assertEqual(ready[0].attrs.get("blocking"), "render")
+                    self.assertEqual(ready[0].attrs.get("media"), "(prefers-reduced-motion: no-preference)")
             with zipfile.ZipFile(output / "book.docx") as archive:
                 document_xml = archive.read("word/document.xml").decode("utf-8")
                 settings_xml = archive.read("word/settings.xml").decode("utf-8")

@@ -70,16 +70,22 @@ footer.footer .nav-footer a { color: var(--accent); }
     }
   }
 
-  body, #quarto-header, .navbar, .sidebar, #title-block-header, footer.footer, .nav-footer,
-  .callout, .callout-title, .callout-title-container, .book, .book p, .cover, .tag, #results,
-  h1, h2, h3, h4, h5, h6, figcaption, caption, code, pre, .sourceCode, .sourceCode span, tr, td, th {
-    transition: color {{motion-fast-ms}} {{motion-easing}}, background-color {{motion-fast-ms}} {{motion-easing}},
-                border-color {{motion-fast-ms}} {{motion-easing}};
-  }
-  a, button, input, select, summary {
+  /* A mode change is interaction feedback, not a first-paint palette animation. */
+  :root:has(.quarto-color-scheme-toggle:is(:hover, :focus)) :is(
+    body, #quarto-header, .navbar, .sidebar, #title-block-header, footer.footer, .nav-footer,
+    .callout, .callout-title, .callout-title-container, .book, .book p, .cover, .tag, #results,
+    h1, h2, h3, h4, h5, h6, figcaption, caption, code, pre, .sourceCode, .sourceCode span, tr, td, th, input, select) {
     transition: color {{motion-fast-ms}} {{motion-easing}}, background-color {{motion-fast-ms}} {{motion-easing}},
                 border-color {{motion-fast-ms}} {{motion-easing}}, outline-offset {{motion-fast-ms}} {{motion-easing}},
                 box-shadow {{motion-fast-ms}} {{motion-easing}}, translate {{motion-fast-ms}} {{motion-easing}};
+  }
+  a, button, summary {
+    transition: color {{motion-fast-ms}} {{motion-easing}}, background-color {{motion-fast-ms}} {{motion-easing}},
+                outline-offset {{motion-fast-ms}} {{motion-easing}}, box-shadow {{motion-fast-ms}} {{motion-easing}},
+                translate {{motion-fast-ms}} {{motion-easing}};
+  }
+  input, select {
+    transition: outline-offset {{motion-fast-ms}} {{motion-easing}}, box-shadow {{motion-fast-ms}} {{motion-easing}};
   }
   main a:not(.btn):not(.fmt):not(.anchorjs-link) {
     background-image: linear-gradient(currentColor, currentColor);
@@ -121,6 +127,19 @@ footer.footer .nav-footer a { color: var(--accent); }
     details[open]::details-content { block-size: auto; }
   }
 
+  /* Keep the established cover entrance and its resting compositing unchanged. */
+  @supports (animation-timeline: view()) {
+    @keyframes handbook-cover-reveal {
+      from { opacity: 0; transform: translateY({{motion-cover-entry-px}}); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .handbook-cover {
+      animation: handbook-cover-reveal {{motion-progress-easing}} both;
+      animation-timeline: view();
+      animation-range: entry 0% entry {{motion-cover-entry-end-percent}}%;
+    }
+  }
+
   /* View progress triggers play a clock animation once; scrolling back cannot rewind it. */
   @supports (animation-timeline: view()) and (animation-trigger: --handbook-reveal play-once) {
     @property --handbook-reveal-alpha { syntax: "<number>"; inherits: false; initial-value: 1; }
@@ -133,7 +152,7 @@ footer.footer .nav-footer a { color: var(--accent); }
       from { opacity: 0; transform: translateY({{motion-entry-px}}); }
       to { opacity: 1; transform: translateY(0); }
     }
-    main section.level2, main .callout, main figure, main table:has(caption), .handbook-cover, .card {
+    main section.level2, main .callout, main figure, main table:has(caption), .card {
       trigger-scope: --handbook-reveal;
       timeline-trigger: --handbook-reveal view() cover 0% cover 100%;
       animation: handbook-reveal {{motion-reveal-ms}} {{motion-enter-easing}};
@@ -145,7 +164,7 @@ footer.footer .nav-footer a { color: var(--accent); }
       top: calc({{motion-entry-px}} * var(--handbook-reveal-offset));
     }
     main .callout, main figure, main table:has(caption) { animation-name: handbook-object-reveal; }
-    main section.level2, .handbook-cover, .card { animation-fill-mode: forwards; }
+    main section.level2, .card { animation-fill-mode: forwards; }
     #book-grid > .book { animation: handbook-object-reveal {{motion-reveal-ms}} {{motion-enter-easing}} backwards; }
     @supports (animation-delay: calc(sibling-index() * {{motion-stagger-ms}})) {
       #book-grid > .book { animation-delay: calc(min(sibling-index() - 1, {{motion-stagger-limit}}) * {{motion-stagger-ms}}); }
@@ -169,9 +188,7 @@ footer.footer .nav-footer a { color: var(--accent); }
   }
 
   #book-grid > .book {
-    transition: translate {{motion-fast-ms}} {{motion-easing}}, box-shadow {{motion-fast-ms}} {{motion-easing}},
-                color {{motion-fast-ms}} {{motion-easing}}, background-color {{motion-fast-ms}} {{motion-easing}},
-                border-color {{motion-fast-ms}} {{motion-easing}};
+    transition: translate {{motion-fast-ms}} {{motion-easing}}, box-shadow {{motion-fast-ms}} {{motion-easing}};
   }
   #book-grid > .book:is(:hover, :has(:focus-visible)) { translate: 0 calc(-1 * {{motion-lift-px}}); box-shadow: {{motion-shadow}}; }
   .book:is(:hover, :has(:focus-visible)) .cover { position: relative; overflow: clip; }

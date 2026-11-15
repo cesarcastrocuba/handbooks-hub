@@ -216,6 +216,7 @@ class QuartoPortalTests(unittest.TestCase):
             self.assertEqual(len(ready),1)
             self.assertEqual(ready[0].attrs.get('href'),'#quarto-html-after-body')
             self.assertEqual(ready[0].attrs.get('blocking'),'render')
+            self.assertEqual(ready[0].attrs.get('media'),'(prefers-reduced-motion: no-preference)')
             targets=[node.attrs.get('href') for node in page.find('link')]
             targets+=[node.attrs.get('src') for tag in ('script','img') for node in page.find(tag)]
             local=[posixpath.normpath(posixpath.join(posixpath.dirname(name),target.split('#')[0].split('?')[0]))
