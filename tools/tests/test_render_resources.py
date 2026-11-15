@@ -85,6 +85,32 @@ class RenderResourceTests(unittest.TestCase):
             self.assertNotEqual(identifiers[0], identifiers[1])
             self.assertEqual(identifiers[0], identifiers[2])
 
+@unittest.skipUnless(shutil.which('quarto') and shutil.which('pdftotext'),
+                     'Quarto and Poppler are required for the long-table probe')
+class RoundedTableTests(unittest.TestCase):
+    def test_rounded_print_table_keeps_all_rows_and_repeated_headers(self):
+        from handbook_toolkit import design
+        theme = (support.SRC / 'handbook_toolkit/render_data/typst/handbook-typst.typ').read_text()
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / 'long-table.typ'
+            source.write_text(design.typst_preamble() + theme + '''
+#set page(width: 160mm, height: 120mm, margin: 10mm, header: none, footer: none)
+#table(columns: (1fr, 3fr), table.header([Row], [Evidence]),
+  ..range(100).map(n => ([#n], [A repeated row that must split across pages.])).flatten())
+''')
+            result = subprocess.run(['quarto', 'typst', 'compile', '--font-path',
+                                     str(support.SRC / 'handbook_toolkit/render_data/fonts'), str(source)],
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            result = subprocess.run(['pdftotext', '-layout', str(source.with_suffix('.pdf')), '-'],
+                                    capture_output=True, text=True, check=True)
+            import re
+            rows = re.findall(r'^\s*(\d+)\s+A repeated row', result.stdout, re.MULTILINE)
+            self.assertEqual(rows, list(map(str, range(100))))
+            pages = result.stdout.count('\f')
+            self.assertGreater(pages, 1)
+            self.assertEqual(result.stdout.count('Evidence'), pages)
+
 
 if __name__ == "__main__":
     unittest.main()

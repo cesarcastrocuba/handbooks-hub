@@ -76,8 +76,8 @@ class ReadingSiteTests(unittest.TestCase):
             self.assertIn('chapter.html', (root/'index.qmd').read_text())
             self.assertEqual(result['book']['site-url'], 'https://example.github.io/handbook/')
             self.assertTrue(result['format']['html']['canonical-url'])
-            self.assertIn({'text':design.reading_header()}, result['format']['html']['include-in-header'])
-            self.assertEqual(result['format']['html']['include-in-header'][0], 'authored.html')
+            self.assertNotIn('blocking', str(result['format']['html']))
+            self.assertEqual(result['format']['html']['include-in-header'], 'authored.html')
             self.assertEqual(result['book']['description'], book['catalog']['summary'])
             self.assertTrue(result['book']['open-graph'])
             self.assertEqual(result['book']['twitter-card']['card-style'], 'summary')
@@ -169,14 +169,12 @@ class ReadingSiteTests(unittest.TestCase):
         css = design.reading_css()
         self.assertNotIn('{{', css)
         self.assertEqual(motion_violations(css), [])
-        for name in ('handbook-topbar', 'handbook-sidebar', 'handbook-margin',
-                     'handbook-footer', 'handbook-body', 'handbook-title'):
-            self.assertIn(name, css)
+        self.assertNotIn('view-transition', css)
         self.assertIn('play-once', css)
         self.assertIn('trigger-scope', css)
         self.assertIn('var(--accent-solid), var(--accent)', css)
         broken = copy.deepcopy(tokens)
-        broken['motion']['body_delay_ms'] = 200
+        broken['motion']['stagger_ms'] = 100
         self.assertTrue(any('300 ms' in issue.message for issue in design.validate_tokens(broken)))
         broken = copy.deepcopy(tokens)
         broken['motion']['highlight_percent'] = 14
@@ -184,7 +182,6 @@ class ReadingSiteTests(unittest.TestCase):
         broken = copy.deepcopy(tokens)
         del broken['motion']['lift_px']
         self.assertTrue(design.validate_tokens(broken))
-        self.assertEqual(rule_declarations(css, ':root:active-view-transition #quarto-header')['view-transition-name'], 'handbook-topbar')
 
     def test_generated_svg_sources_are_deterministic_and_token_derived(self):
         root=ET.fromstring(design.favicon_svg())
@@ -203,43 +200,9 @@ class ReadingSiteTests(unittest.TestCase):
             for name,role in tokens['callout'].items():
                 with self.subTest(scheme=scheme,callout=name):
                     self.assertGreaterEqual(design.contrast_ratio(role['accent'][scheme],role['tint'][scheme]),4.5)
-            for foreground,background in [('accent','canvas'),('accent','table_stripe'),('on_solid','accent_solid'),('muted','canvas')]:
+            for foreground,background in [('accent','canvas'),('accent','surface'),('on_solid','accent_solid'),('muted','canvas')]:
                 with self.subTest(scheme=scheme,foreground=foreground,background=background):
                     self.assertGreaterEqual(design.contrast_ratio(colors[foreground][scheme],colors[background][scheme]),4.5)
-
-
-def validate_region_names(html: str, css: str) -> None:
-    """Resolve authored region selectors against a parsed page, including hidden markup."""
-    from html_support import Document
-    document = Document(html).root
-    names = {}
-    def walk(rules):
-        for rule in rules:
-            if rule.type == 'at-rule' and rule.content and rule.at_keyword in {'media', 'supports'}:
-                walk(tinycss2.parse_rule_list(rule.content))
-            elif rule.type == 'qualified-rule':
-                declarations = {item.name:tinycss2.serialize(item.value).strip()
-                                for item in tinycss2.parse_declaration_list(rule.content)
-                                if item.type == 'declaration'}
-                name = declarations.get('view-transition-name')
-                if name is None or name == 'none':continue
-                selector=tinycss2.serialize(rule.prelude).strip().removeprefix(':root:active-view-transition ')
-                if selector.startswith('#'):
-                    count=sum(node.attrs.get('id') == selector[1:] for node in document.walk())
-                elif selector == 'footer.footer':
-                    count=sum('footer' in (node.attrs.get('class') or '').split() for node in document.find('footer'))
-                else:raise ValueError('unhandled named region selector: '+selector)
-                names[name]=names.get(name,0)+count
-    walk(tinycss2.parse_stylesheet(css))
-    if any(count>1 for count in names.values()):raise ValueError('duplicate transition region: '+str(names))
-
-
-class RegionContractTests(unittest.TestCase):
-    def test_names_are_unique_per_parsed_page(self):
-        css=design.reading_css()
-        validate_region_names('<main id="quarto-document-content"></main><footer class="footer"></footer>',css)
-        with self.assertRaisesRegex(ValueError,'duplicate'):
-            validate_region_names('<footer class="footer"></footer><footer class="footer"></footer>',css)
 
 
 class NativeMotionBrowserTests(unittest.TestCase):
@@ -345,48 +308,6 @@ class NativeMotionBrowserTests(unittest.TestCase):
                     else:self.assertNotIn(middle,(first,last))
                 context.close()
             browser.close()
-
-    def test_native_capture_waits_for_a_streamed_incoming_body(self):
-        try:
-            from playwright.sync_api import sync_playwright
-        except ImportError:
-            self.skipTest('Playwright is installed by the edition-preview job')
-        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-        from threading import Thread
-        import time
-        css=design.reading_css()
-        class Handler(BaseHTTPRequestHandler):
-            def do_GET(self):
-                title='Incoming' if self.path=='/next' else 'Outgoing'
-                head=('<!doctype html><html><head><meta charset="utf-8">'+design.reading_header()
-                      +'<style>'+css+'</style></head>').encode()
-                body=('<body><main id="quarto-document-content"><header id="title-block-header"><h1>'
-                      +title+'</h1></header><p>'+title+' body</p><a href="/next">Next</a></main>'
-                      +'<div id="quarto-html-after-body"></div></body></html>').encode()
-                self.send_response(200);self.send_header('Content-Type','text/html')
-                self.send_header('Content-Length',str(len(head)+len(body)));self.end_headers()
-                self.wfile.write(head);self.wfile.flush();time.sleep(.12)
-                self.wfile.write(body)
-            def log_message(self,*args):pass
-        server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
-        thread=Thread(target=server.serve_forever,daemon=True);thread.start()
-        try:
-            with sync_playwright() as p:
-                browser=p.chromium.launch();page=browser.new_page()
-                page.add_init_script('''addEventListener('pagereveal',event=>{
-                  if(event.viewTransition)event.viewTransition.ready.then(()=>{
-                    window.captured={title:document.querySelector('h1').textContent,
-                      names:document.getAnimations().map(a=>a.animationName)};
-                  });
-                });''')
-                page.goto(f'http://127.0.0.1:{server.server_port}/',wait_until='networkidle')
-                page.locator('a').click();page.wait_for_url('**/next');page.wait_for_timeout(400)
-                captured=page.evaluate('window.captured')
-                self.assertEqual(captured['title'],'Incoming')
-                self.assertTrue({'handbook-title','handbook-enter'}<=set(captured['names']))
-                browser.close()
-        finally:
-            server.shutdown();server.server_close();thread.join()
 
     def test_settled_callout_keeps_the_static_pixels_including_outside_list_markers(self):
         try:

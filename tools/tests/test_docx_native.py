@@ -11,7 +11,7 @@ from zipfile import ZipFile
 
 import support
 from handbook_toolkit.artifacts import inspect_payload
-from handbook_toolkit.docx_post import prepare_docx, _format_table_headers, _band_table_cells, _center_captions
+from handbook_toolkit.docx_post import prepare_docx, _format_table_headers, _style_table_cells, _center_captions
 from handbook_toolkit.docx_fields import add_indexes, bookmark_name, cached_field, Entry, set_cached_pages
 from handbook_toolkit.docx_fonts import font_table
 from handbook_toolkit.docx_xml import W, fields, field_run, instruction_run, text_of
@@ -73,7 +73,7 @@ class TableHeaderTests(unittest.TestCase):
         self.assertTrue(data.findall('.//'+W+'shd'))
         self.assertTrue(data.findall('.//'+W+'b'))
 
-    def test_direct_banding_skips_plain_tables_and_keeps_headers(self):
+    def test_surface_and_bottom_rules_cover_data_and_callout_tables(self):
         from handbook_toolkit import design
         root = ET.Element(W + 'document')
         for style in ('Table', 'TablePlain'):
@@ -86,15 +86,22 @@ class TableHeaderTests(unittest.TestCase):
                 for j in range(2):
                     paragraph(ET.SubElement(row, W + 'tc'), f'{i}/{j}')
         _format_table_headers(root, W)
-        _band_table_cells(root)
-        data, plain = root.findall(W + 'tbl')
+        _style_table_cells(root)
         values = design.docx_values()
-        for index, row in enumerate(data.findall(W + 'tr')):
-            role = 'accent_solid' if index == 0 else ('canvas' if index % 2 else 'stripe')
-            for cell in row.findall(W + 'tc'):
-                self.assertEqual(cell.find(W + 'tcPr/' + W + 'shd').get(W + 'fill'), values[role].lstrip('#'))
-        for row in plain.findall(W + 'tr')[1:]:
-            self.assertFalse(row.findall('.//' + W + 'shd'))
+        # A second pass must not duplicate the shading or border properties.
+        _style_table_cells(root)
+        for table in root.findall(W + 'tbl'):
+            for index, row in enumerate(table.findall(W + 'tr')):
+                role = 'accent_solid' if index == 0 else 'surface'
+                for cell in row.findall(W + 'tc'):
+                    shades = cell.findall(W + 'tcPr/' + W + 'shd')
+                    self.assertEqual(len(shades), 1)
+                    self.assertEqual(shades[0].get(W + 'fill'), values[role].lstrip('#'))
+                    if index:
+                        rules = cell.findall(W + 'tcPr/' + W + 'tcBorders/' + W + 'bottom')
+                        self.assertEqual(len(rules), 1)
+                        self.assertEqual(rules[0].get(W + 'color'), values['rule'].lstrip('#'))
+                        self.assertEqual(rules[0].get(W + 'sz'), '4')
 
 
 

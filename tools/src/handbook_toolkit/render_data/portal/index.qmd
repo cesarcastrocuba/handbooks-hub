@@ -2,6 +2,7 @@
 title: "Knowledge worth keeping. Handbooks worth sharing."
 toc: false
 page-layout: full
+subtitle: "Independent books · shared standards"
 ---
 
 An open library of practical technical handbooks. Read online, download an edition, or write the
@@ -18,35 +19,12 @@ next one.
 {{planned}}
 :::
 
-::: {#how-it-works}
-## How the platform works
-
-Independent repositories, one versioned toolkit and verified editions.
-[How the platform works](how-it-works.qmd).
-:::
-
-::: {#create}
-## Create your handbook in five steps
-
-Start with the template, initialize, write, release and request listing.
-[Create a handbook](create.qmd).
-:::
-
-::: {#publishing}
-## Publishing and withdrawal
-
-Approval and verification stay with a person.
-[Publishing and withdrawal](publishing.qmd).
-:::
-
-::: {#contribute}
-## Contribute to a handbook
-
-Each book owns its corrections and proposals. [Contribute](contribute.qmd).
-:::
-
-::: {#faq}
-## Questions and answers
-
-Formats, verification, ownership and licensing. [Questions and answers](faq.qmd).
-:::
+```{=html}
+<nav class="guide-grid" aria-label="Platform guides">
+<a id="how-it-works" class="guide-card" href="how-it-works.html"><span class="guide-title">How the platform works</span><span class="guide-description">Independent repositories, one toolkit and verified editions.</span><span class="guide-arrow" aria-hidden="true">→</span></a>
+<a id="create" class="guide-card" href="create.html"><span class="guide-title">Create your handbook</span><span class="guide-description">Start with the template, write, review and release.</span><span class="guide-arrow" aria-hidden="true">→</span></a>
+<a id="publishing" class="guide-card" href="publishing.html"><span class="guide-title">Publishing and withdrawal</span><span class="guide-description">A person approves each release and withdrawal.</span><span class="guide-arrow" aria-hidden="true">→</span></a>
+<a id="contribute" class="guide-card" href="contribute.html"><span class="guide-title">Contribute to a handbook</span><span class="guide-description">Send corrections and proposals to the book’s repository.</span><span class="guide-arrow" aria-hidden="true">→</span></a>
+<a id="faq" class="guide-card" href="faq.html"><span class="guide-title">Questions and answers</span><span class="guide-description">Understand formats, verification, ownership and licensing.</span><span class="guide-arrow" aria-hidden="true">→</span></a>
+</nav>
+```

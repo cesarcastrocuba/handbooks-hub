@@ -12,7 +12,8 @@
     "space",
     "radius",
     "motion",
-    "contrast"
+    "contrast",
+    "web"
   ],
   "properties": {
     "schema_version": {
@@ -24,7 +25,6 @@
       "required": [
         "canvas",
         "surface",
-        "table_stripe",
         "text",
         "muted",
         "heading",
@@ -37,7 +37,6 @@
       "properties": {
         "canvas": { "$ref": "#/$defs/color_role" },
         "surface": { "$ref": "#/$defs/color_role" },
-        "table_stripe": { "$ref": "#/$defs/color_role" },
         "text": { "$ref": "#/$defs/color_role" },
         "muted": { "$ref": "#/$defs/color_role" },
         "heading": { "$ref": "#/$defs/color_role" },
@@ -107,10 +106,19 @@
     "radius": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["control_px", "card_px"],
+      "required": [
+        "control_px",
+        "card_px",
+        "tag_px",
+        "cover_spine_px",
+        "cover_edge_px"
+      ],
       "properties": {
         "control_px": { "type": "integer", "minimum": 0, "maximum": 24 },
-        "card_px": { "type": "integer", "minimum": 0, "maximum": 32 }
+        "card_px": { "type": "integer", "minimum": 0, "maximum": 32 },
+        "tag_px": { "type": "integer", "minimum": 0, "maximum": 32 },
+        "cover_spine_px": { "type": "integer", "minimum": 0, "maximum": 32 },
+        "cover_edge_px": { "type": "integer", "minimum": 0, "maximum": 32 }
       }
     },
     "motion": {
@@ -120,19 +128,12 @@
         "fast_ms",
         "normal_ms",
         "easing",
-        "exit_ms",
-        "title_ms",
-        "enter_ms",
-        "body_delay_ms",
         "reveal_ms",
         "sweep_ms",
         "stagger_ms",
         "stagger_limit",
         "enter_easing",
-        "exit_easing",
         "entry_px",
-        "title_px",
-        "exit_px",
         "lift_px",
         "arrow_px",
         "arrow_gap_px",
@@ -163,26 +164,6 @@
             "linear"
           ]
         },
-        "exit_ms": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 300
-        },
-        "title_ms": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 300
-        },
-        "enter_ms": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 300
-        },
-        "body_delay_ms": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 300
-        },
         "reveal_ms": {
           "type": "integer",
           "minimum": 0,
@@ -210,48 +191,11 @@
             "cubic-bezier(0.2, 0.8, 0.2, 1)"
           ]
         },
-        "exit_easing": {
-          "type": "string",
-          "enum": [
-            "ease-in",
-            "cubic-bezier(0.2, 0.8, 0.2, 1)"
-          ]
-        },
-        "entry_px": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 24
-        },
-        "title_px": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 24
-        },
-        "exit_px": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 24
-        },
-        "lift_px": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 24
-        },
-        "arrow_px": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 24
-        },
-        "arrow_gap_px": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 24
-        },
-        "underline_px": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 24
-        },
+        "entry_px": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "lift_px": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "arrow_px": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "arrow_gap_px": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "underline_px": { "type": "integer", "minimum": 0, "maximum": 24 },
         "sweep_percent": {
           "type": "integer",
           "minimum": 0,
@@ -274,26 +218,10 @@
             "alpha"
           ],
           "properties": {
-            "x_px": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 32
-            },
-            "y_px": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 32
-            },
-            "blur_px": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 32
-            },
-            "spread_px": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 32
-            },
+            "x_px": { "type": "integer", "minimum": 0, "maximum": 32 },
+            "y_px": { "type": "integer", "minimum": 0, "maximum": 32 },
+            "blur_px": { "type": "integer", "minimum": 0, "maximum": 32 },
+            "spread_px": { "type": "integer", "minimum": 0, "maximum": 32 },
             "color": {
               "type": "string",
               "pattern": "^#[0-9A-F]{6}$"
@@ -311,11 +239,7 @@
             "linear"
           ]
         },
-        "cover_entry_px": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 24
-        },
+        "cover_entry_px": { "type": "integer", "minimum": 0, "maximum": 24 },
         "cover_entry_end_percent": {
           "type": "integer",
           "minimum": 1,
@@ -356,6 +280,92 @@
             "minimum": 1,
             "maximum": 21
           }
+        }
+      }
+    },
+    "web": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "heading_min_rem",
+        "heading_max_rem",
+        "heading_fluid_vw",
+        "section_px",
+        "card_title_px",
+        "button_px",
+        "button_weight",
+        "button_y_px",
+        "button_x_px",
+        "tag_px",
+        "format_px",
+        "small_px",
+        "root_px"
+      ],
+      "properties": {
+        "heading_min_rem": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 96
+        },
+        "heading_max_rem": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 96
+        },
+        "heading_fluid_vw": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 96
+        },
+        "section_px": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 96
+        },
+        "card_title_px": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 96
+        },
+        "button_px": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 96
+        },
+        "button_weight": {
+          "type": "number",
+          "minimum": 400,
+          "maximum": 900
+        },
+        "button_y_px": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 96
+        },
+        "button_x_px": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 96
+        },
+        "tag_px": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 96
+        },
+        "format_px": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 96
+        },
+        "small_px": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 96
+        },
+        "root_px": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 96
         }
       }
     }

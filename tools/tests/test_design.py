@@ -47,8 +47,26 @@ class DesignTokenTests(unittest.TestCase):
         self.assertIn("div.callout.review", chrome)
         self.assertIn("#quarto-document-content pre.text", chrome)
         self.assertIn("background: var(--code)", chrome)
-        self.assertIn("tbody tr:nth-child(even)", chrome)
+        self.assertNotIn("nth-child(even)", chrome)
+        self.assertIn("background: var(--surface)", chrome)
         self.assertIn("--callout-review-accent", design.css_variables("light"))
+
+    def test_table_surfaces_and_geometry_are_shared_across_editions(self) -> None:
+        from importlib.resources import files
+        tokens = self.tokens
+        self.assertNotIn("table_stripe", tokens["color"])
+        html = design.book_layout_css()
+        self.assertNotIn("nth-child(even)", html)
+        self.assertIn("border-collapse: separate", html)
+        self.assertIn("border-radius: var(--card-radius)", html)
+        self.assertIn("background: var(--surface)", html)
+        typst = files("handbook_toolkit").joinpath("render_data/typst/handbook-typst.typ").read_text()
+        self.assertNotIn("calc.even", typst)
+        self.assertNotIn("hb-table-stripe", typst)
+        self.assertIn("else { hb-surface }", typst)
+        self.assertIn("stroke: (x: none, y: 0.5pt + hb-border)", typst)
+        self.assertIn("radius: hb-card-radius, clip: true, breakable: true", typst)
+        self.assertEqual(design.docx_values()["surface"], tokens["color"]["surface"]["print"])
 
     def test_contrast_pairs_cover_every_scheme(self) -> None:
         covered = {scheme for pair in self.tokens["contrast"] for scheme in pair["schemes"]}

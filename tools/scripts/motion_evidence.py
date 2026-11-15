@@ -112,18 +112,8 @@ def navigation(context, source: str, target: str, output: Path, compositor, redu
     page.evaluate('document.fonts.ready')
     geometry=page.evaluate('({scrollY, width:innerWidth, height:innerHeight})')
     final = page.screenshot()
-    if not reduced:
-        if not probe.get('hasTransition'):
-            page.close()
-            raise RuntimeError('Chromium skipped the native transition')
-        names = {item['name'] for item in probe.get('animations', [])}
-        if not {'handbook-title','handbook-enter'} <= names:
-            raise ValueError('native transition was not observed: ' + str(probe))
-        native = [item for item in probe['animations'] if item['name'] in {'handbook-title','handbook-enter','handbook-leave'}]
-        if any(item['duration'] + item['delay'] > 300 for item in native):
-            raise ValueError('transition exceeds token budget: ' + str(probe))
-    elif probe.get('hasTransition'):
-        raise ValueError('reduced-motion navigation created a view transition')
+    if probe.get('hasTransition'):
+        raise ValueError('navigation unexpectedly created a view transition')
     start = probe.get('start', clicked)
     chosen = [('before', initial)]
     for milliseconds in range(0, 401, 40):
@@ -157,14 +147,12 @@ def inspect(root: Path, output: Path, *, software_at_rest: bool = False) -> dict
             # Every generated page must retain exactly the same script inventory.
             for relative in sorted(path.relative_to(roots['after']) for path in roots['after'].rglob('*.html')):
                 from html_support import Document
-                from test_reading_site import validate_region_names
                 markup=(roots['after']/relative).read_text()
-                validate_region_names(markup, design.reading_css())
+                if 'view-transition' in design.reading_css():
+                    raise ValueError('page transition CSS remains')
                 document=Document(markup).root
-                if not any(node.attrs.get('rel')=='expect' and node.attrs.get('href')=='#quarto-html-after-body'
-                           and node.attrs.get('blocking')=='render'
-                           and node.attrs.get('media')=='(prefers-reduced-motion: no-preference)' for node in document.find('link')):
-                    raise ValueError(f'missing native capture readiness link: {name}/{relative}')
+                if document.find('link', rel='expect'):
+                    raise ValueError(f'unexpected render-blocking capture link: {name}/{relative}')
                 if sum(node.attrs.get('id')=='quarto-html-after-body' for node in document.walk())!=1:
                     raise ValueError(f'missing/ambiguous Quarto body completion marker: {name}/{relative}')
                 def inventory(path):

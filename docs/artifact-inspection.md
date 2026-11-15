@@ -78,7 +78,7 @@ Strict release builds require LibreOffice Writer and pdfinfo. Optional local bui
 unavailable/failed probes on stderr and in the manifest and keep linked titles only. All builds
 reject nonconvergent caches. Decimal section restarts are mapped to logical pages; unsupported
 formats cannot produce guessed numbers. The Owner checks populated indexes without a prompt,
-F9 regeneration of all three, and visible banding in desktop Word before tagging. These caches
+F9 regeneration of all three, and uniform surface table bodies with horizontal rules in desktop Word before tagging. These caches
 reflect LibreOffice pagination, and F9 replaces them with Word's pagination.
 
 ## Two gates: build invariants and the published-release gate

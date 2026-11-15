@@ -4,7 +4,7 @@ The visual language of the platform is data, not taste applied per pull request.
 document defines the colour roles, type roles, spacing and contrast floors that the portal, the book
 HTML, the Typst/PDF edition and the DOCX edition must share.
 
-**Status:** Phases 0 to 4 implemented, with the 0.9 design polish adding compact web chrome, cream Word pages, unified callout boxes and table stripes. The portal, the book
+**Status:** Phases 0 to 4 implemented, with the 0.9 design polish adding compact web chrome, cream Word pages, unified callout boxes; 0.11 aligns the preview scale and uses ruled surface tables. The portal, the book
 stylesheet, the Typst theme and the DOCX reference document take their values from this contract;
 the template exposes search, repository actions and a light/dark book theme. The design shipped in
 toolkit `0.9.1` and template `1.4.1`, and sample `v0.4.1` is published with it.
@@ -48,7 +48,6 @@ families: light web, dark web and print.
 | --- | --- | --- | --- | --- |
 | `canvas` | `#F6F1E7` | `#141A1B` | `#F6F1E7` | Page background |
 | `surface` | `#FFFDF8` | `#1C2526` | `#FFFDF8` | Cards and raised areas |
-| `table_stripe` | `#F2ECE0` | `#1F2A2B` | `#F2ECE0` | Alternate table rows |
 | `text` | `#1D2A2C` | `#EBE6DA` | `#1D2A2C` | Body copy |
 | `muted` | `#55666A` | `#A3B0B0` | `#55666A` | Secondary copy, captions and metadata |
 | `heading` | `#1D2A2C` | `#EBE6DA` | `#1D2A2C` | Headings and structural emphasis |
@@ -73,8 +72,7 @@ introducing a separate heading colour.
 
 The `review` role is opt-in: a callout carries the `review` class (for example
 `::: {.callout-note .review title="Review Checklist"}`) and all three renderers use the neutral
-accent and tint instead of the note blue. Tables inside a callout never receive the alternating
-stripe; their rows keep the callout tint.
+accent and tint instead of the note blue. Tables inside callouts use the same surface-filled body rows and border rules as other tables.
 
 Web, PDF and DOCX use the same callout accent/tint values. The PDF and DOCX page canvas is
 `#F6F1E7`, the same paper tone as the reading site.
@@ -147,8 +145,9 @@ The reference generator and Pandoc callout filter obtain human-readable style na
 design.docx_callout_styles(), so titles inherit their bold face and token color from one style
 definition. Callout boxes use a single non-splitting row within the text column.
 
-Table stripes use direct tcPr/shd cell shading from the canvas/stripe tokens. Header fill stays
-direct teal; plain TablePlain tables inside callouts have no body banding. The reference document
+Table bodies use direct tcPr/shd surface shading and a bottom cell border from the border token.
+Header fill stays direct teal. Word has no rounded table corners; web tables use the card radius.
+PDF tables use a rounded, clipped, breakable block; a 100-row probe retained all rows across eight pages. The reference document
 has no band1Horz/band2Horz conditional formatting. The toolkit writes no row-level shading. Print colors in toolkit Python
 come from design.docx_values(); the conformance gate scans every toolkit module.
 
@@ -212,8 +211,8 @@ button and table-header links use on_solid on accent_solid. Footer copy uses mut
 Callout title contrast is validated on its actual tint in every scheme. The light/print warning
 accent is now #CE3901 (4.57:1 on #FDF3F0); its previous accent measured 4.24:1 for small title text.
 
-Native view transitions, view-timeline reveals and a scroll-timeline progress bar are progressive
-CSS. All motion declarations are inside prefers-reduced-motion: no-preference; unsupported browsers
+Once-only reveals and a scroll-timeline progress bar are progressive CSS. Cross-document page
+transitions and their render-blocking metadata were removed in 0.11 after Owner preview feedback. All motion declarations are inside prefers-reduced-motion: no-preference; unsupported browsers
 keep static, visible content. Durations and easing come from the motion tokens. The packaged
 reading stylesheet provides visible keyboard focus; Quarto supplies the skip link and native tab
 order. No custom script, library or external font/image is added.
@@ -236,3 +235,11 @@ Fonts import so no browser request reaches a third-party font host.
 The current single-page portal remains deployed because the Quarto candidate is heavier. The
 [parity table](../sdd/changes/0033-portal-quarto/record.md) separates functional parity from page
 weight. Neither a working new renderer nor prettier screenshots bypass that gate.
+
+## Preview alignment (0.11.0)
+
+Bootstrap defaults consume the shared body size and line height, control/card radii, 14 px bold
+buttons with 10 × 16 px padding, 24 px section headings and a responsive 2–3 rem page title.
+The `web` token group supplies the shared scale. Portal tags are 11 px, format chips 12 px, card
+titles 20 px and summaries 14 px. Interactive chips remain at least 24 px tall; category tags
+are text labels. Guide links cover each complete card and preserve keyboard focus and hover lift.
