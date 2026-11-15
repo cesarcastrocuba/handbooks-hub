@@ -76,6 +76,7 @@ def validate_tokens(
     issues.extend(_reference_issues(tokens))
     issues.extend(_contrast_issues(tokens))
     issues.extend(_callout_contrast_issues(tokens))
+    issues.extend(_motion_highlight_issues(tokens))
     motion = tokens["motion"]
     if motion["enter_ms"] + motion["body_delay_ms"] > 300:
         issues.append(Issue("$.motion", "page transition exceeds the 300 ms budget"))
@@ -157,6 +158,23 @@ def _contrast_issues(tokens: dict[str, Any]) -> list[Issue]:
                         f"{pair['name']} is {ratio:.2f}:1, below the required {minimum}:1",
                     )
                 )
+    return issues
+
+
+def _motion_highlight_issues(tokens: dict[str, Any]) -> list[Issue]:
+    """The cover's brightest sweep frame must still meet the text contrast floor."""
+    issues = []
+    alpha = tokens["motion"]["highlight_percent"] / 100
+    for scheme in ("light", "dark"):
+        foreground = tokens["color"]["on_solid"][scheme]
+        background = tokens["color"]["accent_solid"][scheme]
+        # The CSS gradient uses an sRGB white/text-color overlay, not a linear-light mix.
+        mixed = "#" + "".join(f"{round(int(background[i:i + 2], 16) * (1 - alpha) + int(foreground[i:i + 2], 16) * alpha):02X}"
+                             for i in (1, 3, 5))
+        ratio = contrast_ratio(foreground, mixed)
+        if ratio < MINIMUM_TEXT_CONTRAST:
+            issues.append(Issue("$.motion.highlight_percent",
+                                f"{scheme} cover highlight is {ratio:.2f}:1, below {MINIMUM_TEXT_CONTRAST}:1"))
     return issues
 
 

@@ -22,7 +22,7 @@ def motion_violations(css):
                 nested = allowed or (rule.at_keyword == 'media' and condition == '(prefers-reduced-motion: no-preference)')
                 if rule.at_keyword in {'view-transition', 'keyframes'} and not allowed:
                     violations.append(rule.at_keyword)
-                if rule.content and rule.at_keyword in {'media', 'supports', 'keyframes'}:
+                if rule.content and rule.at_keyword in {'media', 'supports', 'keyframes', 'starting-style'}:
                     walk(tinycss2.parse_rule_list(rule.content), nested)
             elif rule.type == 'qualified-rule':
                 for declaration in tinycss2.parse_declaration_list(rule.content):
@@ -177,6 +177,9 @@ class ReadingSiteTests(unittest.TestCase):
         broken['motion']['body_delay_ms'] = 200
         self.assertTrue(any('300 ms' in issue.message for issue in design.validate_tokens(broken)))
         broken = copy.deepcopy(tokens)
+        broken['motion']['highlight_percent'] = 14
+        self.assertTrue(any('dark cover highlight' in issue.message for issue in design.validate_tokens(broken)))
+        broken = copy.deepcopy(tokens)
         del broken['motion']['lift_px']
         self.assertTrue(design.validate_tokens(broken))
         self.assertEqual(rule_declarations(css, ':root:active-view-transition #quarto-header')['view-transition-name'], 'handbook-topbar')
@@ -247,12 +250,12 @@ class NativeMotionBrowserTests(unittest.TestCase):
         css=(':root{'+design.css_variables('light')+'}body.quarto-dark{'+design.css_variables('dark')+'}'
              +design.reading_css())
         markup='''<style>body{color:var(--text);background:var(--canvas)}
-          .space{height:1200px}section{height:200px}.cover{height:70px}.book{padding:20px}
+          .space{height:1200px}section,.callout{height:200px}.cover{height:70px}.book{padding:20px;background:var(--surface)}
           </style><header id="quarto-header"></header><main id="quarto-document-content">
           <div class="handbook-cover" id="initial" style="height:20px;background:var(--accent-solid)"></div>
           <div class="cover-actions"><a id="start" class="btn" href="#target">Start reading</a></div>
           <details><summary>Details</summary><p>Expanded content</p></details>
-          <div class="space"></div><section class="level2" id="target">Reading section</section>
+          <div class="space"></div><div class="callout" id="target">Reading callout</div>
           <div id="book-grid"><article class="book"><div class="cover">Book cover</div><a href="#start">Read</a></article></div>
           <div class="space"></div></main><footer class="footer"></footer>'''
         with sync_playwright() as p:
@@ -276,7 +279,11 @@ class NativeMotionBrowserTests(unittest.TestCase):
                 page.locator('#start').hover();page.wait_for_timeout(motion['fast_ms']+50)
                 translate=page.locator('#start').evaluate('e=>getComputedStyle(e).translate')
                 if preference=='reduce':self.assertEqual(translate,'none')
-                else:self.assertIn('-'+str(motion['lift_px'])+'px',translate)
+                else:
+                    self.assertIn('-'+str(motion['lift_px'])+'px',translate)
+                    self.assertEqual(page.locator('#start').evaluate('e=>getComputedStyle(e,"::after").opacity'),'1')
+                page.mouse.move(0,0);page.wait_for_timeout(motion['fast_ms']+50)
+                self.assertEqual(page.locator('#start').evaluate('e=>getComputedStyle(e).position'),'static')
                 closed=page.locator('details').bounding_box()['height']
                 page.locator('summary').click();page.wait_for_timeout(motion['normal_ms']+50)
                 self.assertGreater(page.locator('details').bounding_box()['height'],closed)
@@ -286,7 +293,9 @@ class NativeMotionBrowserTests(unittest.TestCase):
                 page.evaluate('top=>scrollTo(0,top-innerHeight+8)',top);page.wait_for_timeout(30)
                 if preference=='no-preference':
                     self.assertTrue(page.locator('#target').evaluate('e=>e.getAnimations().some(a=>a.playState==="running")'))
+                    self.assertEqual(page.locator('#target').evaluate('e=>getComputedStyle(e).position'),'relative')
                 page.wait_for_timeout(motion['reveal_ms']+50)
+                self.assertEqual(page.locator('#target').evaluate('e=>getComputedStyle(e).position'),'static')
                 self.assertEqual(page.locator('#target').evaluate('e=>getComputedStyle(e).opacity'),'1')
                 page.evaluate('top=>scrollTo(0,top+300)',top);page.wait_for_timeout(30)
                 page.evaluate('top=>scrollTo(0,top-innerHeight+8)',top);page.wait_for_timeout(30)
@@ -299,15 +308,16 @@ class NativeMotionBrowserTests(unittest.TestCase):
                 progress=page.evaluate('getComputedStyle(document.body,"::before").transform')
                 if preference=='reduce':self.assertEqual(progress,'none')
                 else:self.assertAlmostEqual(float(progress.split('(')[1].split(',')[0]),1,places=5)
-                initial=page.evaluate('getComputedStyle(document.body).backgroundColor')
+                initial=page.evaluate('[document.body,document.querySelector(".book")].map(e=>getComputedStyle(e).backgroundColor)')
                 page.evaluate('document.body.classList.add("quarto-dark")')
                 page.wait_for_timeout(motion['fast_ms']//2)
-                during=page.evaluate('getComputedStyle(document.body).backgroundColor')
+                during=page.evaluate('[document.body,document.querySelector(".book")].map(e=>getComputedStyle(e).backgroundColor)')
                 page.wait_for_timeout(motion['fast_ms'])
-                final=page.evaluate('getComputedStyle(document.body).backgroundColor')
-                self.assertNotEqual(initial,final)
-                if preference=='reduce':self.assertEqual(during,final)
-                else:self.assertNotIn(during,(initial,final))
+                final=page.evaluate('[document.body,document.querySelector(".book")].map(e=>getComputedStyle(e).backgroundColor)')
+                for first,middle,last in zip(initial,during,final):
+                    self.assertNotEqual(first,last)
+                    if preference=='reduce':self.assertEqual(middle,last)
+                    else:self.assertNotIn(middle,(first,last))
                 context.close()
             browser.close()
 
@@ -352,3 +362,39 @@ class NativeMotionBrowserTests(unittest.TestCase):
                 browser.close()
         finally:
             server.shutdown();server.server_close();thread.join()
+
+    def test_settled_callout_keeps_the_static_pixels_including_outside_list_markers(self):
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            self.skipTest('Playwright is installed by the edition-preview job')
+        font=base64.b64encode(design.font_assets()['source-sans3/HandbookSans-Regular.woff2']).decode()
+        layout='''html,body{max-width:100%;overflow-x:hidden}
+          @font-face{font-family:Fixture;src:url(data:font/woff2;base64,FONT)}
+          body{font:15px/1.55 Fixture;background:var(--canvas);color:var(--text)}
+          .callout{margin:16px;padding:12px;border:1px solid var(--border);border-left:4px solid var(--accent);
+          border-radius:4px;background:var(--surface)}'''.replace('FONT',font)
+        markup='''<main id="quarto-document-content"><div class="callout"><p>When to use this chapter</p>
+          <ul><li>You are starting a new handbook from this template.</li>
+          <li>You need a minimal chapter that passes the profile and build checks.</li></ul></div></main>'''
+        with sync_playwright() as p:
+            browser=p.chromium.launch();compositor=browser.new_page()
+            for width in (1440,390):
+                for scheme in ('light','dark'):
+                    images=[]
+                    for motion in ('',design.reading_css()):
+                        page=browser.new_page(viewport={'width':width,'height':600})
+                        page.set_content('<style>:root{'+design.css_variables(scheme)+'}'+layout+motion+'</style>'+markup)
+                        page.evaluate('document.fonts.ready');page.wait_for_timeout(350)
+                        images.append(base64.b64encode(page.screenshot()).decode());page.close()
+                    changed=compositor.evaluate('''async ss=>{
+                      const images=await Promise.all(ss.map(async s=>createImageBitmap(await(await fetch('data:image/png;base64,'+s)).blob())));
+                      const canvas=document.createElement('canvas');canvas.width=images[0].width;canvas.height=images[0].height;
+                      const context=canvas.getContext('2d');context.drawImage(images[0],0,0);
+                      const a=context.getImageData(0,0,canvas.width,canvas.height).data;
+                      context.clearRect(0,0,canvas.width,canvas.height);context.drawImage(images[1],0,0);
+                      const b=context.getImageData(0,0,canvas.width,canvas.height).data;
+                      let count=0;for(let i=0;i<a.length;i++)if(a[i]!==b[i])count++;return count;
+                    }''',images)
+                    with self.subTest(width=width,scheme=scheme):self.assertEqual(changed,0)
+            browser.close()

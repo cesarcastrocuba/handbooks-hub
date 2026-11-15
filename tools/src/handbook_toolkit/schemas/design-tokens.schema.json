@@ -257,7 +257,7 @@
         "highlight_percent": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 150
+          "maximum": 100
         },
         "shadow": {
           "type": "object",

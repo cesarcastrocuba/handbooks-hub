@@ -79,25 +79,29 @@ footer.footer .nav-footer a { color: var(--accent); }
                 border-color {{motion-fast-ms}} {{motion-easing}}, outline-offset {{motion-fast-ms}} {{motion-easing}},
                 box-shadow {{motion-fast-ms}} {{motion-easing}}, translate {{motion-fast-ms}} {{motion-easing}};
   }
-  main a:not(.btn):not(.anchorjs-link) {
+  main a:not(.btn):not(.fmt):not(.anchorjs-link) {
     background-image: linear-gradient(currentColor, currentColor);
     background-position: left bottom;
     background-repeat: no-repeat;
     background-size: 0 {{motion-underline-px}};
     transition: color {{motion-fast-ms}} {{motion-easing}}, background-size {{motion-fast-ms}} {{motion-easing}};
   }
-  main a:not(.btn):not(.anchorjs-link):is(:hover, :focus-visible) { background-size: 100% {{motion-underline-px}}; }
+  main a:not(.btn):not(.fmt):not(.anchorjs-link):is(:hover, :focus-visible) { background-size: 100% {{motion-underline-px}}; }
   main :is(.btn, .fmt, button):is(:hover, :focus-visible) { translate: 0 calc(-1 * {{motion-lift-px}}); }
-  main a.btn { position: relative; }
+  main a.btn:is(:hover, :focus-visible) { position: relative; }
   main a.btn::after {
     content: "→" / "";
     position: absolute;
     inset-inline-start: calc(100% + {{motion-arrow-gap-px}});
+    display: none;
     opacity: 0;
     translate: calc(-1 * {{motion-arrow-px}}) 0;
     transition: opacity {{motion-fast-ms}} {{motion-easing}}, translate {{motion-fast-ms}} {{motion-easing}};
   }
-  main a.btn:is(:hover, :focus-visible)::after { opacity: 1; translate: 0 0; }
+  main a.btn:is(:hover, :focus-visible)::after { display: block; opacity: 1; translate: 0 0; }
+  @starting-style {
+    main a.btn:is(:hover, :focus-visible)::after { opacity: 0; translate: calc(-1 * {{motion-arrow-px}}) 0; }
+  }
   .sidebar-item-container a, #TOC a {
     transition: color {{motion-fast-ms}} {{motion-easing}}, background-color {{motion-fast-ms}} {{motion-easing}},
                 border-color {{motion-fast-ms}} {{motion-easing}};
@@ -116,6 +120,12 @@ footer.footer .nav-footer a { color: var(--accent); }
 
   /* View progress triggers play a clock animation once; scrolling back cannot rewind it. */
   @supports (animation-timeline: view()) and (animation-trigger: --handbook-reveal play-once) {
+    @property --handbook-reveal-alpha { syntax: "<number>"; inherits: false; initial-value: 1; }
+    @property --handbook-reveal-offset { syntax: "<number>"; inherits: false; initial-value: 0; }
+    @keyframes handbook-object-reveal {
+      from { position: relative; --handbook-reveal-alpha: 0; --handbook-reveal-offset: 1; }
+      to { position: relative; --handbook-reveal-alpha: 1; --handbook-reveal-offset: 0; }
+    }
     @keyframes handbook-reveal {
       from { opacity: 0; transform: translateY({{motion-entry-px}}); }
       to { opacity: 1; transform: translateY(0); }
@@ -126,7 +136,17 @@ footer.footer .nav-footer a { color: var(--accent); }
       animation: handbook-reveal {{motion-reveal-ms}} {{motion-enter-easing}};
       animation-trigger: --handbook-reveal play-once;
     }
+    /* Position only during entry; positioned mobile callouts lost outside list markers at rest. */
+    main .callout, main figure, main table:has(caption), #book-grid > .book {
+      opacity: var(--handbook-reveal-alpha);
+      top: calc({{motion-entry-px}} * var(--handbook-reveal-offset));
+    }
+    main .callout, main figure, main table:has(caption) { animation-name: handbook-object-reveal; }
     main section.level2, .handbook-cover, .card { animation-fill-mode: forwards; }
+    #book-grid > .book { animation: handbook-object-reveal {{motion-reveal-ms}} {{motion-enter-easing}} backwards; }
+    @supports (animation-delay: calc(sibling-index() * {{motion-stagger-ms}})) {
+      #book-grid > .book { animation-delay: calc(min(sibling-index() - 1, {{motion-stagger-limit}}) * {{motion-stagger-ms}}); }
+    }
   }
   @supports (animation-timeline: scroll()) {
     @keyframes handbook-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
@@ -146,16 +166,15 @@ footer.footer .nav-footer a { color: var(--accent); }
   }
 
   #book-grid > .book {
-    animation: handbook-enter {{motion-reveal-ms}} {{motion-enter-easing}} backwards;
-    transition: translate {{motion-fast-ms}} {{motion-easing}}, box-shadow {{motion-fast-ms}} {{motion-easing}};
-  }
-  @supports (animation-delay: calc(sibling-index() * {{motion-stagger-ms}})) {
-    #book-grid > .book { animation-delay: calc(min(sibling-index() - 1, {{motion-stagger-limit}}) * {{motion-stagger-ms}}); }
+    transition: translate {{motion-fast-ms}} {{motion-easing}}, box-shadow {{motion-fast-ms}} {{motion-easing}},
+                color {{motion-fast-ms}} {{motion-easing}}, background-color {{motion-fast-ms}} {{motion-easing}},
+                border-color {{motion-fast-ms}} {{motion-easing}};
   }
   #book-grid > .book:is(:hover, :has(:focus-visible)) { translate: 0 calc(-1 * {{motion-lift-px}}); box-shadow: {{motion-shadow}}; }
-  .book .cover { position: relative; overflow: clip; }
+  .book:is(:hover, :has(:focus-visible)) .cover { position: relative; overflow: clip; }
   .book .cover::after {
     content: "";
+    display: none;
     position: absolute;
     inset: 0;
     border-radius: inherit;
@@ -169,6 +188,7 @@ footer.footer .nav-footer a { color: var(--accent); }
     to { opacity: 0; translate: {{motion-sweep-percent}}% 0; }
   }
   .book:is(:hover, :has(:focus-visible)) .cover::after {
+    display: block;
     animation: handbook-sweep {{motion-sweep-ms}} {{motion-easing}};
   }
   @keyframes handbook-count { from { color: var(--accent); } }
