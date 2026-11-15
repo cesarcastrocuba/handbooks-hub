@@ -1,5 +1,6 @@
 """Portal contracts checked through parsed structure and real, deterministic Quarto output."""
 from pathlib import Path
+import posixpath
 import shutil
 import tempfile
 import unittest
@@ -8,6 +9,7 @@ from unittest.mock import patch
 import support
 from html_support import Document
 from handbook_toolkit import design
+from handbook_toolkit.artifacts import hidden_site_paths
 from handbook_toolkit.catalog import ASSET_FILES
 from handbook_toolkit.portal import CATEGORIES, FORMATS, build_portal
 from handbook_toolkit.portal_catalog import read_catalog
@@ -167,7 +169,7 @@ class PortalTests(unittest.TestCase):
         variables=dict(line[1:].rstrip(';').split(': ',1) for line in design.book_scss('light').splitlines() if line.startswith('$'))
         self.assertEqual(variables['web-font-path'],'false')
         self.assertTrue(config['website']['open-graph'])
-        self.assertEqual((site/'.handbook-render/html/handbook.css').read_text(),design.book_layout_css())
+        self.assertEqual((site/'handbook-render/html/handbook.css').read_text(),design.book_layout_css())
         self.assertFalse(config['execute']['enabled'])
 
 
@@ -193,6 +195,23 @@ class QuartoPortalTests(unittest.TestCase):
         self.assertTrue(page.find('a',id='quarto-skip-link'))
         self.assertTrue(page.find('link',rel='canonical'))
         self.assertEqual((self.site/'llms.txt').read_bytes(),self._legacy_llms())
+
+    def test_every_local_asset_of_every_page_is_publishable(self):
+        files={path.relative_to(self.site).as_posix() for path in self.site.rglob('*') if path.is_file()}
+        self.assertEqual(hidden_site_paths(files),[])
+        pages=sorted(name for name in files if name.endswith('.html'))
+        self.assertIn('design.html',pages)
+        for name in pages:
+            page=Document((self.site/name).read_text()).root
+            targets=[node.attrs.get('href') for node in page.find('link')]
+            targets+=[node.attrs.get('src') for tag in ('script','img') for node in page.find(tag)]
+            local=[posixpath.normpath(posixpath.join(posixpath.dirname(name),target.split('#')[0].split('?')[0]))
+                   for target in targets
+                   if target and '://' not in target and not target.startswith(('data:','#','mailto:'))]
+            self.assertTrue(any(target.endswith('portal.css') for target in local),name)
+            for target in local:
+                with self.subTest(page=name,target=target):
+                    self.assertIn(target,files)
 
     def _legacy_llms(self):
         return (build_portal(self.catalog,self.root/'legacy').parent/'llms.txt').read_bytes()

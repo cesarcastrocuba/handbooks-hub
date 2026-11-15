@@ -237,3 +237,13 @@ under `front-matter/` and a figure in `chapters/`). Quarto stops with "file not 
 such as `manuscript/chapters/manuscript/front-matter/../images/figure.svg`. Do not pin `0.10.0`;
 pin `0.10.1`. No manuscript or configuration edit is required: image paths stay relative to the
 file that uses them.
+
+## Toolkit 0.10.2 to 0.10.3
+
+Until `0.10.2` the reading site loaded its stylesheets, fonts and favicon from `.handbook-render/`,
+a hidden directory. A static host that does not publish hidden paths serves the pages without
+styles; `actions/upload-pages-artifact` v4 and later drop hidden files, and the book template's
+release workflow uses v5. A book that still deploys with v3 was not affected. From `0.10.3` the
+directory is `handbook-render/` and `build-book` fails if the site archive holds any hidden path.
+No manuscript or configuration edit is required. Do not pin `0.10.2` or older in a book that
+deploys with a current Pages action.

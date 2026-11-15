@@ -191,7 +191,7 @@ status: draft
 profile:
   id: standard
   version: "1.0.0"
-toolkit: "0.10.2"
+toolkit: "0.10.3"
 license:
   content: CC-BY-SA-4.0
   code: MIT
@@ -320,17 +320,17 @@ class RenderConfigTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             workspace = Path(temp)
             resources = {
-                "filters/table-layout.lua": workspace / ".handbook-render/filters/table-layout.lua",
-                "filters/task-checkbox.lua": workspace / ".handbook-render/filters/task-checkbox.lua",
-                "filters/docx-callouts.lua": workspace / ".handbook-render/filters/docx-callouts.lua",
-                "typst/callout-breakable.typ": workspace / ".handbook-render/typst/callout-breakable.typ",
-                "typst/handbook-typst.typ": workspace / ".handbook-render/typst/handbook-typst.typ",
-                "typst/typst-show.typ": workspace / ".handbook-render/typst/typst-show.typ",
-                "docx/reference.docx": workspace / ".handbook-render/docx/reference.docx",
-                "html/handbook.css": workspace / ".handbook-render/html/handbook.css",
-                "fonts/source-sans3/HandbookSans-Regular.ttf": workspace / ".handbook-render/fonts/source-sans3/HandbookSans-Regular.ttf",
-                "fonts/source-serif4/HandbookSerif-Regular.ttf": workspace / ".handbook-render/fonts/source-serif4/HandbookSerif-Regular.ttf",
-                "fonts/jetbrains-mono/JetBrainsMono-Regular.ttf": workspace / ".handbook-render/fonts/jetbrains-mono/JetBrainsMono-Regular.ttf",
+                "filters/table-layout.lua": workspace / "handbook-render/filters/table-layout.lua",
+                "filters/task-checkbox.lua": workspace / "handbook-render/filters/task-checkbox.lua",
+                "filters/docx-callouts.lua": workspace / "handbook-render/filters/docx-callouts.lua",
+                "typst/callout-breakable.typ": workspace / "handbook-render/typst/callout-breakable.typ",
+                "typst/handbook-typst.typ": workspace / "handbook-render/typst/handbook-typst.typ",
+                "typst/typst-show.typ": workspace / "handbook-render/typst/typst-show.typ",
+                "docx/reference.docx": workspace / "handbook-render/docx/reference.docx",
+                "html/handbook.css": workspace / "handbook-render/html/handbook.css",
+                "fonts/source-sans3/HandbookSans-Regular.ttf": workspace / "handbook-render/fonts/source-sans3/HandbookSans-Regular.ttf",
+                "fonts/source-serif4/HandbookSerif-Regular.ttf": workspace / "handbook-render/fonts/source-serif4/HandbookSerif-Regular.ttf",
+                "fonts/jetbrains-mono/JetBrainsMono-Regular.ttf": workspace / "handbook-render/fonts/jetbrains-mono/JetBrainsMono-Regular.ttf",
             }
             for path in resources.values():
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -345,9 +345,9 @@ class RenderConfigTests(unittest.TestCase):
             self.assertEqual(
                 [entry["path"] for entry in config["filters"]],
                 [
-                    ".handbook-render/filters/table-layout.lua",
-                    ".handbook-render/filters/task-checkbox.lua",
-                    ".handbook-render/filters/docx-callouts.lua",
+                    "handbook-render/filters/table-layout.lua",
+                    "handbook-render/filters/task-checkbox.lua",
+                    "handbook-render/filters/docx-callouts.lua",
                 ],
             )
             self.assertEqual(
@@ -361,28 +361,28 @@ class RenderConfigTests(unittest.TestCase):
             self.assertEqual(
                 config["format"]["typst"]["font-paths"],
                 [
-                    ".handbook-render/fonts/source-sans3",
-                    ".handbook-render/fonts/source-serif4",
-                    ".handbook-render/fonts/jetbrains-mono",
+                    "handbook-render/fonts/source-sans3",
+                    "handbook-render/fonts/source-serif4",
+                    "handbook-render/fonts/jetbrains-mono",
                 ],
             )
             self.assertEqual(
                 config["format"]["typst"]["include-before-body"],
-                ".handbook-render/typst/handbook-typst.typ",
+                "handbook-render/typst/handbook-typst.typ",
             )
             self.assertEqual(
                 config["format"]["typst"]["template-partials"],
-                [".handbook-render/typst/typst-show.typ"],
+                ["handbook-render/typst/typst-show.typ"],
             )
             self.assertEqual(
                 config["format"]["docx"]["reference-doc"],
-                ".handbook-render/docx/reference.docx",
+                "handbook-render/docx/reference.docx",
             )
             self.assertEqual(
                 config["format"]["html"]["css"],
                 [
-                    ".handbook-render/html/design-tokens.css",
-                    ".handbook-render/html/handbook.css",
+                    "handbook-render/html/design-tokens.css",
+                    "handbook-render/html/handbook.css",
                 ],
             )
 
@@ -821,7 +821,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.10.2"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.10.3"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             commit = commit_all(repo, "mismatched toolkit pin")
@@ -883,7 +883,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.10.2"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.10.3"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             commit = commit_all(repo, "preview toolkit pin")
@@ -993,7 +993,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.10.2"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.10.3"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             _git(repo, "update-index", "--assume-unchanged", "book.yaml")
