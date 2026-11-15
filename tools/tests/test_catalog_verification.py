@@ -118,11 +118,19 @@ class CatalogVerificationTests(unittest.TestCase):
 
         with patch("handbook_toolkit.catalog_verification._download", side_effect=download), patch(
             "handbook_toolkit.catalog_verification._json", side_effect=fetch_json
-        ), patch("handbook_toolkit.catalog_verification.inspect_payload", return_value=[]):
-            return verify_catalog_releases(self.catalog)
+        ), patch("handbook_toolkit.catalog_verification.inspect_payload", return_value=[]) as inspect:
+            result = verify_catalog_releases(self.catalog)
+        self.inspections = inspect.call_args_list
+        return result
 
     def test_published_release_payload_hashes_and_all_live_site_files_match(self):
         self.assertTrue(self.run_gate().ok)
+
+    def test_a_published_release_is_not_held_to_rules_newer_than_its_build(self):
+        self.assertTrue(self.run_gate().ok)
+        self.assertTrue(self.inspections)
+        for call in self.inspections:
+            self.assertIs(call.kwargs["build_invariants"], False)
 
     def test_legacy_one_point_zero_release_with_six_assets_passes(self):
         self.rewrite_as_legacy()

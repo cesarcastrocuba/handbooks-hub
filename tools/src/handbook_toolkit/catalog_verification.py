@@ -204,7 +204,9 @@ def _verify_book(book: dict) -> None:
         if not integrity.ok:
             raise ValueError("remote integrity failure: " + "; ".join(map(str, integrity.issues)))
         for entry in entries:
-            issues = inspect_payload(root / entry["path"], entry["role"], source_commit=commit)
+            issues = inspect_payload(
+                root / entry["path"], entry["role"], source_commit=commit, build_invariants=False
+            )
             if issues:
                 raise ValueError("remote format failure: " + "; ".join(map(str, issues)))
         html = next(entry for entry in entries if entry["role"] == "html")
