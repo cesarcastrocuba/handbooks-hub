@@ -113,7 +113,7 @@ footer.footer .nav-footer a { color: var(--accent); }
       block-size: 0;
       overflow: clip;
       transition: block-size {{motion-normal-ms}} {{motion-easing}},
-                  content-visibility {{motion-normal-ms}} allow-discrete;
+                  content-visibility {{motion-normal-ms}} {{motion-easing}} allow-discrete;
     }
     details[open]::details-content { block-size: auto; }
   }
@@ -159,7 +159,7 @@ footer.footer .nav-footer a { color: var(--accent); }
       z-index: 2000;
       transform: scaleX(0);
       transform-origin: left;
-      animation: handbook-progress linear both;
+      animation: handbook-progress {{motion-progress-easing}} both;
       animation-timeline: scroll(root block);
       pointer-events: none;
     }

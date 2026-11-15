@@ -139,7 +139,8 @@
         "underline_px",
         "sweep_percent",
         "highlight_percent",
-        "shadow"
+        "shadow",
+        "progress_easing"
       ],
       "properties": {
         "fast_ms": {
@@ -301,6 +302,12 @@
               "maximum": 1
             }
           }
+        },
+        "progress_easing": {
+          "type": "string",
+          "enum": [
+            "linear"
+          ]
         }
       }
     },
