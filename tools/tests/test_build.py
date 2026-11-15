@@ -532,6 +532,22 @@ class BuildTests(unittest.TestCase):
                 self.assertEqual(archive.comment.decode("ascii"), commit)
             with zipfile.ZipFile(output / "book-html.zip") as archive:
                 site = archive.read("manuscript/chapters/pilot.html").decode("utf-8")
+                from handbook_toolkit import design
+                from test_reading_site import validate_region_names
+                css = next(archive.read(name).decode() for name in archive.namelist() if name.endswith("/reading.css"))
+                self.assertEqual(css, design.reading_css())
+                for name in archive.namelist():
+                    if not name.endswith(".html"):
+                        continue
+                    markup = archive.read(name).decode()
+                    validate_region_names(markup, css)
+                    tree = Document(markup).root
+                    self.assertEqual(len(tree.find("script", id="quarto-html-after-body")), 1)
+                    ready = tree.find("link", rel="expect")
+                    self.assertEqual(len(ready), 1)
+                    self.assertEqual(ready[0].attrs.get("href"), "#quarto-html-after-body")
+                    self.assertEqual(ready[0].attrs.get("blocking"), "render")
+                    self.assertEqual(ready[0].attrs.get("media"), "(prefers-reduced-motion: no-preference)")
             with zipfile.ZipFile(output / "book.docx") as archive:
                 document_xml = archive.read("word/document.xml").decode("utf-8")
                 settings_xml = archive.read("word/settings.xml").decode("utf-8")

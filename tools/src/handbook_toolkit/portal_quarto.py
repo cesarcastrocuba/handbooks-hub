@@ -45,7 +45,7 @@ def stage_theme(workspace: Path) -> dict[str, Any]:
         theme[scheme]=['cosmo',name]
     return {'theme':theme, 'css':[str(path.relative_to(workspace)) for path in sorted(folder.glob('*.css'))],
             'toc':True, 'respect-user-color-scheme':True,'canonical-url':True,
-            'include-in-header':[{'text':resource('metadata.html').replace('{{light-canvas}}',design.load_tokens()['color']['canvas']['light']).replace('{{dark-canvas}}',design.load_tokens()['color']['canvas']['dark'])}],
+            'include-in-header':[{'text':resource('metadata.html').replace('{{light-canvas}}',design.load_tokens()['color']['canvas']['light']).replace('{{dark-canvas}}',design.load_tokens()['color']['canvas']['dark'])}, {'text':design.reading_header()}],
             'include-after-body':[{'text':resource('filter.html').replace('{{script}}',resource('filter.js'))}]}
 
 

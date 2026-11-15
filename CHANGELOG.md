@@ -13,6 +13,12 @@ hidden directory that static hosts do not publish (change `0042`).
 
 ## [0.10.4] - 2026-11-15
 
+### Changed
+
+- The reading site and Quarto portal share token-driven layered page transitions, once-only
+  reveals, reading progress and native hover/focus, details and theme micro-interactions, guarded
+  by the reduced-motion preference and feature support.
+
 ### Fixed
 
 - The online release gate (`catalog_verification`) applied the build invariants of the current

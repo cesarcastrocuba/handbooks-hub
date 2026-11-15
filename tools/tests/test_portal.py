@@ -38,6 +38,16 @@ class PortalTests(unittest.TestCase):
         support.write_json(self.catalog,document)
         return Document(build_portal(self.catalog,self.output).read_text()).root
 
+    def test_quarto_portal_loads_the_shared_guarded_motion_layer(self):
+        from test_reading_site import motion_violations
+        stage_site(self.root / 'staged', [])
+        reading = next((self.root / 'staged').rglob('reading.css')).read_text()
+        self.assertEqual(reading, design.reading_css())
+        self.assertEqual(motion_violations(reading), [])
+        import yaml
+        config=yaml.safe_load((self.root / 'staged/_quarto.yml').read_text())
+        self.assertIn({'text':design.reading_header()},config['format']['html']['include-in-header'])
+
     def test_empty_catalog_has_no_book_or_release_link(self):
         page=self.build({'schema_version':'1.0','books':[]})
         self.assertIn('The first handbook is being prepared',page.text())
@@ -194,8 +204,19 @@ class QuartoPortalTests(unittest.TestCase):
         self.assertEqual(hidden_site_paths(files),[])
         pages=sorted(name for name in files if name.endswith('.html'))
         self.assertIn('design.html',pages)
+        from test_reading_site import validate_region_names
+        css=next(self.site.rglob('reading.css')).read_text()
+        self.assertEqual(css,design.reading_css())
         for name in pages:
-            page=Document((self.site/name).read_text()).root
+            markup=(self.site/name).read_text()
+            validate_region_names(markup,css)
+            page=Document(markup).root
+            self.assertEqual(len(page.find('script',id='quarto-html-after-body')),1)
+            ready=page.find('link',rel='expect')
+            self.assertEqual(len(ready),1)
+            self.assertEqual(ready[0].attrs.get('href'),'#quarto-html-after-body')
+            self.assertEqual(ready[0].attrs.get('blocking'),'render')
+            self.assertEqual(ready[0].attrs.get('media'),'(prefers-reduced-motion: no-preference)')
             targets=[node.attrs.get('href') for node in page.find('link')]
             targets+=[node.attrs.get('src') for tag in ('script','img') for node in page.find(tag)]
             local=[posixpath.normpath(posixpath.join(posixpath.dirname(name),target.split('#')[0].split('?')[0]))
