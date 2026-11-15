@@ -5,6 +5,12 @@ semantic versioning once the toolkit is published.
 
 ## [0.10.3] - 2026-11-15
 
+### Changed
+
+- The reading site and Quarto portal share token-driven layered page transitions, once-only
+  reveals, reading progress and native hover/focus, details and theme micro-interactions, guarded
+  by the reduced-motion preference and feature support.
+
 ### Fixed
 
 - The reading site and the Quarto portal loaded their stylesheets, fonts and favicon from a hidden
