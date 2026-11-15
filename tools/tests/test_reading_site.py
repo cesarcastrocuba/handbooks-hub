@@ -251,13 +251,13 @@ class NativeMotionBrowserTests(unittest.TestCase):
              +design.reading_css())
         markup='''<style>body{color:var(--text);background:var(--canvas)}
           .space{height:1200px}section,.callout{height:200px}.cover{height:70px}.book{padding:20px;background:var(--surface)}
-          </style><header id="quarto-header"></header><main id="quarto-document-content">
+          </style><header id="quarto-header"><nav class="navbar" style="height:20px;background:var(--canvas)"></nav></header><main id="quarto-document-content"><h1 style="color:var(--text)">Theme heading</h1>
           <div class="handbook-cover" id="initial" style="height:20px;background:var(--accent-solid)"></div>
           <div class="cover-actions"><a id="start" class="btn" href="#target">Start reading</a></div>
           <details><summary>Details</summary><p>Expanded content</p></details>
           <div class="space"></div><div class="callout" id="target">Reading callout</div>
           <div id="book-grid"><article class="book"><div class="cover">Book cover</div><a href="#start">Read</a></article></div>
-          <div class="space"></div></main><footer class="footer"></footer>'''
+          <div class="space"></div></main><footer class="footer"><div class="nav-footer" style="height:20px;background:var(--canvas)"></div></footer>'''
         with sync_playwright() as p:
             browser=p.chromium.launch()
             for preference in ('no-preference','reduce'):
@@ -285,10 +285,21 @@ class NativeMotionBrowserTests(unittest.TestCase):
                 page.mouse.move(0,0);page.wait_for_timeout(motion['fast_ms']+50)
                 self.assertEqual(page.locator('#start').evaluate('e=>getComputedStyle(e).position'),'static')
                 closed=page.locator('details').bounding_box()['height']
-                page.locator('summary').click();page.wait_for_timeout(motion['normal_ms']+50)
-                self.assertGreater(page.locator('details').bounding_box()['height'],closed)
-                page.locator('summary').click();page.wait_for_timeout(motion['normal_ms']+50)
+                page.locator('summary').click();page.wait_for_timeout(motion['normal_ms']//3)
+                opening=page.locator('details').bounding_box()['height']
+                page.wait_for_timeout(motion['normal_ms'])
+                opened=page.locator('details').bounding_box()['height']
+                self.assertGreater(opened,closed)
+                page.locator('summary').click();page.wait_for_timeout(motion['normal_ms']//3)
+                closing=page.locator('details').bounding_box()['height']
+                page.wait_for_timeout(motion['normal_ms'])
                 self.assertAlmostEqual(page.locator('details').bounding_box()['height'],closed,delta=1)
+                if preference=='no-preference':
+                    self.assertTrue(closed<opening<opened)
+                    self.assertTrue(closed<closing<opened)
+                else:
+                    self.assertAlmostEqual(opening,opened,delta=1)
+                    self.assertAlmostEqual(closing,closed,delta=1)
                 top=page.locator('#target').evaluate('e=>e.getBoundingClientRect().top+scrollY')
                 page.evaluate('top=>scrollTo(0,top-innerHeight+8)',top);page.wait_for_timeout(30)
                 if preference=='no-preference':
@@ -301,19 +312,23 @@ class NativeMotionBrowserTests(unittest.TestCase):
                 page.evaluate('top=>scrollTo(0,top-innerHeight+8)',top);page.wait_for_timeout(30)
                 self.assertFalse(page.locator('#target').evaluate('e=>e.getAnimations().some(a=>a.playState==="running")'))
                 self.assertEqual(page.locator('#target').evaluate('e=>getComputedStyle(e).opacity'),'1')
-                page.locator('.book').hover();page.wait_for_timeout(motion['fast_ms']+50)
-                shadow=page.locator('.book').evaluate('e=>getComputedStyle(e).boxShadow')
+                page.locator('#book-grid').evaluate('e=>{for(let i=0;i<2;i++)e.append(e.firstElementChild.cloneNode(true))}')
+                delays=page.locator('#book-grid>.book').evaluate_all('nodes=>nodes.map(e=>Math.round(parseFloat(getComputedStyle(e).animationDelay)*1000))')
+                expected=[min(i,motion['stagger_limit'])*motion['stagger_ms'] for i in range(3)]
+                self.assertEqual(delays,expected if preference=='no-preference' else [0,0,0])
+                page.locator('.book').first.hover();page.wait_for_timeout(motion['fast_ms']+50)
+                shadow=page.locator('.book').first.evaluate('e=>getComputedStyle(e).boxShadow')
                 self.assertEqual(shadow=='none',preference=='reduce')
                 page.mouse.move(0,0);page.evaluate('scrollTo(0,document.documentElement.scrollHeight)');page.wait_for_timeout(80)
                 progress=page.evaluate('getComputedStyle(document.body,"::before").transform')
                 if preference=='reduce':self.assertEqual(progress,'none')
                 else:self.assertAlmostEqual(float(progress.split('(')[1].split(',')[0]),1,places=5)
-                initial=page.evaluate('[document.body,document.querySelector(".book")].map(e=>getComputedStyle(e).backgroundColor)')
+                initial=page.evaluate('[document.body,document.querySelector(".book"),document.querySelector(".navbar"),document.querySelector(".nav-footer")].map(e=>getComputedStyle(e).backgroundColor).concat(getComputedStyle(document.querySelector("h1")).color)')
                 page.evaluate('document.body.classList.add("quarto-dark")')
                 page.wait_for_timeout(motion['fast_ms']//2)
-                during=page.evaluate('[document.body,document.querySelector(".book")].map(e=>getComputedStyle(e).backgroundColor)')
+                during=page.evaluate('[document.body,document.querySelector(".book"),document.querySelector(".navbar"),document.querySelector(".nav-footer")].map(e=>getComputedStyle(e).backgroundColor).concat(getComputedStyle(document.querySelector("h1")).color)')
                 page.wait_for_timeout(motion['fast_ms'])
-                final=page.evaluate('[document.body,document.querySelector(".book")].map(e=>getComputedStyle(e).backgroundColor)')
+                final=page.evaluate('[document.body,document.querySelector(".book"),document.querySelector(".navbar"),document.querySelector(".nav-footer")].map(e=>getComputedStyle(e).backgroundColor).concat(getComputedStyle(document.querySelector("h1")).color)')
                 for first,middle,last in zip(initial,during,final):
                     self.assertNotEqual(first,last)
                     if preference=='reduce':self.assertEqual(middle,last)

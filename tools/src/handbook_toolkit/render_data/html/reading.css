@@ -70,7 +70,9 @@ footer.footer .nav-footer a { color: var(--accent); }
     }
   }
 
-  body, #quarto-header, .sidebar, footer.footer, .callout, .book, .cover, code, pre, td, th {
+  body, #quarto-header, .navbar, .sidebar, #title-block-header, footer.footer, .nav-footer,
+  .callout, .callout-title, .callout-title-container, .book, .book p, .cover, .tag, #results,
+  h1, h2, h3, h4, h5, h6, figcaption, caption, code, pre, .sourceCode, .sourceCode span, tr, td, th {
     transition: color {{motion-fast-ms}} {{motion-easing}}, background-color {{motion-fast-ms}} {{motion-easing}},
                 border-color {{motion-fast-ms}} {{motion-easing}};
   }
