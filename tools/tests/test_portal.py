@@ -204,8 +204,18 @@ class QuartoPortalTests(unittest.TestCase):
         self.assertEqual(hidden_site_paths(files),[])
         pages=sorted(name for name in files if name.endswith('.html'))
         self.assertIn('design.html',pages)
+        from test_reading_site import validate_region_names
+        css=next(self.site.rglob('reading.css')).read_text()
+        self.assertEqual(css,design.reading_css())
         for name in pages:
-            page=Document((self.site/name).read_text()).root
+            markup=(self.site/name).read_text()
+            validate_region_names(markup,css)
+            page=Document(markup).root
+            self.assertEqual(len(page.find('script',id='quarto-html-after-body')),1)
+            ready=page.find('link',rel='expect')
+            self.assertEqual(len(ready),1)
+            self.assertEqual(ready[0].attrs.get('href'),'#quarto-html-after-body')
+            self.assertEqual(ready[0].attrs.get('blocking'),'render')
             targets=[node.attrs.get('href') for node in page.find('link')]
             targets+=[node.attrs.get('src') for tag in ('script','img') for node in page.find(tag)]
             local=[posixpath.normpath(posixpath.join(posixpath.dirname(name),target.split('#')[0].split('?')[0]))
