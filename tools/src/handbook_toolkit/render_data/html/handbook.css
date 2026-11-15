@@ -23,10 +23,13 @@ code, pre, kbd, samp {
 
 table.table, main table {
   width: 100%;
-  border-collapse: collapse;
-  border: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: {{book-metric-5}} solid var(--border);
+  border-radius: var(--card-radius);
+  overflow: hidden;
   margin: {{book-metric-0}} auto {{book-metric-1}} auto;
-  font-size: {{book-metric-2}};
+  font-size: var(--web-button-px);
 }
 
 table.caption-top, table.table, main table {
@@ -54,23 +57,23 @@ main p:has(> a[id^="tbl-"]) {
 table.table thead th, main table thead th {
   background-color: var(--accent-solid);
   color: var(--on-solid);
-  font-weight: 600;
+  font-weight: 700;
   border: 0;
   border-bottom: {{book-metric-5}} solid var(--accent-solid);
   padding: {{book-metric-6}} {{book-metric-7}};
   text-align: left;
 }
 
-table.table tbody td, main table tbody td {
+table.table tbody :is(td, th), main table tbody :is(td, th) {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: none;
   border: 0;
   border-bottom: {{book-metric-5}} solid var(--border);
   padding: {{book-metric-8}} {{book-metric-7}};
   vertical-align: top;
 }
 
-table.table tbody tr:nth-child(even), main table tbody tr:nth-child(even) {
-  background-color: var(--table-stripe);
-}
 
 figcaption, .figure-caption {
   color: var(--muted);
@@ -86,9 +89,6 @@ figcaption, .figure-caption {
   margin: {{book-metric-10}} 0;
 }
 
-.callout table tbody tr:nth-child(even) {
-  background-color: transparent;
-}
 
 
 /* Book chrome. The reading site uses Quarto's Bootstrap shell; these rules keep that shell on the
@@ -204,7 +204,7 @@ figcaption, .figure-caption {
   color: var(--accent);
   border-left: {{book-metric-28}} solid var(--accent);
   padding-left: {{book-metric-16}};
-  font-weight: 600;
+  font-weight: 700;
 }
 #quarto-document-content h1,
 #quarto-document-content h2,
@@ -223,7 +223,7 @@ figcaption, .figure-caption {
   background: var(--accent-solid);
   color: var(--on-solid);
   border-color: var(--accent-solid);
-  font-weight: 600;
+  font-weight: 700;
 }
 #quarto-document-content table caption,
 #quarto-document-content .quarto-float-caption,
@@ -290,9 +290,6 @@ div.callout.review { border-left-color: var(--callout-review-accent); background
   border-radius: {{book-metric-30}};
   padding: {{book-metric-32}} {{book-metric-0}};
 }
-#quarto-document-content .callout table tbody tr:nth-child(even) {
-  background-color: transparent;
-}
 @media (max-width: {{book-metric-36}}) {
   html, body { max-width: 100%; overflow-x: hidden; }
   #quarto-document-content, main.content, .page-columns { min-width: 0; max-width: 100%; }
@@ -302,3 +299,6 @@ div.callout.review { border-left-color: var(--callout-review-accent); background
 
 /* Native title blocks omit the bottom title margin used by the former list page. */
 body:has(.list-of-tables) #title-block-header .title { margin-bottom: {{book-metric-0}}; }
+
+#quarto-document-content h2 { font-size: var(--web-section-px); }
+#quarto-document-content h3 { font-size: var(--web-card-title-px); }

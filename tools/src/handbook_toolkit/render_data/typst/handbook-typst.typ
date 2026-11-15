@@ -100,14 +100,15 @@
 
 // Tables ---------------------------------------------------------------------
 #set table(
-  stroke: 0.5pt + hb-border,
+  stroke: (x: none, y: 0.5pt + hb-border),
   inset: (x: 7pt, y: 6pt),
-  fill: (_, y) => if y == 0 { hb-accent-solid } else if calc.even(y) { hb-table-stripe } else { none },
+  fill: (_, y) => if y == 0 { hb-accent-solid } else { hb-surface },
 )
 #show table.cell.where(y: 0): set text(fill: hb-on-solid, weight: "bold")
 #show table.cell: set block(breakable: false)
 #show table.cell: set text(hyphenate: false)
-#show table: it => align(center, it)
+#show table.cell: set par(justify: false)
+#show table: it => align(center, block(radius: hb-card-radius, clip: true, breakable: true)[#it])
 
 // Captions -------------------------------------------------------------------
 #show figure.caption: it => align(center)[
@@ -157,8 +158,8 @@
       #text(weight: "bold", fill: accent)[#title]
       #v(3pt)
     ]
-    // Tables inside a callout use the box tint, never the alternating stripe.
-    #set table(fill: (_, y) => if y == 0 { hb-accent-solid } else { none })
+    // Data tables keep the shared surface inside callouts.
+    #set table(fill: (_, y) => if y == 0 { hb-accent-solid } else { hb-surface })
     #body
   ]
 }

@@ -46,7 +46,7 @@ class PortalTests(unittest.TestCase):
         self.assertEqual(motion_violations(reading), [])
         import yaml
         config=yaml.safe_load((self.root / 'staged/_quarto.yml').read_text())
-        self.assertIn({'text':design.reading_header()},config['format']['html']['include-in-header'])
+        self.assertNotIn('blocking',str(config['format']['html']))
 
     def test_empty_catalog_has_no_book_or_release_link(self):
         page=self.build({'schema_version':'1.0','books':[]})
@@ -204,19 +204,17 @@ class QuartoPortalTests(unittest.TestCase):
         self.assertEqual(hidden_site_paths(files),[])
         pages=sorted(name for name in files if name.endswith('.html'))
         self.assertIn('design.html',pages)
-        from test_reading_site import validate_region_names
+
         css=next(self.site.rglob('reading.css')).read_text()
         self.assertEqual(css,design.reading_css())
+        self.assertNotIn("view-transition", css)
         for name in pages:
             markup=(self.site/name).read_text()
-            validate_region_names(markup,css)
+
             page=Document(markup).root
             self.assertEqual(len(page.find('script',id='quarto-html-after-body')),1)
             ready=page.find('link',rel='expect')
-            self.assertEqual(len(ready),1)
-            self.assertEqual(ready[0].attrs.get('href'),'#quarto-html-after-body')
-            self.assertEqual(ready[0].attrs.get('blocking'),'render')
-            self.assertEqual(ready[0].attrs.get('media'),'(prefers-reduced-motion: no-preference)')
+            self.assertEqual(len(ready), 0)
             targets=[node.attrs.get('href') for node in page.find('link')]
             targets+=[node.attrs.get('src') for tag in ('script','img') for node in page.find(tag)]
             local=[posixpath.normpath(posixpath.join(posixpath.dirname(name),target.split('#')[0].split('?')[0]))
@@ -226,6 +224,78 @@ class QuartoPortalTests(unittest.TestCase):
             for target in local:
                 with self.subTest(page=name,target=target):
                     self.assertIn(target,files)
+
+    def test_home_guides_are_whole_card_links(self):
+        page = Document((self.site / 'index.html').read_text()).root
+        guides = page.find('nav', **{'aria-label': 'Platform guides'})[0]
+        cards = guides.find('a', **{'class': 'guide-card'})
+        self.assertEqual(len(cards), 5)
+        self.assertEqual({card.attrs['href'] for card in cards},
+                         {name + '.html' for name in ('how-it-works', 'create', 'publishing', 'contribute', 'faq')})
+        for card in cards:
+            self.assertEqual(len(card.find('a')), 1)  # the card itself; no nested links
+            self.assertTrue(card.find('span', **{'class': 'guide-title'})[0].text())
+            self.assertTrue(card.find('span', **{'class': 'guide-description'})[0].text())
+            self.assertEqual(card.find('span', **{'class': 'guide-arrow'})[0].attrs['aria-hidden'], 'true')
+
+    def test_browser_scale_targets_focus_and_uniform_scrollable_tables(self):
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            self.skipTest('Playwright is installed by the edition-preview job')
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch()
+            for width in (1280, 390):
+                for scheme in ('light', 'dark'):
+                    context = browser.new_context(viewport={'width': width, 'height': 1000},
+                                                  color_scheme=scheme, reduced_motion='reduce')
+                    try:
+                        page = context.new_page()
+                        page.goto((self.site / 'index.html').as_uri())
+                        page.evaluate('document.fonts.ready')
+                        computed = lambda selector, prop: page.locator(selector).first.evaluate(
+                            '(e,p)=>getComputedStyle(e)[p]', prop)
+                        accent = design.load_tokens()['color']['accent'][scheme].lstrip('#')
+                        expected_accent = 'rgb(' + ', '.join(str(int(accent[i:i+2], 16)) for i in (0, 2, 4)) + ')'
+                        self.assertEqual(computed('.links a', 'color'), expected_accent)
+                        self.assertEqual(computed('body', 'fontSize'), '15px')
+                        self.assertEqual(computed('body', 'lineHeight'), '23.25px')
+                        self.assertEqual(computed('h1', 'fontSize'), '40px' if width == 1280 else '28px')
+                        self.assertEqual(computed('h1', 'fontWeight'), '700')
+                        self.assertEqual(computed('.planned', 'fontSize'), '13px')
+                        self.assertEqual(computed('.planned', 'marginTop'), '20px')
+                        gap = page.evaluate('document.querySelector(".planned").getBoundingClientRect().top - document.querySelector("#book-grid").getBoundingClientRect().bottom')
+                        self.assertGreaterEqual(gap, 20)
+                        self.assertEqual(computed('.btn', 'fontSize'), '14px')
+                        self.assertEqual(computed('.btn', 'borderRadius'), '6px')
+                        self.assertEqual(computed('.btn', 'padding'), '10px 16px')
+                        self.assertEqual(computed('.tag', 'fontSize'), '11px')
+                        self.assertEqual(computed('.fmt', 'fontSize'), '12px')
+                        self.assertEqual(computed('.book', 'borderRadius'), '8px')
+                        for selector in ('.btn', '.fmt', '[data-filter]', '#search', '#sort'):
+                            for target in page.locator(selector).all():
+                                self.assertGreaterEqual(target.bounding_box()['height'], 24)
+                        page.locator('.guide-card').first.focus()
+                        self.assertEqual(computed('.guide-card', 'outlineStyle'), 'solid')
+                        self.assertEqual(computed('.guide-card', 'outlineWidth'), '3px')
+                        self.assertEqual(page.locator('link[rel="expect"]').count(), 0)
+                        page.goto((self.site / 'design.html').as_uri())
+                        self.assertEqual(computed('h1', 'fontSize'), '48px' if width == 1280 else '32px')
+                        cells = page.locator('main table').first.locator('tbody td').all()
+                        colors = {cell.evaluate('e=>getComputedStyle(e).backgroundColor') for cell in cells}
+                        expected = 'rgb(255, 253, 248)' if scheme == 'light' else 'rgb(28, 37, 38)'
+                        self.assertEqual(colors, {expected})
+                        # At phone width the table itself remains a scroll container.
+                        if width == 390:
+                            table = page.locator('main table').first
+                            dimensions = table.evaluate('e=>({scroll:e.scrollWidth,client:e.clientWidth})')
+                            self.assertGreater(dimensions['scroll'], dimensions['client'])
+                            table.evaluate('e=>e.scrollLeft=100')
+                            self.assertGreater(table.evaluate('e=>e.scrollLeft'), 0)
+                        self.assertLessEqual(page.evaluate('document.documentElement.scrollWidth'), width)
+                    finally:
+                        context.close()
+            browser.close()
 
     def _legacy_llms(self):
         return (build_portal(self.catalog,self.root/'legacy').parent/'llms.txt').read_bytes()

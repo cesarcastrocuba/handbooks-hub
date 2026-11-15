@@ -47,8 +47,35 @@ class DesignTokenTests(unittest.TestCase):
         self.assertIn("div.callout.review", chrome)
         self.assertIn("#quarto-document-content pre.text", chrome)
         self.assertIn("background: var(--code)", chrome)
-        self.assertIn("tbody tr:nth-child(even)", chrome)
+        self.assertNotIn("nth-child(even)", chrome)
+        self.assertIn("background: var(--surface)", chrome)
         self.assertIn("--callout-review-accent", design.css_variables("light"))
+
+    def test_table_surfaces_and_geometry_are_shared_across_editions(self) -> None:
+        from importlib.resources import files
+        tokens = self.tokens
+        self.assertNotIn("table_stripe", tokens["color"])
+        html = design.book_layout_css()
+        self.assertNotIn("nth-child(even)", html)
+        self.assertIn("border-collapse: separate", html)
+        self.assertIn("border-radius: var(--card-radius)", html)
+        self.assertIn("background: var(--surface)", html)
+        typst = files("handbook_toolkit").joinpath("render_data/typst/handbook-typst.typ").read_text()
+        self.assertNotIn("calc.even", typst)
+        self.assertNotIn("hb-table-stripe", typst)
+        self.assertIn("else { hb-surface }", typst)
+        self.assertIn("stroke: (x: none, y: 0.5pt + hb-border)", typst)
+        self.assertIn("radius: hb-card-radius, clip: true, breakable: true", typst)
+        self.assertEqual(design.docx_values()["surface"], tokens["color"]["surface"]["print"])
+
+    def test_print_rules_match_the_light_web_border(self) -> None:
+        expected = self.tokens['color']['border']['light']
+        self.assertEqual(expected, '#DDD3C0')
+        self.assertEqual(self.tokens['color']['border']['print'], expected)
+        self.assertEqual(self.tokens['color']['chrome_rule']['print'], expected)
+        self.assertEqual(design.docx_values()['rule'], expected)
+        self.assertIn('#let hb-border = rgb("' + expected + '")', design.typst_preamble())
+        self.assertIn('#let hb-chrome-rule = rgb("' + expected + '")', design.typst_preamble())
 
     def test_contrast_pairs_cover_every_scheme(self) -> None:
         covered = {scheme for pair in self.tokens["contrast"] for scheme in pair["schemes"]}

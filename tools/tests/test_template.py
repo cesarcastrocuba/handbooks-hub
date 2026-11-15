@@ -209,6 +209,15 @@ class TemplateTests(unittest.TestCase):
             self.assertIn("validate-book", result.stdout + result.stderr)
             self.assertIn("OK", result.stdout + result.stderr)
 
+    def test_example_review_checklist_uses_neutral_role(self) -> None:
+        source = (TEMPLATE / 'manuscript/chapters/01-example.qmd').read_text()
+        opening = next(line for line in source.splitlines()
+                       if line.startswith(':::') and 'title="Review Checklist — Example Chapter"' in line)
+        classes = set(re.findall(r'\.([a-z-]+)', opening))
+        self.assertIn('review', classes)
+        self.assertIn('callout-note', classes)
+        self.assertNotIn('callout-important', classes)
+
     def test_template_pins_are_exact_and_current(self) -> None:
         descriptor = _load(TEMPLATE / "book.yaml")
         self.assertEqual(descriptor["toolkit"], "0.10.3")
@@ -279,9 +288,25 @@ class TemplateTests(unittest.TestCase):
                 self.assertTrue(any(value and "Three connected boxes" in value for value in alt))
                 figures = Document(archive.read("figures.html").decode()).root
                 self.assertTrue(any("#fig-section-structure" in (link.attrs.get("href") or "") for link in figures.find("a")))
+            with zipfile.ZipFile(output / "book-html.zip") as archive:
+                chapter = Document(archive.read("manuscript/chapters/01-example.html").decode()).root
+            review_boxes = [node for node in chapter.find('div')
+                            if {'review', 'callout'} <= set((node.attrs.get('class') or '').split())]
+            self.assertEqual(len(review_boxes), 1)
+            self.assertIn('Review Checklist — Example Chapter', review_boxes[0].text())
+
             with zipfile.ZipFile(output / "book.docx") as archive:
                 validate_docx(archive)
                 document = ET.fromstring(archive.read("word/document.xml"))
+                from handbook_toolkit import design
+                review = next(node for node in document.iter(W + 'p')
+                              if 'Review Checklist — Example Chapter' in ''.join(node.itertext()))
+                self.assertEqual(review.find(W + 'pPr/' + W + 'pStyle').get(W + 'val'), 'CalloutReviewTitle')
+                box = next(node for node in document.iter(W + 'tbl')
+                           if review in list(node.iter(W + 'p')))
+                cell = box.find(W + 'tr/' + W + 'tc')
+                self.assertEqual(cell.find(W + 'tcPr/' + W + 'shd').get(W + 'fill'),
+                                 design.docx_values()['callout_review_tint'].lstrip('#'))
                 self.assertTrue(any(field.instruction == "TOC \\h \\z \\f F" for field in fields(document)))
                 self.assertTrue(any(name.endswith(".svg") for name in archive.namelist()))
                 figures = [table for table in document.iter(W+"tbl") if table.find(".//"+W+"drawing") is not None]

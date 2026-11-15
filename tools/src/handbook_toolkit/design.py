@@ -78,8 +78,6 @@ def validate_tokens(
     issues.extend(_callout_contrast_issues(tokens))
     issues.extend(_motion_highlight_issues(tokens))
     motion = tokens["motion"]
-    if motion["enter_ms"] + motion["body_delay_ms"] > 300:
-        issues.append(Issue("$.motion", "page transition exceeds the 300 ms budget"))
     if motion["reveal_ms"] + motion["stagger_ms"] * motion["stagger_limit"] > 300:
         issues.append(Issue("$.motion", "card stagger exceeds the 300 ms budget"))
     return sorted(issues)
@@ -291,6 +289,10 @@ def css_variables(scheme: str) -> str:
         f"--control-radius: {tokens['radius']['control_px']}px;",
         f"--card-radius: {tokens['radius']['card_px']}px;",
     ]
+    declarations += [f"--web-{name.replace('_', '-')}: {value}{'px' if name.endswith('_px') else 'rem' if name.endswith('_rem') else 'vw' if name.endswith('_vw') else 'ch' if name.endswith('_ch') else ''};"
+                     for name, value in tokens["web"].items()]
+    declarations += [f"--{name.replace('_', '-')}: {value}px;"
+                     for name, value in tokens["radius"].items() if name not in {"control_px", "card_px"}]
     return "\n".join(declarations)
 
 
@@ -321,9 +323,9 @@ BOOK_METRICS = {'book-metric-0': '1rem',
  'book-metric-18': '.8rem',
  'book-metric-19': '1.4rem',
  'book-metric-20': '1.2rem',
- 'book-metric-21': '2rem',
- 'book-metric-22': '4vw',
- 'book-metric-23': '3rem',
+ 'book-metric-21': 'var(--web-heading-min-rem)',
+ 'book-metric-22': 'var(--web-heading-fluid-vw)',
+ 'book-metric-23': 'var(--web-heading-max-rem)',
  'book-metric-24': '62ch',
  'book-metric-25': '.68rem',
  'book-metric-26': '.1em',
@@ -401,6 +403,7 @@ def typst_preamble() -> str:
         f'#let hb-display-font = ("{tokens["type"]["brand"]["display_family"]}",)',
         f'#let hb-code-font = ("{tokens["type"]["code"]["print_family"]}",)',
     ]
+    lines.append(f'#let hb-card-radius = {tokens["radius"]["card_px"] * 0.75:g}pt')
     for role, value in colour.items():
         name = role.replace("_", "-")
         lines.append(f'#let hb-{name} = rgb("{value}")')
@@ -428,7 +431,7 @@ def docx_values() -> dict[str, str]:
         "rule": colour["border"],
         "heading": colour["heading"],
         "canvas": colour["canvas"],
-        "stripe": colour["table_stripe"],
+        "surface": colour["surface"],
         "on_solid": colour["on_solid"],
         "accent_solid": colour["accent_solid"],
         **{f"callout_{kind}_{part}": values[part]["print"]
@@ -463,19 +466,34 @@ def book_scss(scheme: str) -> str:
     for kind, roles in tokens["callout"].items():
         if kind != "review":
             variables["callout-color-" + kind] = roles["accent"][scheme]
+    web = tokens["web"]
+    variables.update({
+        "enable-rounded": "true",
+        "font-size-root": f"{web['root_px']}px",
+        "btn-border-radius": f"{tokens['radius']['control_px']}px",
+        "btn-border-radius-sm": f"{tokens['radius']['control_px']}px",
+        "btn-border-radius-lg": f"{tokens['radius']['card_px']}px",
+        "border-radius": f"{tokens['radius']['control_px']}px",
+        "border-radius-sm": f"{tokens['radius']['control_px']}px",
+        "border-radius-lg": f"{tokens['radius']['card_px']}px",
+        "font-size-base": f"{tokens['type']['body']['web_size_px'] / web['root_px']}rem",
+        "line-height-base": tokens["type"]["body"]["line_height"],
+        "h1-font-size": f"clamp({web['heading_min_rem']}rem, {web['heading_fluid_vw']}vw, {web['heading_max_rem']}rem)",
+        "h2-font-size": f"{web['section_px']}px",
+        "h3-font-size": f"{web['card_title_px']}px",
+        "btn-font-size": f"{web['button_px']}px",
+        "btn-font-weight": web["button_weight"],
+        "btn-padding-y": f"{web['button_y_px']}px",
+        "btn-padding-x": f"{web['button_x_px']}px",
+    })
     return ("/*-- scss:defaults --*/\n" +
             "\n".join(f"${name}: {value};" for name, value in sorted(variables.items())) +
             "\n/*-- scss:rules --*/\n")
 
 
 READING_METRICS = {"focus-width": "3px", "focus-offset": "3px", "progress-height": "3px",
-                   "cover-space": "1rem", "cover-radius": "6px",
+                   "cover-space": "1rem", "cover-radius": "var(--control-radius)",
                    "favicon-viewbox": "0 0 64 64"}
-
-
-def reading_header() -> str:
-    """Wait for Quarto's complete body before taking native page-transition snapshots."""
-    return '<link rel="expect" blocking="render" href="#quarto-html-after-body" media="(prefers-reduced-motion: no-preference)">'
 
 
 def reading_css() -> str:
@@ -526,11 +544,11 @@ def _callout_contrast_issues(tokens: dict[str, Any]) -> list[Issue]:
     return issues
 
 
-PORTAL_METRICS = {'rule': '1px', 'column': '1300px', 'gutter': '1.25rem', 'gap': '1rem', 'cover': '8rem',
-                  'cover-small': '6.5rem', 'cover-padding': '.8rem', 'cover-radius': '6px',
-                  'card-radius': '8px', 'card-padding': '1.1rem', 'card-min': '30rem',
-                  'small': '.85rem', 'fine': '.75rem', 'title': '1.25rem', 'control': '44px',
-                  'phone': '600px', 'cover-title': '.82rem'}
+PORTAL_METRICS = {'rule': '1px', 'column': '1180px', 'gutter': '24px', 'gap': '20px',
+                  'cover': '130px', 'cover-small': '104px', 'cover-padding': '14px 12px',
+                  'card-padding': '20px', 'card-min': '30rem', 'control': '28px',
+                  'phone': '600px', 'cover-title': '14px',
+                  'tracking': '.12em', 'eyebrow-tracking': '.14em', 'title-top': '10px', 'chip-gap': '6px', 'rhythm': '12px', 'link-gap': '14px', 'toolbar-space': '16px', 'inset': '8px', 'control-inset': '3px', 'target': '24px', 'tag-inset': '2px', 'guide-min': '18rem', 'guide-space': '28px'}
 
 
 def portal_layout_css() -> str:

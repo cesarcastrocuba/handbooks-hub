@@ -25,51 +25,6 @@ footer.footer, footer.footer .nav-footer {
 }
 footer.footer .nav-footer a { color: var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
-  @keyframes handbook-enter {
-    from { opacity: 0; transform: translateY({{motion-entry-px}}); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  /* Name regions only during capture: persistent names change resting text rasterization. */
-  @supports (view-transition-name: handbook-body) and selector(:active-view-transition) {
-    @view-transition { navigation: auto; }
-    :root:active-view-transition #quarto-header { view-transition-name: handbook-topbar; }
-    :root:active-view-transition #quarto-sidebar { view-transition-name: handbook-sidebar; }
-    :root:active-view-transition #quarto-margin-sidebar { view-transition-name: handbook-margin; }
-    :root:active-view-transition footer.footer { view-transition-name: handbook-footer; }
-    :root:active-view-transition #quarto-document-content { view-transition-name: handbook-body; }
-    :root:active-view-transition #title-block-header { view-transition-name: handbook-title; }
-    ::view-transition-group(*) { animation: none; }
-    ::view-transition-old(root) { display: none; }
-    ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
-    ::view-transition-group(handbook-topbar), ::view-transition-group(handbook-sidebar),
-    ::view-transition-group(handbook-margin), ::view-transition-group(handbook-footer) { animation: none; }
-    ::view-transition-old(handbook-topbar), ::view-transition-old(handbook-sidebar),
-    ::view-transition-old(handbook-margin), ::view-transition-old(handbook-footer) { display: none; }
-    ::view-transition-new(handbook-topbar), ::view-transition-new(handbook-sidebar),
-    ::view-transition-new(handbook-margin), ::view-transition-new(handbook-footer) {
-      animation: none; mix-blend-mode: normal;
-    }
-    @keyframes handbook-leave {
-      to { opacity: 0; transform: translateY(calc(-1 * {{motion-exit-px}})); }
-    }
-    @keyframes handbook-title {
-      from { opacity: 0; transform: translateY({{motion-title-px}}); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    ::view-transition-old(handbook-body), ::view-transition-old(handbook-title) {
-      animation: handbook-leave {{motion-exit-ms}} {{motion-exit-easing}} both;
-    }
-    ::view-transition-new(handbook-title) {
-      animation: handbook-title {{motion-title-ms}} {{motion-enter-easing}} both;
-      mix-blend-mode: normal;
-    }
-    ::view-transition-new(handbook-body) {
-      animation: handbook-enter {{motion-enter-ms}} {{motion-enter-easing}} {{motion-body-delay-ms}} both;
-      mix-blend-mode: normal;
-    }
-  }
-
   /* A mode change is interaction feedback, not a first-paint palette animation. */
   :root:has(.quarto-color-scheme-toggle:is(:hover, :focus)) :is(
     body, #quarto-header, .navbar, .sidebar, #title-block-header, footer.footer, .nav-footer,
@@ -87,30 +42,15 @@ footer.footer .nav-footer a { color: var(--accent); }
   input, select {
     transition: outline-offset {{motion-fast-ms}} {{motion-easing}}, box-shadow {{motion-fast-ms}} {{motion-easing}};
   }
-  main a:not(.btn):not(.fmt):not(.anchorjs-link) {
+  main a:not(.btn):not(.fmt):not(.anchorjs-link):not(.guide-card) {
     background-image: linear-gradient(currentColor, currentColor);
     background-position: left bottom;
     background-repeat: no-repeat;
     background-size: 0 {{motion-underline-px}};
     transition: color {{motion-fast-ms}} {{motion-easing}}, background-size {{motion-fast-ms}} {{motion-easing}};
   }
-  main a:not(.btn):not(.fmt):not(.anchorjs-link):is(:hover, :focus-visible) { background-size: 100% {{motion-underline-px}}; }
+  main a:not(.btn):not(.fmt):not(.anchorjs-link):not(.guide-card):is(:hover, :focus-visible) { background-size: 100% {{motion-underline-px}}; }
   main :is(.btn, .fmt, button):is(:hover, :focus-visible) { translate: 0 calc(-1 * {{motion-lift-px}}); }
-  main a.btn:is(:hover, :focus-visible) { position: relative; }
-  main a.btn::after {
-    content: "→" / "";
-    color: var(--accent);
-    position: absolute;
-    inset-inline-start: calc(100% + {{motion-arrow-gap-px}});
-    display: none;
-    opacity: 0;
-    translate: calc(-1 * {{motion-arrow-px}}) 0;
-    transition: opacity {{motion-fast-ms}} {{motion-easing}}, translate {{motion-fast-ms}} {{motion-easing}};
-  }
-  main a.btn:is(:hover, :focus-visible)::after { display: block; opacity: 1; translate: 0 0; }
-  @starting-style {
-    main a.btn:is(:hover, :focus-visible)::after { opacity: 0; translate: calc(-1 * {{motion-arrow-px}}) 0; }
-  }
   .sidebar-item-container a, #TOC a {
     transition: color {{motion-fast-ms}} {{motion-easing}}, background-color {{motion-fast-ms}} {{motion-easing}},
                 border-color {{motion-fast-ms}} {{motion-easing}};
@@ -187,10 +127,10 @@ footer.footer .nav-footer a { color: var(--accent); }
     }
   }
 
-  #book-grid > .book {
+  #book-grid > .book, .guide-card {
     transition: translate {{motion-fast-ms}} {{motion-easing}}, box-shadow {{motion-fast-ms}} {{motion-easing}};
   }
-  #book-grid > .book:is(:hover, :has(:focus-visible)) { translate: 0 calc(-1 * {{motion-lift-px}}); box-shadow: {{motion-shadow}}; }
+  #book-grid > .book:is(:hover, :has(:focus-visible)), .guide-card:is(:hover, :focus-visible) { translate: 0 calc(-1 * {{motion-lift-px}}); box-shadow: {{motion-shadow}}; }
   .book:is(:hover, :has(:focus-visible)) .cover { position: relative; overflow: clip; }
   .book .cover::after {
     content: "";

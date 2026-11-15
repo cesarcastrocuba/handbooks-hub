@@ -3,6 +3,24 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
+## [0.11.0] - Unreleased
+
+### Changed
+
+- Align the portal and reading site with the Owner's design preview: token-driven Bootstrap scale,
+  rounded compact controls, smaller book cards and whole-card home guide links.
+- Use uniform surface-filled table bodies and border rules across HTML, PDF and DOCX. Web tables
+  and PDF tables have rounded corners; PDF keeps page splitting and Word keeps native square corners.
+- Remove cross-document page transitions and render-blocking capture metadata; retain reduced-motion
+  guards, reading progress, once-only reveals, card stagger and hover/focus/theme interactions.
+
+### Fixed
+
+- Remove decorative hover arrows from buttons while retaining lift and keyboard focus.
+- The template's example Review Checklist now opts into the documented neutral review role in
+  HTML and DOCX, matching PDF. This content correction is queued for the later template 1.6.0
+  release; the current template version and toolkit pin are unchanged here.
+
 ## [1.5.1] - 2026-11-15
 
 Template release. Template `1.5.1` pins toolkit `0.10.3` (`58384af`). The release workflow already

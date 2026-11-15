@@ -191,7 +191,7 @@ status: draft
 profile:
   id: standard
   version: "1.0.0"
-toolkit: "0.10.4"
+toolkit: "0.11.0"
 license:
   content: CC-BY-SA-4.0
   code: MIT
@@ -533,21 +533,19 @@ class BuildTests(unittest.TestCase):
             with zipfile.ZipFile(output / "book-html.zip") as archive:
                 site = archive.read("manuscript/chapters/pilot.html").decode("utf-8")
                 from handbook_toolkit import design
-                from test_reading_site import validate_region_names
+
                 css = next(archive.read(name).decode() for name in archive.namelist() if name.endswith("/reading.css"))
                 self.assertEqual(css, design.reading_css())
+                self.assertNotIn("view-transition", css)
                 for name in archive.namelist():
                     if not name.endswith(".html"):
                         continue
                     markup = archive.read(name).decode()
-                    validate_region_names(markup, css)
+
                     tree = Document(markup).root
                     self.assertEqual(len(tree.find("script", id="quarto-html-after-body")), 1)
                     ready = tree.find("link", rel="expect")
-                    self.assertEqual(len(ready), 1)
-                    self.assertEqual(ready[0].attrs.get("href"), "#quarto-html-after-body")
-                    self.assertEqual(ready[0].attrs.get("blocking"), "render")
-                    self.assertEqual(ready[0].attrs.get("media"), "(prefers-reduced-motion: no-preference)")
+                    self.assertEqual(len(ready), 0)
             with zipfile.ZipFile(output / "book.docx") as archive:
                 document_xml = archive.read("word/document.xml").decode("utf-8")
                 settings_xml = archive.read("word/settings.xml").decode("utf-8")
@@ -837,7 +835,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.10.4"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.11.0"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             commit = commit_all(repo, "mismatched toolkit pin")
@@ -899,7 +897,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.10.4"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.11.0"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             commit = commit_all(repo, "preview toolkit pin")
@@ -1009,7 +1007,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.10.4"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.11.0"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             _git(repo, "update-index", "--assume-unchanged", "book.yaml")
