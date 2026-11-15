@@ -260,7 +260,12 @@ class QuartoPortalTests(unittest.TestCase):
                         self.assertEqual(computed('.links a', 'color'), expected_accent)
                         self.assertEqual(computed('body', 'fontSize'), '15px')
                         self.assertEqual(computed('body', 'lineHeight'), '23.25px')
-                        self.assertEqual(computed('h1', 'fontSize'), '48px' if width == 1280 else '32px')
+                        self.assertEqual(computed('h1', 'fontSize'), '40px' if width == 1280 else '28px')
+                        self.assertEqual(computed('h1', 'fontWeight'), '700')
+                        self.assertEqual(computed('.planned', 'fontSize'), '13px')
+                        self.assertEqual(computed('.planned', 'marginTop'), '20px')
+                        gap = page.evaluate('document.querySelector(".planned").getBoundingClientRect().top - document.querySelector("#book-grid").getBoundingClientRect().bottom')
+                        self.assertGreaterEqual(gap, 20)
                         self.assertEqual(computed('.btn', 'fontSize'), '14px')
                         self.assertEqual(computed('.btn', 'borderRadius'), '6px')
                         self.assertEqual(computed('.btn', 'padding'), '10px 16px')
@@ -275,6 +280,7 @@ class QuartoPortalTests(unittest.TestCase):
                         self.assertEqual(computed('.guide-card', 'outlineWidth'), '3px')
                         self.assertEqual(page.locator('link[rel="expect"]').count(), 0)
                         page.goto((self.site / 'design.html').as_uri())
+                        self.assertEqual(computed('h1', 'fontSize'), '48px' if width == 1280 else '32px')
                         cells = page.locator('main table').first.locator('tbody td').all()
                         colors = {cell.evaluate('e=>getComputedStyle(e).backgroundColor') for cell in cells}
                         expected = 'rgb(255, 253, 248)' if scheme == 'light' else 'rgb(28, 37, 38)'

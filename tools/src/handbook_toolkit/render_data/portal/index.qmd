@@ -2,6 +2,7 @@
 title: "Knowledge worth keeping. Handbooks worth sharing."
 toc: false
 page-layout: full
+body-classes: portal-home
 subtitle: "Independent books · shared standards"
 ---
 

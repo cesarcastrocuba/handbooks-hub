@@ -299,7 +299,11 @@
         "tag_px",
         "format_px",
         "small_px",
-        "root_px"
+        "root_px",
+        "hero_min_rem",
+        "hero_max_rem",
+        "hero_fluid_vw",
+        "hero_measure_ch"
       ],
       "properties": {
         "heading_min_rem": {
@@ -363,6 +367,26 @@
           "maximum": 96
         },
         "root_px": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 96
+        },
+        "hero_min_rem": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 96
+        },
+        "hero_max_rem": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 96
+        },
+        "hero_fluid_vw": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 96
+        },
+        "hero_measure_ch": {
           "type": "number",
           "minimum": 1,
           "maximum": 96

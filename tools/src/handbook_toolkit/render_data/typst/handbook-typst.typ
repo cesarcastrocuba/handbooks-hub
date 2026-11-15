@@ -107,6 +107,7 @@
 #show table.cell.where(y: 0): set text(fill: hb-on-solid, weight: "bold")
 #show table.cell: set block(breakable: false)
 #show table.cell: set text(hyphenate: false)
+#show table.cell: set par(justify: false)
 #show table: it => align(center, block(radius: hb-card-radius, clip: true, breakable: true)[#it])
 
 // Captions -------------------------------------------------------------------

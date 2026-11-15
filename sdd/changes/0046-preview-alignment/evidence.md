@@ -61,7 +61,7 @@ This supports keeping PDF rounding instead of accepting square corners. Word has
 geometry; no unsupported rounding is claimed. Poppler prints `Suspects object is wrong type
 (boolean)` for the standalone Typst probe's PDF metadata but extracts all pages/rows successfully.
 
-## Computed styles
+## Initial computed styles (5ae35ca)
 
 Chromium 148, executable `~/.cache/ms-playwright/chromium-1223/chrome-linux/chrome`, launched with
 `--headless=new --no-sandbox`. Viewports: **1280 × 1000** and **390 × 1000**, both light and dark.
@@ -131,7 +131,7 @@ The served `design-tokens.css`, `handbook.css`, `portal.css` and `reading.css` w
 byte with the current source factories: all matched. Local `site_check` passed for the portal
 (3 pages, 24 assets, all 200) and template book (2 pages, 26 assets, all 200).
 
-## Final stable-source full run
+## Initial stable-source full run (5ae35ca)
 
 `make full PYTHON=.venv/bin/python` ran **432 tests in 339.486 s**: **429 passed, 3 failed**.
 All failures are `test_verify_full`, `test_the_repository_itself_is_current` and
@@ -143,3 +143,50 @@ validators were also run separately: **5 checks / 0 problems** and **7 checks / 
 The coordinator-owned synchronization is the only remaining mechanical repository gate. This is
 not a green full-gate receipt; independent review, Owner preview acceptance and desktop Word
 acceptance remain separate outstanding gates.
+
+## Coordinator review correction evidence
+
+All four findings in the global review of `5ae35ca` were fixed on the same branch. The five
+committed WebP sheets were regenerated; the preceding initial measurements remain historical.
+Current raw captures and SVG/OOXML probes are under `.venv/review77-inspection/`.
+
+| Finding | Measured correction |
+| --- | --- |
+| Print border colors | Both print roles now `#DDD3C0`. Sample DOCX document XML has **650** explicit `w:color="DDD3C0"` attributes and **0** `D9E2EC`. All **389** body-cell bottom borders in **33** data tables are `DDD3C0`. |
+| PDF justification | `par(justify: false)` is scoped to table cells. Sample PDF page **12** was rasterized and visually inspected: “README / or short / guide” is left aligned with natural word spaces; running prose stays justified. |
+| Planned topics | Desktop: **20 px** actual gap from book grid to note, **20 px** top margin, **13 px** font, muted **rgb(85, 102, 106)**. The browser regression checks both themes and widths. |
+| Home hero | At 1280 px: **40 px**, weight **700**, width **476.953125 px**, height **129.5625 px** (three lines). At 390 px: **28 px**, width **333.859375 px**, height **90.703125 px** (three lines). Other page h1 stays **48 / 32 px**. |
+
+The new sample PDF remains **61 pages**; the LibreOffice conversion remains **71 pages**, with the
+inspected DOCX table on page **13**. Poppler's SVG for PDF page 12 reports the actual 0.5 pt table
+strokes and running 0.4 pt furniture as `rgb(86.66687%, 82.745361%, 75.294495%)`, which rounds to
+**rgb(221, 211, 192)**. Token `chrome_rule` is used by web Sass, emitted CSS roles and the Typst
+preamble; print furniture currently consumes `hb-border`, now the same cream color. No other
+print consumer retains the old blue-grey rule token. The reference DOCX was regenerated using
+`tools/scripts/generate_reference_docx.py` and passes its byte-parity test.
+
+Correction builds (all with required tools):
+
+```bash
+.venv/bin/python tools/scripts/generate_reference_docx.py
+.venv/bin/python -m handbook_toolkit.portal catalog/catalog.json --output .venv/review77-portal --engine quarto
+.venv/bin/python tools/scripts/edition_preview.py --template --output .venv/review77-template --require-tools
+.venv/bin/python tools/scripts/edition_preview.py --repo /home/ubuntu/github/handbook-sample-01 --output .venv/review77-sample --require-tools
+.venv/bin/python sdd/changes/0046-preview-alignment/capture.py --output .venv/review77-inspection
+make full PYTHON=.venv/bin/python
+```
+
+The portal, template and sample builds succeeded. Focused design tests: **23 passed in 0.107 s**;
+reference-DOCX tests: **2 passed in 0.121 s**. The standalone full validator reports **7 checks,
+3 currency problems**, exclusively the reserved STATUS statements. The full suite result follows
+below. No STATUS or decisions file was changed.
+
+Both localhost previews are rebuilt again after the correction commit, into
+`.venv/review77-head-portal/` and `.venv/review77-head-template/site/`, and left serving on their
+original ports. The current stylesheets are compared byte-for-byte with the source factories.
+
+Correction full run: **433 tests in 306.515 s; 430 passed, 3 failed**, no errors or skips. The only
+failures remain the CLI full-verification, repository-currency and repository-full wrappers, all
+reporting the same STATUS.md lines 10, 37 and 47. Every browser/layout, print, DOCX, cached-index,
+reference-byte and contrast check passed. The coordinator will synchronize STATUS and add the
+new decision after this push, as directed in the review. The full gate is not claimed green here.

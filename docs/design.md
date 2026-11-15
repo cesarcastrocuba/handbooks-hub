@@ -54,7 +54,7 @@ families: light web, dark web and print.
 | `accent` | `#0B5D5F` | `#6FCFC6` | `#0B5D5F` | Links, active controls and outlines |
 | `accent_solid` | `#0B5D5F` | `#157875` | `#0B5D5F` | Filled surfaces: buttons, covers, table headers |
 | `on_solid` | `#FFFFFF` | `#FFFFFF` | `#FFFFFF` | Text on a filled accent surface |
-| `border` | `#DDD3C0` | `#33403F` | `#D9E2EC` | Rules, dividers and table borders |
+| `border` | `#DDD3C0` | `#33403F` | `#DDD3C0` | Rules, dividers and table borders |
 | `code` | `#F1F3F5` | `#1B2426` | `#F1F3F5` | Code and licence blocks |
 
 Headings use the same near-black as body text on light and print; hierarchy comes from size, weight
@@ -243,3 +243,8 @@ buttons with 10 × 16 px padding, 24 px section headings and a responsive 2–3 
 The `web` token group supplies the shared scale. Portal tags are 11 px, format chips 12 px, card
 titles 20 px and summaries 14 px. Interactive chips remain at least 24 px tall; category tags
 are text labels. Guide links cover each complete card and preserve keyboard focus and hover lift.
+
+The portal home hero has its own token scale, `clamp(1.75rem, 3.2vw, 2.5rem)`, with a 22 ch
+measure and bold weight. Other page titles retain the general 2–3 rem scale. Print border and
+chrome-rule colors both match the light web border, `#DDD3C0`. Table-cell paragraphs are left
+aligned in PDF while running prose remains justified.

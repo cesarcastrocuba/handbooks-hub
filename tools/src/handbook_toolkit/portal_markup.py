@@ -54,4 +54,6 @@ def library_page(books: list[dict[str, Any]]) -> str:
         content = resource('empty.qmd')
     planned = sorted(CATEGORIES-set(categories))
     note = '**Planned topics (not listed books):** ' + ', '.join(category.title() for category in planned) if planned else ''
+    if note:
+        note = '::: {.planned}\n\n' + note + '\n\n:::'
     return resource('index.qmd').replace('{{library}}', content).replace('{{planned}}', note)

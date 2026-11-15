@@ -19,7 +19,8 @@ Implementer change; a different Reviewer and Owner acceptance are required befor
 The generated Sass defines the body/root scale, heading sizes, button dimensions and radius
 from the token contract. Cosmo also needs `enable-rounded: true`: changing the radius variables
 alone leaves buttons square. Quarto's default root is 17 px; the explicit 16 px root gives the
-preview's 32–48 px responsive page titles and exact 14 px buttons. The palette remains unchanged.
+32–48 px general page titles and exact 14 px buttons. The web palette remains unchanged; the
+coordinator correction aligns the print border and chrome-rule roles to `#DDD3C0`.
 
 Portal book cards use 20 px titles without a heading rule, 14 px muted summaries, 13 px link rows,
 11 px text tags, 12 px edition chips and the asymmetrically rounded cover. Search, sort and topic
@@ -57,3 +58,21 @@ The requested version bump makes three existing toolkit 0.10.4 statements in coo
 that file nor weakened the checker. The coordinator must synchronize its status statements before
 the full repository gate can become green. Owner preview acceptance and independent review remain
 required; the local read-only preview servers are left running.
+
+## Coordinator review corrections
+
+The review of `5ae35ca` identified one Major and three Minor findings. This correction commit
+addresses all four together, with the existing STATUS/decisions write exclusion retained.
+
+1. Print `border` and `chrome_rule` now both use `#DDD3C0`; the packaged reference DOCX was
+   regenerated so its inherited rules agree with direct cell rules. The color-role regression
+   checks both print constants, DOCX values and token validity/contrast.
+2. Typst table-cell paragraphs opt out of justification; the body paragraph rule remains justified.
+3. Planned topics now have a semantic container, a 20 px grid-gap top margin, 13 px text and the
+   muted color. Browser checks verify both the computed margin and the actual card-to-note gap.
+4. Only the home hero uses `clamp(1.75rem, 3.2vw, 2.5rem)`, weight 700 and max-width 22 ch.
+   A page body class scopes it; other page titles retain their existing scale. Browser checks
+   verify the 40/28 px hero and the unchanged 48/32 px Design title at desktop/phone widths.
+
+Updated visual, PDF and DOCX evidence is in evidence.md. The correction can be rolled back as
+one commit without reverting the original implementation or coordinator-owned state changes.

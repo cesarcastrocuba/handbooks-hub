@@ -289,7 +289,7 @@ def css_variables(scheme: str) -> str:
         f"--control-radius: {tokens['radius']['control_px']}px;",
         f"--card-radius: {tokens['radius']['card_px']}px;",
     ]
-    declarations += [f"--web-{name.replace('_', '-')}: {value}{'px' if name.endswith('_px') else 'rem' if name.endswith('_rem') else 'vw' if name.endswith('_vw') else ''};"
+    declarations += [f"--web-{name.replace('_', '-')}: {value}{'px' if name.endswith('_px') else 'rem' if name.endswith('_rem') else 'vw' if name.endswith('_vw') else 'ch' if name.endswith('_ch') else ''};"
                      for name, value in tokens["web"].items()]
     declarations += [f"--{name.replace('_', '-')}: {value}px;"
                      for name, value in tokens["radius"].items() if name not in {"control_px", "card_px"}]

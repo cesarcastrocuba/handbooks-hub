@@ -68,6 +68,15 @@ class DesignTokenTests(unittest.TestCase):
         self.assertIn("radius: hb-card-radius, clip: true, breakable: true", typst)
         self.assertEqual(design.docx_values()["surface"], tokens["color"]["surface"]["print"])
 
+    def test_print_rules_match_the_light_web_border(self) -> None:
+        expected = self.tokens['color']['border']['light']
+        self.assertEqual(expected, '#DDD3C0')
+        self.assertEqual(self.tokens['color']['border']['print'], expected)
+        self.assertEqual(self.tokens['color']['chrome_rule']['print'], expected)
+        self.assertEqual(design.docx_values()['rule'], expected)
+        self.assertIn('#let hb-border = rgb("' + expected + '")', design.typst_preamble())
+        self.assertIn('#let hb-chrome-rule = rgb("' + expected + '")', design.typst_preamble())
+
     def test_contrast_pairs_cover_every_scheme(self) -> None:
         covered = {scheme for pair in self.tokens["contrast"] for scheme in pair["schemes"]}
         self.assertEqual(covered, set(design.SCHEMES))

@@ -46,3 +46,11 @@ input, button, select { max-width: 100%; min-width: 0; min-height: {{control}}; 
 
 #title-block-header .quarto-title { display: flex; flex-direction: column; }
 #title-block-header .subtitle { order: -1; }
+
+.planned { margin-block-start: {{gap}}; font-size: var(--web-small-px); }
+.planned p { margin: 0; }
+.portal-home #title-block-header .title {
+  font-size: clamp(var(--web-hero-min-rem), var(--web-hero-fluid-vw), var(--web-hero-max-rem));
+  font-weight: 700;
+  max-width: var(--web-hero-measure-ch);
+}
