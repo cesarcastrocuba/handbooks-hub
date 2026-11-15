@@ -48,6 +48,15 @@ and export again from the reviewed hub commit.
 The tag is the template release identity. Books created from a tagged mirror can record which
 template they started from in their own history; the platform does not rewrite book repositories.
 
+## Name a book repository
+
+A repository created from the mirror is named `handbook-<topic>` (`HUB-DEC-043`), for example
+`handbook-solutions-architecture`. The convention is mandatory for the Owner's books and the
+recommended default for other authors; the catalog accepts other names. The catalog slug is not the
+repository name: `initialize-book` sets it from the book identifier, which follows the book title in
+natural word order (`solutions-architecture-handbook` for "Solutions Architecture Handbook"; the
+sample `handbook-sample-01` has the slug `handbook-authoring-and-publishing`).
+
 ## Mark the repository as a template
 
 Marking `cesarcastrocuba/handbooks-template` as a GitHub template is an **Owner** action. It is a

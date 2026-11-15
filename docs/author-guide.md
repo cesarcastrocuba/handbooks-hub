@@ -33,6 +33,13 @@ Create a public repository from `cesarcastrocuba/handbooks-template` with **Use 
 template is a generated mirror of the hub's `template/book/`; never edit the mirror. The
 [template distribution guide](template-distribution.md) explains how the mirror is produced.
 
+Name the repository `handbook-<topic>`, in lowercase words joined by hyphens, for example
+`handbook-solutions-architecture` (`HUB-DEC-043`). The Owner's books always follow this convention;
+for other authors it is the recommended default, and the catalog accepts any repository name. The
+repository name does not set the catalog slug: the slug is the book identifier you give in step 3,
+derived from the book title in natural word order (the title "Solutions Architecture Handbook" gives
+the slug `solutions-architecture-handbook`).
+
 ### 2. Configure the repository once
 
 Set **Settings → Pages → Source** to **GitHub Actions**, and protect `main` with a pull-request rule
