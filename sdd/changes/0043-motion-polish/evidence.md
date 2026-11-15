@@ -19,7 +19,7 @@ from main). The handoff commit also contains this evidence. No release, tag or s
 
 ## Commands and results
 
-Results below come from the executed logs. The final browser receipt is still running.
+Results below come from the executed logs. The browser receipt is complete.
 
 | Check | Command | Result |
 | --- | --- | --- |
@@ -32,7 +32,7 @@ Results below come from the executed logs. The final browser receipt is still ru
 | Frozen template comparison | `python3 tools/scripts/edition_preview.py --repo /tmp/motion-evidence/fixtures/template-book --output /tmp/motion-acceptance/template-after` | Passed; 7 files, 6 matching checksums, 4 HTML pages |
 | Sample | `python3 tools/scripts/edition_preview.py --repo /tmp/motion-sample-source --output /tmp/motion-acceptance/sample-after` | Passed; 7 files, 6 matching checksums, LibreOffice PDF, 18 HTML pages |
 | Portal | `python3 -m handbook_toolkit.portal catalog/catalog.json --output /tmp/motion-acceptance/portal-after --engine quarto` | Passed; 7 HTML pages |
-| Visual receipt | `python3 tools/scripts/motion_evidence.py --root /tmp/motion-acceptance --output /tmp/motion-acceptance/inspection` | In progress; partial strict pixel mismatch disclosed below |
+| Visual receipt | `python3 tools/scripts/motion_evidence.py --root /tmp/motion-acceptance --output /tmp/motion-acceptance/inspection` | Completed: 72 pairs, 24 contact sheets; 69 exact, 3 tiny differences listed below |
 
 Logs: `/tmp/motion-acceptance-{full,build,template,required,sample,portal,inspection}.log`.
 The preview outputs include the unpacked HTML sites, LibreOffice PDFs, screenshots and PREVIEW.md.
@@ -82,4 +82,41 @@ entrance is retained. Result-count feedback follows CSS-observable focus/filter 
 text replacements are not animated by a new script. Quarto/Bootstrap vendor assets are unchanged;
 the guard covers every toolkit-authored/generated stylesheet, not a rewritten vendor bundle.
 
-The default-compositor receipt is in progress. Its first 12 pairs include a strict mismatch of 15 pixels on the dark desktop template cover, within [345, 438, 460, 440]. Sampled computed styles and geometry are equal. This is a disclosed acceptance gap, not a pixel-identity pass. The PR remains draft pending the completed receipt and coordinator decision.
+The coordinator inspected the sample desktop/light contact sheet and accepted its fixed chrome,
+leading title and approximately 250 ms reading-column transition. The coordinator explicitly
+accepted the measured 15-pixel dark desktop template cover difference as rendering noise and
+instructed that it be recorded without further investigation. The completed receipt also contains
+two portal differences, disclosed separately below; that acceptance is not represented as an
+explicit review of those additional cases.
+
+| Non-identical resting pair | Changed pixels | Inclusive bounding box (x1, y1, x2, y2) | Sampled styles/geometry |
+| --- | ---: | --- | --- |
+| Template index, 1440 px, dark, no-preference | 15 | 345, 438, 460, 440 | Equal |
+| Portal index, 390 px, light, no-preference | 16 | 365, 494, 367, 661 | Equal |
+| Portal index, 390 px, dark, no-preference | 14 | 366, 511, 367, 678 | Equal |
+
+The other 69 pairs are pixel-identical, including every sample pair and all 36 reduced-motion
+pairs. No differing sampled computed property was found in the three non-identical pairs:
+`color`, `backgroundColor`, `font`, `border`, and bounding rectangles matched for the inspected
+visible header/sidebar/margin/main/title/footer/callout/figure/table/caption elements. This is a
+bounded sample, not a claim that every DOM property was inspected.
+
+One pixel-identical template chapter pair reports `computed_equal: false`. A focused fresh-load
+recheck found 9 versus 8 visible sampled elements, with identical properties on the common eight;
+the result is retained in `computed-recheck.json`. It is not hidden by the pixel result.
+
+All 24 navigation sheets are actual compositor captures; all 12 reduced-motion navigations report
+no native transition. No external browser request was observed. Every generated after page (29
+total) passed region/readiness/script-inventory checks. The initial all-sites capture process
+terminated with SIGTERM after completing the template cases. The remaining two sites were
+captured with the same committed `inspect` function in separate runs, using `SITES` restricted to
+`sample` or `portal` respectively. Their complete reports and images were combined with the 24
+completed template pairs into `inspection/report.json`; original component reports remain in
+`inspection-sample-final/` and `inspection-portal-final/`. The sample run exits 0; the portal run
+exits 1 because the harness deliberately still rejects any nonzero pixel difference. No tolerance
+was added to the test or harness after the coordinator's acceptance decision.
+
+Manual inspection covered template desktop/light normal and phone/dark reduced, sample
+desktop/light and phone/dark normal, and portal phone/dark normal contact sheets. Chrome remains
+anchored; incoming title precedes body; reduced motion changes directly to the destination without
+a fading intermediate state. No further pixel tuning was attempted, as instructed.

@@ -73,6 +73,12 @@ At-rest pixel identity is checked using unmodified browser screenshots, with no 
 animation completion or hidden normalization. Early mismatches were treated as defects, not
 waived as renderer noise; the paint and marker fixes above resulted from that comparison.
 
+The completed receipt has 69 exact pixel matches and three non-identical pairs (15 template
+pixels; 16 and 14 portal pixels), with equal sampled styles/geometry for those pairs. The coordinator
+accepted the 15-pixel template case as rendering noise and directed the PR to be marked ready;
+the additional portal cases remain explicitly disclosed in evidence.md. No comparison tolerance
+or normalization was introduced. All sample and reduced-motion pairs are pixel-identical.
+
 ## Documentation impact
 
 - CHANGELOG: adds the behavior to main's current toolkit entry; no separate release is created.
