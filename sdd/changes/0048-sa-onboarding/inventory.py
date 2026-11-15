@@ -3,21 +3,20 @@
 for Phase 6, Stage 0: Solutions Architecture Handbook onboarding.
 
 Governed by HUB-DEC-043 and Change 0048.
+Supports CLI arguments --src and --out for reproducible auditing.
 """
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import os
 import re
+from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-
-SRC_DIR = Path("/tmp/agy-sa/src")
-WORKTREE_DIR = Path("/home/ubuntu/github/handbooks-hub.worktrees/sa-onboarding")
-CHANGE_DIR = WORKTREE_DIR / "sdd/changes/0048-sa-onboarding"
 
 # Regexes
 RE_HEADING = re.compile(r"^(#{1,6})\s+(.*?)(?:\s+\{#([a-zA-Z0-9_\-:]+)\})?\s*$")
@@ -31,36 +30,71 @@ RE_SHORTCODE = re.compile(r"\{\{<\s*([a-zA-Z0-9_\-]+)")
 RE_CHECKLIST_CALLOUT = re.compile(r"\*\*Architecture Review Checklist\s*—\s*([^*]+)\*\*")
 RE_IMAGE = re.compile(r"!\[(.*?)\]\((.*?)\)(?:\{#([a-zA-Z0-9_\-]+)[^}]*\})?")
 RE_TBL_CAP = re.compile(r"^:\s+(.+)$", re.M)
+RE_PIPE_SEP = re.compile(r"^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?$")
 RE_PROSE_SEC = re.compile(r"\bSection\s+(\d+(?:\.\d+)*)\b")
 RE_PROSE_FIG = re.compile(r"\bFigure\s+(\d+\.\d+)\b")
 RE_PROSE_TBL = re.compile(r"\bTable\s+(\d+\.\d+)\b")
 
 
-def get_source_files() -> List[Dict[str, Any]]:
-    """List all 479 files in the source repository with size and relative path."""
+def _slug(text: str) -> str:
+    """Standard slug generation matching scripts/build_book.py:_slug."""
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+
+
+def heading_id(level: int, title: str) -> str:
+    """Exact heading ID algorithm matching scripts/build_book.py:heading_id at 13d295b."""
+    title = title.strip()
+    if level == 1:
+        if match := re.match(r"^(\d+)\.\s", title):
+            return f"sec-ch-{int(match.group(1))}"
+        if match := re.match(r"^Appendix ([A-J])\b", title):
+            return f"sec-app-{match.group(1).lower()}"
+        return {
+            "Introduction": "sec-intro",
+            "The Solutions Architect Role": "sec-role",
+            "Conclusions": "sec-conclusions",
+            "References": "sec-references",
+            "Document Control": "sec-document-control",
+        }.get(title, f"sec-{_slug(title)}")
+    if match := re.match(r"^([0-9]+(?:\.[0-9]+)+)\s", title):
+        return "sec-" + match.group(1).replace(".", "-")
+    if match := re.match(r"^([A-J](?:\.[0-9]+)+)\s", title):
+        return "sec-" + match.group(1).replace(".", "-").lower()
+    return f"sec-{_slug(title)}"
+
+
+def get_source_files(src_dir: Path) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, int]]]:
+    """List all 479 files in the source repository with size and relative path, derived from tree."""
     files = []
-    for root, _, filenames in os.walk(SRC_DIR):
+    dir_counts: Dict[str, Dict[str, int]] = defaultdict(lambda: {"files": 0, "bytes": 0})
+
+    for root, _, filenames in os.walk(src_dir):
         if "/.git" in root or root.endswith("/.git"):
             continue
+        rel_root = Path(root).relative_to(src_dir).as_posix()
+        top_dir = rel_root.split("/")[0] if rel_root != "." else "root"
         for fname in filenames:
             fpath = Path(root) / fname
-            rel_path = fpath.relative_to(SRC_DIR).as_posix()
+            rel_path = fpath.relative_to(src_dir).as_posix()
             size = fpath.stat().st_size
-            files.append({"path": rel_path, "bytes": size})
+            files.append({"path": rel_path, "bytes": size, "directory": top_dir})
+            dir_counts[top_dir]["files"] += 1
+            dir_counts[top_dir]["bytes"] += size
+
     files.sort(key=lambda x: x["path"])
-    return files
+    return files, dict(dir_counts)
 
 
-def parse_all_qmd() -> List[Dict[str, Any]]:
+def parse_all_qmd(src_dir: Path) -> List[Dict[str, Any]]:
     """Parse each of the 33 manuscript .qmd files."""
-    qmd_paths = sorted(list(SRC_DIR.glob("manuscript/**/*.qmd")))
+    qmd_paths = sorted(list(src_dir.glob("manuscript/**/*.qmd")))
     results = []
 
-    dot_dir = SRC_DIR / "assets/diagrams/src"
-    png_dir = SRC_DIR / "assets/diagrams/rendered"
+    dot_dir = src_dir / "assets/diagrams/src"
+    png_dir = src_dir / "assets/diagrams/rendered"
 
     for fpath in qmd_paths:
-        rel = fpath.relative_to(SRC_DIR).as_posix()
+        rel = fpath.relative_to(src_dir).as_posix()
         content = fpath.read_text(encoding="utf-8")
         lines = content.splitlines()
 
@@ -134,6 +168,7 @@ def parse_all_qmd() -> List[Dict[str, Any]]:
                         "source_file": rel,
                         "line": i,
                         "level": f"H{lvl_num}",
+                        "level_num": lvl_num,
                         "text": text,
                         "label": explicit_id,
                         "slice": slice_num,
@@ -154,7 +189,8 @@ def parse_all_qmd() -> List[Dict[str, Any]]:
             for m in RE_SHORTCODE.finditer(line):
                 shortcodes.append(m.group(1))
 
-            if sline.startswith("|") and sline.endswith("|") and ("-+-" in sline or "|---" in sline):
+            # Table separators outside code blocks
+            if RE_PIPE_SEP.match(sline):
                 pipe_tables += 1
             elif sline.startswith("+---") or sline.startswith("+==="):
                 grid_tables += 1
@@ -195,6 +231,9 @@ def parse_all_qmd() -> List[Dict[str, Any]]:
         tbl_labels = [l for l in labels_all if l.startswith("tbl-")]
         other_labels = [l for l in labels_all if not (l.startswith("sec-") or l.startswith("fig-") or l.startswith("tbl-"))]
 
+        captioned_count = len(table_captions)
+        uncaptioned_count = max(0, pipe_tables - captioned_count)
+
         results.append({
             "file": rel,
             "slice": slice_num,
@@ -212,8 +251,9 @@ def parse_all_qmd() -> List[Dict[str, Any]]:
             "figures_count": len(fig_files),
             "fig_dot_bytes": fig_dot_bytes,
             "fig_png_bytes": fig_png_bytes,
-            "tables_captioned": len(table_captions),
             "pipe_tables": pipe_tables,
+            "tables_captioned": captioned_count,
+            "tables_uncaptioned": uncaptioned_count,
             "grid_tables": grid_tables,
             "callouts": callouts_dict,
             "checklists": len(checklist_blocks),
@@ -228,7 +268,7 @@ def parse_all_qmd() -> List[Dict[str, Any]]:
 
 
 def build_section_map(parsed_qmds: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Build the exact section mapping for all 620 qmd headings + 5 generated sections."""
+    """Build the exact section mapping for all 620 qmd headings + 5 generated sections + checklist exports."""
     section_map = []
 
     for q in parsed_qmds:
@@ -236,29 +276,37 @@ def build_section_map(parsed_qmds: List[Dict[str, Any]]) -> List[Dict[str, Any]]
         slice_num = q["slice"]
         target_file = src_file
 
+        # Determine how_produced for this file
+        if "appendix-h" in src_file or "appendix-i" in src_file or "appendix-j" in src_file:
+            how = "generated by scripts/generate_catalogs.py (book-owned generator)"
+        elif "appendix-g" in src_file:
+            how = "manuscript annotated by scripts/build_book.py:annotate_glossary_entries (toolkit gap G9)"
+        else:
+            how = "manuscript"
+
         for h in q["headings"]:
             lvl = h["level"]
+            lvl_num = h["level_num"]
             text = h["text"]
-            lbl = h["label"]
+            explicit_lbl = h["label"]
 
-            if not lbl:
-                slug = re.sub(r"[^a-zA-Z0-9]+", "-", text.lower()).strip("-")
-                lbl = f"sec-{slug}"
+            # Use exact heading_id algorithm from scripts/build_book.py:heading_id
+            real_anchor = explicit_lbl if explicit_lbl else heading_id(lvl_num, text)
 
             section_map.append({
                 "source_file": src_file,
                 "heading_level": lvl,
                 "heading_text": text,
-                "label": lbl,
+                "label": real_anchor,
                 "target_file": target_file,
                 "target_heading": text,
-                "how_produced": "manuscript",
+                "how_produced": how,
                 "slice": slice_num,
             })
 
     generated = [
         {
-            "source_file": "(generated / build script: cover)",
+            "source_file": "(generated / scripts/build_book.py:1210 cover)",
             "heading_level": "H1",
             "heading_text": "Cover",
             "label": "sec-cover",
@@ -268,7 +316,7 @@ def build_section_map(parsed_qmds: List[Dict[str, Any]]) -> List[Dict[str, Any]]
             "slice": 1,
         },
         {
-            "source_file": "(generated / build script: reading_order)",
+            "source_file": "(generated / scripts/build_book.py:1200 reading_order)",
             "heading_level": "H1",
             "heading_text": "Contents",
             "label": "sec-contents",
@@ -278,33 +326,43 @@ def build_section_map(parsed_qmds: List[Dict[str, Any]]) -> List[Dict[str, Any]]
             "slice": 1,
         },
         {
-            "source_file": "(generated / build script: list_of_figures)",
+            "source_file": "(generated / scripts/build_book.py:1219 list_of_figures)",
             "heading_level": "H1",
             "heading_text": "List of Figures",
             "label": "sec-list-of-figures",
-            "target_file": "list-of-figures.html",
+            "target_file": "list-of-figures.html / figures.html",
             "target_heading": "List of Figures",
             "how_produced": "toolkit existing (web_lists)",
             "slice": 1,
         },
         {
-            "source_file": "(generated / build script: list_of_tables)",
+            "source_file": "(generated / scripts/build_book.py:1227 list_of_tables)",
             "heading_level": "H1",
             "heading_text": "List of Tables",
             "label": "sec-list-of-tables",
-            "target_file": "list-of-tables.html",
+            "target_file": "list-of-tables.html / tables.html",
             "target_heading": "List of Tables",
             "how_produced": "toolkit existing (web_lists)",
             "slice": 1,
         },
         {
-            "source_file": "(generated / build script: analytic_index)",
+            "source_file": "(generated / scripts/build_book.py:1026 analytic_index)",
             "heading_level": "H1",
             "heading_text": "Index",
             "label": "sec-analytic-index",
             "target_file": "analytic-index.html / manuscript/back-matter/analytic-index.qmd",
             "target_heading": "Index",
-            "how_produced": "toolkit new (G4) / book generator",
+            "how_produced": "toolkit new (G4) (handbook_toolkit.indexes)",
+            "slice": 6,
+        },
+        {
+            "source_file": "checklists/canonical/*.yaml (18 checklists)",
+            "heading_level": "N/A",
+            "heading_text": "Architecture Review Checklists & Assessment Templates",
+            "label": "checklists-exports",
+            "target_file": "checklists/exports/*.csv, *.json, *.md & release assets",
+            "target_heading": "Review Checklists (CSV, JSON, Markdown)",
+            "how_produced": "generated by scripts/checklists.py & export_checklists_csv.py (book-owned generator)",
             "slice": 6,
         },
     ]
@@ -320,25 +378,25 @@ def build_feature_matrix() -> List[Dict[str, str]]:
             "feature": "Analytic Index generation (scripts/build_book.py:1026 analytic_index)",
             "dependent_files": "publishing/index-vocabulary.yaml, analytic-index.qmd, published Index page",
             "category": "(b) new toolkit feature",
-            "rationale": "Serves every handbook that maintains a curated glossary and index vocabulary; gap G4. Dry run verified absent in toolkit 0.11.0 output.",
+            "rationale": "Platform feature for curated glossary and index vocabularies; definite home is handbook-toolkit (indexes module); gap G4. Dry run verified absent in toolkit 0.11.0 output.",
         },
         {
             "feature": "Glossary definition links & backlinks (scripts/build_book.py:980 annotate_glossary_entries, :1002 _defined_sections)",
             "dependent_files": "manuscript/appendices/appendix-g-glossary-of-terms-and-acronyms.qmd",
             "category": "(b) new toolkit feature",
-            "rationale": "Scans chapter occurrences to populate 'Defined in Section X.Y' backlinks in Appendix G; gap G9. Absent in toolkit 0.11.0 output.",
+            "rationale": "Scans chapter occurrences to populate 'Defined in Section X.Y' backlinks in Appendix G; definite home is handbook-toolkit; gap G9. Absent in toolkit 0.11.0 output.",
         },
         {
             "feature": "Glossary body term hyperlinking (scripts/build_book.py:1257 rewrite_glossary_hrefs, :1263 staged_glossary_hrefs)",
             "dependent_files": "All 18 chapters -> appendix-g-glossary-of-terms-and-acronyms.qmd",
             "category": "(b) new toolkit feature",
-            "rationale": "Transforms prose term occurrences in chapter text into links to Appendix G entries (509 links in v3.0.0 vs 41 explicit in preview); gap G9.",
+            "rationale": "Transforms prose term occurrences in chapter text into links to Appendix G entries (509 links in v3.0.0 vs 41 explicit in preview); definite home is handbook-toolkit; gap G9.",
         },
         {
             "feature": "Prose cross-reference linking (scripts/build_book.py:684 link_references)",
             "dependent_files": "All 18 chapters, 10 appendices",
             "category": "(b) new toolkit feature",
-            "rationale": "Hyperlinks prose numbers ('Section X.Y', 'Figure X.Y', 'Table X.Y', 'Chapter X', 'Appendix X') to generated anchor IDs; gap G8. Plain text in preview.",
+            "rationale": "Hyperlinks prose citations ('Section X.Y', 'Figure X.Y', 'Table X.Y', 'Chapter X', 'Appendix X') to real anchors (e.g. sec-1-1); gap G8. Plain text in preview.",
         },
         {
             "feature": "Catalog appendices generator (scripts/generate_catalogs.py)",
@@ -372,7 +430,7 @@ def build_feature_matrix() -> List[Dict[str, str]]:
         },
         {
             "feature": "Table numbering, spans & sequence annotation (scripts/build_book.py:1098 table_spans, :1127 captioned_tables, :1151 table_sequence, :1165 annotate_tables)",
-            "dependent_files": "All 18 chapters, 263 captioned tables",
+            "dependent_files": "All 18 chapters, 263 captioned tables, 113 uncaptioned tables",
             "category": "(a) already covered by toolkit 0.11.0",
             "rationale": "Native Quarto and pandoc handle markdown table captions (: Caption text); toolkit docx_post / table-layout.lua formats tables. Dry-run evidence: 1,037 table elements rendered cleanly.",
         },
@@ -422,13 +480,13 @@ def build_feature_matrix() -> List[Dict[str, str]]:
             "feature": "Link & cross-reference verification (scripts/check_crossrefs.py, check_links.py)",
             "dependent_files": "All 33 manuscript files",
             "category": "(a) already covered by toolkit 0.11.0",
-            "rationale": "handbook_toolkit.references (validate-references) and site_check verify all internal and external anchors. Dry-run evidence: passed cleanly.",
+            "rationale": "handbook_toolkit.references (validate-references) verifies explicit cross-references, labels, and local images; site_check verifies publication assets. Dry-run evidence: passed cleanly.",
         },
         {
             "feature": "Structural validation against rules (scripts/check_structure.py)",
             "dependent_files": "All 18 chapters",
             "category": "(a) already covered by toolkit 0.11.0",
-            "rationale": "handbook_toolkit.manuscript (validate-manuscript) checks profile conformance. 98.5% out-of-the-box alignment.",
+            "rationale": "handbook_toolkit.manuscript (validate-manuscript) checks profile conformance. 14 of 18 chapters pass out-of-the-box.",
         },
         {
             "feature": "DOCX XML and style validation (scripts/check_docx.py)",
@@ -483,6 +541,7 @@ def build_feature_matrix() -> List[Dict[str, str]]:
 
 def generate_inventory_markdown(
     files: List[Dict[str, Any]],
+    dir_counts: Dict[str, Dict[str, int]],
     parsed_qmds: List[Dict[str, Any]],
     sec_map: List[Dict[str, Any]],
     feat_matrix: List[Dict[str, str]],
@@ -493,10 +552,12 @@ def generate_inventory_markdown(
     total_words = sum(q["words"] for q in parsed_qmds)
     total_lines = sum(q["lines"] for q in parsed_qmds)
     total_figures = sum(q["figures_count"] for q in parsed_qmds)
-    total_tables = sum(q["tables_captioned"] for q in parsed_qmds)
+    total_pipe_tables = sum(q["pipe_tables"] for q in parsed_qmds)
+    total_captioned_tables = sum(q["tables_captioned"] for q in parsed_qmds)
+    total_uncaptioned_tables = sum(q["tables_uncaptioned"] for q in parsed_qmds)
     total_checklists = sum(q["checklists"] for q in parsed_qmds)
 
-    slices = {i: {"words": 0, "files": 0, "figures": 0, "dot_bytes": 0, "png_bytes": 0, "tables": 0, "checklists": 0} for i in range(1, 7)}
+    slices = {i: {"words": 0, "files": 0, "figures": 0, "dot_bytes": 0, "png_bytes": 0, "pipe_tables": 0, "captioned_tables": 0, "uncaptioned_tables": 0, "checklists": 0} for i in range(1, 7)}
     for q in parsed_qmds:
         s = q["slice"]
         slices[s]["words"] += q["words"]
@@ -504,7 +565,9 @@ def generate_inventory_markdown(
         slices[s]["figures"] += q["figures_count"]
         slices[s]["dot_bytes"] += q["fig_dot_bytes"]
         slices[s]["png_bytes"] += q["fig_png_bytes"]
-        slices[s]["tables"] += q["tables_captioned"]
+        slices[s]["pipe_tables"] += q["pipe_tables"]
+        slices[s]["captioned_tables"] += q["tables_captioned"]
+        slices[s]["uncaptioned_tables"] += q["tables_uncaptioned"]
         slices[s]["checklists"] += q["checklists"]
 
     md = []
@@ -525,20 +588,32 @@ def generate_inventory_markdown(
     md.append("- **Cloned**: Fresh shallow clone into `/tmp/agy-sa/src` via `gh repo clone cesarcastrocuba/solutions-architecture-handbook /tmp/agy-sa/src -- --branch v3.0.0 --depth 1`.")
     md.append("- **Verification**: `git rev-parse HEAD` = `13d295bfb266c6fb03b8d244666ebbf0e056e6cd`. The reference repository is read-only and never modified.")
     md.append("")
-    md.append(f"### Repository Shape and Byte Allocation ({total_files} files, {total_bytes:,} bytes / ~25.0 MB)")
+    md.append(f"### Repository Shape and Directory Allocation (Derived from Tree: {total_files} files, {total_bytes:,} bytes / ~25.0 MB)")
     md.append("")
     md.append("| Directory / Path | Files | Total Bytes | Description |")
-    md.append("| :--- | :--- | :--- | :--- |")
-    md.append("| `assets/` | 244 | 17,627,471 | 121 Graphviz `.dot` sources (`assets/diagrams/src/`) and 121 rendered `.png` diagrams (`assets/diagrams/rendered/`, 17.5 MB), plus fonts/config |")
-    md.append("| `publishing/` | 42 | 2,313,201 | Styles (`handbook.css`, `reference.docx`, `handbook-typst.typ`), vocabularies (`index-vocabulary.yaml`, `pattern-catalog.yaml`), and vendored fonts (`Selawik`, `Cascadia Code`) |")
-    md.append("| `baseline/` | 13 | 1,813,080 | Immutable RC2 benchmark and reference artifacts |")
-    md.append("| `manuscript/` | 34 | 1,211,401 | 33 `.qmd` files (3 front-matter, 18 chapters, 10 appendices, 2 back-matter) + `manuscript/README.md` |")
-    md.append("| `sdd/` | 38 | 1,159,152 | System design documents, architecture specs, and change records |")
-    md.append("| `checklists/` | 45 | 393,707 | Canonical YAML review checklists (`checklists/canonical/*.yaml`), schemas, and CSV/JSON/MD exports |")
-    md.append("| `scripts/` | 25 | 378,731 | Python build, validation, normalization, and export tools |")
-    md.append("| `docs/` | 13 | 41,531 | Author guide and contributor documentation |")
-    md.append("| Root metadata | 25 | 65,727 | `LICENSE` (CC BY-SA 4.0), `LICENSE-CODE` (MIT), `NOTICE.md`, `README.md`, `CHANGELOG.md`, `DECISIONS.md`, `PROJECT_STATUS.md`, `AGENTS.md`, etc. |")
+    md.append("| :--- | :---: | :---: | :--- |")
+
+    dir_descriptions = {
+        "assets": "121 Graphviz `.dot` sources (`assets/diagrams/src/`) and 121 rendered `.png` diagrams (`assets/diagrams/rendered/`, 17.5 MB), plus fonts/config",
+        "baseline": "Immutable RC2 benchmark and reference artifacts",
+        "checklists": "Canonical YAML review checklists (`checklists/canonical/*.yaml`), schemas, and CSV/JSON/MD exports",
+        "docs": "Author guide and contributor documentation",
+        "manuscript": "33 `.qmd` files (3 front-matter, 18 chapters, 10 appendices, 2 back-matter) + `manuscript/README.md`",
+        "publishing": "Styles (`handbook.css`, `reference.docx`, `handbook-typst.typ`), vocabularies (`index-vocabulary.yaml`, `pattern-catalog.yaml`), and vendored fonts (`Selawik`, `Cascadia Code`)",
+        "root": "`LICENSE` (CC BY-SA 4.0), `LICENSE-CODE` (MIT), `NOTICE.md`, `README.md`, `CHANGELOG.md`, `DECISIONS.md`, `PROJECT_STATUS.md`, `AGENTS.md`, etc.",
+        "scripts": "Python build, validation, normalization, and export tools",
+        "sdd": "System design documents, architecture specs, and change records",
+    }
+
+    for dname, dinfo in sorted(dir_counts.items()):
+        desc = dir_descriptions.get(dname, "Repository files")
+        dlabel = f"`{dname}/`" if dname != "root" else "Root files"
+        md.append(f"| {dlabel} | {dinfo['files']} | {dinfo['bytes']:,} | {desc} |")
+
     md.append(f"| **Total** | **{total_files}** | **{total_bytes:,}** | **Complete repository tree at v3.0.0** |")
+    md.append("")
+    md.append("> [!NOTE]")
+    md.append("> The complete 479-file per-file byte-size inventory is stored in companion dataset [`source_files.csv`](source_files.csv) and machine-readable [`metrics.json`](metrics.json).")
     md.append("")
     md.append("### Published Release Assets (v3.0.0)")
     md.append("")
@@ -553,17 +628,20 @@ def generate_inventory_markdown(
     md.append("## 2. Section Map: Source → Target")
     md.append("")
     md.append("Every section of the published v3.0.0 edition is accounted for. No manuscript section is dropped, consolidated, or omitted.")
-    md.append("This includes all **620 headings** across the 33 `.qmd` files, plus all **5 generated pages/sections** present in the published editions:")
+    md.append("This includes all **620 headings** across the 33 `.qmd` files, plus all **5 generated pages/sections** present in the published editions, and the checklist exports:")
     md.append("1. `Cover` (Web cover and print front matter)")
     md.append("2. `Contents` (Table of Contents)")
     md.append("3. `List of Figures` (`list-of-figures.html` / `figures.html`)")
     md.append("4. `List of Tables` (`list-of-tables.html` / `tables.html`)")
     md.append("5. `Index` (`analytic-index.html` / `analytic-index.qmd`)")
+    md.append("6. `Checklist Exports` (`checklists/exports/*.csv, *.json, *.md`)")
+    md.append("")
+    md.append("Real anchors are derived using the frozen build's exact `heading_id()` logic (e.g. `1.1 Functional Requirements` -> `sec-1-1`). Generated catalog appendices (H, I, J) and transformed glossary entries (G) are explicitly identified with their producers.")
     md.append("")
     md.append("### Totals")
     md.append("")
-    md.append("- **Source sections**: 625 (620 manuscript headings + 5 generated sections).")
-    md.append("- **Target sections**: 625 (all 625 preserved in the new platform repository).")
+    md.append("- **Source sections**: 625 headings (620 manuscript headings + 5 generated sections) + 1 checklist exports entry = **626 mapped items**.")
+    md.append("- **Target sections**: 626 (all 626 preserved in the new platform repository).")
     md.append("- **Unmapped sections**: **0** (zero content lost).")
     md.append("")
     md.append("### Theme-Only Replaced Items")
@@ -585,25 +663,30 @@ def generate_inventory_markdown(
         if sf not in file_summary:
             file_summary[sf] = {"H1": 0, "H2": 0, "H3": 0, "H4": 0, "target": r["target_file"], "how": r["how_produced"], "slice": r["slice"]}
         lvl = r["heading_level"]
-        file_summary[sf][lvl] = file_summary[sf].get(lvl, 0) + 1
+        if lvl in file_summary[sf]:
+            file_summary[sf][lvl] = file_summary[sf].get(lvl, 0) + 1
 
     for sf, data in file_summary.items():
         total_s = data["H1"] + data["H2"] + data["H3"] + data["H4"]
-        breakdown = f"H1:{data['H1']}, H2:{data['H2']}, H3:{data['H3']}"
-        if data["H4"] > 0:
-            breakdown += f", H4:{data['H4']}"
+        if total_s > 0:
+            breakdown = f"H1:{data['H1']}, H2:{data['H2']}, H3:{data['H3']}"
+            if data["H4"] > 0:
+                breakdown += f", H4:{data['H4']}"
+        else:
+            breakdown = "Data / exports"
+            total_s = 1
         md.append(f"| `{sf}` | {breakdown} | **{total_s}** | `{data['target']}` | {data['how']} | {data['slice']} |")
 
     md.append("")
     md.append("> [!NOTE]")
-    md.append("> The complete 625-row itemized section mapping is stored in companion dataset [`section_map.csv`](section_map.csv) in this directory.")
+    md.append("> The complete itemized section mapping with real anchors and producers is stored in companion dataset [`section_map.csv`](section_map.csv).")
     md.append("")
 
     # Section 3: Per-chapter metrics
     md.append("## 3. Per-Chapter Metrics")
     md.append("")
-    md.append("| File | Slice | Words | Lines | Figs | DOT B | PNG B | Tables | Checklists | Callouts |")
-    md.append("| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |")
+    md.append("| File | Slice | Words | Lines | Figs | DOT B | PNG B | Pipe Tbl | Cap Tbl | Uncap Tbl | Checklists | Callouts |")
+    md.append("| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |")
 
     for r in parsed_qmds:
         f_name = Path(r["file"]).name
@@ -613,15 +696,18 @@ def generate_inventory_markdown(
         fc = r["figures_count"]
         db = r["fig_dot_bytes"]
         pb = r["fig_png_bytes"]
+        pt = r["pipe_tables"]
         tc = r["tables_captioned"]
+        tu = r["tables_uncaptioned"]
         ck = r["checklists"]
         c_str = ", ".join(f"{k}:{v}" for k, v in r["callouts"].items()) if r["callouts"] else "-"
-        md.append(f"| `{f_name}` | {s} | {w:,} | {l:,} | {fc} | {db:,} | {pb:,} | {tc} | {ck} | {c_str} |")
+        md.append(f"| `{f_name}` | {s} | {w:,} | {l:,} | {fc} | {db:,} | {pb:,} | {pt} | {tc} | {tu} | {ck} | {c_str} |")
 
-    md.append(f"| **Total ({len(parsed_qmds)} files)** | - | **{total_words:,}** | **{total_lines:,}** | **{total_figures}** | **{sum(r['fig_dot_bytes'] for r in parsed_qmds):,}** | **{sum(r['fig_png_bytes'] for r in parsed_qmds):,}** | **{total_tables}** | **{total_checklists}** | **note:36, tip:18, warning:112, important:110** |")
+    md.append(f"| **Total ({len(parsed_qmds)} files)** | - | **{total_words:,}** | **{total_lines:,}** | **{total_figures}** | **{sum(r['fig_dot_bytes'] for r in parsed_qmds):,}** | **{sum(r['fig_png_bytes'] for r in parsed_qmds):,}** | **{total_pipe_tables}** | **{total_captioned_tables}** | **{total_uncaptioned_tables}** | **{total_checklists}** | **note:36, tip:18, warning:112, important:110** |")
     md.append("")
+    md.append("- **Table inventory**: Exactly **376 pipe-table separators** exist outside fenced code blocks in the frozen manuscript. Of these, **263 are captioned tables** (`: Caption text`), and **113 are uncaptioned data/fiche tables** (e.g. artifact fiches, comparison tables, checklist matrices). Both categories are tracked per file in [`per_chapter_metrics.csv`](per_chapter_metrics.csv).")
     md.append("- **Explicit cross-reference labels**: 121 `{#fig-...}` figure labels, 263 table captions. `handbook-toolkit validate-references` checks these explicit anchors, labels, and image paths.")
-    md.append("- **Prose references**: 673 explicit prose references (`Section X.Y`, `Figure X.Y`, `Table X.Y`, `Chapter X`, `Appendix X`) plus bare section citations (e.g. `(3.2.1)`). These are plain text in standard Quarto output; hyperlinking them requires platform gap **G8** (`link_references`).")
+    md.append("- **Prose references**: 673 explicit prose references (`Section X.Y`, `Figure X.Y`, `Table X.Y`, `Chapter X`, `Appendix X`) plus bare section citations (e.g. `(3.2.1)`). These are plain text in standard Quarto output; hyperlinking them to real anchors (`sec-1-1`) requires platform gap **G8** (`link_references`).")
     md.append("- **Raw HTML / LaTeX / OpenXML blocks**: None in the manuscript bodies (pure markdown).")
     md.append("- **Footnotes and shortcodes**: None (pure Quarto markdown).")
     md.append("- **Lua filters**: None used in the manuscript source.")
@@ -649,7 +735,7 @@ def generate_inventory_markdown(
     # Section 5: Dry run results
     md.append("## 5. Dry Run Results on Scratch Scaffold")
     md.append("")
-    md.append("A scratch scaffold was constructed using `handbooks-template` at `template-v1.6.0` (commit `8a6d5ae`) in `/tmp/agy-sa/book`:")
+    md.append("A scratch scaffold was constructed using `handbooks-template` at `template-v1.6.0` (peeled commit `8a6d5aeefdb5401f3f69a3378975003b9083a50b`) in `/tmp/agy-sa/book`:")
     md.append("1. Scaffolding initialized via `.github/scripts/initialize_book.py --id solutions-architecture-handbook --title \"Solutions Architecture Handbook\" --repository-url \"https://github.com/cesarcastrocuba/handbook-solutions-architecture\"`.")
     md.append("2. Pinned toolkit `0.11.0` installed in dedicated virtual environment (`/tmp/agy-sa/venv`).")
     md.append("3. Frozen manuscript (33 `.qmd` files) and 121 rendered `.png` diagrams copied in; `manuscript/book.yml` configured with the reading order.")
@@ -660,9 +746,9 @@ def generate_inventory_markdown(
     md.append("#### Gate 1: Fast Checks (`make check`)")
     md.append("```bash")
     md.append("handbook-toolkit --root . validate-book --full")
-    md.append("# /tmp/agy-sa/book/book.yaml: OK")
+    md.append("# /tmp/agy-sa/book/book.yaml: OK (Exit code: 0)")
     md.append("handbook-toolkit --root . validate-references book.yaml")
-    md.append("# /tmp/agy-sa/book/book.yaml: OK")
+    md.append("# /tmp/agy-sa/book/book.yaml: OK (Exit code: 0)")
     md.append("```")
     md.append("- **Exit Code**: `0` (**PASSED**).")
     md.append("- **Result**: All descriptors, schemas, cross-references, figure targets and table references passed deterministic checks without errors.")
@@ -679,12 +765,16 @@ def generate_inventory_markdown(
     md.append("  missing chapter element \"Review Checklist\": expected a callout titled \"Review Checklist\"")
     md.append("  ```")
     md.append("")
-    md.append("### Error Classification & Root Cause Analysis")
+    md.append("### Error Classification & Diagnostic Audit")
     md.append("")
-    md.append("Auditing all 33 files with `validate-manuscript` revealed three distinct failure classes:")
+    md.append("Diagnostic audit executed with exact command:")
+    md.append("```bash")
+    md.append("handbook-toolkit validate-manuscript <file> --profile profiles/standard/profile.yaml")
+    md.append("```")
+    md.append("This revealed three distinct failure classes:")
     md.append("")
     md.append("#### Failure Class 1: Review Checklist Callout Title Attribute (18 files)")
-    md.append("- **Counts**: Exactly 18 of 18 chapters (`ch01` through `ch18`).")
+    md.append("- **Counts**: Exactly 18 of 18 chapters (`ch01` through `ch18`) failed with exit code 1.")
     md.append("- **Verbatim Output**:")
     md.append("  ```")
     md.append("  /tmp/agy-sa/book/manuscript/chapters/ch01-architecture-requirements.qmd: missing chapter element \"Review Checklist\": expected a callout titled \"Review Checklist\"")
@@ -698,7 +788,7 @@ def generate_inventory_markdown(
     md.append("- **Remedy**: Either (a) mechanical content adaptation during import: add `title=\"Review Checklist\"` to each callout, or (b) platform enhancement **G3** allowing bold lead-in titles.")
     md.append("")
     md.append("#### Failure Class 2: Appendix Evaluation Under Chapter Anatomy (10 files)")
-    md.append("- **Counts**: All 10 appendices (`appendix-a` through `appendix-j`).")
+    md.append("- **Counts**: All 10 appendices (`appendix-a` through `appendix-j`) failed with exit code 1.")
     md.append("- **Root Cause**: `handbook_toolkit.build_staging._validate_manuscripts` groups targets in chapter mode as `targets = [*chapters, *appendices]` and validates both against the chapter profile. Appendices are reference/catalog material and intentionally do not contain chapter elements (`When to Use This Chapter`, `Worked Example`, `Review Checklist`, `Further Reading`, or 4-label unit structure).")
     md.append("- **Remedy**: Platform gap **G2**: allow appendices to be validated under an appendix profile or bypass chapter anatomy checks.")
     md.append("")
@@ -731,6 +821,13 @@ def generate_inventory_markdown(
     md.append("  ```")
     md.append("  *Non-destructive adaptation*: Adapt profile validator unit detection to respect H3 sub-unit headings within a major section, validating each sub-unit independently.")
     md.append("")
+    md.append("### Second Dry Run with Checklist Titles Added")
+    md.append("")
+    md.append("When `title=\"Review Checklist\"` was added to the 18 chapters and re-validated:")
+    md.append("- **14 of 18 chapters passed 100% cleanly** (exit code 0): `ch01`, `ch02`, `ch04`, `ch05`, `ch07`, `ch08`, `ch09`, `ch10`, `ch11`, `ch12`, `ch13`, `ch14`, `ch15`, `ch18`.")
+    md.append("- Exactly 4 chapters exhibited the single-line issues identified above: `ch03`, `ch06`, `ch16`, `ch17`.")
+    md.append("- Conformance rate: **14 of 18 chapters (77.8%)** pass completely without modifications beyond the checklist callout title. At the heading unit level, **321 of 325 chapter units (98.8%)** pass profile conformance out-of-the-box.")
+    md.append("")
     md.append("### Third Dry Run: Full Rendered Build & Parity Baseline")
     md.append("")
     md.append("To verify all `(a) already covered by toolkit 0.11.0` claims and obtain exact parity metrics, a third scratch dry run was executed with a documented, scratch-only workaround for G2/G3:")
@@ -756,7 +853,7 @@ def generate_inventory_markdown(
     md.append("| Metric / Dimension | Preview Build (`dist/`) | Frozen v3.0.0 Release | Parity Status & Platform Notes |")
     md.append("| :--- | :---: | :---: | :--- |")
     md.append("| **PDF Page Count** | **490 pages** | **570 pages** | Rendered via Typst 0.15.1. Preview uses Hub standard design tokens (Source Sans 3, Source Serif 4, JetBrains Mono, 2.2cm x 2.4cm margins) resulting in tighter, more efficient layout (-80 pages). |")
-    md.append("| **DOCX Total Headings** | **624 headings** | **625 headings** | Manuscript headings match **100% exactly** (620 / 620: Title:1, H1:33, H2:261, H3:322, H4:4). Difference is exactly 1 heading: missing TOCHeading for Index (Gap G4). |")
+    md.append("| **DOCX Total Headings** | **624 headings** | **625 headings** | Manuscript headings match **100% exactly** (620 / 620: Title: 1, H1: 33, H2: 261, H3: 322, H4: 4). Difference is exactly 1 heading: missing TOCHeading for Index (Gap G4). |")
     md.append("| **DOCX Heading 1 (H1)** | **33** | **33** | **100% exact parity**. |")
     md.append("| **DOCX Heading 2 (H2)** | **261** | **261** | **100% exact parity**. |")
     md.append("| **DOCX Heading 3 (H3)** | **322** | **322** | **100% exact parity**. |")
@@ -771,7 +868,7 @@ def generate_inventory_markdown(
     md.append("| **Glossary Body Links** | **41** | **509** | 41 explicit author markdown links in preview. 468 term links generated by `rewrite_glossary_hrefs` absent (Gap G9). |")
     md.append("| **Glossary Backlinks** | **Absent** | **Present** | Appendix G 'Defined in Section X.Y' pointers generated by `annotate_glossary_entries` absent (Gap G9). |")
     md.append("| **Prose Cross-References** | **Plain text** | **Hyperlinks** | 673 explicit prose references ('Section X.Y', 'Figure X.Y', etc.) linked in v3.0.0 via `link_references`, plain text in preview (Gap G8). |")
-    md.append("| **Analytic Index** | **Absent** | **Present** (487 KB) | Generated in v3.0.0 from vocabulary via `analytic_index`, absent in preview (Gap G4). |")
+    md.append("| **Analytic Index** | **Absent** | **Present** (487 KB) | Generated in v3.0.0 from vocabulary via `analytic_index`, absent in preview (Gap G4). Definite platform home is `handbook-toolkit`. |")
     md.append("")
 
     # Section 6: Licensing review
@@ -802,8 +899,8 @@ def generate_inventory_markdown(
     md.append("")
     md.append("Import will proceed in 6 incremental slices from frozen tag `v3.0.0` into `cesarcastrocuba/handbook-solutions-architecture`:")
     md.append("")
-    md.append("| Slice | Contents | Files | Words | Figures | PNG Bytes | Tables | Checklists | Adaptations Needed | Gate Dependencies |")
-    md.append("| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- | :--- |")
+    md.append("| Slice | Contents | Files | Words | Figures | PNG Bytes | Pipe Tbl | Cap Tbl | Uncap Tbl | Checklists | Adaptations Needed | Gate Dependencies |")
+    md.append("| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- | :--- |")
 
     for s in range(1, 7):
         d = slices[s]
@@ -838,10 +935,10 @@ def generate_inventory_markdown(
             adaptations = "Glossary definition backlinks (G9); checklist exports (G6); pattern catalog"
             deps = "G2 (Appendix validation), G4 (Analytic Index), G9 (Glossary)"
 
-        md.append(f"| **{name}** | {contents} | {d['files']} | {d['words']:,} | {d['figures']} | {d['png_bytes']:,} | {d['tables']} | {d['checklists']} | {adaptations} | {deps} |")
+        md.append(f"| **{name}** | {contents} | {d['files']} | {d['words']:,} | {d['figures']} | {d['png_bytes']:,} | {d['pipe_tables']} | {d['captioned_tables']} | {d['uncaptioned_tables']} | {d['checklists']} | {adaptations} | {deps} |")
 
     md.append("")
-    md.append(f"**Total Corpus**: **{total_files}** files in reference repository, **33** manuscript `.qmd` files, **{total_words:,}** words, **{total_figures}** figures (83.9 KB DOT, 17.5 MB PNG), **{total_tables}** tables, **{total_checklists}** review checklists.")
+    md.append(f"**Total Corpus**: **{total_files}** files in reference repository, **33** manuscript `.qmd` files, **{total_words:,}** words, **{total_figures}** figures (83.9 KB DOT, 17.5 MB PNG), **{total_pipe_tables}** pipe tables (**{total_captioned_tables}** captioned, **{total_uncaptioned_tables}** uncaptioned), **{total_checklists}** review checklists.")
     md.append("")
     md.append("### Detail: Slice 1 & Document Control Adaptation (G7)")
     md.append("`manuscript/front-matter/document-control.qmd` in the reference repository contains:")
@@ -884,7 +981,7 @@ def generate_inventory_markdown(
     md.append("- **Evidence**: The reference book generated `analytic-index.qmd` via `scripts/build_book.py:1026 analytic_index` from `publishing/index-vocabulary.yaml`. In toolkit 0.11.0, there is no built-in analytic index generator, causing the published Index page and DOCX TOCHeading to be absent in preview.")
     md.append("- **Impact**: Long-form reference handbooks lose back-of-the-book analytic indexing.")
     md.append("- **Affected Files**: `handbook_toolkit/indexes.py` / `build_book.py`.")
-    md.append("- **Proposed Home**: `handbook-toolkit`.")
+    md.append("- **Definite Home**: `handbook-toolkit` (core platform capability for curated reference handbooks).")
     md.append("- **Size**: Medium.")
     md.append("")
     md.append("### G5: Automated Catalog Appendices from Callouts")
@@ -910,7 +1007,7 @@ def generate_inventory_markdown(
     md.append("- **Size**: Small.")
     md.append("")
     md.append("### G8: Cross-Reference Linking for Prose Numbers")
-    md.append("- **Evidence**: `scripts/build_book.py:684 link_references` scanned manuscript text for prose references (`Section X.Y`, `Figure X.Y`, `Table X.Y`, `Chapter X`, `Appendix X`, bare `(X.Y.Z)`) and converted them into clickable hyperlinks pointing to generated anchor IDs. In toolkit 0.11.0 output, these remain plain unlinked text.")
+    md.append("- **Evidence**: `scripts/build_book.py:684 link_references` scanned manuscript text for prose references (`Section X.Y`, `Figure X.Y`, `Table X.Y`, `Chapter X`, `Appendix X`, bare `(X.Y.Z)`) and converted them into clickable hyperlinks pointing to real anchors (`sec-1-1`). In toolkit 0.11.0 output, these remain plain unlinked text.")
     md.append("- **Impact**: Over 673 cross-references across 18 chapters lose clickability in HTML and PDF editions.")
     md.append("- **Affected Files**: `handbook_toolkit/references.py`, lua filters.")
     md.append("- **Proposed Home**: `handbook-toolkit`.")
@@ -942,37 +1039,52 @@ def generate_inventory_markdown(
 
 
 def main():
-    CHANGE_DIR.mkdir(parents=True, exist_ok=True)
+    parser = argparse.ArgumentParser(description="Deterministic inventory for SA handbook onboarding")
+    parser.add_argument("--src", type=Path, default=Path("/tmp/agy-sa/src"), help="Source repository directory")
+    parser.add_argument("--out", type=Path, default=Path(__file__).parent, help="Output directory")
+    args = parser.parse_args()
 
-    print("Extracting files...")
-    files = get_source_files()
+    src_dir = args.src.resolve()
+    out_dir = args.out.resolve()
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"Extracting files from {src_dir}...")
+    files, dir_counts = get_source_files(src_dir)
     total_source_bytes = sum(f["bytes"] for f in files)
     print(f"Total source files: {len(files)}, Total bytes: {total_source_bytes}")
 
     print("Parsing manuscript .qmd files...")
-    parsed_qmds = parse_all_qmd()
+    parsed_qmds = parse_all_qmd(src_dir)
     print(f"Parsed {len(parsed_qmds)} files.")
 
-    print("Building section map...")
+    print("Building section map with real anchors and producers...")
     section_map = build_section_map(parsed_qmds)
     print(f"Total mapped sections: {len(section_map)}")
 
     print("Building feature matrix...")
     feature_matrix = build_feature_matrix()
 
-    # Save metrics JSON
-    with open(CHANGE_DIR / "metrics.json", "w", encoding="utf-8") as f:
+    # Save metrics JSON (with per-file byte inventory and directory breakdown)
+    with open(out_dir / "metrics.json", "w", encoding="utf-8") as f:
         json.dump({
             "source_commit": "13d295bfb266c6fb03b8d244666ebbf0e056e6cd",
             "source_tag": "v3.0.0",
             "total_files": len(files),
             "total_bytes": total_source_bytes,
+            "directory_counts": dir_counts,
+            "files": files,
             "parsed_qmds": parsed_qmds,
             "total_sections": len(section_map),
         }, f, indent=2)
 
-    # Save section map CSV
-    with open(CHANGE_DIR / "section_map.csv", "w", encoding="utf-8", newline="") as f:
+    # Save source files CSV (per-file byte-size inventory)
+    with open(out_dir / "source_files.csv", "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, lineterminator="\n", fieldnames=["path", "bytes", "directory"])
+        writer.writeheader()
+        writer.writerows(files)
+
+    # Save section map CSV (real anchors, producers, exports)
+    with open(out_dir / "section_map.csv", "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, lineterminator="\n", fieldnames=[
             "source_file", "heading_level", "heading_text", "label",
             "target_file", "target_heading", "how_produced", "slice"
@@ -980,14 +1092,14 @@ def main():
         writer.writeheader()
         writer.writerows(section_map)
 
-    # Save per-chapter metrics CSV
-    with open(CHANGE_DIR / "per_chapter_metrics.csv", "w", encoding="utf-8", newline="") as f:
+    # Save per-chapter metrics CSV (includes pipe_tables, captioned, uncaptioned)
+    with open(out_dir / "per_chapter_metrics.csv", "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, lineterminator="\n", fieldnames=[
             "file", "slice", "words", "lines",
             "sec_labels", "fig_labels", "tbl_labels", "other_labels",
             "at_crossrefs", "prose_sec_refs", "prose_fig_refs", "prose_tbl_refs",
             "figures_count", "fig_dot_bytes", "fig_png_bytes",
-            "tables_captioned", "pipe_tables", "grid_tables",
+            "pipe_tables", "tables_captioned", "tables_uncaptioned", "grid_tables",
             "checklists", "ext_links", "footnotes", "raw_blocks", "shortcodes", "lua_filters"
         ])
         writer.writeheader()
@@ -996,16 +1108,16 @@ def main():
             writer.writerow(row)
 
     # Save feature matrix CSV
-    with open(CHANGE_DIR / "feature_matrix.csv", "w", encoding="utf-8", newline="") as f:
+    with open(out_dir / "feature_matrix.csv", "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, lineterminator="\n", fieldnames=["feature", "dependent_files", "category", "rationale"])
         writer.writeheader()
         writer.writerows(feature_matrix)
 
     # Save inventory.md
-    inventory_md = generate_inventory_markdown(files, parsed_qmds, section_map, feature_matrix).rstrip() + "\n"
-    (CHANGE_DIR / "inventory.md").write_text(inventory_md, encoding="utf-8")
+    inventory_md = generate_inventory_markdown(files, dir_counts, parsed_qmds, section_map, feature_matrix).rstrip() + "\n"
+    (out_dir / "inventory.md").write_text(inventory_md, encoding="utf-8")
 
-    print("CSV files, metrics.json, and inventory.md written successfully.")
+    print(f"Generated datasets written successfully to {out_dir}.")
 
 
 if __name__ == "__main__":
