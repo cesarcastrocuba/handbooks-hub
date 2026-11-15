@@ -105,7 +105,7 @@ class DocxValidatorTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
 
-    def check(self, *, valid: bool):
+    def check(self, *, valid: bool, build_invariants: bool = True):
         path = Path(self.temp.name) / 'fixture.docx'
         with ZipFile(path, 'w') as archive:
             archive.writestr('[Content_Types].xml', '<Types/>')
@@ -113,13 +113,18 @@ class DocxValidatorTests(unittest.TestCase):
             archive.writestr('word/document.xml', ET.tostring(self.root))
             archive.writestr('word/styles.xml', ET.tostring(self.styles))
             archive.writestr('word/settings.xml', ET.tostring(self.settings))
-        issues = inspect_payload(path, 'docx')
+        issues = inspect_payload(path, 'docx', build_invariants=build_invariants)
         self.assertEqual(not issues, valid, [str(issue) for issue in issues])
 
     def test_dirty_attribute_is_forbidden(self):
         self.check(valid=True)
         self.root.find('.//' + W + 'r').set(W + 'dirty', 'false')
         self.check(valid=False)
+
+    def test_the_published_gate_does_not_apply_build_invariants(self):
+        self.root.find('.//' + W + 'r').set(W + 'dirty', 'true')
+        self.check(valid=False)
+        self.check(valid=True, build_invariants=False)
 
     def test_settings_must_not_update_fields_on_open(self):
         self.check(valid=True)

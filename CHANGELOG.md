@@ -3,6 +3,16 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
+## [0.10.4] - 2026-11-15
+
+### Fixed
+
+- The online release gate (`catalog_verification`) applied the build invariants of the current
+  toolkit to releases built by older versions, so a new Word or site rule rejected an edition that
+  was valid when it was published and blocked the portal deployment. `inspect_payload` now takes
+  `build_invariants`; the release gate checks integrity, format and local targets only. This
+  change is hub-side: books do not need `0.10.4`.
+
 ## [0.10.3] - 2026-11-15
 
 ### Changed
