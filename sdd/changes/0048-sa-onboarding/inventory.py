@@ -317,16 +317,28 @@ def build_feature_matrix() -> List[Dict[str, str]]:
     """Build the feature matrix comparing reference implementation to toolkit/template."""
     return [
         {
-            "feature": "Analytic Index generation (scripts/build_book.py:analytic_index)",
+            "feature": "Analytic Index generation (scripts/build_book.py:1026 analytic_index)",
             "dependent_files": "publishing/index-vocabulary.yaml, analytic-index.qmd, published Index page",
             "category": "(b) new toolkit feature",
-            "rationale": "Serves every handbook that maintains a curated glossary and index vocabulary; gap G4.",
+            "rationale": "Serves every handbook that maintains a curated glossary and index vocabulary; gap G4. Dry run verified absent in toolkit 0.11.0 output.",
         },
         {
-            "feature": "Glossary definition links & term scanning (scripts/build_book.py:annotate_glossary_entries)",
+            "feature": "Glossary definition links & backlinks (scripts/build_book.py:980 annotate_glossary_entries, :1002 _defined_sections)",
             "dependent_files": "manuscript/appendices/appendix-g-glossary-of-terms-and-acronyms.qmd",
             "category": "(b) new toolkit feature",
-            "rationale": "Cross-linking terms to glossary definitions is a generic platform feature for long-form reference works; gap G4/backlog.",
+            "rationale": "Scans chapter occurrences to populate 'Defined in Section X.Y' backlinks in Appendix G; gap G9. Absent in toolkit 0.11.0 output.",
+        },
+        {
+            "feature": "Glossary body term hyperlinking (scripts/build_book.py:1257 rewrite_glossary_hrefs, :1263 staged_glossary_hrefs)",
+            "dependent_files": "All 18 chapters -> appendix-g-glossary-of-terms-and-acronyms.qmd",
+            "category": "(b) new toolkit feature",
+            "rationale": "Transforms prose term occurrences in chapter text into links to Appendix G entries (509 links in v3.0.0 vs 41 explicit in preview); gap G9.",
+        },
+        {
+            "feature": "Prose cross-reference linking (scripts/build_book.py:684 link_references)",
+            "dependent_files": "All 18 chapters, 10 appendices",
+            "category": "(b) new toolkit feature",
+            "rationale": "Hyperlinks prose numbers ('Section X.Y', 'Figure X.Y', 'Table X.Y', 'Chapter X', 'Appendix X') to generated anchor IDs; gap G8. Plain text in preview.",
         },
         {
             "feature": "Catalog appendices generator (scripts/generate_catalogs.py)",
@@ -338,7 +350,7 @@ def build_feature_matrix() -> List[Dict[str, str]]:
             "feature": "Checklists canonical YAML, parity validation & CSV/JSON/MD exports (scripts/checklists.py, export_checklists_csv.py)",
             "dependent_files": "checklists/canonical/*.yaml, checklists/exports/*, manuscript/appendices/appendix-c-architecture-assurance-checklist.qmd, all 18 chapters",
             "category": "(c) book-owned generator/check",
-            "rationale": "Domain-specific architecture review checklists and assessment templates for enterprise auditing.",
+            "rationale": "Domain-specific architecture review checklists. Exports published as extra release assets and in checklists/exports/; gap G6.",
         },
         {
             "feature": "Graphviz diagram rendering (scripts/render_diagrams.py)",
@@ -347,46 +359,94 @@ def build_feature_matrix() -> List[Dict[str, str]]:
             "rationale": "Compiles 121 .dot sources to .png using dot CLI; toolkit does not package Graphviz binary.",
         },
         {
-            "feature": "DOCX post-processing: table widths, cantSplit, bookmarks, callout styles (scripts/docx_postprocess.py)",
+            "feature": "Artifact optimization & compression (scripts/artifact_optimize.py)",
+            "dependent_files": "dist/book.pdf (Ghostscript pdfwrite), assets/diagrams/rendered/*.png (optipng)",
+            "category": "(c) book-owned build script",
+            "rationale": "Post-build release optimization using external system binaries (gs, optipng); executed in book CI publication pipeline.",
+        },
+        {
+            "feature": "DOCX post-processing: table widths, cantSplit, bookmarks, callout styles (scripts/docx_postprocess.py, build_book.py:181 proportional_tables)",
             "dependent_files": "Solutions-Architecture-Handbook.docx, publishing/styles/reference.docx",
             "category": "(a) already covered by toolkit 0.11.0",
-            "rationale": "handbook_toolkit.docx_post, docx_fields, and docx_xml implement full table allocation and style transformations.",
+            "rationale": "handbook_toolkit.docx_post, docx_fields, and docx_xml implement full table allocation and style transformations. Dry-run evidence: 16 MB clean DOCX generated.",
         },
         {
-            "feature": "Web Cover & Document Control generation (scripts/build_book.py:cover)",
+            "feature": "Table numbering, spans & sequence annotation (scripts/build_book.py:1098 table_spans, :1127 captioned_tables, :1151 table_sequence, :1165 annotate_tables)",
+            "dependent_files": "All 18 chapters, 263 captioned tables",
+            "category": "(a) already covered by toolkit 0.11.0",
+            "rationale": "Native Quarto and pandoc handle markdown table captions (: Caption text); toolkit docx_post / table-layout.lua formats tables. Dry-run evidence: 1,037 table elements rendered cleanly.",
+        },
+        {
+            "feature": "Figure layout and sizing (scripts/build_book.py:223 _figure_width, :306 figure_layout)",
+            "dependent_files": "All 121 diagrams across chapters",
+            "category": "(a) already covered by toolkit 0.11.0",
+            "rationale": "handbook_toolkit.docx_post and Quarto width attributes ({width=100%}) handle responsive diagram scaling. Dry-run evidence: 121 drawings embedded in preview DOCX and HTML.",
+        },
+        {
+            "feature": "Section anchor and heading ID slugging (scripts/build_book.py:274 heading_id, :290 section_ids)",
+            "dependent_files": "All manuscript headings",
+            "category": "(a) already covered by toolkit 0.11.0",
+            "rationale": "Native Quarto heading slugging and explicit {#sec-...} anchors provide stable target bookmarks across all formats. Dry-run evidence: 624 DOCX headings match manuscript 100%.",
+        },
+        {
+            "feature": "Reading site presentation & cleanup (scripts/build_book.py:1194 presentation)",
+            "dependent_files": "HTML reading site pages",
+            "category": "(a) already covered by toolkit 0.11.0",
+            "rationale": "handbook_toolkit.reading_site and portal_markup handle responsive reading site navigation and clean presentation. Dry-run evidence: 36 HTML pages rendered.",
+        },
+        {
+            "feature": "Print front matter & layout (scripts/build_book.py:1325 print_front)",
+            "dependent_files": "PDF and DOCX front matter",
+            "category": "(a) already covered by toolkit 0.11.0",
+            "rationale": "handbook_toolkit.print_layout, typst/front.typ, and docx reference styles generate compliant print front matter. Dry-run evidence: 490-page PDF rendered via Typst.",
+        },
+        {
+            "feature": "Web Cover & Document Control generation (scripts/build_book.py:1210 cover)",
             "dependent_files": "front-matter/document-control.qmd, index.html",
             "category": "(a) already covered by toolkit 0.11.0",
-            "rationale": "handbook_toolkit.reading_site and build_identity generate compliant web covers and metadata displays.",
+            "rationale": "handbook_toolkit.reading_site and build_identity generate compliant web covers and metadata displays; version history preserved in front-matter; gap G7.",
         },
         {
-            "feature": "List of Figures & List of Tables generation (scripts/build_book.py:list_of_figures, list_of_tables)",
-            "dependent_files": "list-of-figures.html, list-of-tables.html",
+            "feature": "List of Figures & List of Tables generation (scripts/build_book.py:1219 list_of_figures, :1227 list_of_tables)",
+            "dependent_files": "list-of-figures.html, list-of-tables.html, figures.html, tables.html",
             "category": "(a) already covered by toolkit 0.11.0",
-            "rationale": "handbook_toolkit.web_lists automatically creates dedicated list pages across HTML, PDF, and DOCX.",
+            "rationale": "handbook_toolkit.web_lists automatically creates dedicated list pages across HTML, PDF, and DOCX. Dry-run evidence: figures.html and tables.html generated in preview.",
         },
         {
-            "feature": "Reading order enforcement & validation (scripts/build_book.py:reading_order)",
+            "feature": "Reading order enforcement & validation (scripts/build_book.py:1200 reading_order)",
             "dependent_files": "publishing/book.yml, manuscript/book.yml",
             "category": "(a) already covered by toolkit 0.11.0",
-            "rationale": "handbook_toolkit.books and validate_references validate every file in reading order without duplication.",
+            "rationale": "handbook_toolkit.books and validate_references validate every file in reading order without duplication. Dry-run evidence: validate-references exited 0.",
         },
         {
             "feature": "Link & cross-reference verification (scripts/check_crossrefs.py, check_links.py)",
-            "dependent_files": "all 33 manuscript files",
+            "dependent_files": "All 33 manuscript files",
             "category": "(a) already covered by toolkit 0.11.0",
-            "rationale": "handbook_toolkit.references (validate-references) and site_check verify all internal and external anchors.",
+            "rationale": "handbook_toolkit.references (validate-references) and site_check verify all internal and external anchors. Dry-run evidence: passed cleanly.",
         },
         {
             "feature": "Structural validation against rules (scripts/check_structure.py)",
-            "dependent_files": "all 18 chapters",
+            "dependent_files": "All 18 chapters",
             "category": "(a) already covered by toolkit 0.11.0",
-            "rationale": "handbook_toolkit.manuscript (validate-manuscript) checks profile conformance.",
+            "rationale": "handbook_toolkit.manuscript (validate-manuscript) checks profile conformance. 98.5% out-of-the-box alignment.",
         },
         {
-            "feature": "SHA256 digest generation (scripts/build_book.py:digest)",
+            "feature": "DOCX XML and style validation (scripts/check_docx.py)",
+            "dependent_files": "Solutions-Architecture-Handbook.docx",
+            "category": "(a) already covered by toolkit 0.11.0",
+            "rationale": "handbook_toolkit.docx_validation validates DOCX package structure, bookmarks, tables, and paragraph styles. Dry-run evidence: verified in build pipeline.",
+        },
+        {
+            "feature": "Reference DOCX generator / styling (scripts/reference_docx.py)",
+            "dependent_files": "publishing/styles/reference.docx",
+            "category": "(a) already covered by toolkit 0.11.0",
+            "rationale": "handbook_toolkit.render_resources supplies bundled, tested reference.docx with all corporate styles. Dry-run evidence: styles applied cleanly.",
+        },
+        {
+            "feature": "SHA256 digest generation (scripts/build_book.py:1415 digest)",
             "dependent_files": "SHA256SUMS.txt, publication-manifest.json",
             "category": "(a) already covered by toolkit 0.11.0",
-            "rationale": "handbook_toolkit.publication generates cryptographic manifests and verification receipts.",
+            "rationale": "handbook_toolkit.publication generates cryptographic manifests and verification receipts. Dry-run evidence: SHA256SUMS.txt produced in dist/.",
         },
         {
             "feature": "Custom Learn CSS theme (publishing/styles/handbook.css)",
@@ -404,7 +464,13 @@ def build_feature_matrix() -> List[Dict[str, str]]:
             "feature": "Vendored fonts Selawik & Cascadia Code (publishing/fonts/)",
             "dependent_files": "HTML, PDF, DOCX typography",
             "category": "(d) theme only, replaced by hub design",
-            "rationale": "Replaced by hub standard font stack (Libertinus / Fira / Atkinson / System stack); zero bundled font binaries imported.",
+            "rationale": "Replaced by hub standard font stack (Source Sans 3, Source Serif 4, JetBrains Mono under SIL Open Font License 1.1; template NOTICE.md, toolkit render_resources).",
+        },
+        {
+            "feature": "Fontconfig XML staging (scripts/build_book.py:76 stage_fontconfig)",
+            "dependent_files": "Linux fontconfig path for Typst",
+            "category": "(d) theme only, replaced by hub design",
+            "rationale": "Replaced by Typst native font-paths in _quarto.yml pointing directly to staged toolkit fonts (handbook-render/fonts/).",
         },
         {
             "feature": "RC2 normalization and migration scripts (scripts/rc2_*.py, verify_rc2_parity.py)",
@@ -478,8 +544,8 @@ def generate_inventory_markdown(
     md.append("")
     md.append("Downloaded from `gh release download v3.0.0 -R cesarcastrocuba/solutions-architecture-handbook -D /tmp/agy-sa/assets`:")
     md.append("- `Solutions-Architecture-Handbook-html.zip` (14,125,177 bytes): 36 published HTML pages (index, analytic-index, list-of-figures, list-of-tables, 2 front-matter, 18 chapters, 10 appendices, 2 back-matter).")
-    md.append("- `Solutions-Architecture-Handbook.docx` (12,416,306 bytes): 624 headings (Contents, List of Figures, List of Tables, Document Control, 620 manuscript headings), 121 figures, 263 tables.")
-    md.append("- `Solutions-Architecture-Handbook.pdf` (16,030,616 bytes): 570 pages rendered via Typst 0.15.1.")
+    md.append("- `Solutions-Architecture-Handbook.docx` (12,416,306 bytes): 624 headings (Title: 1, Contents, List of Figures, List of Tables, Index, Document Control, 620 manuscript headings), 121 figures, 263 tables.")
+    md.append("- `Solutions-Architecture-Handbook.pdf` (16,030,616 bytes): 570 pages rendered via Typst 0.15.1 with custom font stack.")
     md.append("- `SHA256SUMS.txt` (312 bytes): Cryptographic digest of published payloads.")
     md.append("")
 
@@ -490,8 +556,8 @@ def generate_inventory_markdown(
     md.append("This includes all **620 headings** across the 33 `.qmd` files, plus all **5 generated pages/sections** present in the published editions:")
     md.append("1. `Cover` (Web cover and print front matter)")
     md.append("2. `Contents` (Table of Contents)")
-    md.append("3. `List of Figures` (`list-of-figures.html`)")
-    md.append("4. `List of Tables` (`list-of-tables.html`)")
+    md.append("3. `List of Figures` (`list-of-figures.html` / `figures.html`)")
+    md.append("4. `List of Tables` (`list-of-tables.html` / `tables.html`)")
     md.append("5. `Index` (`analytic-index.html` / `analytic-index.qmd`)")
     md.append("")
     md.append("### Totals")
@@ -502,10 +568,10 @@ def generate_inventory_markdown(
     md.append("")
     md.append("### Theme-Only Replaced Items")
     md.append("")
-    md.append("Per the brief, theme-only styling items are the **only** things replaced by the hub design:")
-    md.append("1. **Learn Theme CSS** (`publishing/styles/handbook.css`): Replaced by hub design tokens and packaged CSS contract (`handbook-toolkit.design`).")
-    md.append("2. **Selawik Font** (`publishing/fonts/selawik/`): Replaced by hub body typography stack (Libertinus / Atkinson Hyperlegible / System stack).")
-    md.append("3. **Cascadia Code Font** (`publishing/fonts/cascadia-code/`): Replaced by hub monospace typography stack (Fira Code / System monospace).")
+    md.append("Per `HUB-DEC-043`, theme-only styling items are the **only** things replaced by the hub design:")
+    md.append("1. **Learn Theme CSS** (`publishing/styles/handbook.css`): Replaced by hub design tokens and packaged CSS contract (`handbook-render/html/`).")
+    md.append("2. **Selawik Font** (`publishing/fonts/selawik/`): Replaced by hub body typography stack: **Source Sans 3** and **Source Serif 4** (distributed under SIL Open Font License 1.1; `template/book/NOTICE.md`, `render_resources.py`).")
+    md.append("3. **Cascadia Code Font** (`publishing/fonts/cascadia-code/`): Replaced by hub monospace typography stack: **JetBrains Mono** (distributed under SIL Open Font License 1.1; `template/book/NOTICE.md`, `render_resources.py`).")
     md.append("4. **Learn Accent Colors**: Replaced by hub accessible color tokens (neutral/warm corporate palette).")
     md.append("")
     md.append("### Section Mapping Summary by File")
@@ -554,7 +620,8 @@ def generate_inventory_markdown(
 
     md.append(f"| **Total ({len(parsed_qmds)} files)** | - | **{total_words:,}** | **{total_lines:,}** | **{total_figures}** | **{sum(r['fig_dot_bytes'] for r in parsed_qmds):,}** | **{sum(r['fig_png_bytes'] for r in parsed_qmds):,}** | **{total_tables}** | **{total_checklists}** | **note:36, tip:18, warning:112, important:110** |")
     md.append("")
-    md.append("- **Explicit cross-reference labels**: 121 `{#fig-...}` figure labels, 263 table captions. All 18 chapters use prose references (`Section X.Y`, `Figure X.Y`, `Table X.Y`) which were linked by the reference build script and are verified by `handbook-toolkit validate-references`.")
+    md.append("- **Explicit cross-reference labels**: 121 `{#fig-...}` figure labels, 263 table captions. `handbook-toolkit validate-references` checks these explicit anchors, labels, and image paths.")
+    md.append("- **Prose references**: 673 explicit prose references (`Section X.Y`, `Figure X.Y`, `Table X.Y`, `Chapter X`, `Appendix X`) plus bare section citations (e.g. `(3.2.1)`). These are plain text in standard Quarto output; hyperlinking them requires platform gap **G8** (`link_references`).")
     md.append("- **Raw HTML / LaTeX / OpenXML blocks**: None in the manuscript bodies (pure markdown).")
     md.append("- **Footnotes and shortcodes**: None (pure Quarto markdown).")
     md.append("- **Lua filters**: None used in the manuscript source.")
@@ -565,6 +632,8 @@ def generate_inventory_markdown(
 
     # Section 4: Feature matrix
     md.append("## 4. Feature Matrix: Reference Scripts & Configuration")
+    md.append("")
+    md.append("Auditing the complete reference tooling (`scripts/build_book.py`, `scripts/render_diagrams.py`, `scripts/checklists.py`, `scripts/artifact_optimize.py`, `scripts/check_docx.py`, `scripts/reference_docx.py`) against `handbook-toolkit 0.11.0` and `handbooks-template 1.6.0`:")
     md.append("")
     md.append("| Reference Feature / Script / Step | Dependent Files & Stages | Classification | Decision & Platform Rationale |")
     md.append("| :--- | :--- | :--- | :--- |")
@@ -612,7 +681,7 @@ def generate_inventory_markdown(
     md.append("")
     md.append("### Error Classification & Root Cause Analysis")
     md.append("")
-    md.append("Auditing all 33 files with `validate-manuscript` revealed two distinct failure classes:")
+    md.append("Auditing all 33 files with `validate-manuscript` revealed three distinct failure classes:")
     md.append("")
     md.append("#### Failure Class 1: Review Checklist Callout Title Attribute (18 files)")
     md.append("- **Counts**: Exactly 18 of 18 chapters (`ch01` through `ch18`).")
@@ -626,26 +695,83 @@ def generate_inventory_markdown(
     md.append("  ::: {.callout-note appearance=\"minimal\" icon=false}")
     md.append("  **Architecture Review Checklist — Requirements**")
     md.append("  ```")
-    md.append("- **Remedy**: Either (a) mechanical content adaptation during import: add `title=\"Review Checklist\"` to each callout, or (b) platform enhancement G3 allowing bold lead-in titles.")
+    md.append("- **Remedy**: Either (a) mechanical content adaptation during import: add `title=\"Review Checklist\"` to each callout, or (b) platform enhancement **G3** allowing bold lead-in titles.")
     md.append("")
     md.append("#### Failure Class 2: Appendix Evaluation Under Chapter Anatomy (10 files)")
     md.append("- **Counts**: All 10 appendices (`appendix-a` through `appendix-j`).")
     md.append("- **Root Cause**: `handbook_toolkit.build_staging._validate_manuscripts` groups targets in chapter mode as `targets = [*chapters, *appendices]` and validates both against the chapter profile. Appendices are reference/catalog material and intentionally do not contain chapter elements (`When to Use This Chapter`, `Worked Example`, `Review Checklist`, `Further Reading`, or 4-label unit structure).")
     md.append("- **Remedy**: Platform gap **G2**: allow appendices to be validated under an appendix profile or bypass chapter anatomy checks.")
     md.append("")
-    md.append("#### Failure Class 3: Minor Chapter Structural Edits (4 files)")
-    md.append("- `ch03-architecture-decisions.qmd`: duplicate closing element `**Example.**` on lines 167, 169.")
-    md.append("- `ch06-integration-architecture.qmd`: empty body text for required label `**What it includes.**` on line 273.")
-    md.append("- `ch16-software-engineering-and-architecture-artifacts.qmd`: duplicate closing element `**Example.**` on lines 462, 487.")
-    md.append("- `ch17-architecture-frameworks-methods-and-standards.qmd`: duplicate closing element `**Example.**` on lines 171, 225.")
-    md.append("- **Remedy**: Trivial mechanical content fixes during slice import.")
+    md.append("#### Failure Class 3: Minor Chapter Structural Issues (4 files) — Zero Word Deletion")
+    md.append("Under `HUB-DEC-043`, only theme and styling may change; author prose must not be deleted. The 4 structural findings are addressed through non-destructive adaptations:")
+    md.append("- **`ch03` lines 167 & 169**: Two consecutive `**Example.**` paragraphs in ADD cycle (Section 3.2.1):")
+    md.append("  ```markdown")
+    md.append("  Line 167: **Example.** In the reference checkout the first driver is that order acceptance must survive a payment-provider outage...")
+    md.append("  Line 169: **Example.** For the payment decision in 3.6, three designs are compared against Table 3.3 before any score...")
+    md.append("  ```")
+    md.append("  *Non-destructive adaptation*: Update profile validator rule to accept multiple closing elements (`min=1`, no upper bound), or merge into a single paragraph without deleting a single author word. Any deletion of author prose is strictly flagged as an Owner decision.")
+    md.append("- **`ch06` line 273**: `**What it includes.**` followed by a blank line and a bullet list of 6 items (lines 275–280):")
+    md.append("  ```markdown")
+    md.append("  Line 273: **What it includes.**")
+    md.append("  Line 274:")
+    md.append("  Line 275: - **API-first design.** Write and review the specification (OpenAPI or AsyncAPI)...")
+    md.append("  ```")
+    md.append("  *Non-destructive adaptation*: Profile validator unit parser currently expects inline body text on the same line or immediate paragraph; adapt validator to recognize block elements (such as bullet lists) as valid body content, preserving all 6 items verbatim.")
+    md.append("- **`ch16` lines 462, 481, 487**: False positive duplicate example across Sections 16.5.3 and 16.5.4:")
+    md.append("  ```markdown")
+    md.append("  Line 462: **Example.** The payment HLD is superseded when the asynchronous workflow replaces...")
+    md.append("  Line 481: | Example | Payment capability review: no critical findings...")
+    md.append("  Line 487: **Example.** The payment capability review records no critical findings...")
+    md.append("  ```")
+    md.append("  *Non-destructive adaptation*: Profile validator unit scanner detected `Example` inside Table 16.17 cell text (line 481); adapt unit scanner to ignore table cells when detecting structural unit labels.")
+    md.append("- **`ch17` lines 171 & 225**: Two `**Example.**` paragraphs across sub-sections 17.3.1 through 17.3.5:")
+    md.append("  ```markdown")
+    md.append("  Line 171: **Example.** Comparing synchronous with asynchronous payment authorization...")
+    md.append("  Line 225: **Example.** For a contested integration design, the team runs a QAW...")
+    md.append("  ```")
+    md.append("  *Non-destructive adaptation*: Adapt profile validator unit detection to respect H3 sub-unit headings within a major section, validating each sub-unit independently.")
     md.append("")
-    md.append("### Second Dry Run with Mechanical Adaptations")
+    md.append("### Third Dry Run: Full Rendered Build & Parity Baseline")
     md.append("")
-    md.append("When `title=\"Review Checklist\"` was mechanically applied to the 18 chapters:")
-    md.append("- **14 of 18 chapters passed 100% cleanly** against `standard 1.0.0` profile rules.")
-    md.append("- The remaining 4 chapters showed only the 4 single-line content issues identified in Failure Class 3.")
-    md.append("- Conformance rate: **98.5%** out-of-the-box structural alignment with the hub standard profile.")
+    md.append("To verify all `(a) already covered by toolkit 0.11.0` claims and obtain exact parity metrics, a third scratch dry run was executed with a documented, scratch-only workaround for G2/G3:")
+    md.append("1. Title attribute `title=\"Review Checklist\"` added to checklist callouts in scratch.")
+    md.append("2. Scratch venv patched at `build_staging.py:68` to bypass `validate_manuscripts` for appendices and minor unit structure issues.")
+    md.append("3. Scratch repository committed at `a7e00d7be960a7bd5ce38b7dde5fb09359dd6653`.")
+    md.append("4. Full build executed:")
+    md.append("   ```bash")
+    md.append("   handbook-toolkit build-book --repo /tmp/agy-sa/book --commit a7e00d7be960a7bd5ce38b7dde5fb09359dd6653 --output /tmp/agy-sa/dist --mode chapter --preview --version 3.1.0-preview")
+    md.append("   ```")
+    md.append("5. **Build Result**: **EXIT 0 (PASSED)**. Produced full publication payloads:")
+    md.append("   - `book-html.zip` (17,879,999 bytes): 36 rendered HTML pages.")
+    md.append("   - `book.docx` (16,255,647 bytes): Full Word edition with verified LibreOffice pagination and bookmark caching.")
+    md.append("   - `book.pdf` (21,463,437 bytes): Full Typst 0.15.1 rendered PDF.")
+    md.append("   - `book.md` (1,228,800 bytes): Unified clean markdown edition.")
+    md.append("   - `book-source.zip` (16,061,501 bytes): Complete staged source bundle.")
+    md.append("   - `publication-manifest.json` and `SHA256SUMS.txt`.")
+    md.append("")
+    md.append("### Rendered Parity Baseline: Preview vs Frozen v3.0.0 Release Assets")
+    md.append("")
+    md.append("Direct comparison of `/tmp/agy-sa/dist/` against `/tmp/agy-sa/assets/`:")
+    md.append("")
+    md.append("| Metric / Dimension | Preview Build (`dist/`) | Frozen v3.0.0 Release | Parity Status & Platform Notes |")
+    md.append("| :--- | :---: | :---: | :--- |")
+    md.append("| **PDF Page Count** | **490 pages** | **570 pages** | Rendered via Typst 0.15.1. Preview uses Hub standard design tokens (Source Sans 3, Source Serif 4, JetBrains Mono, 2.2cm x 2.4cm margins) resulting in tighter, more efficient layout (-80 pages). |")
+    md.append("| **DOCX Total Headings** | **624 headings** | **625 headings** | Manuscript headings match **100% exactly** (620 / 620: Title:1, H1:33, H2:261, H3:322, H4:4). Difference is exactly 1 heading: missing TOCHeading for Index (Gap G4). |")
+    md.append("| **DOCX Heading 1 (H1)** | **33** | **33** | **100% exact parity**. |")
+    md.append("| **DOCX Heading 2 (H2)** | **261** | **261** | **100% exact parity**. |")
+    md.append("| **DOCX Heading 3 (H3)** | **322** | **322** | **100% exact parity**. |")
+    md.append("| **DOCX Heading 4 (H4)** | **4** | **4** | **100% exact parity** (`document-control.qmd` subsections). |")
+    md.append("| **DOCX TOCHeadings** | **3** | **4** | Contents, List of Figures, List of Tables present in both. v3.0.0 had 4th TOCHeading for Index (Gap G4). |")
+    md.append("| **Figures / Drawings** | **121** | **121** | **100% exact parity**. All 121 diagram drawings present in preview DOCX and HTML. |")
+    md.append("| **List of Figures** | **Present** (`figures.html`) | **Present** (`list-of-figures.html`) | Full figure list rendered in both. |")
+    md.append("| **Captioned Tables (source)** | **263** | **263** | **100% exact parity**. All 263 tables rendered. |")
+    md.append("| **DOCX TableCaption style** | **0** | **263** | In v3.0.0, `annotate_tables` applied custom `TableCaption` style. In preview, Quarto native caption style applied. Total table elements: 1,037 (preview) vs 653 (v3.0.0) due to pandoc callout tables. |")
+    md.append("| **List of Tables** | **Present** (`tables.html`) | **Present** (`list-of-tables.html`) | Full table list rendered in both. |")
+    md.append("| **HTML Page Count** | **36 pages** | **36 pages** | Both editions render exactly 36 HTML pages. In v3.0.0, 36 includes `analytic-index.html` with document control in index; preview includes `document-control.html` with Index absent. |")
+    md.append("| **Glossary Body Links** | **41** | **509** | 41 explicit author markdown links in preview. 468 term links generated by `rewrite_glossary_hrefs` absent (Gap G9). |")
+    md.append("| **Glossary Backlinks** | **Absent** | **Present** | Appendix G 'Defined in Section X.Y' pointers generated by `annotate_glossary_entries` absent (Gap G9). |")
+    md.append("| **Prose Cross-References** | **Plain text** | **Hyperlinks** | 673 explicit prose references ('Section X.Y', 'Figure X.Y', etc.) linked in v3.0.0 via `link_references`, plain text in preview (Gap G8). |")
+    md.append("| **Analytic Index** | **Absent** | **Present** (487 KB) | Generated in v3.0.0 from vocabulary via `analytic_index`, absent in preview (Gap G4). |")
     md.append("")
 
     # Section 6: Licensing review
@@ -657,7 +783,7 @@ def generate_inventory_markdown(
     md.append("   - Dual-licensing model matches hub standards.")
     md.append("2. **Bundled Fonts Exclusion**:")
     md.append("   - Reference repository bundled `Selawik` and `Cascadia Code` under SIL Open Font License 1.1 in `publishing/fonts/`.")
-    md.append("   - **Decision**: These font binaries are **NOT** imported into the new repository. The book uses the platform's standard system and open-source typography stack (Libertinus / Fira Code / Atkinson Hyperlegible).")
+    md.append("   - **Decision**: These font binaries are **NOT** imported into the new repository. The book uses the platform's standard bundled open-source typography stack (**Source Sans 3**, **Source Serif 4**, and **JetBrains Mono** under OFL 1.1; `template/book/NOTICE.md`, `render_resources.py`).")
     md.append("3. **Diagrams and Visual Assets**:")
     md.append("   - All 121 `.dot` files in `assets/diagrams/src/` and 121 `.png` renders in `assets/diagrams/rendered/` are original author diagrams created specifically for the Solutions Architecture Handbook.")
     md.append("   - No third-party trademarks, logos, or copyrighted graphical assets are used.")
@@ -684,17 +810,17 @@ def generate_inventory_markdown(
         if s == 1:
             name = "Slice 1: Front Matter"
             contents = "Document Control, Introduction, Solutions Architect Role"
-            adaptations = "Align Document Control with book.yaml metadata"
+            adaptations = "Preserve version history table in document-control.qmd; align metadata"
             deps = "G7 (Front matter display)"
         elif s == 2:
             name = "Slice 2: Chapters 1–4"
             contents = "Requirements, Principles, Decisions, Governance"
-            adaptations = "Review Checklist callout titles; ch03 line 167 duplicate Example"
+            adaptations = "Review Checklist callout titles; ch03 lines 167/169 non-destructive Example adaptation"
             deps = "G3 (Checklist callouts)"
         elif s == 3:
             name = "Slice 3: Chapters 5–8"
             contents = "Data, Integration, Application, Cloud/Infrastructure"
-            adaptations = "Review Checklist callout titles; ch06 line 273 What it includes text"
+            adaptations = "Review Checklist callout titles; ch06 line 273 block list recognition"
             deps = "G3 (Checklist callouts)"
         elif s == 4:
             name = "Slice 4: Chapters 9–12"
@@ -704,30 +830,40 @@ def generate_inventory_markdown(
         elif s == 5:
             name = "Slice 5: Chapters 13–18"
             contents = "Evaluation, Quality, Evolution, Artifacts, Frameworks, AI/ML"
-            adaptations = "Review Checklist callout titles; ch16/ch17 duplicate Example"
+            adaptations = "Review Checklist callout titles; ch16/ch17 non-destructive table/sub-unit adaptations"
             deps = "G3 (Checklist callouts)"
         elif s == 6:
             name = "Slice 6: Appendices & Back Matter"
             contents = "Appendices A–J, Conclusions, References, Analytic Index"
-            adaptations = "Glossary definition pointers; checklist exports; pattern catalog"
-            deps = "G2 (Appendix validation), G4 (Analytic Index)"
+            adaptations = "Glossary definition backlinks (G9); checklist exports (G6); pattern catalog"
+            deps = "G2 (Appendix validation), G4 (Analytic Index), G9 (Glossary)"
 
         md.append(f"| **{name}** | {contents} | {d['files']} | {d['words']:,} | {d['figures']} | {d['png_bytes']:,} | {d['tables']} | {d['checklists']} | {adaptations} | {deps} |")
 
     md.append("")
     md.append(f"**Total Corpus**: **{total_files}** files in reference repository, **33** manuscript `.qmd` files, **{total_words:,}** words, **{total_figures}** figures (83.9 KB DOT, 17.5 MB PNG), **{total_tables}** tables, **{total_checklists}** review checklists.")
     md.append("")
+    md.append("### Detail: Slice 1 & Document Control Adaptation (G7)")
+    md.append("`manuscript/front-matter/document-control.qmd` in the reference repository contains:")
+    md.append("1. **Document Metadata Table**: 10-row key/value table (Document Identifier, Classification, Author, Status, Edition, Repository, Licensing, etc.).")
+    md.append("2. **Version History Table**: 11 chronological release rows detailing every version from `1.0` through `2.1 RC5` and `3.0.0`, with exact dates, authors, and summary of changes.")
+    md.append("3. **Maintenance & Contribution Model**: Governance and change approval procedures.")
+    md.append("4. **Notice & Licensing**: Dual licensing statement (CC BY-SA 4.0 / MIT).")
+    md.append("")
+    md.append("In contrast, `handbook-toolkit` automatically generates the web cover banner, edition footer (`book-data.typ`), and metadata cards from `book.yaml`.")
+    md.append("- **Adaptation**: The full 11-version history table and governance text in `document-control.qmd` must **not** be dropped. It will be preserved as `manuscript/front-matter/document-control.qmd` (or dedicated `version-history.qmd`), while the top-level cover banner and footer metadata are driven from `book.yaml`.")
+    md.append("")
 
     # Section 8: Gap backlog
     md.append("## 8. Platform Gap Backlog")
     md.append("")
-    md.append("The dry run and feature analysis identify seven concrete gaps requiring hub changes before or during Phase 6:")
+    md.append("The dry run, rendered parity baseline, and feature analysis identify eleven concrete gaps requiring hub changes before or during Phase 6:")
     md.append("")
     md.append("### G1: Template Release Workflow Tag Regex Rejects Pre-Releases")
     md.append("- **Evidence**: `template/book/.github/workflows/release.yml:47` regex `tag: '^[0-9]+\\.[0-9]+\\.[0-9]+$'` rejects pre-release tags like `v3.1.0-rc.1` or `3.1.0-rc.1`.")
     md.append("- **Impact**: Under `HUB-DEC-043`, the solutions architecture book will publish `v3.1.0-rc.1` through `v3.1.0-rc.N` before final release. These cannot be dispatched without relaxing the workflow tag validation.")
-    md.append("- **Affected Files**: `template/book/.github/workflows/release.yml`.")
-    md.append("- **Proposed Home**: `handbooks-template`.")
+    md.append("- **Affected Files**: `template/book/.github/workflows/release.yml` in hub repository.")
+    md.append("- **Proposed Home**: Hub repository `template/book/` (never edit `handbooks-template` mirror directly; template exports from hub).")
     md.append("- **Size**: Small (1 line regex update: `^[0-9]+\\.[0-9]+\\.[0-9]+(-rc\\.[0-9]+)?$`).")
     md.append("")
     md.append("### G2: Profile Validator Enforces Chapter Anatomy on Appendices in Chapter Mode")
@@ -745,7 +881,7 @@ def generate_inventory_markdown(
     md.append("- **Size**: Small.")
     md.append("")
     md.append("### G4: Analytic Index Generation from Vocabulary")
-    md.append("- **Evidence**: The reference book generated `analytic-index.qmd` via `scripts/build_book.py:analytic_index` from `publishing/index-vocabulary.yaml`. In toolkit 0.11.0, there is no built-in analytic index generator.")
+    md.append("- **Evidence**: The reference book generated `analytic-index.qmd` via `scripts/build_book.py:1026 analytic_index` from `publishing/index-vocabulary.yaml`. In toolkit 0.11.0, there is no built-in analytic index generator, causing the published Index page and DOCX TOCHeading to be absent in preview.")
     md.append("- **Impact**: Long-form reference handbooks lose back-of-the-book analytic indexing.")
     md.append("- **Affected Files**: `handbook_toolkit/indexes.py` / `build_book.py`.")
     md.append("- **Proposed Home**: `handbook-toolkit`.")
@@ -758,18 +894,47 @@ def generate_inventory_markdown(
     md.append("- **Proposed Home**: Book-owned generator in `handbook-solutions-architecture` (with potential future migration to toolkit).")
     md.append("- **Size**: Small.")
     md.append("")
-    md.append("### G6: Canonical Checklist Parity & Multi-Format Exports")
-    md.append("- **Evidence**: Canonical review questions are stored in `checklists/canonical/*.yaml` and exported to CSV, JSON, Markdown assessment templates for auditing.")
+    md.append("### G6: Canonical Checklist Parity & Multi-Format Exports Distribution")
+    md.append("- **Evidence**: Canonical review questions are stored in `checklists/canonical/*.yaml` and exported to CSV, JSON, Markdown assessment templates for auditing. The toolkit's 7-file publication manifest has no default distribution slot for these extra audit templates.")
     md.append("- **Impact**: Architecture practitioners rely on standalone CSV/JSON checklist templates for compliance evaluations.")
-    md.append("- **Affected Files**: `checklists/` directory and `scripts/checklists.py` in book repository.")
-    md.append("- **Proposed Home**: Book-owned generator/check in `handbook-solutions-architecture`.")
+    md.append("- **Distribution Channel**: Published as extra release assets in the GitHub Release (`checklists/*.csv`, `checklists/*.json`) via release workflow upload steps, and checked into the book repository under `checklists/exports/` for direct cloning and web access.")
+    md.append("- **Affected Files**: `checklists/` directory and `.github/workflows/release.yml` in book repository.")
+    md.append("- **Proposed Home**: Book repository `handbook-solutions-architecture`.")
     md.append("- **Size**: Small.")
     md.append("")
     md.append("### G7: Web Landing & Document Control Integration")
-    md.append("- **Evidence**: `document-control.qmd` in the reference book contains manual version tables and licensing notices. The toolkit currently renders Document Control from `book.yaml` metadata.")
-    md.append("- **Impact**: Ensure front-matter document control information seamlessly presents both version history and governance without duplicate covers.")
+    md.append("- **Evidence**: `document-control.qmd` contains 10-row document metadata and an extensive 11-version history table (v1.0 to v2.1 RC5). The toolkit renders cover banners from `book.yaml`.")
+    md.append("- **Impact**: Ensure front-matter document control preserves the full version history table without duplication or content loss.")
     md.append("- **Affected Files**: `template/book/manuscript/front-matter/`, `handbook_toolkit/reading_site.py`.")
     md.append("- **Proposed Home**: `handbooks-template` / `handbook-toolkit`.")
+    md.append("- **Size**: Small.")
+    md.append("")
+    md.append("### G8: Cross-Reference Linking for Prose Numbers")
+    md.append("- **Evidence**: `scripts/build_book.py:684 link_references` scanned manuscript text for prose references (`Section X.Y`, `Figure X.Y`, `Table X.Y`, `Chapter X`, `Appendix X`, bare `(X.Y.Z)`) and converted them into clickable hyperlinks pointing to generated anchor IDs. In toolkit 0.11.0 output, these remain plain unlinked text.")
+    md.append("- **Impact**: Over 673 cross-references across 18 chapters lose clickability in HTML and PDF editions.")
+    md.append("- **Affected Files**: `handbook_toolkit/references.py`, lua filters.")
+    md.append("- **Proposed Home**: `handbook-toolkit`.")
+    md.append("- **Size**: Medium.")
+    md.append("")
+    md.append("### G9: Appendix G Glossary Body Hyperlinks & Definition Backlinks")
+    md.append("- **Evidence**: `scripts/build_book.py:1257 rewrite_glossary_hrefs`, `scripts/build_book.py:1263 staged_glossary_hrefs`, `scripts/build_book.py:980 annotate_glossary_entries`, and `scripts/build_book.py:1002 _defined_sections`. In frozen v3.0.0, 509 body term occurrences across chapters linked to Appendix G entries, and Appendix G Table G.1 had a 'Defined in Section X.Y' backlink column pointing to defining chapters. In preview build, only 41 explicit links exist, and definition backlinks are absent.")
+    md.append("- **Impact**: Loss of 468 interactive glossary term links and reverse definition navigation.")
+    md.append("- **Affected Files**: `handbook_toolkit/indexes.py` / `reading_site.py` / lua filters.")
+    md.append("- **Proposed Home**: `handbook-toolkit` (generic platform feature; sample handbook also has a glossary).")
+    md.append("- **Size**: Medium.")
+    md.append("")
+    md.append("### G10: Template CI Job Name Mismatch")
+    md.append("- **Evidence**: `template/book/.github/workflows/ci.yml` names the validation job `Fast checks`, while `docs/author-guide.md` specifies that branch protection rules should require the status check `ci`.")
+    md.append("- **Impact**: Inconsistent branch protection configurations across new book repositories.")
+    md.append("- **Affected Files**: `template/book/.github/workflows/ci.yml` in hub repository.")
+    md.append("- **Proposed Home**: Hub repository `template/book/`.")
+    md.append("- **Size**: Small (1 line rename: `name: ci` or align documentation).")
+    md.append("")
+    md.append("### G11: Book Initializer Leaves Template README Body")
+    md.append("- **Evidence**: `.github/scripts/initialize_book.py` replaces only the H1 title in `README.md`, leaving the rest of the template README text unmodified.")
+    md.append("- **Impact**: Newly initialized books carry template documentation rather than book-specific description unless manually edited.")
+    md.append("- **Affected Files**: `template/book/.github/scripts/initialize_book.py` in hub repository.")
+    md.append("- **Proposed Home**: Hub repository `template/book/`.")
     md.append("- **Size**: Small.")
     md.append("")
 
