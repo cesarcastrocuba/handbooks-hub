@@ -11,6 +11,7 @@ import yaml
 from .build_types import BuildError
 from .print_layout import document_control_table, license_label
 from . import design
+from .render_resources import RENDER_DIRECTORY
 
 PARTS = (("front", "Front matter"), ("chapters", "Chapters"),
          ("back", "Back matter"), ("appendices", "Appendices"), ("references", "References"))
@@ -155,7 +156,7 @@ def prepare_reading_site(workspace: Path, config: dict[str, Any], book: dict[str
     if canonical:
         bc["site-url"] = canonical
         config["format"]["html"]["canonical-url"] = True
-    favicon = workspace / ".handbook-render/html/favicon.svg"
+    favicon = workspace / RENDER_DIRECTORY / "html" / "favicon.svg"
     favicon.write_text(design.favicon_svg(), encoding="utf-8")
     bc["favicon"] = favicon.relative_to(workspace).as_posix()
     footer = f"{_literal(book['title'])} · {_literal(version)} · {_literal(date)} · {_literal(license_text)}"

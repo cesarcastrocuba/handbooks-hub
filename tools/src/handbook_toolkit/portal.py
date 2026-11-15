@@ -11,6 +11,7 @@ import tempfile
 from urllib.parse import urlsplit
 
 from . import design
+from .artifacts import hidden_site_paths
 from .portal_catalog import read_catalog
 
 CATEGORIES = {"architecture", "authoring", "cloud", "data", "engineering",
@@ -216,6 +217,13 @@ def llms_text(books: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def _require_publishable(site: Path) -> None:
+    """A static host does not publish hidden paths; a page that needs one loads without styles."""
+    hidden = hidden_site_paths(path.relative_to(site).as_posix() for path in site.rglob("*"))
+    if hidden:
+        raise ValueError("portal has paths that static hosts do not publish: " + ", ".join(hidden[:5]))
+
+
 def build_portal(catalog: Path, output: Path, *, engine: str = "legacy") -> Path:
     """Build a fresh static directory from a validated catalog; never fetch drafts.
 
@@ -224,7 +232,9 @@ def build_portal(catalog: Path, output: Path, *, engine: str = "legacy") -> Path
     """
     if engine == "quarto":
         from .portal_quarto import build_quarto_portal
-        return build_quarto_portal(catalog, output)
+        index = build_quarto_portal(catalog, output)
+        _require_publishable(index.parent)
+        return index
     if engine != "legacy":
         raise ValueError(f"unknown portal engine: {engine}")
     books = read_catalog(catalog)

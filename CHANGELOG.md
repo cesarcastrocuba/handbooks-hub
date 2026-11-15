@@ -3,6 +3,16 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
+## [0.10.3] - 2026-11-15
+
+### Fixed
+
+- The reading site and the Quarto portal loaded their stylesheets, fonts and favicon from a hidden
+  directory, `.handbook-render/`. Static hosts do not publish hidden paths: the deployed Quarto
+  portal rendered without styles, and so would any book deployed with `actions/upload-pages-artifact`
+  v4 or later, which the book template uses. The directory is now `handbook-render/`, and the HTML
+  payload inspection and the portal builder reject any hidden path.
+
 ## [0.10.2] - 2026-11-14
 
 The Markdown edition now uses native chapter-aware figure, table and listing labels and cross-

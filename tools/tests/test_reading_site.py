@@ -54,7 +54,7 @@ class ReadingSiteTests(unittest.TestCase):
     def test_cover_parts_footer_and_native_metadata(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
-            (root / '.handbook-render/html').mkdir(parents=True)
+            (root / 'handbook-render/html').mkdir(parents=True)
             (root / 'chapter.qmd').write_text('# Example\n')
             book = {'title': 'Handbook \\T', 'status':'draft', 'catalog':{'summary':'A <script> is text.'},
                     'license':{'content':'CC-BY-SA-4.0'},
@@ -82,7 +82,7 @@ class ReadingSiteTests(unittest.TestCase):
             self.assertTrue((root / result['book']['favicon']).is_file())
 
     def _prepare(self, root, summary, subtitle, groups):
-        (root / '.handbook-render/html').mkdir(parents=True)
+        (root / 'handbook-render/html').mkdir(parents=True)
         for files in groups.values():
             for name in files:
                 (root / name).write_text('# ' + name + '\n')

@@ -16,20 +16,21 @@ from .portal_design import design_page
 from .portal_markup import library_page, resource
 
 from .build_types import QUARTO_VERSION
+from .render_resources import RENDER_DIRECTORY
 PAGES = ('how-it-works','create','publishing','contribute','faq')
 SITE_URL = 'https://cesarcastrocuba.github.io/handbooks-hub/'
 
 
 def stage_theme(workspace: Path) -> dict[str, Any]:
     """Consume WP3/WP4's shared generators verbatim; no private portal theme copy."""
-    folder=workspace/'.handbook-render/html'
+    folder=workspace/RENDER_DIRECTORY/'html'
     folder.mkdir(parents=True)
     for name,content in [('design-tokens.css',design.book_theme_css()),('handbook.css',design.book_layout_css()),
                          ('reading.css',design.reading_css()),('favicon.svg',design.favicon_svg()),
                          ('portal.css',design.portal_layout_css())]:
         (folder/name).write_text(content,encoding='utf-8')
     for relative,data in {**design.font_assets(),**design.font_licenses()}.items():
-        target=workspace/'.handbook-render/fonts'/relative
+        target=workspace/RENDER_DIRECTORY/'fonts'/relative
         target.parent.mkdir(parents=True,exist_ok=True)
         target.write_bytes(data)
     # Preserve the old, public OFL notice URLs as well as the shared book font layout.
@@ -66,10 +67,10 @@ def stage_site(workspace: Path, books: list[dict[str, Any]], *, design_only: boo
                     {'text':'Design','href':'design.qmd'}, {'text':'GitHub','href':HUB_URL}]
     (workspace/'llms.txt').write_text(llms_text(books),encoding='utf-8')
     website={'title':'Handbook Hub','description':'Independent technical handbooks published as verified releases.',
-             'site-url':SITE_URL,'favicon':'.handbook-render/html/favicon.svg','open-graph':True,
+             'site-url':SITE_URL,'favicon':f'{RENDER_DIRECTORY}/html/favicon.svg','open-graph':True,
              'twitter-card':{'card-style':'summary'},'navbar':{'right':navigation},
              'page-footer':{'center':resource('footer.html')}}
-    config={'project':{'type':'website','output-dir':'_site','resources':['llms.txt','fonts/**','.handbook-render/fonts/**']},
+    config={'project':{'type':'website','output-dir':'_site','resources':['llms.txt','fonts/**',f'{RENDER_DIRECTORY}/fonts/**']},
             'website':website,'format':{'html':html},'execute':{'enabled':False}}
     (workspace/'_quarto.yml').write_text(yaml.safe_dump(config,sort_keys=True,allow_unicode=True),encoding='utf-8')
 

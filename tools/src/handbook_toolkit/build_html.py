@@ -10,6 +10,7 @@ from .docx_post import (
 from .artifacts import archive_tree
 
 from .build_types import BuildError, PAYLOADS
+from .render_resources import RENDER_DIRECTORY
 
 def _one_file(directory: Path, suffix: str) -> Path:
     matches = sorted(directory.rglob(f"*{suffix}"))
@@ -33,7 +34,7 @@ def _payload_paths(workspace: Path, dist: Path, epoch: int) -> dict[str, Path]:
     # notices must travel with them, so they are added explicitly before the
     # exact tree is archived and deployed.
     for relative, data in design.font_licenses().items():
-        target = site / ".handbook-render" / "fonts" / relative
+        target = site / RENDER_DIRECTORY / "fonts" / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
     archive_tree(site, dist / PAYLOADS["html"], epoch)
