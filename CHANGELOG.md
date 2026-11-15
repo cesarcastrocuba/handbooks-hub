@@ -3,6 +3,14 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
+## [1.5.1] - 2026-11-15
+
+Template release. Template `1.5.1` pins toolkit `0.10.3` (`58384af`). The release workflow already
+installs LibreOffice and passes `--require-page-numbers` (change `0038`), so the book's indexes open
+with cached page numbers; no other template file changes. Toolkit 0.10.2 was tagged but is not
+pinned by any template or book, because the reading site it builds loads its stylesheets from a
+hidden directory that static hosts do not publish (change `0042`).
+
 ## [0.10.4] - 2026-11-15
 
 ### Changed
