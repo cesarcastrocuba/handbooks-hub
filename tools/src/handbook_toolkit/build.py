@@ -16,7 +16,7 @@ from .profiles import validate_profile
 from .profile_resources import load_profile
 from .books import validate_book
 from .references import validate_references
-from .render_resources import stage_render_resources
+from .render_resources import RENDER_DIRECTORY, stage_render_resources
 from .validation import (
     DocumentError,
     load_document,
@@ -174,7 +174,7 @@ def build_book(
         _validate_manuscripts(workspace, book, profile_document, mode)
         book_version = _book_version(workspace, version)
         _require_prerelease_version(book_version, mode, preview)
-        resources = stage_render_resources(workspace / ".handbook-render")
+        resources = stage_render_resources(workspace / RENDER_DIRECTORY)
         brand = design.load_tokens()
         brand_colours = {
             role: values["light"] for role, values in brand["color"].items()
@@ -308,7 +308,7 @@ def build_book(
         payloads = _payload_paths(workspace, dist, source_epoch)
         from .docx_pages import cache_page_numbers
         tool_versions.update(cache_page_numbers(
-            payloads["docx"], workspace / ".handbook-render/fonts", required=require_page_numbers))
+            payloads["docx"], workspace / RENDER_DIRECTORY / "fonts", required=require_page_numbers))
         markdown_text = _markdown_header(book, fields, commit) + _clean_markdown(
             _render_markdown(workspace, markdown_source, resources, quarto, environment,
                              crossref=html_config.get('crossref'), language=language)

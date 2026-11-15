@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path, PurePosixPath
@@ -142,9 +143,21 @@ def _source(archive: ZipFile, names: set[str], commit: str | None) -> None:
         raise ValueError("source reading order must cover every canonical manuscript exactly once")
 
 
+def hidden_site_paths(names: Iterable[str]) -> list[str]:
+    """Paths a static host will not publish: any component that starts with a dot."""
+    return sorted(
+        name for name in names if any(part.startswith(".") for part in PurePosixPath(name).parts)
+    )
+
+
 def _html(archive: ZipFile, names: set[str]) -> None:
     if "index.html" not in names:
         raise ValueError("HTML site archive must contain index.html at its root")
+    hidden = hidden_site_paths(names)
+    if hidden:
+        raise ValueError(
+            "HTML site archive has paths that static hosts do not publish: " + ", ".join(hidden[:5])
+        )
     pages = {name: _Page(archive.read(name).decode("utf-8"))
              for name in names if name.endswith(".html")}
     for name, page in sorted(pages.items()):

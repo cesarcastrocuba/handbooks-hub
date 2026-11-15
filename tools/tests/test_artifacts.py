@@ -25,6 +25,15 @@ class ArtifactTests(unittest.TestCase):
         archive_tree(source, output, 1793993016)
         return output
 
+    def test_a_site_with_a_hidden_path_is_rejected(self):
+        source = self.root / "site"
+        (source / ".hidden" / "html").mkdir(parents=True)
+        (source / ".hidden" / "html" / "site.css").write_text("body{}")
+        archive = self.site('<link rel="stylesheet" href=".hidden/html/site.css"><h1>Hello</h1>')
+        issues = [str(issue) for issue in inspect_payload(archive, "html")]
+        self.assertEqual(len(issues), 1)
+        self.assertIn("static hosts do not publish: .hidden/html/site.css", issues[0])
+
     def test_archives_have_reproducible_bytes_and_normalized_permissions(self):
         one = self.site('<h1 id="intro">Hello</h1><a href="#intro">Read</a>')
         source = self.root / "site"

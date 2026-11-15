@@ -211,7 +211,7 @@ class TemplateTests(unittest.TestCase):
 
     def test_template_pins_are_exact_and_current(self) -> None:
         descriptor = _load(TEMPLATE / "book.yaml")
-        self.assertEqual(descriptor["toolkit"], "0.10.2")
+        self.assertEqual(descriptor["toolkit"], "0.10.3")
         self.assertRegex(descriptor["toolkit"], r"^\d+\.\d+\.\d+$")
         self.assertRegex(descriptor["profile"]["version"], r"^\d+\.\d+\.\d+$")
         requirements = (TEMPLATE / "requirements.txt").read_text(encoding="utf-8")
@@ -255,8 +255,8 @@ class TemplateTests(unittest.TestCase):
 
             with zipfile.ZipFile(output / "book-html.zip") as archive:
                 names = set(archive.namelist())
-            self.assertIn(".handbook-render/fonts/source-sans3/OFL.txt", names)
-            self.assertIn(".handbook-render/fonts/source-serif4/OFL.txt", names)
+            self.assertIn("handbook-render/fonts/source-sans3/OFL.txt", names)
+            self.assertIn("handbook-render/fonts/source-serif4/OFL.txt", names)
 
             manifest = json.loads((output / "publication-manifest.json").read_text())
             self.assertEqual(manifest["book"]["commit"], _git(book, "rev-parse", "HEAD"))
@@ -485,7 +485,7 @@ class InitializeBookTests(unittest.TestCase):
                 "# Book descriptor. Replace the identifiers and summary before the first commit.",
                 "# Keep toolkit and profile versions exact: ranges are rejected by the schema.",
                 'schema_version: "1.0"',
-                'toolkit: "0.10.2"',
+                'toolkit: "0.10.3"',
                 'version: "1.0.0"',
                 "default_branch: main",
             ):
