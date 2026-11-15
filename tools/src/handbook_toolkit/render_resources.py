@@ -6,6 +6,11 @@ import shutil
 import json
 from .design import docx_callout_styles, book_layout_css, reading_css, favicon_svg
 
+# The staged resources sit inside the rendered project, and the stylesheets, fonts and favicon
+# are served from this directory. Its name must not start with a dot: static hosts (GitHub Pages
+# among them) do not publish hidden paths, and the site would load without styles.
+RENDER_DIRECTORY = "handbook-render"
+
 RESOURCE_NAMES = (
     "filters/index-resources.lua",
     "filters/table-layout.lua",
