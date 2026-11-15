@@ -93,6 +93,7 @@ footer.footer .nav-footer a { color: var(--accent); }
   main a.btn:is(:hover, :focus-visible) { position: relative; }
   main a.btn::after {
     content: "→" / "";
+    color: var(--accent);
     position: absolute;
     inset-inline-start: calc(100% + {{motion-arrow-gap-px}});
     display: none;

@@ -148,6 +148,8 @@ def prepare_reading_site(workspace: Path, config: dict[str, Any], book: dict[str
                  status, license_text, downloads)
     html = config["format"]["html"]
     includes = html.get("include-in-header", [])
+    if includes is None:
+        includes = []
     if not isinstance(includes, list):
         includes = [includes]
     html["include-in-header"] = [*includes, {"text": design.reading_header()}]

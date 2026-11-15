@@ -91,7 +91,7 @@ class ReadingSiteTests(unittest.TestCase):
                 (root / name).write_text('# ' + name + '\n')
         book = {'title': 'Handbook', 'status': 'draft', 'catalog': {'summary': summary},
                 'license': {'content': 'CC-BY-SA-4.0'}, 'repository': {'url': None}}
-        config = {'book': {}, 'format': {'html': {}}}
+        config = {'book': {}, 'format': {'html': {'include-in-header': None}}}
         return prepare_reading_site(root, config, book, {'subtitle': subtitle}, groups, [],
                                     [('Version', '1.0.0')], 'An Author', '1.0.0', 'November 2026', False)
 
@@ -250,10 +250,11 @@ class NativeMotionBrowserTests(unittest.TestCase):
         css=(':root{'+design.css_variables('light')+'}body.quarto-dark{'+design.css_variables('dark')+'}'
              +design.reading_css())
         markup='''<style>body{color:var(--text);background:var(--canvas)}
+          .btn{display:inline-block;padding:6px 12px;background:var(--accent-solid);color:var(--on-solid)}
           .space{height:1200px}section,.callout{height:200px}.cover{height:70px}.book{padding:20px;background:var(--surface)}
           </style><header id="quarto-header"><nav class="navbar" style="height:20px;background:var(--canvas)"></nav></header><main id="quarto-document-content"><h1 style="color:var(--text)">Theme heading</h1>
           <div class="handbook-cover" id="initial" style="height:20px;background:var(--accent-solid)"></div>
-          <div class="cover-actions"><a id="start" class="btn" href="#target">Start reading</a></div>
+          <div class="cover-actions"><a id="start" class="btn btn-primary" href="#target">Start reading</a></div>
           <details><summary>Details</summary><p>Expanded content</p></details>
           <div class="space"></div><div class="callout" id="target">Reading callout</div>
           <div id="book-grid"><article class="book"><div class="cover">Book cover</div><a href="#start">Read</a></article></div>
@@ -276,12 +277,18 @@ class NativeMotionBrowserTests(unittest.TestCase):
                 }''',[png,round(rect['x']+10),round(rect['y']+10)])
                 accent=tokens['color']['accent_solid']['light']
                 self.assertEqual(painted,[int(accent[i:i+2],16)for i in (1,3,5)])
+                button_top=page.locator('#start').bounding_box()['y']
                 page.locator('#start').hover();page.wait_for_timeout(motion['fast_ms']+50)
+                lift=button_top-page.locator('#start').bounding_box()['y']
+                self.assertAlmostEqual(lift,0 if preference=='reduce' else motion['lift_px'],delta=.5)
                 translate=page.locator('#start').evaluate('e=>getComputedStyle(e).translate')
                 if preference=='reduce':self.assertEqual(translate,'none')
                 else:
                     self.assertIn('-'+str(motion['lift_px'])+'px',translate)
                     self.assertEqual(page.locator('#start').evaluate('e=>getComputedStyle(e,"::after").opacity'),'1')
+                    accent=tokens['color']['accent']['light']
+                    rgb=', '.join(str(int(accent[i:i+2],16)) for i in (1,3,5))
+                    self.assertEqual(page.locator('#start').evaluate('e=>getComputedStyle(e,"::after").color'),'rgb('+rgb+')')
                 page.mouse.move(0,0);page.wait_for_timeout(motion['fast_ms']+50)
                 self.assertEqual(page.locator('#start').evaluate('e=>getComputedStyle(e).position'),'static')
                 closed=page.locator('details').bounding_box()['height']
