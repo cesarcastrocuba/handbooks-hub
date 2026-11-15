@@ -61,7 +61,7 @@ class ReadingSiteTests(unittest.TestCase):
                     'license':{'content':'CC-BY-SA-4.0'},
                     'repository':{'url':'https://github.com/example/handbook'}}
             groups = {'front':[], 'chapters':['chapter.qmd'], 'back':[], 'appendices':[], 'references':[]}
-            config = {'book':{}, 'format':{'html':{}}}
+            config = {'book':{}, 'format':{'html':{'include-in-header':'authored.html'}}}
             result = prepare_reading_site(root, config, book, {'subtitle':'An edition'}, groups,
                         ['figures.qmd'], [('Version','1.0.0')], 'An Author',
                         '1.0.0', 'November 2026', False)
@@ -76,6 +76,8 @@ class ReadingSiteTests(unittest.TestCase):
             self.assertIn('chapter.html', (root/'index.qmd').read_text())
             self.assertEqual(result['book']['site-url'], 'https://example.github.io/handbook/')
             self.assertTrue(result['format']['html']['canonical-url'])
+            self.assertIn({'text':design.reading_header()}, result['format']['html']['include-in-header'])
+            self.assertEqual(result['format']['html']['include-in-header'][0], 'authored.html')
             self.assertEqual(result['book']['description'], book['catalog']['summary'])
             self.assertTrue(result['book']['open-graph'])
             self.assertEqual(result['book']['twitter-card']['card-style'], 'summary')
@@ -177,7 +179,7 @@ class ReadingSiteTests(unittest.TestCase):
         broken = copy.deepcopy(tokens)
         del broken['motion']['lift_px']
         self.assertTrue(design.validate_tokens(broken))
-        self.assertEqual(rule_declarations(css, '#quarto-header')['view-transition-name'], 'handbook-topbar')
+        self.assertEqual(rule_declarations(css, ':root:active-view-transition #quarto-header')['view-transition-name'], 'handbook-topbar')
 
     def test_generated_svg_sources_are_deterministic_and_token_derived(self):
         root=ET.fromstring(design.favicon_svg())
@@ -216,7 +218,7 @@ def validate_region_names(html: str, css: str) -> None:
                                 if item.type == 'declaration'}
                 name = declarations.get('view-transition-name')
                 if name is None or name == 'none':continue
-                selector=tinycss2.serialize(rule.prelude).strip()
+                selector=tinycss2.serialize(rule.prelude).strip().removeprefix(':root:active-view-transition ')
                 if selector.startswith('#'):
                     count=sum(node.attrs.get('id') == selector[1:] for node in document.walk())
                 elif selector == 'footer.footer':
@@ -297,5 +299,56 @@ class NativeMotionBrowserTests(unittest.TestCase):
                 progress=page.evaluate('getComputedStyle(document.body,"::before").transform')
                 if preference=='reduce':self.assertEqual(progress,'none')
                 else:self.assertAlmostEqual(float(progress.split('(')[1].split(',')[0]),1,places=5)
+                initial=page.evaluate('getComputedStyle(document.body).backgroundColor')
+                page.evaluate('document.body.classList.add("quarto-dark")')
+                page.wait_for_timeout(motion['fast_ms']//2)
+                during=page.evaluate('getComputedStyle(document.body).backgroundColor')
+                page.wait_for_timeout(motion['fast_ms'])
+                final=page.evaluate('getComputedStyle(document.body).backgroundColor')
+                self.assertNotEqual(initial,final)
+                if preference=='reduce':self.assertEqual(during,final)
+                else:self.assertNotIn(during,(initial,final))
                 context.close()
             browser.close()
+
+    def test_native_capture_waits_for_a_streamed_incoming_body(self):
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            self.skipTest('Playwright is installed by the edition-preview job')
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+        from threading import Thread
+        import time
+        css=design.reading_css()
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                title='Incoming' if self.path=='/next' else 'Outgoing'
+                head=('<!doctype html><html><head><meta charset="utf-8">'+design.reading_header()
+                      +'<style>'+css+'</style></head>').encode()
+                body=('<body><main id="quarto-document-content"><header id="title-block-header"><h1>'
+                      +title+'</h1></header><p>'+title+' body</p><a href="/next">Next</a></main>'
+                      +'<div id="quarto-html-after-body"></div></body></html>').encode()
+                self.send_response(200);self.send_header('Content-Type','text/html')
+                self.send_header('Content-Length',str(len(head)+len(body)));self.end_headers()
+                self.wfile.write(head);self.wfile.flush();time.sleep(.12)
+                self.wfile.write(body)
+            def log_message(self,*args):pass
+        server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
+        thread=Thread(target=server.serve_forever,daemon=True);thread.start()
+        try:
+            with sync_playwright() as p:
+                browser=p.chromium.launch();page=browser.new_page()
+                page.add_init_script('''addEventListener('pagereveal',event=>{
+                  if(event.viewTransition)event.viewTransition.ready.then(()=>{
+                    window.captured={title:document.querySelector('h1').textContent,
+                      names:document.getAnimations().map(a=>a.animationName)};
+                  });
+                });''')
+                page.goto(f'http://127.0.0.1:{server.server_port}/',wait_until='networkidle')
+                page.locator('a').click();page.wait_for_url('**/next');page.wait_for_timeout(400)
+                captured=page.evaluate('window.captured')
+                self.assertEqual(captured['title'],'Incoming')
+                self.assertTrue({'handbook-title','handbook-enter'}<=set(captured['names']))
+                browser.close()
+        finally:
+            server.shutdown();server.server_close();thread.join()

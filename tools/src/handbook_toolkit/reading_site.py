@@ -146,6 +146,11 @@ def prepare_reading_site(workspace: Path, config: dict[str, Any], book: dict[str
     release, downloads = release_links(metadata, preview)
     _write_cover(workspace, book, metadata, groups["chapters"][0], author, version, date,
                  status, license_text, downloads)
+    html = config["format"]["html"]
+    includes = html.get("include-in-header", [])
+    if not isinstance(includes, list):
+        includes = [includes]
+    html["include-in-header"] = [*includes, {"text": design.reading_header()}]
     bc = config["book"]
     bc["chapters"] = chapters
     bc["description"] = str(book["catalog"]["summary"])

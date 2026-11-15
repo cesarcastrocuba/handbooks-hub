@@ -145,12 +145,12 @@
         "fast_ms": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 1000
+          "maximum": 300
         },
         "normal_ms": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 1000
+          "maximum": 300
         },
         "easing": {
           "type": "string",

@@ -455,6 +455,11 @@ READING_METRICS = {"focus-width": "3px", "focus-offset": "3px", "progress-height
                    "favicon-viewbox": "0 0 64 64"}
 
 
+def reading_header() -> str:
+    """Wait for Quarto's complete body before taking native page-transition snapshots."""
+    return '<link rel="expect" blocking="render" href="#quarto-html-after-body">'
+
+
 def reading_css() -> str:
     """Expand the packaged reading controls from central geometry and motion tokens."""
     css = resource_files("handbook_toolkit").joinpath("render_data/html/reading.css").read_text()

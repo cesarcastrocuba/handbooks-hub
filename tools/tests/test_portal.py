@@ -44,6 +44,9 @@ class PortalTests(unittest.TestCase):
         reading = next((self.root / 'staged').rglob('reading.css')).read_text()
         self.assertEqual(reading, design.reading_css())
         self.assertEqual(motion_violations(reading), [])
+        import yaml
+        config=yaml.safe_load((self.root / 'staged/_quarto.yml').read_text())
+        self.assertIn({'text':design.reading_header()},config['format']['html']['include-in-header'])
 
     def test_empty_catalog_has_no_book_or_release_link(self):
         page=self.build({'schema_version':'1.0','books':[]})

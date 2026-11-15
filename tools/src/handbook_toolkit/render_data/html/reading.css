@@ -25,20 +25,20 @@ footer.footer, footer.footer .nav-footer {
 }
 footer.footer .nav-footer a { color: var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
-    @keyframes handbook-enter {
-      from { opacity: 0; transform: translateY({{motion-entry-px}}); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+  @keyframes handbook-enter {
+    from { opacity: 0; transform: translateY({{motion-entry-px}}); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 
-  /* Stable regions are isolated snapshots; only title and reading column animate. */
-  @supports (view-transition-name: handbook-body) {
+  /* Name regions only during capture: persistent names change resting text rasterization. */
+  @supports (view-transition-name: handbook-body) and selector(:active-view-transition) {
     @view-transition { navigation: auto; }
-    #quarto-header { view-transition-name: handbook-topbar; }
-    #quarto-sidebar { view-transition-name: handbook-sidebar; }
-    #quarto-margin-sidebar { view-transition-name: handbook-margin; }
-    footer.footer { view-transition-name: handbook-footer; }
-    #quarto-document-content { view-transition-name: handbook-body; }
-    #title-block-header { view-transition-name: handbook-title; }
+    :root:active-view-transition #quarto-header { view-transition-name: handbook-topbar; }
+    :root:active-view-transition #quarto-sidebar { view-transition-name: handbook-sidebar; }
+    :root:active-view-transition #quarto-margin-sidebar { view-transition-name: handbook-margin; }
+    :root:active-view-transition footer.footer { view-transition-name: handbook-footer; }
+    :root:active-view-transition #quarto-document-content { view-transition-name: handbook-body; }
+    :root:active-view-transition #title-block-header { view-transition-name: handbook-title; }
     ::view-transition-group(*) { animation: none; }
     ::view-transition-old(root) { display: none; }
     ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
