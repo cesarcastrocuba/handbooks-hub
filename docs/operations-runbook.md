@@ -60,6 +60,24 @@ Operations distinguish between two verification gates:
      six assets for `1.0` (published before toolkit `0.6.0`) and seven for `1.1`, which adds
      `book.md`.
 
+### Check after a deployment
+
+A deployment that succeeds can still serve pages without their stylesheets: on 2026-11-14 the portal
+answered 200 on every page while four stylesheets answered 404, because the host does not publish
+hidden paths (change `0042`). After every Pages deployment the site is checked from the outside:
+
+```bash
+PYTHONPATH=tools/src python3 -m handbook_toolkit.site_check https://cesarcastrocuba.github.io/handbooks-hub/ --page design.html --page create.html
+PYTHONPATH=tools/src python3 -m handbook_toolkit.site_check https://cesarcastrocuba.github.io/handbook-sample-01/
+```
+
+It requests every stylesheet, script and image the pages load from their own origin and fails with
+the list of those that do not answer 200. `portal-pages` runs it in its `verify` job after `deploy`.
+A book's reading site is also compared file by file with its released HTML archive by
+`catalog_verification` before the catalog lists the release. A failed check means the deployed
+site is broken for readers even though the workflow built it: fix the cause and deploy again, or
+roll back as in section 3.
+
 ### Edition preview and Owner acceptance before tagging
 
 Neither gate above shows what a reader will see. A release is immutable, so the editions are

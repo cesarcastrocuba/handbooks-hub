@@ -13,6 +13,12 @@ hidden directory that static hosts do not publish (change `0042`).
 
 ## [0.10.4] - 2026-11-15
 
+### Added
+
+- `python3 -m handbook_toolkit.site_check URL`: checks a deployed site from the outside by
+  requesting every local stylesheet, script and image its pages load. `portal-pages` runs it after
+  each deployment.
+
 ### Fixed
 
 - The online release gate (`catalog_verification`) applied the build invariants of the current
