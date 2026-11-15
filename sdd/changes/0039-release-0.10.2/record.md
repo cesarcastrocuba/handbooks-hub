@@ -55,8 +55,10 @@ exists.
 ## Steps still to run after merge
 
 1. Export `template/book/` with `python3 tools/scripts/export_template.py`, push it to
-   `cesarcastrocuba/handbooks-template` and tag `template-v1.5.1`.
-2. Upgrade the sample book to toolkit `0.10.3`, run its checks, review the rebuilt editions and
-   publish `v0.5.1`, which carries the Word index fix. `v0.4.2` and `v0.5.0` keep the defect.
-3. Update the catalog to `v0.5.1` with the `catalog-update` workflow, review the pull request and
-   merge it so `portal-pages` redeploys.
+   `cesarcastrocuba/handbooks-template` and tag `template-v1.5.1`. This is the only step still to
+   run.
+2. Done: the sample upgrade to toolkit `0.10.3` (sample PR 29, `77e7216`) is published as `v0.5.1`
+   by run 43686973539, with seven assets and cached page numbers verified against LibreOffice
+   destinations. `v0.4.2` and `v0.5.0` keep the defect.
+3. Done: `catalog-update` run 43687167357 pushed the branch merged as PR 73 (`9a15882`), and
+   `portal-pages` run 43687529695 deployed `v0.5.1` on its first attempt.
