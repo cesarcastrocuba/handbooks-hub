@@ -231,6 +231,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements-dev.txt -r tools/scripts/requirements-edition-preview.txt
           python -m playwright install --with-deps chromium
+      - name: Verify native CSS motion behavior in Chromium
+        if: matrix.book == 'template'
+        run: python3 -m unittest discover -s tools/tests -p test_reading_site.py -v
       - name: Build the edition preview
         env:
           BOOK: ${{ matrix.book }}

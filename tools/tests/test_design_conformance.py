@@ -59,7 +59,7 @@ class GeneratedSurfaceTests(unittest.TestCase):
         self.assertIn("var(--font-sans)", css)
 
     def test_all_packaged_book_styles_use_central_values(self) -> None:
-        dimensions = re.compile(r"(?<![\w-])-?(?:\d*\.)?\d+(?:px|rem|em|ch|vw)\b")
+        dimensions = re.compile(r"(?<![\w-])-?(?:\d*\.)?\d+(?:px|rem|em|ch|vw|ms|s)\b")
         for path in RENDER.rglob("*.css"):
             with self.subTest(resource=path.name):
                 source = path.read_text()

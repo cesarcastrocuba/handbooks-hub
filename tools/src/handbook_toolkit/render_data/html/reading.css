@@ -25,23 +25,108 @@ footer.footer, footer.footer .nav-footer {
 }
 footer.footer .nav-footer a { color: var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
-  @view-transition { navigation: auto; }
-  a, button, summary, .handbook-cover, .cover-actions .btn {
-    transition: color {{motion-fast}} {{motion-ease}},
-                background-color {{motion-fast}} {{motion-ease}},
-                outline-offset {{motion-fast}} {{motion-ease}};
-  }
-  details::details-content { transition: content-visibility {{motion-normal}} {{motion-ease}}; }
-  @supports (animation-timeline: view()) {
-    @keyframes handbook-reveal {
-      from { opacity: 0; transform: translateY({{reveal-distance}}); }
+    @keyframes handbook-enter {
+      from { opacity: 0; transform: translateY({{motion-entry-px}}); }
       to { opacity: 1; transform: translateY(0); }
     }
-    main section.level2, .handbook-cover, .card {
-      animation: handbook-reveal linear both;
-      animation-timeline: view();
-      animation-range: entry 0% entry 15%;
+
+  /* Stable regions are isolated snapshots; only title and reading column animate. */
+  @supports (view-transition-name: handbook-body) {
+    @view-transition { navigation: auto; }
+    #quarto-header { view-transition-name: handbook-topbar; }
+    #quarto-sidebar { view-transition-name: handbook-sidebar; }
+    #quarto-margin-sidebar { view-transition-name: handbook-margin; }
+    footer.footer { view-transition-name: handbook-footer; }
+    #quarto-document-content { view-transition-name: handbook-body; }
+    #title-block-header { view-transition-name: handbook-title; }
+    ::view-transition-group(*) { animation: none; }
+    ::view-transition-old(root) { display: none; }
+    ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+    ::view-transition-group(handbook-topbar), ::view-transition-group(handbook-sidebar),
+    ::view-transition-group(handbook-margin), ::view-transition-group(handbook-footer) { animation: none; }
+    ::view-transition-old(handbook-topbar), ::view-transition-old(handbook-sidebar),
+    ::view-transition-old(handbook-margin), ::view-transition-old(handbook-footer) { display: none; }
+    ::view-transition-new(handbook-topbar), ::view-transition-new(handbook-sidebar),
+    ::view-transition-new(handbook-margin), ::view-transition-new(handbook-footer) {
+      animation: none; mix-blend-mode: normal;
     }
+    @keyframes handbook-leave {
+      to { opacity: 0; transform: translateY(calc(-1 * {{motion-exit-px}})); }
+    }
+    @keyframes handbook-title {
+      from { opacity: 0; transform: translateY({{motion-title-px}}); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    ::view-transition-old(handbook-body), ::view-transition-old(handbook-title) {
+      animation: handbook-leave {{motion-exit-ms}} {{motion-exit-easing}} both;
+    }
+    ::view-transition-new(handbook-title) {
+      animation: handbook-title {{motion-title-ms}} {{motion-enter-easing}} both;
+      mix-blend-mode: normal;
+    }
+    ::view-transition-new(handbook-body) {
+      animation: handbook-enter {{motion-enter-ms}} {{motion-enter-easing}} {{motion-body-delay-ms}} both;
+      mix-blend-mode: normal;
+    }
+  }
+
+  body, #quarto-header, .sidebar, footer.footer, .callout, .book, .cover, code, pre, td, th {
+    transition: color {{motion-fast-ms}} {{motion-easing}}, background-color {{motion-fast-ms}} {{motion-easing}},
+                border-color {{motion-fast-ms}} {{motion-easing}};
+  }
+  a, button, input, select, summary {
+    transition: color {{motion-fast-ms}} {{motion-easing}}, background-color {{motion-fast-ms}} {{motion-easing}},
+                border-color {{motion-fast-ms}} {{motion-easing}}, outline-offset {{motion-fast-ms}} {{motion-easing}},
+                box-shadow {{motion-fast-ms}} {{motion-easing}}, translate {{motion-fast-ms}} {{motion-easing}};
+  }
+  main a:not(.btn):not(.anchorjs-link) {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-position: left bottom;
+    background-repeat: no-repeat;
+    background-size: 0 {{motion-underline-px}};
+    transition: color {{motion-fast-ms}} {{motion-easing}}, background-size {{motion-fast-ms}} {{motion-easing}};
+  }
+  main a:not(.btn):not(.anchorjs-link):is(:hover, :focus-visible) { background-size: 100% {{motion-underline-px}}; }
+  main :is(.btn, .fmt, button):is(:hover, :focus-visible) { translate: 0 calc(-1 * {{motion-lift-px}}); }
+  main a.btn { position: relative; }
+  main a.btn::after {
+    content: "→" / "";
+    position: absolute;
+    inset-inline-start: calc(100% + {{motion-arrow-gap-px}});
+    opacity: 0;
+    translate: calc(-1 * {{motion-arrow-px}}) 0;
+    transition: opacity {{motion-fast-ms}} {{motion-easing}}, translate {{motion-fast-ms}} {{motion-easing}};
+  }
+  main a.btn:is(:hover, :focus-visible)::after { opacity: 1; translate: 0 0; }
+  .sidebar-item-container a, #TOC a {
+    transition: color {{motion-fast-ms}} {{motion-easing}}, background-color {{motion-fast-ms}} {{motion-easing}},
+                border-color {{motion-fast-ms}} {{motion-easing}};
+  }
+  input:focus-visible { box-shadow: 0 0 0 {{motion-underline-px}} var(--accent); }
+  @supports (interpolate-size: allow-keywords) and (transition-behavior: allow-discrete) {
+    details::details-content {
+      interpolate-size: allow-keywords;
+      block-size: 0;
+      overflow: clip;
+      transition: block-size {{motion-normal-ms}} {{motion-easing}},
+                  content-visibility {{motion-normal-ms}} allow-discrete;
+    }
+    details[open]::details-content { block-size: auto; }
+  }
+
+  /* View progress triggers play a clock animation once; scrolling back cannot rewind it. */
+  @supports (animation-timeline: view()) and (animation-trigger: --handbook-reveal play-once) {
+    @keyframes handbook-reveal {
+      from { opacity: 0; transform: translateY({{motion-entry-px}}); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    main section.level2, main .callout, main figure, main table:has(caption), .handbook-cover, .card {
+      trigger-scope: --handbook-reveal;
+      timeline-trigger: --handbook-reveal view() cover 0% cover 100%;
+      animation: handbook-reveal {{motion-reveal-ms}} {{motion-enter-easing}};
+      animation-trigger: --handbook-reveal play-once;
+    }
+    main section.level2, .handbook-cover, .card { animation-fill-mode: forwards; }
   }
   @supports (animation-timeline: scroll()) {
     @keyframes handbook-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
@@ -50,15 +135,46 @@ footer.footer .nav-footer a { color: var(--accent); }
       position: fixed;
       inset: 0 0 auto;
       height: {{progress-height}};
-      background: var(--accent);
+      background: linear-gradient(to right, var(--accent-solid), var(--accent));
       z-index: 2000;
-      /* Hidden unless the scroll timeline is active: a page that does not scroll shows no bar. */
       transform: scaleX(0);
       transform-origin: left;
       animation: handbook-progress linear both;
-      animation-timeline: scroll();
+      animation-timeline: scroll(root block);
       pointer-events: none;
     }
+  }
+
+  #book-grid > .book {
+    animation: handbook-enter {{motion-reveal-ms}} {{motion-enter-easing}} backwards;
+    transition: translate {{motion-fast-ms}} {{motion-easing}}, box-shadow {{motion-fast-ms}} {{motion-easing}};
+  }
+  @supports (animation-delay: calc(sibling-index() * {{motion-stagger-ms}})) {
+    #book-grid > .book { animation-delay: calc(min(sibling-index() - 1, {{motion-stagger-limit}}) * {{motion-stagger-ms}}); }
+  }
+  #book-grid > .book:is(:hover, :has(:focus-visible)) { translate: 0 calc(-1 * {{motion-lift-px}}); box-shadow: {{motion-shadow}}; }
+  .book .cover { position: relative; overflow: clip; }
+  .book .cover::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(to right, transparent, color-mix(in srgb, var(--on-solid) {{motion-highlight-percent}}%, transparent), transparent);
+    opacity: 0;
+  }
+  @keyframes handbook-sweep {
+    from { opacity: 0; translate: calc(-1 * {{motion-sweep-percent}}%) 0; }
+    50% { opacity: 1; }
+    to { opacity: 0; translate: {{motion-sweep-percent}}% 0; }
+  }
+  .book:is(:hover, :has(:focus-visible)) .cover::after {
+    animation: handbook-sweep {{motion-sweep-ms}} {{motion-easing}};
+  }
+  @keyframes handbook-count { from { color: var(--accent); } }
+  #quarto-document-content:has(#search:focus-visible) #results,
+  #quarto-document-content:has(button:not([data-filter="all"])[aria-pressed="true"]) #results {
+    animation: handbook-count {{motion-normal-ms}} {{motion-easing}};
   }
 }
 

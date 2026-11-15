@@ -11,6 +11,7 @@
     "type",
     "space",
     "radius",
+    "motion",
     "contrast"
   ],
   "properties": {
@@ -113,12 +114,194 @@
       }
     },
     "motion": {
-      "type": "object", "additionalProperties": false,
-      "required": ["fast_ms", "normal_ms", "easing"],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fast_ms",
+        "normal_ms",
+        "easing",
+        "exit_ms",
+        "title_ms",
+        "enter_ms",
+        "body_delay_ms",
+        "reveal_ms",
+        "sweep_ms",
+        "stagger_ms",
+        "stagger_limit",
+        "enter_easing",
+        "exit_easing",
+        "entry_px",
+        "title_px",
+        "exit_px",
+        "lift_px",
+        "arrow_px",
+        "arrow_gap_px",
+        "underline_px",
+        "sweep_percent",
+        "highlight_percent",
+        "shadow"
+      ],
       "properties": {
-        "fast_ms": {"type": "integer", "minimum": 1, "maximum": 1000},
-        "normal_ms": {"type": "integer", "minimum": 1, "maximum": 1000},
-        "easing": {"type": "string", "enum": ["ease-out", "ease-in-out", "linear"]}
+        "fast_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "normal_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "easing": {
+          "type": "string",
+          "enum": [
+            "ease-out",
+            "ease-in-out",
+            "linear"
+          ]
+        },
+        "exit_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300
+        },
+        "title_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300
+        },
+        "enter_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300
+        },
+        "body_delay_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300
+        },
+        "reveal_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300
+        },
+        "sweep_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300
+        },
+        "stagger_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300
+        },
+        "stagger_limit": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "enter_easing": {
+          "type": "string",
+          "enum": [
+            "ease-in",
+            "cubic-bezier(0.2, 0.8, 0.2, 1)"
+          ]
+        },
+        "exit_easing": {
+          "type": "string",
+          "enum": [
+            "ease-in",
+            "cubic-bezier(0.2, 0.8, 0.2, 1)"
+          ]
+        },
+        "entry_px": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 24
+        },
+        "title_px": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 24
+        },
+        "exit_px": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 24
+        },
+        "lift_px": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 24
+        },
+        "arrow_px": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 24
+        },
+        "arrow_gap_px": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 24
+        },
+        "underline_px": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 24
+        },
+        "sweep_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 150
+        },
+        "highlight_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 150
+        },
+        "shadow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "x_px",
+            "y_px",
+            "blur_px",
+            "spread_px",
+            "color",
+            "alpha"
+          ],
+          "properties": {
+            "x_px": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 32
+            },
+            "y_px": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 32
+            },
+            "blur_px": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 32
+            },
+            "spread_px": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 32
+            },
+            "color": {
+              "type": "string",
+              "pattern": "^#[0-9A-F]{6}$"
+            },
+            "alpha": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
       }
     },
     "contrast": {

@@ -36,6 +36,13 @@ class PortalTests(unittest.TestCase):
         support.write_json(self.catalog,document)
         return Document(build_portal(self.catalog,self.output).read_text()).root
 
+    def test_quarto_portal_loads_the_shared_guarded_motion_layer(self):
+        from test_reading_site import motion_violations
+        stage_site(self.root / 'staged', [])
+        reading = next((self.root / 'staged').rglob('reading.css')).read_text()
+        self.assertEqual(reading, design.reading_css())
+        self.assertEqual(motion_violations(reading), [])
+
     def test_empty_catalog_has_no_book_or_release_link(self):
         page=self.build({'schema_version':'1.0','books':[]})
         self.assertIn('The first handbook is being prepared',page.text())

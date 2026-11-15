@@ -76,6 +76,11 @@ def validate_tokens(
     issues.extend(_reference_issues(tokens))
     issues.extend(_contrast_issues(tokens))
     issues.extend(_callout_contrast_issues(tokens))
+    motion = tokens["motion"]
+    if motion["enter_ms"] + motion["body_delay_ms"] > 300:
+        issues.append(Issue("$.motion", "page transition exceeds the 300 ms budget"))
+    if motion["reveal_ms"] + motion["stagger_ms"] * motion["stagger_limit"] > 300:
+        issues.append(Issue("$.motion", "card stagger exceeds the 300 ms budget"))
     return sorted(issues)
 
 
@@ -446,7 +451,7 @@ def book_scss(scheme: str) -> str:
 
 
 READING_METRICS = {"focus-width": "3px", "focus-offset": "3px", "progress-height": "3px",
-                   "cover-space": "1rem", "cover-radius": "6px", "reveal-distance": "8px",
+                   "cover-space": "1rem", "cover-radius": "6px",
                    "favicon-viewbox": "0 0 64 64"}
 
 
@@ -455,9 +460,15 @@ def reading_css() -> str:
     css = resource_files("handbook_toolkit").joinpath("render_data/html/reading.css").read_text()
     tokens = load_tokens()
     values = dict(READING_METRICS)
-    values.update({"motion-fast": str(tokens["motion"]["fast_ms"]) + "ms",
-                   "motion-normal": str(tokens["motion"]["normal_ms"]) + "ms",
-                   "motion-ease": tokens["motion"]["easing"]})
+    for name, value in tokens["motion"].items():
+        if isinstance(value, dict):
+            continue
+        key = "motion-" + name.replace("_", "-")
+        values[key] = str(value) + ("ms" if name.endswith("_ms") else "px" if name.endswith("_px") else "")
+    shadow = tokens["motion"]["shadow"]
+    red, green, blue = (int(shadow["color"][offset:offset + 2], 16) for offset in (1, 3, 5))
+    geometry = " ".join(str(shadow[name]) + "px" for name in ("x_px", "y_px", "blur_px", "spread_px"))
+    values["motion-shadow"] = geometry + f" rgb({red} {green} {blue} / {shadow['alpha']})"
     for name, value in values.items():
         css = css.replace("{{" + name + "}}", value)
     return css
