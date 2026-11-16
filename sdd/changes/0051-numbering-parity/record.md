@@ -46,7 +46,7 @@ nor `docs/decisions.md` is modified.
    - Appendices receive their letter identifier (`tbl-a-1`, `tbl-b-1`, …).
 
 3. **Prefix Stripping and Mismatch Protection**:
-   - Figure captions matching `^Figure\s+(?P<label>[A-Za-z0-9.]+)\s*(?:[—–:]|-)\s*(?P<rest>.*)$` (including class-first attribute forms `![Figure 9.9 — ...](...){.wide #fig-...}`) have the `Figure <label> — ` prefix stripped at staging so Quarto's native cross-reference numbering does not create duplicate numbers (`Figure 1.1: Figure 1.1 — …`).
+   - Figure captions matching `^Figure\s+(?P<label>[A-Za-z0-9.]+)\s*(?:[—–:]|-)\s*(?P<rest>.*)$` (including class-first attribute forms such as `Figure 9.9 — ...` followed by `{.wide #fig-...}`) have the `Figure <label> — ` prefix stripped at staging so Quarto's native cross-reference numbering does not create duplicate numbers (`Figure 1.1: Figure 1.1 — …`).
    - Before stripping, `<label>` is validated against the exact expected displayed number (`{ch}.{fig}` or `{app_letter}.{fig}`). If `<label>` differs, the build fails with `BuildError: figure caption label '<label>' does not match expected number '<expected>'`. Tested with a negative build asserting build failure on mismatched class-first figures.
    - Table captions matching `^Table\s+(?P<label>[A-Za-z0-9.]+)\s*(?:[—–:]|-)\s*(?P<rest>.*)$` are stripped and validated under the same rule.
    - The canonical manuscript source in git remains untouched.
