@@ -323,6 +323,7 @@ class RenderConfigTests(unittest.TestCase):
                 "filters/table-layout.lua": workspace / "handbook-render/filters/table-layout.lua",
                 "filters/task-checkbox.lua": workspace / "handbook-render/filters/task-checkbox.lua",
                 "filters/docx-callouts.lua": workspace / "handbook-render/filters/docx-callouts.lua",
+                "filters/front-crossrefs.lua": workspace / "handbook-render/filters/front-crossrefs.lua",
                 "typst/callout-breakable.typ": workspace / "handbook-render/typst/callout-breakable.typ",
                 "typst/handbook-typst.typ": workspace / "handbook-render/typst/handbook-typst.typ",
                 "typst/typst-show.typ": workspace / "handbook-render/typst/typst-show.typ",
@@ -348,6 +349,7 @@ class RenderConfigTests(unittest.TestCase):
                     "handbook-render/filters/table-layout.lua",
                     "handbook-render/filters/task-checkbox.lua",
                     "handbook-render/filters/docx-callouts.lua",
+                    "handbook-render/filters/front-crossrefs.lua",
                 ],
             )
             self.assertEqual(
@@ -419,7 +421,7 @@ class MarkdownEditionTests(unittest.TestCase):
                 '| A | B |\n| --- | --- |\n| C | D |\n\n: Routes\n')
             source = _markdown_sources(workspace, ['intro.qmd'])
             self.assertIn('# Introduction {#sec-intro .unnumbered}', source)
-            self.assertIn('{#tbl-1-1}', source)
+            self.assertIn('{#tbl-0-1}', source)
             self.assertFalse(source.startswith('---'))
 
     def test_clean_markdown_keeps_text_and_drops_rendered_html(self):

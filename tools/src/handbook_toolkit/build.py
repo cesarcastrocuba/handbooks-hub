@@ -218,9 +218,10 @@ def build_book(
             language=language,
         )
         control_table = document_control_table(fields)
+        appendix_entries = list(groups.get("appendices", []))
         # The Markdown edition carries its own document-control header, so it is captured
         # before the print editions inject the table into the front matter.
-        markdown_source = _markdown_sources(workspace, entries)
+        markdown_source = _markdown_sources(workspace, entries, appendices=appendix_entries)
         for entry in entries:
             entry_path = workspace / entry
             content = entry_path.read_text(encoding="utf-8")
@@ -232,6 +233,8 @@ def build_book(
         entry_texts = [(workspace / entry).read_text(encoding="utf-8") for entry in entries]
         depth = toc_depth(entry_texts)
 
+        rendered_entries = _prepare_render(workspace, entries, appendices=appendix_entries)
+
         title = str(book.get("title", ""))
         licenses = book.get("license", {})
         license_text = license_label(str(licenses.get("content", "")))
@@ -242,6 +245,7 @@ def build_book(
                 title=title,
                 license_text=license_text,
                 running_header=running_header,
+                appendix_start=getattr(rendered_entries, "appendix_start", None),
             ),
             encoding="utf-8",
         )
@@ -268,8 +272,6 @@ def build_book(
         )
         resources["typst/front.typ"] = front_file
 
-        rendered_entries = _prepare_render(workspace, entries)
-
         (workspace / "_quarto.yml").write_text(
             yaml.safe_dump(
                 _render_config(
@@ -278,6 +280,7 @@ def build_book(
                     rendered_entries,
                     resources,
                     workspace,
+                    appendices=appendix_entries,
                     toc_depth=depth,
                     edition_date=date_str,
                 ),

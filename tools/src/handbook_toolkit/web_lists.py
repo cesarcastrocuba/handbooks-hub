@@ -53,7 +53,14 @@ def generate_list_pages(workspace: Path, entries: list[str]) -> list[str]:
         for label, caption, entry in items:
             target = quote(entry, safe="/") + "#" + label
             caption = caption.replace("[", "\\[").replace("]", "\\]")
-            body.append(f"- @{label}" + (f": [{caption}](<{target}>)" if caption else ""))
+            m = re.match(r"^(tbl|fig)-(0|bm)-(\d+)$", label)
+            if m:
+                prefix = "Table" if m.group(1) == "tbl" else "Figure"
+                group_pfx = "0" if m.group(2) == "0" else "BM"
+                num_label = f"{prefix} {group_pfx}.{m.group(3)}"
+                body.append(f"- [{num_label}](<{target}>)" + (f": [{caption}](<{target}>)" if caption else ""))
+            else:
+                body.append(f"- @{label}" + (f": [{caption}](<{target}>)" if caption else ""))
         body += [":::", ""]
         page.write_text("\n".join(body), encoding="utf-8")
         pages.append(name)
