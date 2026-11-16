@@ -465,6 +465,196 @@ class TemplateWorkflowTests(unittest.TestCase):
         self.assertIsNone(pattern.fullmatch("3.1.0-beta"))
         self.assertIn("--prerelease --latest=false", release_text)
 
+    def test_extra_release_assets_step_structure_and_order(self) -> None:
+        release = _load(TEMPLATE_WORKFLOWS / "release.yml")
+        steps = release["jobs"]["build"]["steps"]
+        names = [step.get("name", "") for step in steps]
+        self.assertIn("Build book-owned extra release assets (opt-in)", names)
+        extra_idx = names.index("Build book-owned extra release assets (opt-in)")
+        pages_idx = names.index("Upload the Pages artifact")
+        publish_idx = names.index("Publish every verified file to the release")
+        self.assertLess(pages_idx, extra_idx)
+        self.assertLess(extra_idx, publish_idx)
+
+        extra_step = steps[extra_idx]
+        self.assertEqual(extra_step["env"]["EXTRA_ASSETS_DIR"], "${{ runner.temp }}/extra-assets")
+        self.assertEqual(extra_step["env"]["RELEASE_DIR"], "${{ runner.temp }}/release")
+        self.assertNotIn("${{", extra_step.get("run", ""))
+        run_text = extra_step.get("run", "")
+        self.assertIn('export PATH="$RUNNER_TEMP/toolkit-venv/bin:$PATH"', run_text)
+        self.assertIn('PYTHON="$RUNNER_TEMP/toolkit-venv/bin/python"', run_text)
+        self.assertIn('SOURCE_DATE_EPOCH="$(git log -1 --format=%ct "$SOURCE_COMMIT")"', run_text)
+        self.assertIn("make -qp 2>/dev/null", run_text)
+        self.assertIn("grep -q '^release-assets:'", run_text)
+        val_step = next(s for s in steps if s.get("name") == "Validate the request")
+        self.assertNotIn("SOURCE_DATE_EPOCH", val_step.get("run", ""))
+
+    def test_release_workflow_no_expression_interpolated_into_shell(self) -> None:
+        release = _load(TEMPLATE_WORKFLOWS / "release.yml")
+        for job_name, job in release.get("jobs", {}).items():
+            for step in job.get("steps", []):
+                run = step.get("run", "")
+                self.assertNotIn("${{", run, f"Step {step.get('name', 'unnamed')} in job {job_name} interpolates expression into shell")
+
+    def test_extra_release_assets_opt_in_detection(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            mf_no = root / "Makefile.no"
+            mf_no.write_text("check:\n\t@echo ok\n")
+            p_no = subprocess.run(f"(make -f {mf_no} -qp 2>/dev/null || true) | grep -q '^release-assets:'", shell=True)
+            self.assertNotEqual(p_no.returncode, 0)
+
+            mf_yes = root / "Makefile.yes"
+            mf_yes.write_text("release-assets:\n\t@echo ok\n")
+            p_yes = subprocess.run(f"(make -f {mf_yes} -qp 2>/dev/null || true) | grep -q '^release-assets:'", shell=True)
+            self.assertEqual(p_yes.returncode, 0)
+
+    def test_extra_release_assets_script_validation(self) -> None:
+        import textwrap
+        release_text = (TEMPLATE_WORKFLOWS / "release.yml").read_text(encoding="utf-8")
+        match = re.search(r"make release-assets.*?<<'PY'\n(.*?)\n\s*PY", release_text, re.DOTALL)
+        self.assertIsNotNone(match)
+        py_code = textwrap.dedent(match.group(1))
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            extra_dir = root / "extra"
+            release_dir = root / "release"
+            extra_dir.mkdir()
+            release_dir.mkdir()
+
+            env = os.environ.copy()
+            env["EXTRA_ASSETS_DIR"] = str(extra_dir)
+            env["RELEASE_DIR"] = str(release_dir)
+            env["SOURCE_DATE_EPOCH"] = "1794765019"
+
+            # 1. Empty extra dir should fail
+            res = subprocess.run([sys.executable, "-c", py_code], env=env, capture_output=True, text=True)
+            self.assertNotEqual(res.returncode, 0)
+            self.assertIn("no files", res.stderr)
+
+            # 2. Subdirectory inside extra dir should fail
+            (extra_dir / "subdir").mkdir()
+            res = subprocess.run([sys.executable, "-c", py_code], env=env, capture_output=True, text=True)
+            self.assertNotEqual(res.returncode, 0)
+            self.assertIn("regular file", res.stderr)
+            (extra_dir / "subdir").rmdir()
+
+            # 3. Invalid filename should fail
+            (extra_dir / "bad name.txt").write_text("hello")
+            res = subprocess.run([sys.executable, "-c", py_code], env=env, capture_output=True, text=True)
+            self.assertNotEqual(res.returncode, 0)
+            self.assertIn("invalid extra release asset name", res.stderr)
+            (extra_dir / "bad name.txt").unlink()
+
+            # 4. Forbidden name collision should fail
+            (extra_dir / "book.pdf").write_text("fake pdf")
+            res = subprocess.run([sys.executable, "-c", py_code], env=env, capture_output=True, text=True)
+            self.assertNotEqual(res.returncode, 0)
+            self.assertIn("collides with publication files", res.stderr)
+            (extra_dir / "book.pdf").unlink()
+
+            # 5. Oversized single file should fail (>10 MB)
+            oversized = extra_dir / "big.bin"
+            with open(oversized, "wb") as f:
+                f.seek(10 * 1024 * 1024)
+                f.write(b"X")
+            res = subprocess.run([sys.executable, "-c", py_code], env=env, capture_output=True, text=True)
+            self.assertNotEqual(res.returncode, 0)
+            self.assertIn("exceeds max file size", res.stderr)
+            oversized.unlink()
+
+            # 6. Valid files pack deterministically into book-extras.zip
+            (extra_dir / "checklists.json").write_text('{"item": 1}')
+            (extra_dir / "assessment.csv").write_text('id,score\n1,100\n')
+            res = subprocess.run([sys.executable, "-c", py_code], env=env, capture_output=True, text=True)
+            self.assertEqual(res.returncode, 0, res.stderr)
+            extras_zip = release_dir / "book-extras.zip"
+            self.assertTrue(extras_zip.is_file())
+
+            with zipfile.ZipFile(extras_zip) as z:
+                self.assertEqual(z.namelist(), ["assessment.csv", "checklists.json"])
+                info = z.getinfo("assessment.csv")
+                self.assertEqual(info.date_time[:3], (2026, 11, 15))
+                self.assertEqual(info.external_attr >> 16, 0o100644)
+
+    def test_extra_release_assets_step_run_script_execution(self) -> None:
+        release = _load(TEMPLATE_WORKFLOWS / "release.yml")
+        steps = release["jobs"]["build"]["steps"]
+        extra_step = next(s for s in steps if s.get("name") == "Build book-owned extra release assets (opt-in)")
+        run_script = extra_step["run"]
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            book_dir = root / "book"
+            book_dir.mkdir()
+            subprocess.run(["git", "init"], cwd=book_dir, check=True, capture_output=True)
+            subprocess.run(["git", "config", "user.name", "Test"], cwd=book_dir, check=True)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=book_dir, check=True)
+            (book_dir / "README.md").write_text("# Book\n")
+            subprocess.run(["git", "add", "README.md"], cwd=book_dir, check=True)
+            subprocess.run(["git", "commit", "-m", "init"], cwd=book_dir, check=True)
+
+            runner_temp = root / "runner_temp"
+            toolkit_venv = runner_temp / "toolkit-venv" / "bin"
+            toolkit_venv.mkdir(parents=True)
+            (toolkit_venv / "python").symlink_to(sys.executable)
+
+            extra_assets = runner_temp / "extra-assets"
+            release_dir = runner_temp / "release"
+            release_dir.mkdir(parents=True)
+
+            source_commit = subprocess.run(
+                ["git", "rev-parse", "HEAD"], cwd=book_dir, check=True, capture_output=True, text=True
+            ).stdout.strip()
+
+            env = os.environ.copy()
+            env["RUNNER_TEMP"] = str(runner_temp)
+            env["EXTRA_ASSETS_DIR"] = str(extra_assets)
+            env["RELEASE_DIR"] = str(release_dir)
+            env["SOURCE_COMMIT"] = source_commit
+
+            # Case A: Makefile has no release-assets target -> skips cleanly
+            (book_dir / "Makefile").write_text("check:\n\t@echo ok\n")
+            subprocess.run(["git", "add", "Makefile"], cwd=book_dir, check=True)
+            subprocess.run(["git", "commit", "-m", "add makefile"], cwd=book_dir, check=True)
+            source_commit = subprocess.run(
+                ["git", "rev-parse", "HEAD"], cwd=book_dir, check=True, capture_output=True, text=True
+            ).stdout.strip()
+            env["SOURCE_COMMIT"] = source_commit
+
+            res_skip = subprocess.run(["bash", "-c", run_script], cwd=book_dir, env=env, capture_output=True, text=True)
+            self.assertEqual(res_skip.returncode, 0, res_skip.stderr)
+            self.assertIn("No release-assets target found", res_skip.stdout)
+            self.assertFalse((release_dir / "book-extras.zip").exists())
+
+            # Case B: Makefile defines release-assets target -> executes, packages, checksums
+            (book_dir / "Makefile").write_text(
+                "release-assets:\n"
+                "\t@mkdir -p \"$(RELEASE_ASSETS_DIR)\"\n"
+                "\t@echo '{\"test\": true}' > \"$(RELEASE_ASSETS_DIR)/data.json\"\n"
+            )
+            subprocess.run(["git", "add", "Makefile"], cwd=book_dir, check=True)
+            subprocess.run(["git", "commit", "-m", "update makefile"], cwd=book_dir, check=True)
+            source_commit = subprocess.run(
+                ["git", "rev-parse", "HEAD"], cwd=book_dir, check=True, capture_output=True, text=True
+            ).stdout.strip()
+            env["SOURCE_COMMIT"] = source_commit
+
+            res_build = subprocess.run(["bash", "-c", run_script], cwd=book_dir, env=env, capture_output=True, text=True)
+            self.assertEqual(res_build.returncode, 0, res_build.stderr)
+            self.assertIn("Building book-owned extra release assets...", res_build.stdout)
+            self.assertIn("packaged 1 extra release assets into book-extras.zip", res_build.stdout)
+            extras_zip = release_dir / "book-extras.zip"
+            checksum_file = release_dir / "EXTRAS-SHA256SUMS.txt"
+            self.assertTrue(extras_zip.is_file())
+            self.assertTrue(checksum_file.is_file())
+            with zipfile.ZipFile(extras_zip) as z:
+                self.assertEqual(z.namelist(), ["data.json"])
+                self.assertEqual(z.read("data.json"), b'{"test": true}\n')
+            chk_content = checksum_file.read_text(encoding="utf-8")
+            self.assertIn("book-extras.zip", chk_content)
+
     def test_documentation_specifies_fast_checks_as_required_check(self) -> None:
         author_guide = (support.REPO_ROOT / "docs/author-guide.md").read_text(encoding="utf-8")
         self.assertIn("requires the `Fast checks` status check", author_guide)
