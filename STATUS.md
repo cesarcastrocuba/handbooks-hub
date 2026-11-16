@@ -32,7 +32,7 @@ branches (`HUB-DEC-026`).
 
 | Item | State |
 | --- | --- |
-| `main` | `fe439a2a3edfb69e0de0227f5b9e40be3f84a3bf`; protected by pull request and CI, also for administrators (`HUB-DEC-018`), and requires up-to-date branches (`strict=true`, `HUB-DEC-026`). Change `0027` merged as PR 47 (audit record and decisions 036 to 040), PR 48 (documentation truth), PR 49 (toolkit release), PR 50 (edition preview in CI), PR 51 (documentation currency check), PR 52 (retrospective design record and font rights review), PR 53 (template release), PR 54 (catalog `v0.4.2`), PR 55 (native theme and list pages), PR 56 (authenticated release verification), PR 57 (release status), PR 58 (cover page, parts and reading experience, reviewed and merged by the independent reviewer), PR 59 (template release), PR 60 (figure paths in the print editions), PR 61 (catalog `v0.5.0`), PR 62 (release status), PR 63 (Quarto portal as an opt-in engine), PR 64 (deploy the Quarto portal, `HUB-DEC-041`), PR 65 (Word index caches), PR 66 (pinned actions and development dependencies, closes S2), PR 67 (Markdown figure and table numbering), PR 68 (interim status), PR 70 (Word list markers), PR 71 (site resources in a published path), PR 72 (release gate levels), PR 73 (catalog `v0.5.1`), PR 74 (native motion polish, change `0043`), PR 75 (deployed-site check, change `0045`), PR 76 (status) and PR 77 (preview alignment, change `0046`, toolkit `0.11.0`), PR 78 (template `1.6.0`), PR 79 (catalog `v0.5.2`), PR 80 (status) and PR 81 (`HUB-DEC-043`) |
+| `main` | `12b83f1bf2c20f9af7dc95ccda16e9da7a2769a7`; protected by pull request and CI, also for administrators (`HUB-DEC-018`), and requires up-to-date branches (`strict=true`, `HUB-DEC-026`). Change `0027` merged as PR 47 (audit record and decisions 036 to 040), PR 48 (documentation truth), PR 49 (toolkit release), PR 50 (edition preview in CI), PR 51 (documentation currency check), PR 52 (retrospective design record and font rights review), PR 53 (template release), PR 54 (catalog `v0.4.2`), PR 55 (native theme and list pages), PR 56 (authenticated release verification), PR 57 (release status), PR 58 (cover page, parts and reading experience, reviewed and merged by the independent reviewer), PR 59 (template release), PR 60 (figure paths in the print editions), PR 61 (catalog `v0.5.0`), PR 62 (release status), PR 63 (Quarto portal as an opt-in engine), PR 64 (deploy the Quarto portal, `HUB-DEC-041`), PR 65 (Word index caches), PR 66 (pinned actions and development dependencies, closes S2), PR 67 (Markdown figure and table numbering), PR 68 (interim status), PR 70 (Word list markers), PR 71 (site resources in a published path), PR 72 (release gate levels), PR 73 (catalog `v0.5.1`), PR 74 (native motion polish, change `0043`), PR 75 (deployed-site check, change `0045`), PR 76 (status) and PR 77 (preview alignment, change `0046`, toolkit `0.11.0`), PR 78 (template `1.6.0`), PR 79 (catalog `v0.5.2`), PR 80 (status), PR 81 (`HUB-DEC-043`), PR 82 (change `0048`), PR 83 (`HUB-DEC-044`) and PR 84 (change `0049`) |
 | GitHub repositories | [hub](https://github.com/cesarcastrocuba/handbooks-hub), [sample](https://github.com/cesarcastrocuba/handbook-sample-01) and [template](https://github.com/cesarcastrocuba/handbooks-template), all public. The template repository is a generated mirror of `template/book/`, marked as a template and tagged `template-v1.6.0` at `8a6d5ae` (template `1.6.0` with toolkit `0.11.0`); `template-v1.5.1` remains at `514f66c` and `template-v1.5.0` at `6e864d3` |
 | Reference handbook | Private and never modified (`HUB-DEC-043`). Its final release, tag `v3.0.0` at `13d295bfb266c6fb03b8d244666ebbf0e056e6cd` (published 2026-11-15), is the frozen content source of the new book: 3 front-matter files, 18 chapters, appendices A to J, 2 back-matter files and 121 Graphviz figures |
 | New book repository | [`cesarcastrocuba/handbook-solutions-architecture`](https://github.com/cesarcastrocuba/handbook-solutions-architecture), public, created from `template-v1.6.0` and initialized (book PR 1, `388b9ed`), skeleton only; Owner gap decisions in `HUB-DEC-044`; title "Solutions Architecture Handbook", slug `solutions-architecture-handbook`; one pre-release `v3.1.0-rc.1` after Chapters 1–18, first complete and listed edition `v3.1.0` |
@@ -49,14 +49,20 @@ branches (`HUB-DEC-026`).
 
 ## Next actions
 
-1. Phase 6, stage 0: change `0048-sa-onboarding` (Agy implements, Codex reviews): section map, dry
-   run in a `template-v1.6.0` scaffold, feature matrix, licensing review and import order.
-2. Stage 1 is done: `handbook-solutions-architecture` exists, created from `template-v1.6.0`
-   (book PR 1, `388b9ed`).
-3. Stage 2: import by slices (front matter, chapters 1–4, 5–8, 9–12, 13–18, appendices and back
-   matter), each with a parity table against `v3.0.0`.
-4. Stage 3: close the platform gaps found in the hub with the next toolkit and template minor
-   releases.
+Phase 6 (`HUB-DEC-043`, `HUB-DEC-044`). Stage 0 and stage 1 are done: the inventory and dry run
+(change `0048`, PR 82) and the book repository (book PR 1). Change `0049` (PR 84) adds `X.Y.Z-rc.N`
+pre-releases and two onboarding fixes to the template source; it ships with the next template
+release.
+
+1. Stage 2, import by slices: front matter is imported (book PR 2); Chapters 1–4 are in review
+   (book PR 3); then 5–8, 9–12, 13–18, appendices and back matter, each with a parity table
+   against `v3.0.0`.
+2. Stage 3, platform gaps: standard profile `1.1.0` (change `0050`, PR 85, in review); figure and
+   table numbering that follows displayed chapters and appendix letters (change `0051`, gap G12,
+   found in the real-book build); cross-reference links (G8); glossary pointers and the analytic
+   Index (G9, G4); then a toolkit and template minor release with the Owner's preview and desktop
+   Word check.
+3. `v3.1.0-rc.1` after Chapters 1–18 (`HUB-DEC-044`), with the Owner's tag approval.
 
 ## Blockers and open owner decisions
 
