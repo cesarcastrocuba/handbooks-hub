@@ -50,9 +50,9 @@ The template's `book.yaml` keeps profile 1.0.0 for now.
    - Under profile 1.1.0:
      - A unit may contain multiple closing elements of the same kind (e.g. two `**Example.**` paragraphs in `ch03` and `ch17`).
      - A label body may be a block list following the label paragraph (e.g. `**What it includes.**` followed by bullet items in `ch06`).
-     - The unit scanner ignores text inside table cells (e.g. Table cell containing `Example` in `ch16`).
+     - The unit scanner ignores text inside table cells for structural-label detection while preserving table content for callout and appendix body presence (e.g. table-only callouts or appendices).
      - Bold paragraph labels inside matching heading sections (e.g. `**Worked example.**` narrative inside `## 17.5 Worked Example`) are recognized as section body prose rather than wrong-form headings. **Note:** This fourth relaxation is beyond the three named in `HUB-DEC-044 (2)` and needs Owner confirmation before the toolkit 0.12.0 tag.
-   - Under profile 1.0.0, strict unit rules remain unchanged.
+   - Under profiles 1.0.0 and 0.2.0, strict unit rules remain unchanged (verified via differential regression tests). Mode "appendix" is rejected as unsupported under 1.0.0/0.2.0, and untitled non-callout containers retain their malformed diagnostic across all profile versions.
 
 4. **Version Resolution & Distribution**:
    - `profile: standard@1.1.0` and `profile: {id: standard, version: "1.1.0"}` resolve from the filesystem and packaged assets.

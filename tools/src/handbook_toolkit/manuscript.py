@@ -56,6 +56,8 @@ class Manuscript:
     plain_lines: tuple[tuple[int, str], ...]
     malformed: tuple[tuple[int, str], ...]
     line_count: int
+    table_lines: frozenset[int] = frozenset()
+    fence_lines: frozenset[int] = frozenset()
 
 
 def _slice(manuscript: Manuscript, start: int, end: int) -> Manuscript:
@@ -68,6 +70,8 @@ def _slice(manuscript: Manuscript, start: int, end: int) -> Manuscript:
         tuple(item for item in manuscript.plain_lines if start <= item[0] < end),
         (),
         manuscript.line_count,
+        frozenset(line for line in manuscript.table_lines if start <= line < end),
+        frozenset(line for line in manuscript.fence_lines if start <= line < end),
     )
 
 
@@ -170,7 +174,8 @@ def scan(text: str, *, ignore_table_cells: bool = False) -> Manuscript:
     fence_char = ""
     fence_length = 0
     lines = text.splitlines()
-    table_lines = _find_table_lines(lines) if ignore_table_cells else set()
+    table_lines = _find_table_lines(lines)
+    fence_lines: set[int] = set()
 
     for number, line in enumerate(lines, start=1):
         stripped = line.strip()
@@ -181,6 +186,9 @@ def scan(text: str, *, ignore_table_cells: bool = False) -> Manuscript:
                 in_fence = True
                 fence_char = marker[0]
                 fence_length = len(marker)
+                fence_lines.add(number)
+                if stack:
+                    stack[-1][3].append(line)
                 continue
             if (
                 marker[0] == fence_char
@@ -190,11 +198,14 @@ def scan(text: str, *, ignore_table_cells: bool = False) -> Manuscript:
                 in_fence = False
                 fence_char = ""
                 fence_length = 0
+                fence_lines.add(number)
+                if stack:
+                    stack[-1][3].append(line)
                 continue
         if in_fence:
-            continue
-
-        if number in table_lines:
+            fence_lines.add(number)
+            if stack:
+                stack[-1][3].append(line)
             continue
 
         callout = CALLOUT_START.match(stripped)
@@ -220,9 +231,9 @@ def scan(text: str, *, ignore_table_cells: bool = False) -> Manuscript:
                 callouts.append(
                     Callout(start, number, title, kind, "\n".join(body_lines).strip())
                 )
-            elif title:
+            else:
                 malformed.append(
-                    (start, f'callout "{title}" has no callout-* class')
+                    (start, f'callout "{title or "untitled"}" has no callout-* class')
                 )
             continue
 
@@ -236,12 +247,13 @@ def scan(text: str, *, ignore_table_cells: bool = False) -> Manuscript:
             )
             continue
 
-        paragraph = PARAGRAPH.match(stripped)
-        if paragraph:
-            paragraphs.append(
-                Paragraph(number, paragraph.group("label").strip(), paragraph.group("rest").strip())
-            )
-            continue
+        if not (ignore_table_cells and number in table_lines):
+            paragraph = PARAGRAPH.match(stripped)
+            if paragraph:
+                paragraphs.append(
+                    Paragraph(number, paragraph.group("label").strip(), paragraph.group("rest").strip())
+                )
+                continue
 
         if stripped:
             plain_lines.append((number, stripped))
@@ -260,6 +272,8 @@ def scan(text: str, *, ignore_table_cells: bool = False) -> Manuscript:
         tuple(plain_lines),
         tuple(malformed),
         len(lines),
+        frozenset(table_lines),
+        frozenset(fence_lines),
     )
 
 
@@ -344,7 +358,13 @@ def _require_callout_body(
 
 
 def _wrong_forms(
-    title: str, manuscript: Manuscript, expected: str, *, allow_qualified: bool = False
+    title: str,
+    manuscript: Manuscript,
+    expected: str,
+    *,
+    allow_qualified: bool = False,
+    allow_heading_body_label: bool = False,
+    ignore_table_cells: bool = False,
 ) -> list[tuple[int, str]]:
     """Return occurrences of the element title in a form other than *expected*."""
 
@@ -357,27 +377,32 @@ def _wrong_forms(
         # Headings matching title define the section for this element;
         # paragraphs and plain lines inside that section are body content.
         section_spans: list[tuple[int, int]] = []
-        for h in manuscript.headings:
-            if _matches_title(h.title, title, allow_qualified=allow_qualified):
-                next_h_line = min(
-                    (
-                        other.line
-                        for other in manuscript.headings
-                        if other.line > h.line and other.level <= h.level
-                    ),
-                    default=manuscript.line_count + 1,
-                )
-                section_spans.append((h.line, next_h_line))
+        if allow_heading_body_label:
+            for h in manuscript.headings:
+                if _matches_title(h.title, title, allow_qualified=allow_qualified):
+                    next_h_line = min(
+                        (
+                            other.line
+                            for other in manuscript.headings
+                            if other.line > h.line and other.level <= h.level
+                        ),
+                        default=manuscript.line_count + 1,
+                    )
+                    section_spans.append((h.line, next_h_line))
 
         def _inside_matching_section(line: int) -> bool:
             return any(start <= line < end for start, end in section_spans)
 
         for paragraph in manuscript.paragraphs:
+            if ignore_table_cells and paragraph.line in manuscript.table_lines:
+                continue
             if _inside_matching_section(paragraph.line):
                 continue
             if _matches_label(paragraph.label, title + "."):
                 wrong.append((paragraph.line, "found a bold paragraph instead of a heading"))
         for line, text in manuscript.plain_lines:
+            if ignore_table_cells and line in manuscript.table_lines:
+                continue
             if _inside_matching_section(line):
                 continue
             if text.casefold().startswith(_clean_title(title).casefold()):
@@ -387,11 +412,15 @@ def _wrong_forms(
             if _matches_title(heading.title, title, allow_qualified=allow_qualified):
                 wrong.append((heading.line, "found a heading instead of the required callout"))
         for paragraph in manuscript.paragraphs:
+            if ignore_table_cells and paragraph.line in manuscript.table_lines:
+                continue
             if _matches_label(paragraph.label, title + "."):
                 wrong.append(
                     (paragraph.line, "found a bold paragraph instead of the required callout")
                 )
         for line, text in manuscript.plain_lines:
+            if ignore_table_cells and line in manuscript.table_lines:
+                continue
             if text.casefold().startswith(_clean_title(title).casefold()):
                 wrong.append((line, "found plain text instead of the required callout"))
     return wrong
@@ -454,6 +483,8 @@ def _check_labels(
             ):
                 wrong.append((paragraph.line, "found the label inside a callout, not a paragraph"))
         for line, text in manuscript.plain_lines:
+            if is_v11 and line in manuscript.table_lines:
+                continue
             if text.casefold().startswith(label.casefold()):
                 wrong.append((line, "found plain text instead of a bold paragraph"))
         _occurrence_issue(
@@ -665,7 +696,7 @@ def _check_chapter(
             for callout in manuscript.callouts
             if _matches_title(callout.title, title, allow_qualified=is_v11)
         ]
-        wrong = _wrong_forms(title, manuscript, "callout", allow_qualified=is_v11)
+        wrong = _wrong_forms(title, manuscript, "callout", allow_qualified=is_v11, ignore_table_cells=is_v11)
         _occurrence_issue(path, issues, f'chapter element "{title}"', f'a callout titled "{title}"', correct, wrong)
         _require_callout_body(path, manuscript, issues, correct, f'chapter element "{title}"')
         if len(correct) == 1:
@@ -688,7 +719,14 @@ def _check_chapter(
         element = elements["worked-example"]
         title = element["title"]
         correct = [heading for heading in h2 if _matches_title(heading.title, title)]
-        wrong = _wrong_forms(title, manuscript, "heading", allow_qualified=is_v11)
+        wrong = _wrong_forms(
+            title,
+            manuscript,
+            "heading",
+            allow_qualified=is_v11,
+            allow_heading_body_label=is_v11,
+            ignore_table_cells=is_v11,
+        )
         _occurrence_issue(
             path,
             issues,
@@ -718,7 +756,7 @@ def _check_chapter(
             for callout in manuscript.callouts
             if _matches_title(callout.title, title, allow_qualified=is_v11)
         ]
-        wrong = _wrong_forms(title, manuscript, "callout", allow_qualified=is_v11)
+        wrong = _wrong_forms(title, manuscript, "callout", allow_qualified=is_v11, ignore_table_cells=is_v11)
         _occurrence_issue(
             path,
             issues,
@@ -768,7 +806,14 @@ def _check_chapter(
         element = elements["further-reading"]
         title = element["title"]
         correct = [heading for heading in h2 if _matches_title(heading.title, title)]
-        wrong = _wrong_forms(title, manuscript, "heading")
+        wrong = _wrong_forms(
+            title,
+            manuscript,
+            "heading",
+            allow_qualified=is_v11,
+            allow_heading_body_label=is_v11,
+            ignore_table_cells=is_v11,
+        )
         _occurrence_issue(
             path,
             issues,
@@ -868,7 +913,7 @@ def _check_appendix(
         manuscript.plain_lines
         or manuscript.paragraphs
         or manuscript.callouts
-        or len(manuscript.headings) > 1
+        or manuscript.fence_lines
     )
     if not has_body:
         issues.append(Issue(path, "appendix body must not be empty"))
@@ -902,7 +947,10 @@ def validate_manuscript(
     if mode == "section-pilot":
         _check_section(label, manuscript, profile, issues)
     elif mode == "appendix":
-        _check_appendix(label, manuscript, profile, issues)
+        if is_v11:
+            _check_appendix(label, manuscript, profile, issues)
+        else:
+            issues.append(Issue(label, f'unsupported mode "{mode}"'))
     elif mode == "chapter":
         if is_v11 and _is_appendix_path(path):
             _check_appendix(label, manuscript, profile, issues)

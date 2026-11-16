@@ -96,6 +96,7 @@ class Profile110Tests(unittest.TestCase):
         self.root = Path(self._temp.name)
         self.profile_110 = load_profile("standard", "1.1.0")
         self.profile_100 = load_profile("standard", "1.0.0")
+        self.profile_020 = load_profile("standard", "0.2.0")
 
     def tearDown(self) -> None:
         self._temp.cleanup()
@@ -296,6 +297,136 @@ Demonstration text.
             "**Worked example.** Specific synthetic scenario narrative.",
         )
         res_110 = self._check(chapter_with_worked_example_label, self.profile_110, "chapter")
+        self.assertTrue(res_110.ok, [str(i) for i in res_110.issues])
+
+    def test_worked_example_body_with_bold_label_fails_under_100_and_020(self) -> None:
+        chapter_with_worked_example_label = SYNTHETIC_CHAPTER.replace(
+            "A concrete walkthrough of the synthetic case.",
+            "A concrete walkthrough of the synthetic case.\n\n"
+            "**Worked example.** Specific synthetic scenario narrative.",
+        ).replace(
+            'title="Architecture Review Checklist — Domain"',
+            'title="Review Checklist"',
+        )
+        res_100 = self._check(chapter_with_worked_example_label, self.profile_100, "chapter")
+        self.assertFalse(res_100.ok)
+        self.assertTrue(
+            any("found a bold paragraph instead of a heading" in i.message for i in res_100.issues),
+            f"Expected wrong-form heading finding in: {[str(i) for i in res_100.issues]}",
+        )
+
+        res_020 = self._check(chapter_with_worked_example_label, self.profile_020, "chapter")
+        self.assertFalse(res_020.ok)
+        self.assertTrue(
+            any("found a bold paragraph instead of a heading" in i.message for i in res_020.issues),
+            f"Expected wrong-form heading finding in: {[str(i) for i in res_020.issues]}",
+        )
+
+    def test_untitled_container_reports_malformed_under_all_profiles(self) -> None:
+        untitled_container = """\
+# 1. Test Chapter
+
+::: {.custom-container}
+Custom content inside container.
+:::
+
+## 1.1 First Section
+
+**Definition.** Def.
+**Purpose.** Purpose.
+**What it includes.** Scope.
+**Why it is needed.** Need.
+**Example.** Ex.
+::: {.callout-warning appearance="simple" icon=false title="Common Pitfall"}
+Pitfall.
+:::
+::: {.callout-important appearance="simple" icon=false title="Decision & Trade-off"}
+Tradeoff.
+:::
+## 1.2 Worked Example
+Demo.
+::: {.callout-note appearance="simple" icon=false title="Review Checklist"}
+- Item.
+:::
+## 1.3 Further Reading
+- Reading.
+"""
+        for prof in (self.profile_020, self.profile_100, self.profile_110):
+            with self.subTest(profile_version=prof["version"]):
+                res = self._check(untitled_container, prof, "chapter")
+                self.assertFalse(res.ok)
+                self.assertTrue(
+                    any('callout "untitled" has no callout-* class' in i.message for i in res.issues),
+                    f"Expected malformed container diagnostic in {[str(i) for i in res.issues]}",
+                )
+
+    def test_appendix_mode_dispatch_rejected_under_100_and_020(self) -> None:
+        appendix_text = "# Appendix A — Data Catalog\n\nSome body text.\n"
+        for prof in (self.profile_020, self.profile_100):
+            with self.subTest(profile_version=prof["version"]):
+                res = self._check(appendix_text, prof, "appendix")
+                self.assertFalse(res.ok)
+                self.assertTrue(
+                    any('unsupported mode "appendix"' in i.message for i in res.issues),
+                    f"Expected unsupported mode in {[str(i) for i in res.issues]}",
+                )
+
+        res_110 = self._check(appendix_text, self.profile_110, "appendix")
+        self.assertTrue(res_110.ok, [str(i) for i in res_110.issues])
+
+    def test_callout_with_only_table_body_passes_under_both_100_and_110(self) -> None:
+        # A Decision & Trade-off callout whose body consists solely of a markdown table
+        section_with_table_callout = SYNTHETIC_SECTION.replace(
+            "::: {.callout-important appearance=\"simple\" icon=false title=\"Decision & Trade-off\"}\nA synthetic decision and trade-off table.\n:::",
+            "::: {.callout-important appearance=\"simple\" icon=false title=\"Decision & Trade-off\"}\n"
+            "| Option | Pro | Con |\n"
+            "| :--- | :--- | :--- |\n"
+            "| Monolith | Simple transactions | Scaling limits |\n"
+            "| Services | Independent deployment | Network complexity |\n"
+            ":::",
+        )
+        res_100 = self._check(section_with_table_callout, self.profile_100, "section-pilot")
+        self.assertTrue(res_100.ok, [str(i) for i in res_100.issues])
+
+        res_110 = self._check(section_with_table_callout, self.profile_110, "section-pilot")
+        self.assertTrue(res_110.ok, [str(i) for i in res_110.issues])
+
+    def test_appendix_with_only_data_table_passes_under_110(self) -> None:
+        appendix_with_table = """\
+# Appendix A — Data Catalog
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| id | uuid | Primary key |
+| status | string | Order lifecycle state |
+"""
+        res_110 = self._check(appendix_with_table, self.profile_110, "appendix")
+        self.assertTrue(res_110.ok, [str(i) for i in res_110.issues])
+
+    def test_appendix_with_empty_subheading_fails_under_110(self) -> None:
+        # Appendix with one H1 plus an empty H2 must fail as having no substantive body
+        appendix_empty_subheading = """\
+# Appendix A — Empty Subheading Appendix
+
+## A.1 Subheading Without Body
+"""
+        res_110 = self._check(appendix_empty_subheading, self.profile_110, "appendix")
+        self.assertFalse(res_110.ok)
+        self.assertTrue(
+            any("appendix body must not be empty" in i.message for i in res_110.issues),
+            f"Expected empty body finding in: {[str(i) for i in res_110.issues]}",
+        )
+
+    def test_appendix_with_fenced_code_body_passes_under_110(self) -> None:
+        appendix_with_code = """\
+# Appendix A — Code Snippets
+
+```python
+def example():
+    return True
+```
+"""
+        res_110 = self._check(appendix_with_code, self.profile_110, "appendix")
         self.assertTrue(res_110.ok, [str(i) for i in res_110.issues])
 
 
