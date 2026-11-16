@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 from pathlib import Path
+import base64
 from html.parser import HTMLParser
+import json
 import posixpath
 import re
 from typing import Any
@@ -12,7 +14,12 @@ from .print_layout import (
 )
 
 from .build_types import BuildError, _run
-from .build_staging import _transform_chapter
+from .build_staging import (
+    _appendix_letter,
+    _count_tables,
+    _is_unnumbered,
+    _transform_chapter,
+)
 
 MARKDOWN_ENTRY = "book-markdown.qmd"
 
@@ -34,7 +41,12 @@ MARKDOWN_NOTE = (
     "for the images. Figure, table and listing labels match the other editions."
 )
 
-def _markdown_sources(workspace: Path, entries: list[str]) -> str:
+def _markdown_sources(
+    workspace: Path,
+    entries: list[str],
+    *,
+    appendices: list[str] | None = None,
+) -> str:
     """Concatenate the canonical reading order into one GitHub-flavoured Markdown source.
 
     The Markdown edition is one file, so the per-file front matter of the reading order is
@@ -43,17 +55,47 @@ def _markdown_sources(workspace: Path, entries: list[str]) -> str:
     """
 
     parts: list[str] = []
-    for chapter_number, entry in enumerate(entries, 1):
+    appendix_set = set(appendices or ())
+    chapter_counter = 0
+    appendix_counter = 0
+    front_table_counter = 0
+
+    for entry in entries:
         try:
             text = (workspace / entry).read_text(encoding="utf-8")
         except OSError as exc:
             raise BuildError(f"cannot read staged chapter {entry}: {exc}") from exc
+
+        if entry in appendix_set:
+            appendix_counter += 1
+            letter = _appendix_letter(appendix_counter)
+            ch_label, tbl_pfx, start_idx = letter, letter.lower(), 0
+            meta_json = json.dumps({"bookItemType": "appendix", "bookItemNumber": appendix_counter})
+            meta_b64 = base64.b64encode(meta_json.encode("utf-8")).decode("ascii")
+            appendix_meta = f"```{{=html}}\n<!-- quarto-file-metadata: {meta_b64} -->\n```\n\n"
+        elif _is_unnumbered(text):
+            start_idx = front_table_counter
+            front_table_counter += _count_tables(text)
+            ch_label, tbl_pfx = None, "0"
+            appendix_meta = ""
+        else:
+            chapter_counter += 1
+            ch_label, tbl_pfx, start_idx = str(chapter_counter), str(chapter_counter), 0
+            appendix_meta = ""
+
         # Use the same chapter wrapper and automatic table IDs as the other writers,
         # keeping the canonical title numbers because GFM does not print section numbers.
-        text = _transform_chapter(text, chapter_number, strip_heading_numbers=False)
-        match = FRONT_MATTER_BLOCK.match(text)
-        body = (text[match.end():] if match else text).strip()
-        parts.append(_rewrite_includes(body, entry))
+        transformed = _transform_chapter(
+            text,
+            ch_label,
+            tbl_prefix=tbl_pfx,
+            table_start=start_idx,
+            strip_heading_numbers=False,
+            path=entry,
+        )
+        match = FRONT_MATTER_BLOCK.match(transformed)
+        body = (transformed[match.end():] if match else transformed).strip()
+        parts.append(appendix_meta + _rewrite_includes(body, entry))
     if not parts:
         raise BuildError("the reading order contains no manuscript content for the Markdown edition")
     return "\n\n".join(parts) + "\n"
@@ -145,6 +187,8 @@ class _MarkdownHTML(HTMLParser):
         self.append(f"</{tag}>")
 
     def handle_comment(self, data: str) -> None:
+        if "quarto-file-metadata:" in data:
+            return
         self.append("<!--" + data + "-->")
 
     def handle_decl(self, decl: str) -> None:

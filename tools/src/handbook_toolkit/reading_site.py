@@ -140,6 +140,8 @@ def prepare_reading_site(workspace: Path, config: dict[str, Any], book: dict[str
     front[1:1] = lists
     chapters: list[Any] = ["index.qmd"]
     for group, title in PARTS:
+        if group == "appendices":
+            continue
         chapters.extend(_navigation_entries(title, front if group == "front" else groups[group]))
     license_text = license_label(book["license"]["content"])
     status = "Preview — not a released edition" if preview else str(metadata.get("status") or book["status"])
@@ -148,6 +150,8 @@ def prepare_reading_site(workspace: Path, config: dict[str, Any], book: dict[str
                  status, license_text, downloads)
     bc = config["book"]
     bc["chapters"] = chapters
+    if groups.get("appendices"):
+        bc["appendices"] = list(groups["appendices"])
     bc["description"] = str(book["catalog"]["summary"])
     config["format"]["html"]["description-meta"] = bc["description"]
     bc["open-graph"] = True

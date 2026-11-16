@@ -419,7 +419,7 @@ class MarkdownEditionTests(unittest.TestCase):
                 '| A | B |\n| --- | --- |\n| C | D |\n\n: Routes\n')
             source = _markdown_sources(workspace, ['intro.qmd'])
             self.assertIn('# Introduction {#sec-intro .unnumbered}', source)
-            self.assertIn('{#tbl-1-1}', source)
+            self.assertIn('{#tbl-0-1}', source)
             self.assertFalse(source.startswith('---'))
 
     def test_clean_markdown_keeps_text_and_drops_rendered_html(self):

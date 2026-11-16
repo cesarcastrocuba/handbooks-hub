@@ -105,9 +105,9 @@ class ReadingSiteTests(unittest.TestCase):
             {'part': 'Front matter', 'chapters': ['document-control.qmd', 'intro.qmd']},
             {'part': 'Chapters', 'chapters': ['one.qmd', 'two.qmd']},
             'notices.qmd',
-            {'part': 'Appendices', 'chapters': ['a.qmd', 'b.qmd']},
             'references.qmd',
         ])
+        self.assertEqual(result['book']['appendices'], ['a.qmd', 'b.qmd'])
 
     def test_the_cover_states_the_summary_once(self):
         groups = {'front': [], 'chapters': ['one.qmd'], 'back': [], 'appendices': [], 'references': []}
