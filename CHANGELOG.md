@@ -5,6 +5,13 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+## [1.8.0] - Unreleased
+
+Template release prepared by change `0059`. Template `1.8.0` pins toolkit `0.13.0` at
+`4b9e3114d0a6c638eb7715784e7f0bb622f88322` (`toolkit-v0.13.0` once the Owner approves the tag) and keeps standard
+profile `1.1.0`. Its release workflow publishes a book's own `release-assets` as `book-extras.zip`.
+The template mirror and tag are published by the coordinator after the merge and the Owner's approval.
+
 ### Added
 
 - Book-owned extra release assets (change `0057`, gap G6): template `release.yml` optionally runs `make release-assets RELEASE_ASSETS_DIR="$RUNNER_TEMP/extra-assets"` when defined in the book's `Makefile`, verifies that the working tree remains clean, validates regular file constraints (names matching `^[A-Za-z0-9][A-Za-z0-9._-]*$`, caps of max 100 files, 10 MB per file, 50 MB total, and no collisions with publication payloads), packages them deterministically into `book-extras.zip`, and writes `EXTRAS-SHA256SUMS.txt`. Books without the target publish only the standard seven files.
