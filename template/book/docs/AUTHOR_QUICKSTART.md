@@ -24,7 +24,7 @@ hand: the export and mirror procedure is described in the hub's
 1. **Pages:** open **Settings → Pages** and set **Source** to **GitHub Actions**. The release
    workflow deploys the HTML edition with the same verified bytes it publishes.
 2. **Branch protection:** open **Settings → Branches**, add a rule for `main`, require a pull
-   request before merging, and require the `ci` status check. This keeps the release branch clean.
+   request before merging, and require the `Fast checks` status check. This keeps the release branch clean.
 3. **Actions:** confirm that workflows are enabled under **Actions → General**. The default
    `GITHUB_TOKEN` of a new repository may create branches and releases; it may not open pull
    requests or change workflow files. The template never asks it to. If your account or organization
@@ -49,7 +49,7 @@ not open a pull request.
 ## 4. Open and merge the initialization pull request
 
 1. Open the compare URL from the job summary.
-2. Create the pull request. Check that the `ci` workflow passes on the branch.
+2. Create the pull request. Check that the `Fast checks` status check passes on the branch.
 3. Merge it. The default branch now contains your book identity.
 
 ## 5. Write the manuscript
@@ -77,9 +77,9 @@ not open a pull request.
 
 ## 6. Publish a release
 
-1. Merge your content to `main` and wait for `ci` to pass.
+1. Merge your content to `main` and wait for `Fast checks` to pass.
 2. Open **Actions → release → Run workflow**, choose the default branch, and enter the version as
-   `X.Y.Z` without a leading `v`.
+   `X.Y.Z` (or `X.Y.Z-rc.N` for a pre-release) without a leading `v`.
 3. The workflow refuses to run outside the default branch, refuses an existing tag or release,
    refuses a book whose identifier is still `template-book`, runs `make check`, and builds once from
    the exact commit.

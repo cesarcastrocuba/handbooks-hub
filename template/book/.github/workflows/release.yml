@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Book version, exact X.Y.Z without a leading v
+        description: Book version, exact X.Y.Z or X.Y.Z-rc.N without a leading v
         required: true
         type: string
 
@@ -43,8 +43,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::error::version must be X.Y.Z, got: $VERSION"
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[1-9][0-9]*)?$'; then
+            echo "::error::version must be X.Y.Z or X.Y.Z-rc.N, got: $VERSION"
             exit 1
           fi
           if [ "$GITHUB_REF" != "$DEFAULT_REF" ]; then
@@ -174,11 +174,16 @@ jobs:
 
           This release was built once from the listed commit and verified before publication.
           EOF
+          extra_args=()
+          if printf '%s' "$VERSION" | grep -q -- '-rc\.'; then
+            extra_args=(--prerelease --latest=false)
+          fi
           gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$SOURCE_COMMIT" \
             --title "$TAG" \
             --notes-file "$notes" \
+            "${extra_args[@]}" \
             "$RELEASE_DIR"/*
 
   deploy:

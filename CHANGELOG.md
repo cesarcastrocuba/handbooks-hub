@@ -3,6 +3,14 @@
 All notable changes to the hub are recorded here. The format follows Keep a Changelog; versions use
 semantic versioning once the toolkit is published.
 
+## [Unreleased]
+
+### Changed
+
+- Template `release.yml` accepts pre-release versions `X.Y.Z-rc.N` alongside stable `X.Y.Z`, publishing pre-releases with `--prerelease --latest=false` while keeping Pages deployment and site verification active (Gap G1).
+- Template `initialize_book.py` writes a clean, tailored book README with book title, summary, contributor pointers, and verification commands (Gap G11).
+- Align author guide and template quickstart documentation to specify the exact required branch protection status check `Fast checks` (Gap G10).
+
 ## [1.6.0] - 2026-11-15
 
 Template release. Template `1.6.0` pins toolkit `0.11.0` at

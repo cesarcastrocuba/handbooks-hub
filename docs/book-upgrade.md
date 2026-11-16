@@ -268,3 +268,16 @@ release workflow uses v5. A book that still deploys with v3 was not affected. Fr
 directory is `handbook-render/` and `build-book` fails if the site archive holds any hidden path.
 No manuscript or configuration edit is required. Do not pin `0.10.2` or older in a book that
 deploys with a current Pages action.
+
+## Template onboarding enhancements (G1, G10, G11)
+
+1. **Pre-release editions (`release.yml`):** The release workflow accepts pre-release versions
+   matching `X.Y.Z-rc.N` (for example `3.1.0-rc.1`) alongside stable `X.Y.Z`. Releases with `-rc.N`
+   are published with `--prerelease --latest=false` in GitHub Releases while still deploying to Pages
+   and executing the `site_check` verification step.
+2. **Branch protection status check (`Fast checks`):** Required branch protection rules on `main`
+   should specify the exact status check `Fast checks` (reported by `ci.yml`).
+3. **Book-owned bootstrap (`initialize_book.py`):** The `initialize-book` workflow replaces the
+   generic template README with a clean book README containing the book title, catalog summary,
+   pointers to `AGENTS.md`, `NOTICE.md`, optional `PROJECT_STATUS.md` and `DECISIONS.md`, and
+   local development commands.

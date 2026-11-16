@@ -43,7 +43,7 @@ the slug `solutions-architecture-handbook`).
 ### 2. Configure the repository once
 
 Set **Settings → Pages → Source** to **GitHub Actions**, and protect `main` with a pull-request rule
-that requires the `ci` status check. The release workflow deploys the HTML edition; branch protection
+that requires the `Fast checks` status check. The release workflow deploys the HTML edition; branch protection
 keeps the released commit clean.
 
 The default `GITHUB_TOKEN` of a new repository can create branches, commits and releases. It cannot
@@ -62,7 +62,7 @@ category. The workflow:
   `LICENSE-CODE` and the README title with a Python step that handles YAML safely;
 - runs `make check`, commits to `init/<id>`, pushes the branch and prints the compare URL.
 
-It does not open a pull request. Open the pull request from the compare link, wait for `ci` and merge.
+It does not open a pull request. Open the pull request from the compare link, wait for `Fast checks` and merge.
 
 ### 4. Write, check and release
 

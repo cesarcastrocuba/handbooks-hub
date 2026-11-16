@@ -451,6 +451,51 @@ class TemplateWorkflowTests(unittest.TestCase):
             names.index("Publish every verified file to the release"),
         )
 
+    def test_release_accepts_prerelease_versions(self) -> None:
+        release_text = (TEMPLATE_WORKFLOWS / "release.yml").read_text(encoding="utf-8")
+        match = re.search(r"grep -Eq '([^']+)'", release_text)
+        self.assertIsNotNone(match)
+        pattern = re.compile(match.group(1))
+        self.assertTrue(pattern.fullmatch("0.1.0"))
+        self.assertTrue(pattern.fullmatch("3.1.0-rc.1"))
+        self.assertTrue(pattern.fullmatch("3.1.0-rc.12"))
+        self.assertIsNone(pattern.fullmatch("3.1.0-rc.0"))
+        self.assertIsNone(pattern.fullmatch("3.1.0-rc"))
+        self.assertIsNone(pattern.fullmatch("v3.1.0"))
+        self.assertIsNone(pattern.fullmatch("3.1.0-beta"))
+        self.assertIn("--prerelease --latest=false", release_text)
+
+    def test_documentation_specifies_fast_checks_as_required_check(self) -> None:
+        author_guide = (support.REPO_ROOT / "docs/author-guide.md").read_text(encoding="utf-8")
+        self.assertIn("requires the `Fast checks` status check", author_guide)
+        self.assertIn("wait for `Fast checks` and merge", author_guide)
+        quickstart = (TEMPLATE / "docs/AUTHOR_QUICKSTART.md").read_text(encoding="utf-8")
+        self.assertIn("require the `Fast checks` status check", quickstart)
+        self.assertIn("wait for `Fast checks` to pass", quickstart)
+
+    def test_catalog_refuses_prereleases(self) -> None:
+        from handbook_toolkit.validation import load_packaged_schema
+        schema = load_packaged_schema("catalog.schema.json")
+        version_pattern = re.compile(
+            schema["properties"]["books"]["items"]["properties"]["latest_release"]["properties"]["version"]["pattern"]
+        )
+        tag_pattern = re.compile(
+            schema["properties"]["books"]["items"]["properties"]["latest_release"]["properties"]["tag"]["pattern"]
+        )
+        self.assertIsNone(version_pattern.fullmatch("3.1.0-rc.1"))
+        self.assertIsNone(tag_pattern.fullmatch("v3.1.0-rc.1"))
+        self.assertTrue(version_pattern.fullmatch("3.1.0"))
+        self.assertTrue(tag_pattern.fullmatch("v3.1.0"))
+
+    def test_manifest_schema_accepts_prerelease_version(self) -> None:
+        from handbook_toolkit.validation import load_packaged_schema
+        schema = load_packaged_schema("publication-manifest.schema.json")
+        version_pattern = re.compile(
+            schema["properties"]["book"]["properties"]["version"]["pattern"]
+        )
+        self.assertTrue(version_pattern.fullmatch("3.1.0-rc.1"))
+        self.assertTrue(version_pattern.fullmatch("0.1.0"))
+
     def test_reader_navigation_and_issue_forms(self) -> None:
         quarto = yaml.safe_load((TEMPLATE / "publishing/_quarto.yml").read_text(encoding="utf-8"))
         book = quarto["book"]
@@ -636,11 +681,13 @@ class InitializeBookTests(unittest.TestCase):
 
             self.assertIn(IDENTITY["author"], (book / "NOTICE.md").read_text(encoding="utf-8"))
             self.assertIn(IDENTITY["author"], (book / "LICENSE-CODE").read_text(encoding="utf-8"))
-            self.assertTrue(
-                (book / "README.md").read_text(encoding="utf-8").startswith(
-                    f"# {IDENTITY['title']}\n"
-                )
-            )
+            readme = (book / "README.md").read_text(encoding="utf-8")
+            self.assertTrue(readme.startswith(f"# {IDENTITY['title']}\n"))
+            self.assertIn(IDENTITY["summary"], readme)
+            self.assertIn("[`AGENTS.md`](AGENTS.md)", readme)
+            self.assertIn("[`NOTICE.md`](NOTICE.md)", readme)
+            self.assertIn("make check", readme)
+            self.assertNotIn("A starting point for an independent handbook repository", readme)
 
             validation = _run(
                 [
@@ -659,6 +706,17 @@ class InitializeBookTests(unittest.TestCase):
             second = _initialize(book)
             self.assertNotEqual(second.returncode, 0)
             self.assertIn("already initialized", second.stderr)
+
+    def test_initialization_includes_optional_project_status_and_decisions(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            book = _copy_template(Path(temp), replace=False)
+            (book / "PROJECT_STATUS.md").write_text("# Project Status\n", encoding="utf-8")
+            (book / "DECISIONS.md").write_text("# Decisions\n", encoding="utf-8")
+            result = _initialize(book)
+            self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+            readme = (book / "README.md").read_text(encoding="utf-8")
+            self.assertIn("[`PROJECT_STATUS.md`](PROJECT_STATUS.md)", readme)
+            self.assertIn("[`DECISIONS.md`](DECISIONS.md)", readme)
 
     def test_rejects_invalid_input_without_writing(self) -> None:
         cases = {
