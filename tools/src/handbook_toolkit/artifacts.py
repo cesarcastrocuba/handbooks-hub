@@ -31,7 +31,7 @@ VERSION_ROW = re.compile(r"^\| Version \| (.+?) \|\s*$", re.MULTILINE)
 COMMIT_ROW = re.compile(r"^\| Commit \| ([0-9a-f]{40}) \|\s*$", re.MULTILINE)
 
 
-def archive_tree(source: Path, output: Path, epoch: int) -> None:
+def archive_tree(source: Path, output: Path, epoch: int, compresslevel: int | None = 9) -> None:
     """Archive regular files in sorted order with fixed timestamps and permissions."""
     source = source.resolve()
     output = output.resolve()
@@ -48,13 +48,14 @@ def archive_tree(source: Path, output: Path, epoch: int) -> None:
     files = [path for path in paths if path.is_file()]
     if not files:
         raise ValueError("cannot archive an empty source tree")
-    with ZipFile(output, "x", compression=ZIP_DEFLATED) as archive:
+    zip_kwargs = {"compresslevel": compresslevel} if compresslevel is not None else {}
+    with ZipFile(output, "x", compression=ZIP_DEFLATED, **zip_kwargs) as archive:
         for path in files:
             info = ZipInfo(path.relative_to(source).as_posix(), stamp)
             info.compress_type = ZIP_DEFLATED
             info.create_system = 3
             info.external_attr = 0o100644 << 16
-            archive.writestr(info, path.read_bytes())
+            archive.writestr(info, path.read_bytes(), **zip_kwargs)
 
 
 class _Page(HTMLParser):

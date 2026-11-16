@@ -20,7 +20,7 @@ def _one_file(directory: Path, suffix: str) -> Path:
         )
     return matches[0]
 
-def _payload_paths(workspace: Path, dist: Path, epoch: int) -> dict[str, Path]:
+def _payload_paths(workspace: Path, dist: Path, epoch: int, compresslevel: int | None = 9) -> dict[str, Path]:
     output = workspace / "_output"
     if not (output / "index.html").is_file():
         raise BuildError("Quarto did not produce _output/index.html")
@@ -37,12 +37,12 @@ def _payload_paths(workspace: Path, dist: Path, epoch: int) -> dict[str, Path]:
         target = site / RENDER_DIRECTORY / "fonts" / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
-    archive_tree(site, dist / PAYLOADS["html"], epoch)
+    archive_tree(site, dist / PAYLOADS["html"], epoch, compresslevel=compresslevel)
     pdf = _one_file(output, ".pdf")
     docx = _one_file(output, ".docx")
     shutil.copy2(pdf, dist / PAYLOADS["pdf"])
     shutil.copy2(docx, dist / PAYLOADS["docx"])
-    prepare_docx(dist / PAYLOADS["docx"])
+    prepare_docx(dist / PAYLOADS["docx"], compresslevel=compresslevel)
     return {
         "html": dist / PAYLOADS["html"],
         "pdf": dist / PAYLOADS["pdf"],

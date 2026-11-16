@@ -160,7 +160,7 @@ def logical_pages(physical: dict[str, int], sections: list[Section], targets: se
     return result
 
 
-def cache_page_numbers(path: Path, fonts: Path, *, required: bool = False) -> dict[str, str]:
+def cache_page_numbers(path: Path, fonts: Path, *, required: bool = False, compresslevel: int | None = 9) -> dict[str, str]:
     """Probe/cache/verify; missing or failed optional tools leave honest title-only caches."""
     with ZipFile(path) as archive:
         members = {name: archive.read(name) for name in archive.namelist()}
@@ -173,7 +173,7 @@ def cache_page_numbers(path: Path, fonts: Path, *, required: bool = False) -> di
         register_namespaces()
         order_properties(root)
         members['word/document.xml'] = ET.tostring(root, encoding='utf-8', xml_declaration=True)
-        _write_package(path, members)
+        _write_package(path, members, compresslevel=compresslevel)
 
     try:
         if not shutil.which('soffice') or not shutil.which('pdfinfo'):
