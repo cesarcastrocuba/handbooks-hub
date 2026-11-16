@@ -7,6 +7,7 @@ semantic versioning once the toolkit is published.
 
 ### Added
 
+- Opt-in `publication.cross_reference_links`: staged, whitelist-only prose navigation with stable section anchors and cross-page HTML links (change `0052`, G8); existing books remain opted out.
 - Lossless artifact size optimization (`HUB-DEC-045`, change `0055`): staged PNG diagrams are losslessly recompressed (filter 0, zlib level 9) with exact pixel-identity verification before Quarto rendering, and ZIP distributions (Word `.docx` package and HTML site archive `book-html.zip`) are compressed at zlib level 9. The `--no-optimize` build flag opts out of both PNG recompression and ZIP level 9 compression.
 
 ## [1.7.0] - Unreleased

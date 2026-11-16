@@ -160,3 +160,33 @@ and the Markdown edition to separate modules. HTML lists are native nonempty reg
 generated from staged source labels. Print renders use the canonical reading order; the later HTML
 render adds the lists, using Quarto --no-clean to retain print outputs. Generated list pages never
 enter the source archive or Markdown source. Caption numbering and links are resolved by Quarto.
+
+## Opt-in prose cross-reference links (unreleased, change 0052)
+
+Set `publication.cross_reference_links: true` in `book.yaml` to link resolved prose references
+in the private render workspace. The default is off; the canonical sources and source archive
+are never rewritten. No version bump or release is part of this change.
+
+The shared section anchor scheme uses Word-safe ASCII names: `sec_ch_1` for Chapter 1,
+`sec_app_a` for Appendix A, `sec_1_2` for Section 1.2 and `sec_a_1` for Section A.1.
+Numbered headings through level six are supported. These generated IDs are the same HTML IDs,
+PDF named destinations and DOCX bookmarks. Unnumbered subheadings use deterministic file-scoped
+IDs, shortened with the toolkit's bookmark hash when necessary. An explicit author ID takes
+precedence; Word's existing bookmark encoder still applies to author IDs containing hyphens or
+other unsupported characters. Figure/table targets follow change 0051's native displayed labels:
+`0.N` before numbered chapters, chapter numbers, appendix letters and `BM.N` in back matter.
+They keep Quarto IDs
+and their existing Word bookmark encoding; explicit author IDs remain authoritative.
+
+Chapter, appendix, section, figure and table references link only when a target exists.
+Ranges and lists retain their wording. Bare section numbers need a navigational cue, a
+reference group, or a declared reference table column. Code, headings, image/caption lines,
+existing links, bibliography lines under References/Further Reading, versions, dates and
+measurements stay plain. A bibliography heading ends at the next heading of the same or higher
+level. Automatic glossary-term linking stays off (`HUB-DEC-005`).
+
+PDF and DOCX links are internal. After the print render, generated HTML links are rebased to
+the owning source page, including a book whose first page becomes `handbook-source-index.html`.
+Only generated links carry the `handbook-xref` class and receive this rewrite. Ambiguous section
+numbers or duplicate navigation IDs fail the opted-in build rather than selecting a target.
+This feature does not repair displayed numbering; change 0051 owns that separate contract.

@@ -1018,5 +1018,112 @@ class BuildTests(unittest.TestCase):
             self.assertTrue(result.output.is_dir())
 
 
+@unittest.skipUnless(BUILD_AVAILABLE, "Quarto and pdfinfo required")
+class CrossReferenceBuildTests(unittest.TestCase):
+    def test_opted_in_navigation_resolves_in_every_edition(self):
+        import yaml
+        from handbook_toolkit.docx_fields import bookmark_name
+        from urllib.parse import unquote, urlsplit
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            repo, _ = make_book(root, chapter=True)
+            descriptor = repo / "book.yaml"
+            book = yaml.safe_load(descriptor.read_text())
+            book["publication"]["cross_reference_links"] = True
+            descriptor.write_text(yaml.safe_dump(book))
+            first = repo / "manuscript/chapters/pilot.qmd"
+            first.write_text(first.read_text().replace("**Example.** A labeled example.",
+                "**Example.** See Chapter 2, Section 2.1, Figure 2.1, Table 2.1 and Table 0.1. "
+                "TLS 1.2 stays plain."))
+            second = repo / "manuscript/chapters/two.qmd"
+            content = CHAPTER.replace("# 1.", "# 2.").replace("## 1.", "## 2.")
+            content = content.replace("## 2.1 A Content Section", "## 2.1 A Content Section {#custom_destination}")
+            content = content.replace("**Example.** A labeled example.",
+                "**Example.** Return to Chapter 1.\n\n"
+                "![A fixture diagram.](../images/fixture.png){#fig-remote}\n\n"
+                "| A | B |\n| --- | --- |\n| C | D |\n\n: A fixture summary. {.wide #tbl-remote}\n")
+            second.write_text(content)
+            reading = repo / "manuscript/book.yml"
+            order = yaml.safe_load(reading.read_text());order["chapters"].append("chapters/two.qmd")
+            intro = repo / "manuscript/front-matter/introduction.qmd"
+            intro.parent.mkdir()
+            intro.write_text("# Welcome {.unnumbered}\n\n| A | B |\n| --- | --- |\n| C | D |\n\n: Opening summary.\n")
+            order["front"] = ["front-matter/introduction.qmd"]
+            reading.write_text(yaml.safe_dump(order))
+            commit = commit_all(repo)
+            output = root / "dist"
+            build_book(repo, commit, output, mode="chapter")
+            documents = {}
+            with zipfile.ZipFile(output / "book-html.zip") as archive:
+                for name in archive.namelist():
+                    if name.endswith(".html"):
+                        documents[name] = Document(archive.read(name).decode()).root
+            generated = []
+            for page, document in documents.items():
+                for link in document.find("a"):
+                    if "handbook-xref" not in (link.attrs.get("class") or "").split(): continue
+                    generated.append((page, link))
+                    target = urlsplit(link.attrs["href"])
+                    path = posixpath.normpath(posixpath.join(posixpath.dirname(page), unquote(target.path))) if target.path else page
+                    self.assertIn(path, documents)
+                    self.assertTrue(any(node.attrs.get("id") == unquote(target.fragment)
+                                        for node in documents[path].walk()), (page, link.attrs))
+            self.assertEqual(len(generated), 6)
+            self.assertTrue(any("two.html#custom_destination" in link.attrs["href"] for _, link in generated))
+            self.assertFalse(any(link.text() == "1.2" for _, link in generated))
+            with zipfile.ZipFile(output / "book.docx") as archive:
+                document = ET.fromstring(archive.read("word/document.xml"))
+            bookmarks = {node.get(W+"name") for node in document.iter(W+"bookmarkStart")}
+            anchors = [node.get(W+"anchor") for node in document.iter(W+"hyperlink") if node.get(W+"anchor")]
+            self.assertFalse(set(anchors) - bookmarks)
+            self.assertIn(bookmark_name("tbl-0-1"), bookmarks)
+            for name in ("sec_ch_1", "sec_ch_2", "custom_destination", "fig-remote", "tbl-remote", "tbl-0-1"):
+                self.assertIn(bookmark_name(name), bookmarks)
+                self.assertIn(bookmark_name(name), anchors)
+            destinations = subprocess.check_output([PDFINFO, "-dests", str(output / "book.pdf")], text=True)
+            for name in ("sec_ch_1", "sec_ch_2", "custom_destination"):
+                self.assertIn('"'+name+'"', destinations)
+            # Figure/table annotations use direct page destinations in Typst, rather
+            # than named PDF destinations. Poppler resolves them to page links.
+            pdf_xml = subprocess.run(["pdftohtml", "-xml", "-i", "-stdout", str(output / "book.pdf")],
+                                     capture_output=True, text=True, check=True).stdout
+            pdf_document = ET.fromstring(pdf_xml)
+            pages = {node.get("number") for node in pdf_document.iter("page")}
+            local_links = [node.get("href") for node in pdf_document.iter("a") if "#" in node.get("href", "")]
+            self.assertTrue(local_links)
+            self.assertFalse({link.rsplit("#", 1)[1] for link in local_links} - pages)
+            self.assertTrue(verify_publication(output).ok)
+
+
+    def test_opted_in_root_source_index_links_follow_web_alias(self):
+        import yaml
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            repo, _ = make_book(root, chapter=True)
+            descriptor = repo / "book.yaml"
+            book = yaml.safe_load(descriptor.read_text())
+            book["publication"]["cross_reference_links"] = True
+            book["manuscript"]["root"] = "."
+            descriptor.write_text(yaml.safe_dump(book))
+            original = repo / "manuscript/chapters/pilot.qmd"
+            original.rename(repo / "index.qmd")
+            first = repo / "index.qmd"
+            first.write_text(first.read_text().replace("**Example.** A labeled example.", "**Example.** See Chapter 2."))
+            (repo / "two.qmd").write_text(CHAPTER.replace("# 1.", "# 2.").replace("## 1.", "## 2.").replace("**Example.** A labeled example.", "**Example.** Return to Chapter 1."))
+            order = {"front": [], "chapters": ["index.qmd", "two.qmd"], "back": [], "appendices": [], "references": []}
+            (repo / "manuscript/book.yml").write_text(yaml.safe_dump(order))
+            commit = commit_all(repo)
+            output = root / "dist"
+            build_book(repo, commit, output, mode="chapter")
+            with zipfile.ZipFile(output / "book-html.zip") as archive:
+                second = Document(archive.read("two.html").decode()).root
+                generated = [link for link in second.find("a") if "handbook-xref" in (link.attrs.get("class") or "").split()]
+                self.assertEqual(len(generated), 1)
+                self.assertEqual(posixpath.normpath(generated[0].attrs["href"].split("#")[0]), "handbook-source-index.html")
+                self.assertTrue(generated[0].attrs["href"].endswith("#sec_ch_1"))
+                restored = Document(archive.read("handbook-source-index.html").decode()).root
+                self.assertTrue(any(node.attrs.get("id") == "sec_ch_1" for node in restored.walk()))
+
+
 if __name__ == "__main__":
     unittest.main()
