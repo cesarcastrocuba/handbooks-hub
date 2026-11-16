@@ -1039,7 +1039,11 @@ def rewrite_html_links(
 ) -> None:
     """Rebase generated links after the print render; Quarto resolves .qmd to .html."""
     pages = {
-        identity: source_alias if page == "index.qmd" and source_alias else page
+        identity: (
+            source_alias
+            if posixpath.normpath(page) == "index.qmd" and source_alias
+            else page
+        )
         for identity, page in registry.pages.items()
     }
     for entry in entries:

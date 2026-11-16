@@ -52,3 +52,17 @@ Remove the optional schema property, orchestration calls and xref module/tests/d
 Books without the opt-in never execute this module. No release, deployment, Owner desktop Word
 acceptance or editorial approval is performed. The real-book proof uses profile 1.1.0 in scratch;
 the canonical book is untouched. PR 87's numbering behavior is outside this change.
+
+## Root-source alias verification
+
+The runtime fixture also opts in a book with `manuscript.root: .` and first source
+`index.qmd`, verifying that inbound links resolve to `handbook-source-index.html#sec_ch_1`.
+The navigation rewriter normalizes `./index.qmd` itself instead of relying on the existing
+index-resource filter's fallback. That fallback already preserved valid production links;
+this change makes the navigation helper self-contained for the path form returned by reading order.
+
+```text
+.venv/bin/python -m unittest discover -s tools/tests -p test_build.py -k root_source_index_links -v
+Ran 1 test in 17.328s
+OK
+```

@@ -204,7 +204,7 @@ See Chapter 2 and Section 1.2.
             other.write_text(
                 "# 2. Destination {.unnumbered}\n\n## 2.1 Choice {#custom-choice .unlisted}\n\n| A | B |\n| --- | --- |\n| C | D |\n\n: Summary\n\nSee Chapter 1.\n"
             )
-            entries = ["index.qmd", "chapters/two.qmd"]
+            entries = ["./index.qmd", "chapters/two.qmd"]
             registry = stage_cross_references(root, entries)
             self.assertIn("{#custom-choice .unlisted}", other.read_text())
             self.assertIn("{.unnumbered #sec_ch_2}", other.read_text())

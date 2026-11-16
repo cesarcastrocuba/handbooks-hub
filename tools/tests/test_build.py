@@ -1095,5 +1095,35 @@ class CrossReferenceBuildTests(unittest.TestCase):
             self.assertTrue(verify_publication(output).ok)
 
 
+    def test_opted_in_root_source_index_links_follow_web_alias(self):
+        import yaml
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            repo, _ = make_book(root, chapter=True)
+            descriptor = repo / "book.yaml"
+            book = yaml.safe_load(descriptor.read_text())
+            book["publication"]["cross_reference_links"] = True
+            book["manuscript"]["root"] = "."
+            descriptor.write_text(yaml.safe_dump(book))
+            original = repo / "manuscript/chapters/pilot.qmd"
+            original.rename(repo / "index.qmd")
+            first = repo / "index.qmd"
+            first.write_text(first.read_text().replace("**Example.** A labeled example.", "**Example.** See Chapter 2."))
+            (repo / "two.qmd").write_text(CHAPTER.replace("# 1.", "# 2.").replace("## 1.", "## 2.").replace("**Example.** A labeled example.", "**Example.** Return to Chapter 1."))
+            order = {"front": [], "chapters": ["index.qmd", "two.qmd"], "back": [], "appendices": [], "references": []}
+            (repo / "manuscript/book.yml").write_text(yaml.safe_dump(order))
+            commit = commit_all(repo)
+            output = root / "dist"
+            build_book(repo, commit, output, mode="chapter")
+            with zipfile.ZipFile(output / "book-html.zip") as archive:
+                second = Document(archive.read("two.html").decode()).root
+                generated = [link for link in second.find("a") if "handbook-xref" in (link.attrs.get("class") or "").split()]
+                self.assertEqual(len(generated), 1)
+                self.assertEqual(posixpath.normpath(generated[0].attrs["href"].split("#")[0]), "handbook-source-index.html")
+                self.assertTrue(generated[0].attrs["href"].endswith("#sec_ch_1"))
+                restored = Document(archive.read("handbook-source-index.html").decode()).root
+                self.assertTrue(any(node.attrs.get("id") == "sec_ch_1" for node in restored.walk()))
+
+
 if __name__ == "__main__":
     unittest.main()
