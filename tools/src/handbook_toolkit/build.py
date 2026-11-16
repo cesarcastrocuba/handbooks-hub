@@ -225,6 +225,10 @@ def build_book(
         appendix_entries = list(groups.get("appendices", []))
         # The Markdown edition carries its own document-control header, so it is captured
         # before the print editions inject the table into the front matter.
+        navigation = None
+        if book.get("publication", {}).get("cross_reference_links", False):
+            from .xref_links import stage_cross_references
+            navigation = stage_cross_references(workspace, entries)
         markdown_source = _markdown_sources(workspace, entries, appendices=appendix_entries)
         for entry in entries:
             entry_path = workspace / entry
@@ -304,6 +308,9 @@ def build_book(
         source_alias = restore_first_source(workspace, entries, groups)
         if source_alias:
             html_config["handbook-root-source-index"] = source_alias
+        if navigation is not None:
+            from .xref_links import rewrite_html_links
+            rewrite_html_links(workspace, entries, navigation, source_alias)
         lists = generate_list_pages(workspace, entries)
         html_config = prepare_reading_site(workspace, html_config, book, metadata, groups,
                                            lists, fields, author, book_version,
