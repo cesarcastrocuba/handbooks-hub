@@ -96,6 +96,18 @@ DOCX once with `--no-execute`, inspects the payloads and atomically creates a se
 `make full` runs `check` and then `build`. The build does not publish or deploy. Override the output
 with `make build OUTPUT=/external/path`.
 
+### Extra release deliverables (optional)
+
+If the book produces additional release deliverables (such as checklist exports, templates or data files), the book can opt in by adding a `release-assets` target to its `Makefile`:
+
+```makefile
+release-assets:
+	mkdir -p "$(RELEASE_ASSETS_DIR)"
+	cp _build/exports/* "$(RELEASE_ASSETS_DIR)/"
+```
+
+When present, `release.yml` runs `make release-assets RELEASE_ASSETS_DIR="$RUNNER_TEMP/extra-assets"`, validates file constraints (regular files, safe names, size caps, no collisions with core payloads), confirms the working tree stays clean, packages them deterministically into `book-extras.zip`, and writes `EXTRAS-SHA256SUMS.txt`. Books without this target publish only the standard seven files.
+
 Without `make`, run the same commands directly:
 
 ```bash

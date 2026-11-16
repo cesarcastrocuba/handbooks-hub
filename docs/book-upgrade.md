@@ -20,6 +20,11 @@ other contribution; nothing upgrades automatically.
    once and check the List of Tables and List of Figures in the PDF and DOCX.
 4. Reinstall dependencies, run the book's checks and build its editions once; open the DOCX in
    desktop Word before the next tag.
+5. Book-owned extra release assets (change `0057`, gap G6): if the book generates additional
+   deliverables (e.g. checklist exports, spreadsheets, data templates), define a `release-assets`
+   target in `Makefile`. The release workflow validates deliverables, requires a clean working tree,
+   packages them deterministically into `book-extras.zip`, and writes `EXTRAS-SHA256SUMS.txt`. Books
+   without this target publish only the standard seven files.
 
 ## Example: toolkit 0.10.3 to 0.11.0
 
