@@ -220,10 +220,10 @@
     } else {
       numbering("1.1", ch, num)
     }
-    let pg = counter(page).at(loc).first()
-    link(loc)[
-      #sup #num-str #h(0.5em) #it.element.caption.body #box(width: 1fr, it.fill) #pg
-    ]
+    link(
+      loc,
+      it.indented([#sup #num-str], it.inner()),
+    )
   } else {
     it
   }

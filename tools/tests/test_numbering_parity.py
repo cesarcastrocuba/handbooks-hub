@@ -319,6 +319,55 @@ class NumberingParityUnitTests(unittest.TestCase):
             self.assertIn("Figure A.1: Appendix Figure", pdf_text)
             self.assertIn("Table A.1: Appendix Table", pdf_text)
 
+    @unittest.skipUnless(BUILD_AVAILABLE and PDFTOTEXT, "Quarto, pdfinfo, and pdftotext are required for the PDF build test")
+    def test_pdf_multientry_list_layout(self) -> None:
+        import subprocess
+        from test_build import make_book, build_book, PROFILE, CHAPTER
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, commit = make_book(root, chapter=True)
+            ch_file = repo / "manuscript/chapters/pilot.qmd"
+            floats = (
+                "**Example.** A labeled example.\n\n"
+                "| A | B |\n|---|---|\n| 1 | 2 |\n\n: First Table {#tbl-1-1}\n\n"
+                "| C | D |\n|---|---|\n| 3 | 4 |\n\n: Second Table {#tbl-1-2}\n\n"
+                "| E | F |\n|---|---|\n| 5 | 6 |\n\n: Third Table {#tbl-1-3}\n\n"
+                "![First Figure](../images/fixture.png){#fig-1-1}\n\n"
+                "![Second Figure](../images/fixture.png){#fig-1-2}\n\n"
+                "![Third Figure](../images/fixture.png){#fig-1-3}\n\n"
+            )
+            ch_file.write_text(CHAPTER.replace("**Example.** A labeled example.", floats), encoding="utf-8")
+            subprocess.run(["git", "-C", str(repo), "commit", "-am", "multi entries"], check=True, capture_output=True)
+            new_commit = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"]).decode().strip()
+            output = root / "dist"
+            build_book(repo, new_commit, output, profile=PROFILE, mode="chapter")
+            pdf_path = output / "book.pdf"
+            self.assertTrue(pdf_path.exists())
+            pdf_text = subprocess.check_output(["pdftotext", "-layout", str(pdf_path), "-"]).decode()
+
+            first_body = re.search(r"(?m)^\s*Table\s+1\.1\s*:", pdf_text)
+            self.assertIsNotNone(first_body)
+            assert first_body is not None
+            listing_text = pdf_text[:first_body.start()]
+
+            # List of Tables: at least 3 tables, exactly 1 label per list line
+            table_lines = [l for l in listing_text.splitlines() if re.search(r"\bTable\s+1\.\d+\b", l)]
+            self.assertEqual(len(table_lines), 3)
+            for line in table_lines:
+                labels = re.findall(r"\bTable\s+1\.\d+\b", line)
+                self.assertEqual(len(labels), 1, f"Expected 1 table label per line, got {labels} in: {line}")
+            tbl_labels = [re.search(r"\bTable\s+(1\.\d+)\b", l).group(1) for l in table_lines]  # type: ignore[union-attr]
+            self.assertEqual(tbl_labels, ["1.1", "1.2", "1.3"])
+
+            # List of Figures: at least 3 figures, exactly 1 label per list line
+            fig_lines = [l for l in listing_text.splitlines() if re.search(r"\bFigure\s+1\.\d+\b", l)]
+            self.assertEqual(len(fig_lines), 3)
+            for line in fig_lines:
+                labels = re.findall(r"\bFigure\s+1\.\d+\b", line)
+                self.assertEqual(len(labels), 1, f"Expected 1 figure label per line, got {labels} in: {line}")
+            fig_labels = [re.search(r"\bFigure\s+(1\.\d+)\b", l).group(1) for l in fig_lines]  # type: ignore[union-attr]
+            self.assertEqual(fig_labels, ["1.1", "1.2", "1.3"])
+
 
 if __name__ == "__main__":
     unittest.main()

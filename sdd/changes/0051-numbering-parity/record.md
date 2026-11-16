@@ -68,6 +68,11 @@ nor `docs/decisions.md` is modified.
      - After: `Table 0.1: Task-Based Reading Routes`, `Table 2.1: Illustrative brief for a fictional API handbook; names, targets and evidence are not real.`
    - In DOCX, the appendices (which lack figures or tables) retain their unnumbered titles.
 
+6. **Typst PDF Outline Entry Layout (List of Tables and List of Figures)**:
+   - In `handbook-typst.typ`, `outline.entry` formats figure entries using `link(loc, it.indented([#sup #num-str], it.inner()))`.
+   - Restores block/row boundaries, dot leaders, right-aligned page numbers, hanging indent for wrapped captions, and normal text appearance across the List of Tables and List of Figures (resolving R5).
+   - Multi-entry PDF test `test_pdf_multientry_list_layout` builds a PDF with 3 tables and 3 figures and asserts via `pdftotext -layout` that each line in the listing sections holds exactly one label.
+
 ## Real Book Parity Proof (`Solutions-Architecture-Handbook`)
 
 Full book build executed on `/tmp/codex-pr87-real-book` with all 33 files into `/tmp/codex-pr87-real-dist`.
