@@ -38,7 +38,7 @@ No manuscript prose, figures, or `.dot`/`.png` files are copied into the hub rep
    - Manuscript: Exactly 33 `.qmd` files (3 front-matter, 18 chapters, 10 appendices, 2 back-matter), 184,551 words, 11,577 lines.
    - Diagrams: Exactly 121 Graphviz `.dot` sources and 121 rendered `.png` diagrams (17.5 MB). All diagrams are original author works.
    - Tables: 376 total pipe-table separators outside code blocks (263 captioned tables, 113 uncaptioned data/fiche tables).
-   - Checklists: 18 chapter review checklists in manuscript and 18 canonical checklist YAML definitions with multi-format assessment exports.
+   - Checklists: 18 chapter review checklists in manuscript and 19 canonical checklist YAML definitions (including `asr.yaml`) with multi-format assessment exports (21 templates in `checklists/exports/`).
    - Published release assets (v3.0.0): HTML bundle (36 pages, 14.1 MB), Word edition (624 headings, 121 figures, 263 tables, 12.4 MB), Typst PDF (570 pages, 16.0 MB), SHA256SUMS.
 2. **Section Preservation**:
    - **Source sections**: 625 headings (620 manuscript headings + 5 generated sections: Cover, Contents, List of Figures, List of Tables, Analytic Index) + 1 checklist exports entry = **626 mapped items**.
@@ -63,7 +63,7 @@ No manuscript prose, figures, or `.dot`/`.png` files are copied into the hub rep
    - **Figures / Drawings**: Exactly 121 in preview DOCX vs 121 in v3.0.0 DOCX (100% match). List of Figures present in both (`figures.html` vs `list-of-figures.html`).
    - **Tables**: 263 captioned tables in source (100% match). List of Tables present in both (`tables.html` vs `list-of-tables.html`). TableCaption custom style count in DOCX is 0 in preview because `annotate_tables` was not run (tables rendered with native Quarto captions).
    - **HTML Page Count**: Exactly 36 HTML pages in preview zip vs 36 in v3.0.0 release zip.
-   - **Glossary Links (Appendix G)**: 41 explicit author links in preview vs 509 links in v3.0.0 (468 term links added by `rewrite_glossary_hrefs` absent; Gap G9). Appendix G definition backlinks ("Defined in Section X.Y") absent in preview (Gap G9).
+   - **Glossary Navigation & Term Links**: 42 navigation links in preview (0 `#gl-`) vs 509 glossary-path links in v3.0.0. In v3.0.0, 466 `#gl-` term links exist on `analytic-index.html` (Index-to-definition anchors, belonging to Gap G4); 43 are page navigation links. In preview, 42 navigation links exist, with 0 `#gl-` term links (due to missing Index, Gap G4). Chapter bodies in both v3.0.0 and preview have 0 automatic prose glossary links (deliberately removed in 2.1 RC6; 0 deliberate author `](#gl-...)` links exist in source). Gap G9 covers preserving deliberate author glossary link resolution and Appendix G glossary-to-section definition pointers ('Defined in Section X.Y' via `annotate_glossary_entries`), NOT automatic prose term linking.
    - **Prose Cross-References**: 673 explicit prose references linked in v3.0.0 via `link_references`, plain text in preview (Gap G8).
    - **Analytic Index**: Present in v3.0.0 (`analytic-index.html`, 487 KB), absent in preview (Gap G4). Definite platform home is `handbook-toolkit`.
 
@@ -72,12 +72,12 @@ No manuscript prose, figures, or `.dot`/`.png` files are copied into the hub rep
 - **G1**: Template release workflow tag regex rejects `-rc.N` pre-releases (`release.yml:47`). Home: Hub repository `template/book/` (small).
 - **G2**: Profile validator enforces chapter anatomy on appendices in `--mode chapter`. Home: `handbook-toolkit` (medium).
 - **G3**: Review Checklist callout attribute title vs bold lead-in recognition. Home: `handbook-toolkit` / book import (small).
-- **G4**: Analytic Index generation from index vocabulary. Home: `handbook-toolkit` (medium).
+- **G4**: Analytic Index generation from index vocabulary (including 466 `#gl-` Index-to-definition anchors). Home: `handbook-toolkit` (medium).
 - **G5**: Automated catalog appendices generation from callouts. Home: book repository `handbook-solutions-architecture` (small).
-- **G6**: Canonical checklist parity & multi-format assessment exports distribution. Published as extra release assets (`checklists/*.csv`, `*.json`) and checked into book repository under `checklists/exports/`. Home: book repository `handbook-solutions-architecture` (small).
-- **G7**: Web landing & Document Control presentation (preserving 11-version history table without dropping content). Home: `handbooks-template` / `handbook-toolkit` (small).
+- **G6**: Canonical checklist parity (19 canonical YAMLs including `asr.yaml`) & multi-format assessment exports distribution. Published as extra release assets (`checklists/*.csv`, `*.json`) and checked into book repository under `checklists/exports/`. Home: book repository `handbook-solutions-architecture` (small).
+- **G7**: Web landing & Document Control presentation (preserving 10-row metadata table and 21-version history table without dropping content). Home: `handbooks-template` / `handbook-toolkit` (small).
 - **G8**: Cross-reference hyperlinking for prose numbers (`Section X.Y`, `Figure X.Y`, `Table X.Y`, `Chapter X`, `Appendix X`). Home: `handbook-toolkit` (medium).
-- **G9**: Appendix G glossary body hyperlinks (`rewrite_glossary_hrefs`) & definition backlinks (`annotate_glossary_entries`). Home: `handbook-toolkit` (medium).
+- **G9**: Appendix G glossary deliberate author link resolution (`rewrite_glossary_hrefs`) & definition backlinks (`annotate_glossary_entries`). Home: `handbook-toolkit` (medium).
 - **G10**: Template CI job name mismatch (`Fast checks` in workflow vs `ci` in `docs/author-guide.md`). Home: Hub repository `template/book/` (small).
 - **G11**: Book initializer updates only README title, leaving template body text. Home: Hub repository `template/book/` (small).
 

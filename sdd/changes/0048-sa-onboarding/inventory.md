@@ -169,13 +169,13 @@ Auditing the complete reference tooling (`scripts/build_book.py`, `scripts/rende
 | Reference Feature / Script / Step | Dependent Files & Stages | Classification | Decision & Platform Rationale |
 | :--- | :--- | :--- | :--- |
 | `Analytic Index generation (scripts/build_book.py:1026 analytic_index)` | `publishing/index-vocabulary.yaml, analytic-index.qmd, published Index page` | **(b) new toolkit feature** | Platform feature for curated glossary and index vocabularies; definite home is handbook-toolkit (indexes module); gap G4. Dry run verified absent in toolkit 0.11.0 output. |
-| `Glossary definition links & backlinks (scripts/build_book.py:980 annotate_glossary_entries, :1002 _defined_sections)` | `manuscript/appendices/appendix-g-glossary-of-terms-and-acronyms.qmd` | **(b) new toolkit feature** | Scans chapter occurrences to populate 'Defined in Section X.Y' backlinks in Appendix G; definite home is handbook-toolkit; gap G9. Absent in toolkit 0.11.0 output. |
-| `Glossary body term hyperlinking (scripts/build_book.py:1257 rewrite_glossary_hrefs, :1263 staged_glossary_hrefs)` | `All 18 chapters -> appendix-g-glossary-of-terms-and-acronyms.qmd` | **(b) new toolkit feature** | Transforms prose term occurrences in chapter text into links to Appendix G entries (509 links in v3.0.0 vs 41 explicit in preview); definite home is handbook-toolkit; gap G9. |
+| `Glossary definition links & backlinks (scripts/build_book.py:980 annotate_glossary_entries, :1002 _defined_sections)` | `manuscript/appendices/appendix-g-glossary-of-terms-and-acronyms.qmd` | **(b) new toolkit feature** | Sorts Appendix G rows alphabetically, inserts letter separator rows, adds {#gl-<slug>} anchors, and populates 'Defined in Section X.Y' pointers from section catalog. Definite home is handbook-toolkit; gap G9. Absent in toolkit 0.11.0 output. |
+| `Glossary link rewriting (scripts/build_book.py:1257 rewrite_glossary_hrefs, :1263 staged_glossary_hrefs)` | `manuscript/**/*.qmd (HTML staging) -> appendix-g-glossary-of-terms-and-acronyms.qmd` | **(b) new toolkit feature** | Rewrites deliberate author links [Term](#gl-slug) to point to Appendix G in HTML staging while keeping local anchors in print editions (0 deliberate links currently in v3.0.0 source after 2.1 RC6 removal). Definite home is handbook-toolkit; gap G9. Note: Index-to-definition anchors belong to G4. |
 | `Prose cross-reference linking (scripts/build_book.py:684 link_references)` | `All 18 chapters, 10 appendices` | **(b) new toolkit feature** | Hyperlinks prose citations ('Section X.Y', 'Figure X.Y', 'Table X.Y', 'Chapter X', 'Appendix X') to real anchors (e.g. sec-1-1); gap G8. Plain text in preview. |
 | `Catalog appendices generator (scripts/generate_catalogs.py)` | `manuscript/appendices/appendix-h-anti-pattern-catalog.qmd, appendix-i-decision-catalog.qmd, appendix-j-pattern-catalog.qmd, publishing/pattern-catalog.yaml` | **(c) book-owned generator** | Scans chapter callouts to regenerate catalog appendices. Specific to architecture taxonomy; kept as book-owned generator with future platform path (G5). |
-| `Checklists canonical YAML, parity validation & CSV/JSON/MD exports (scripts/checklists.py, export_checklists_csv.py)` | `checklists/canonical/*.yaml, checklists/exports/*, manuscript/appendices/appendix-c-architecture-assurance-checklist.qmd, all 18 chapters` | **(c) book-owned generator/check** | Domain-specific architecture review checklists. Exports published as extra release assets and in checklists/exports/; gap G6. |
+| `Checklists canonical YAML, parity validation & CSV/JSON/MD exports (scripts/checklists.py, export_checklists_csv.py)` | `checklists/canonical/*.yaml (19 canonical definitions including asr.yaml), checklists/exports/* (21 assessment templates), manuscript/appendices/appendix-c-architecture-assurance-checklist.qmd, all 18 chapters` | **(c) book-owned generator/check** | Domain-specific architecture review checklists. Exports published as extra release assets and in checklists/exports/; gap G6. |
 | `Graphviz diagram rendering (scripts/render_diagrams.py)` | `assets/diagrams/src/*.dot (121 files) -> assets/diagrams/rendered/*.png` | **(c) book-owned build script** | Compiles 121 .dot sources to .png using dot CLI; toolkit does not package Graphviz binary. |
-| `Artifact optimization & compression (scripts/artifact_optimize.py)` | `dist/book.pdf (Ghostscript pdfwrite), assets/diagrams/rendered/*.png (optipng)` | **(c) book-owned build script** | Post-build release optimization using external system binaries (gs, optipng); executed in book CI publication pipeline. |
+| `Artifact optimization & compression (scripts/artifact_optimize.py)` | `assets/diagrams/rendered/*.png (Python zlib), dist/*.docx / dist/*-html.zip (ZIP repack), dist/*.pdf (optional qpdf)` | **(c) book-owned build script** | Lossless post-build release optimization preserving exact semantics: Python zlib IDAT recompression for PNGs (filter 0, level 9, pixel-identical check), member-preserving ZIP repacking with fixed timestamps for DOCX/HTML, and optional qpdf object-stream/Flate recompression with verification for PDF. No external Ghostscript or optipng binaries used; executed in book CI publication pipeline. |
 | `DOCX post-processing: table widths, cantSplit, bookmarks, callout styles (scripts/docx_postprocess.py, build_book.py:181 proportional_tables)` | `Solutions-Architecture-Handbook.docx, publishing/styles/reference.docx` | **(a) already covered by toolkit 0.11.0** | handbook_toolkit.docx_post, docx_fields, and docx_xml implement full table allocation and style transformations. Dry-run evidence: 16 MB clean DOCX generated. |
 | `Table numbering, spans & sequence annotation (scripts/build_book.py:1098 table_spans, :1127 captioned_tables, :1151 table_sequence, :1165 annotate_tables)` | `All 18 chapters, 263 captioned tables, 113 uncaptioned tables` | **(a) already covered by toolkit 0.11.0** | Native Quarto and pandoc handle markdown table captions (: Caption text); toolkit docx_post / table-layout.lua formats tables. Dry-run evidence: 1,037 table elements rendered cleanly. |
 | `Figure layout and sizing (scripts/build_book.py:223 _figure_width, :306 figure_layout)` | `All 121 diagrams across chapters` | **(a) already covered by toolkit 0.11.0** | handbook_toolkit.docx_post and Quarto width attributes ({width=100%}) handle responsive diagram scaling. Dry-run evidence: 121 drawings embedded in preview DOCX and HTML. |
@@ -331,10 +331,10 @@ Direct comparison of `/tmp/agy-sa/dist/` against `/tmp/agy-sa/assets/`:
 | **DOCX TableCaption style** | **0** | **263** | In v3.0.0, `annotate_tables` applied custom `TableCaption` style. In preview, Quarto native caption style applied. Total table elements: 1,037 (preview) vs 653 (v3.0.0) due to pandoc callout tables. |
 | **List of Tables** | **Present** (`tables.html`) | **Present** (`list-of-tables.html`) | Full table list rendered in both. |
 | **HTML Page Count** | **36 pages** | **36 pages** | Both editions render exactly 36 HTML pages. In v3.0.0, 36 includes `analytic-index.html` with document control in index; preview includes `document-control.html` with Index absent. |
-| **Glossary Body Links** | **41** | **509** | 41 explicit author markdown links in preview. 468 term links generated by `rewrite_glossary_hrefs` absent (Gap G9). |
-| **Glossary Backlinks** | **Absent** | **Present** | Appendix G 'Defined in Section X.Y' pointers generated by `annotate_glossary_entries` absent (Gap G9). |
+| **Glossary Navigation & Term Links** | **42 navigation (0 #gl-)** | **509 total (466 #gl-)** | In v3.0.0, 466 `#gl-` term links exist, all located on `analytic-index.html` (Index-to-definition anchors, belonging to Gap G4); 42 links are page navigation links. In preview, 42 navigation links exist, with 0 `#gl-` term links (due to missing Index, Gap G4). Chapter bodies in both v3.0.0 and preview have 0 automatic prose glossary links (deliberately removed in 2.1 RC6; 0 deliberate author `](#gl-...)` links exist in source). |
+| **Glossary Definition Backlinks** | **Absent** | **Present** | Appendix G 'Defined in Section X.Y' pointers generated by `annotate_glossary_entries` absent in preview (Gap G9). |
 | **Prose Cross-References** | **Plain text** | **Hyperlinks** | 673 explicit prose references ('Section X.Y', 'Figure X.Y', etc.) linked in v3.0.0 via `link_references`, plain text in preview (Gap G8). |
-| **Analytic Index** | **Absent** | **Present** (487 KB) | Generated in v3.0.0 from vocabulary via `analytic_index`, absent in preview (Gap G4). Definite platform home is `handbook-toolkit`. |
+| **Analytic Index** | **Absent** | **Present** (487 KB) | Generated in v3.0.0 from vocabulary via `analytic_index` (including 466 `#gl-` definition links), absent in preview (Gap G4). Definite platform home is `handbook-toolkit`. |
 
 ## 6. Licensing Review
 
@@ -374,13 +374,13 @@ Import will proceed in 6 incremental slices from frozen tag `v3.0.0` into `cesar
 
 ### Detail: Slice 1 & Document Control Adaptation (G7)
 `manuscript/front-matter/document-control.qmd` in the reference repository contains:
-1. **Document Metadata Table**: 10-row key/value table (Document Identifier, Classification, Author, Status, Edition, Repository, Licensing, etc.).
-2. **Version History Table**: 11 chronological release rows detailing every version from `1.0` through `2.1 RC5` and `3.0.0`, with exact dates, authors, and summary of changes.
+1. **Document Metadata Table**: 10-row key/value table (Title, Author, Approver and maintainer, Version, Status, Date, Language, License, Scope, Review cycle).
+2. **Version History Table**: 21 chronological release rows detailing every version from `1.0` through `3.0`, with exact dates, summary of changes, and milestones (e.g. 2.1 RC6 removal of automatic prose glossary linking).
 3. **Maintenance & Contribution Model**: Governance and change approval procedures.
-4. **Notice & Licensing**: Dual licensing statement (CC BY-SA 4.0 / MIT).
+4. **License & Usage Notice**: Dual licensing statement (CC BY-SA 4.0 / MIT).
 
 In contrast, `handbook-toolkit` automatically generates the web cover banner, edition footer (`book-data.typ`), and metadata cards from `book.yaml`.
-- **Adaptation**: The full 11-version history table and governance text in `document-control.qmd` must **not** be dropped. It will be preserved as `manuscript/front-matter/document-control.qmd` (or dedicated `version-history.qmd`), while the top-level cover banner and footer metadata are driven from `book.yaml`.
+- **Adaptation**: The full 21-version history table and governance text in `document-control.qmd` must **not** be dropped. It will be preserved as `manuscript/front-matter/document-control.qmd` (or dedicated `version-history.qmd`), while the top-level cover banner and footer metadata are driven from `book.yaml`.
 
 ## 8. Platform Gap Backlog
 
@@ -408,10 +408,10 @@ The dry run, rendered parity baseline, and feature analysis identify eleven conc
 - **Size**: Small.
 
 ### G4: Analytic Index Generation from Vocabulary
-- **Evidence**: The reference book generated `analytic-index.qmd` via `scripts/build_book.py:1026 analytic_index` from `publishing/index-vocabulary.yaml`. In toolkit 0.11.0, there is no built-in analytic index generator, causing the published Index page and DOCX TOCHeading to be absent in preview.
-- **Impact**: Long-form reference handbooks lose back-of-the-book analytic indexing.
-- **Affected Files**: `handbook_toolkit/indexes.py` / `build_book.py`.
-- **Definite Home**: `handbook-toolkit` (core platform capability for curated reference handbooks).
+- **Evidence**: The reference book generated `analytic-index.qmd` via `scripts/build_book.py:1026 analytic_index` from `publishing/index-vocabulary.yaml`. In toolkit 0.11.0, there is no built-in analytic index generator, causing the published Index page and DOCX TOCHeading to be absent in preview. Furthermore, the 466 `#gl-` term links present in v3.0.0 HTML are generated on `analytic-index.html` pointing to definitions in Appendix G (`appendix-g-glossary-of-terms-and-acronyms.html#gl-<slug>`).
+- **Impact**: Long-form reference handbooks lose back-of-the-book analytical indexing, two-column index layout, cantSplit table rows, and Index-to-definition anchors.
+- **Affected Files**: `handbook_toolkit/indexes.py` (new module), `docx_post.py`.
+- **Proposed Home**: `handbook-toolkit` (definite platform home for analytical index features).
 - **Size**: Medium.
 
 ### G5: Automated Catalog Appendices from Callouts
@@ -422,7 +422,7 @@ The dry run, rendered parity baseline, and feature analysis identify eleven conc
 - **Size**: Small.
 
 ### G6: Canonical Checklist Parity & Multi-Format Exports Distribution
-- **Evidence**: Canonical review questions are stored in `checklists/canonical/*.yaml` and exported to CSV, JSON, Markdown assessment templates for auditing. The toolkit's 7-file publication manifest has no default distribution slot for these extra audit templates.
+- **Evidence**: Exactly 19 canonical review checklists (18 chapter review checklists plus `asr.yaml` for Architecture Significant Requirements) are stored in `checklists/canonical/*.yaml` and exported to 21 CSV, JSON, Markdown assessment templates (`checklists/exports/*`) for auditing. The toolkit's 7-file publication manifest has no default distribution slot for these extra audit templates.
 - **Impact**: Architecture practitioners rely on standalone CSV/JSON checklist templates for compliance evaluations.
 - **Distribution Channel**: Published as extra release assets in the GitHub Release (`checklists/*.csv`, `checklists/*.json`) via release workflow upload steps, and checked into the book repository under `checklists/exports/` for direct cloning and web access.
 - **Affected Files**: `checklists/` directory and `.github/workflows/release.yml` in book repository.
@@ -430,8 +430,8 @@ The dry run, rendered parity baseline, and feature analysis identify eleven conc
 - **Size**: Small.
 
 ### G7: Web Landing & Document Control Integration
-- **Evidence**: `document-control.qmd` contains 10-row document metadata and an extensive 11-version history table (v1.0 to v2.1 RC5). The toolkit renders cover banners from `book.yaml`.
-- **Impact**: Ensure front-matter document control preserves the full version history table without duplication or content loss.
+- **Evidence**: `document-control.qmd` contains a 10-row document metadata table (Title, Author, Approver and maintainer, Version, Status, Date, Language, License, Scope, Review cycle) and an extensive 21-version history table (v1.0 to v3.0). The toolkit renders cover banners from `book.yaml`.
+- **Impact**: Ensure front-matter document control preserves the full 21-version history table without duplication or content loss.
 - **Affected Files**: `template/book/manuscript/front-matter/`, `handbook_toolkit/reading_site.py`.
 - **Proposed Home**: `handbooks-template` / `handbook-toolkit`.
 - **Size**: Small.
@@ -443,9 +443,9 @@ The dry run, rendered parity baseline, and feature analysis identify eleven conc
 - **Proposed Home**: `handbook-toolkit`.
 - **Size**: Medium.
 
-### G9: Appendix G Glossary Body Hyperlinks & Definition Backlinks
-- **Evidence**: `scripts/build_book.py:1257 rewrite_glossary_hrefs`, `scripts/build_book.py:1263 staged_glossary_hrefs`, `scripts/build_book.py:980 annotate_glossary_entries`, and `scripts/build_book.py:1002 _defined_sections`. In frozen v3.0.0, 509 body term occurrences across chapters linked to Appendix G entries, and Appendix G Table G.1 had a 'Defined in Section X.Y' backlink column pointing to defining chapters. In preview build, only 41 explicit links exist, and definition backlinks are absent.
-- **Impact**: Loss of 468 interactive glossary term links and reverse definition navigation.
+### G9: Appendix G Glossary Deliberate Link Resolution & Definition Pointers
+- **Evidence**: `scripts/build_book.py:1257 rewrite_glossary_hrefs`, `scripts/build_book.py:1263 staged_glossary_hrefs`, `scripts/build_book.py:980 annotate_glossary_entries`, and `scripts/build_book.py:1002 _defined_sections`. In frozen v3.0.0, automatic glossary-term linking was deliberately removed in v2.1 RC6; zero `#gl-` links occur in chapter bodies, and exactly 0 deliberate author `](#gl-...)` links currently exist in the source manuscript. The 466 `#gl-` term links present in v3.0.0 HTML are Index-to-definition links on `analytic-index.html`, which belong strictly to Gap G4. In Appendix G, `annotate_glossary_entries` sorts rows, inserts letter headers, creates `{#gl-<slug>}` definition anchors, and populates 'Defined in Section X.Y' pointers back to chapters. In preview build, these definition backlinks are absent.
+- **Impact**: Appendix G lacks 'Defined in Section X.Y' reverse navigation pointers, and any deliberate author glossary links would fail to rewrite to the multi-page HTML glossary path.
 - **Affected Files**: `handbook_toolkit/indexes.py` / `reading_site.py` / lua filters.
 - **Proposed Home**: `handbook-toolkit` (generic platform feature; sample handbook also has a glossary).
 - **Size**: Medium.
