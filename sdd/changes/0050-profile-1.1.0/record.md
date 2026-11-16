@@ -9,7 +9,7 @@ No toolkit version bump or tag is created here; this change ships with toolkit 0
 
 ## Pins and Scope
 
-- **Hub Base**: `12b83f1bf2c20f9af7dc95ccda16e9da7a2769a7` (`origin/main`, merge of PR #84).
+- **Hub Base**: `c183b5f46a89d0c8f6436de4c210d60c417e1127` (`origin/main`, merge of PR #86).
 - **Branch / Worktree**: `feat/0050-profile-1.1.0`, `/home/ubuntu/github/handbooks-hub.worktrees/profile110`.
 - **Write set**:
   - `profiles/standard/profile.yaml` (canonical profile updated to version 1.1.0)
