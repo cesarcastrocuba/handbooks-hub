@@ -7,7 +7,7 @@ here; these updates ship with template 1.7.0 alongside toolkit 0.12.0.
 
 ## Pins and Scope
 
-- **Hub Base**: `aef8c033cff9b1f77d3f848dfebc382f7e750cae` (`origin/main`, PR 83 merged).
+- **Hub Base**: `c6032fe64d355fcb5f863037a03d688c947ffb21` (`origin/main`, merge of PR 82).
 - **Branch / Worktree**: `feat/0049-template-onboarding-gaps`, `/home/ubuntu/github/handbooks-hub.worktrees/tpl-gaps`.
 - **Write set**:
   - `template/book/.github/workflows/release.yml`
@@ -38,7 +38,7 @@ here; these updates ship with template 1.7.0 alongside toolkit 0.12.0.
    - `initialize_book.py` now replaces the template boilerplate README with a tailored book README containing:
      - H1 title and catalog summary provided during initialization.
      - Pointers to contributor governance (`AGENTS.md`) and attribution (`NOTICE.md`).
-     - Conditional pointers to `PROJECT_STATUS.md` and `DECISIONS.md` if present in the book root.
+     - Conditional pointers to `PROJECT_STATUS.md` and `DECISIONS.md` if present in the book root (note: the template repository does not include these files by default, so these links are omitted during first-time initialization from the template workflow, but fire when initialized locally or when a book repository creates them beforehand).
      - Local virtual environment setup and validation commands (`make check`, `make full`).
 
 ## Verification Evidence
