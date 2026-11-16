@@ -190,3 +190,31 @@ the owning source page, including a book whose first page becomes `handbook-sour
 Only generated links carry the `handbook-xref` class and receive this rewrite. Ambiguous section
 numbers or duplicate navigation IDs fail the opted-in build rather than selecting a target.
 This feature does not repair displayed numbering; change 0051 owns that separate contract.
+
+## Opt-in glossary pointers and analytic Index (unreleased, change 0053)
+
+Set `manuscript.glossary` to a glossary QMD path relative to `manuscript.root`. It must be in
+the canonical reading order and contain a `Term | Meaning | Defined in` pipe table. This enables
+stable `gl-<slug>` entry anchors, alphabetic grouping, definition pointers and a final unnumbered
+Index in HTML, PDF and Word. Source files and the source bundle remain unchanged.
+
+Optionally set `publication.index_vocabulary` to a repository-relative YAML file conforming to
+the packaged `index-vocabulary.schema.json`: `terms` is a list of objects with `term`, optional
+`aliases`, `defined`, `see` and `rationale`. Matching glossary terms merge aliases; additional
+terms create Index-only entries. `see` names an existing canonical entry and creates an alphabetic
+lookup row. A vocabulary requires a declared glossary. Missing files, invalid schemas, missing
+`see` targets, duplicate slugs, generated-page collisions and unresolved deliberate glossary links
+fail the opted-in build.
+
+Definition sections appear in bold in the Index. Other occurrences are grouped by declared
+chapter/appendix reading order. Longest non-overlapping aliases match prose case-insensitively;
+short uppercase acronyms retain case. Code, headings, captions, bibliography, proper-name spans,
+front/back matter and the glossary itself do not supply discussion locations. Chapter/appendix
+introductions do supply locations, matching the frozen reference builder.
+
+Deliberate `[Term](#gl-slug)` author links resolve across HTML pages and stay internal in print.
+Long glossary identifiers are encoded before Pandoc writes Word bookmarks; HTML/PDF retain their
+full `gl-<slug>` IDs. Index rows are unbreakable Typst cells and carry Word `cantSplit` markers.
+No prose glossary term is linked automatically (`HUB-DEC-005`). The separate
+`publication.cross_reference_links` option controls prose cross-reference linking; glossary and
+Index navigation work with it disabled. Omitting the new keys preserves the default build path.

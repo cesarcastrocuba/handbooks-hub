@@ -892,7 +892,7 @@ class Registry:
 
 
 def stage_cross_references(
-    workspace: Path, entries: list[str], *, groups: dict[str, list[str]] | None = None
+    workspace: Path, entries: list[str], *, groups: dict[str, list[str]] | None = None, link_prose: bool = True
 ) -> Registry:
     """Build the whitelist first, then link prose across the entire reading order."""
     targets: Targets = ({}, {}, {})
@@ -988,7 +988,7 @@ def stage_cross_references(
         texts[entry] = "\n".join(lines)
     registry = Registry(targets, pages)
     for entry, text in texts.items():
-        (workspace / entry).write_text(link_references(text, targets), encoding="utf-8")
+        (workspace / entry).write_text(link_references(text, targets) if link_prose else text, encoding="utf-8")
     return registry
 
 
