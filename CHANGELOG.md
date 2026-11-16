@@ -5,19 +5,39 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
-### Added
-
-- Standard profile version 1.1.0 (`HUB-DEC-044`):
-  - Qualified callout titles (G3): callout titles may include domain qualifiers preceding the title on word boundaries (e.g. `Architecture Review Checklist — Requirements` satisfies `Review Checklist`).
-  - Appendix rule (G2): appendices in chapter mode and appendix mode are validated by a dedicated appendix rule (single H1, non-empty body) instead of textbook chapter anatomy.
-  - Unit relaxations: permits multiple closing elements of the same kind, block list bodies following a label paragraph, and ignores table cells in the unit scanner.
-- Packaged snapshot `tools/src/handbook_toolkit/profile_data/standard-1.1.0.yaml`; profile 1.0.0 and 0.2.0 remain resolvable.
-
 ### Changed
 
 - Template `release.yml` accepts pre-release versions `X.Y.Z-rc.N` alongside stable `X.Y.Z`, publishing pre-releases with `--prerelease --latest=false` while keeping Pages deployment and site verification active (Gap G1).
 - Template `initialize_book.py` writes a clean, tailored book README with book title, summary, contributor pointers, and verification commands (Gap G11).
 - Align author guide and template quickstart documentation to specify the exact required branch protection status check `Fast checks` (Gap G10).
+
+## [0.12.0] - Unreleased
+
+Toolkit release prepared by change `0054`: changes `0050` and `0051`. The tag `toolkit-v0.12.0`
+needs the Owner's approval and the Owner's desktop Word check of a DOCX built with it, because the
+DOCX table and figure labels change.
+
+### Added
+
+- Standard profile version 1.1.0 (`HUB-DEC-044`, change `0050`):
+  - Qualified callout titles (G3): callout titles may include domain qualifiers preceding the title on word boundaries (e.g. `Architecture Review Checklist — Requirements` satisfies `Review Checklist`).
+  - Appendix rule (G2): appendices in chapter mode and appendix mode are validated by a dedicated appendix rule (single H1, non-empty body) instead of textbook chapter anatomy.
+  - Unit relaxations: permits multiple closing elements of the same kind, block list bodies following a label paragraph, and ignores table cells in the unit scanner.
+  - A bold paragraph label inside a heading section of the same name (`**Worked example.**` inside
+    `## 17.5 Worked Example`) is section body prose, not a wrong-form heading. This fourth
+    relaxation goes beyond the three named in `HUB-DEC-044 (2)` and needs the Owner's
+    confirmation before the tag.
+- Packaged snapshot `tools/src/handbook_toolkit/profile_data/standard-1.1.0.yaml`; profile 1.0.0 and 0.2.0 remain resolvable.
+
+### Fixed
+
+- Figure and table numbering follows the displayed chapters in every edition (Gap G12, change
+  `0051`): numbered chapters use `N.M`, appendices use their letter (`A.1`) in HTML, DOCX, PDF and
+  Markdown, tables and figures in unnumbered front matter are numbered `0.N` continuously, and those
+  in unnumbered back matter `BM.N`. An author-written caption prefix (`Figure 1.1 — …`) is stripped
+  when it matches its position, and a mismatch fails the build. The List of Tables and List of
+  Figures carry the same labels. Visible change: the sample's front-matter `Table 1` becomes
+  `Table 0.1`.
 
 ## [1.6.0] - 2026-11-15
 
