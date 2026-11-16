@@ -91,6 +91,10 @@
             "enum": ["html", "pdf", "docx"]
           }
         },
+        "cross_reference_links": {
+          "type": "boolean",
+          "description": "Opt in to whitelist-only prose navigation links and stable staged section anchors."
+        },
         "manifest": {
           "type": "string",
           "pattern": "^(?!/)(?!.*\\.\\.)[A-Za-z0-9._/-]+\\.json$"
