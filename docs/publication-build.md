@@ -173,8 +173,10 @@ Numbered headings through level six are supported. These generated IDs are the s
 PDF named destinations and DOCX bookmarks. Unnumbered subheadings use deterministic file-scoped
 IDs, shortened with the toolkit's bookmark hash when necessary. An explicit author ID takes
 precedence; Word's existing bookmark encoder still applies to author IDs containing hyphens or
-other unsupported characters. Figure/table labels keep their Quarto IDs and their existing
-Word bookmark encoding.
+other unsupported characters. Figure/table targets follow change 0051's native displayed labels:
+`0.N` before numbered chapters, chapter numbers, appendix letters and `BM.N` in back matter.
+They keep Quarto IDs
+and their existing Word bookmark encoding; explicit author IDs remain authoritative.
 
 Chapter, appendix, section, figure and table references link only when a target exists.
 Ranges and lists retain their wording. Bare section numbers need a navigational cue, a
