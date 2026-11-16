@@ -28,6 +28,7 @@
 #let handbook-title = ""
 #let handbook-license = "CC BY-SA 4.0"
 #let handbook-running-header = "Practitioner reference"
+#let handbook-appendix-state = state("handbook-appendix-start", none)
 
 #set page(
   header: context {
@@ -61,9 +62,24 @@
 // reference handbook. Front matter, appendices and references arrive from
 // Quarto as unnumbered headings and keep their literal labels. The layout in
 // typst-show.typ passes this function to `article` as its section numbering.
-#let handbook-numbering(..nums) = {
+#let handbook-numbering(..nums) = context {
   let parts = nums.pos()
-  if parts.len() == 1 { numbering("1.", ..parts) } else { numbering("1.1", ..parts) }
+  let ch = parts.first()
+  let app-start = handbook-appendix-state.get()
+  if app-start != none and ch >= app-start {
+    let app-idx = ch - app-start + 1
+    if parts.len() == 1 {
+      numbering("A.", app-idx)
+    } else {
+      numbering("A.1", app-idx, ..parts.slice(1))
+    }
+  } else {
+    if parts.len() == 1 {
+      numbering("1.", ch)
+    } else {
+      numbering("1.1", ..parts)
+    }
+  }
 }
 #set heading(numbering: handbook-numbering)
 
@@ -85,16 +101,101 @@
 // Every front-matter page, chapter and appendix starts on a new page.
 #show heading.where(level: 1): it => {
   pagebreak(weak: true)
-  counter(figure.where(kind: "quarto-float-tbl")).update(0)
+  if it.numbering != none {
+    counter(figure.where(kind: "quarto-float-tbl")).update(0)
+    counter(figure.where(kind: "quarto-float-fig")).update(0)
+    counter(figure.where(kind: table)).update(0)
+    counter(figure.where(kind: image)).update(0)
+  }
   it
 }
 
-// Table numbers follow the chapter, as they do in HTML and DOCX. Front matter
-// has no chapter number, so its tables keep the flat number.
-#set figure(numbering: n => {
+// Table and figure numbers follow the chapter, as they do in HTML and DOCX.
+// Front matter has no chapter number, so its floats use 0.N continuous numbering.
+// Appendices use lettered counters (A.1, B.1...).
+#let handbook-front-tbl = counter("handbook-front-tbl")
+#let handbook-front-fig = counter("handbook-front-fig")
+
+#show figure.where(kind: "quarto-float-tbl"): it => context {
+  let ch = counter(heading).get().first()
+  if ch == 0 {
+    handbook-front-tbl.step()
+  }
+  it
+}
+#show figure.where(kind: "quarto-float-fig"): it => context {
+  let ch = counter(heading).get().first()
+  if ch == 0 {
+    handbook-front-fig.step()
+  }
+  it
+}
+
+#show figure.where(kind: "quarto-float-tbl"): set figure(numbering: n => context {
   let chapter = counter(heading).get().first()
-  if chapter == 0 { numbering("1", n) } else { numbering("1.1", chapter, n) }
+  let app-start = handbook-appendix-state.get()
+  if chapter == 0 {
+    "0." + str(handbook-front-tbl.get().first())
+  } else if app-start != none and chapter >= app-start {
+    let app-idx = chapter - app-start + 1
+    numbering("A.1", app-idx, n)
+  } else {
+    numbering("1.1", chapter, n)
+  }
 })
+
+#show figure.where(kind: "quarto-float-fig"): set figure(numbering: n => context {
+  let chapter = counter(heading).get().first()
+  let app-start = handbook-appendix-state.get()
+  if chapter == 0 {
+    "0." + str(handbook-front-fig.get().first())
+  } else if app-start != none and chapter >= app-start {
+    let app-idx = chapter - app-start + 1
+    numbering("A.1", app-idx, n)
+  } else {
+    numbering("1.1", chapter, n)
+  }
+})
+
+#set figure(numbering: n => context {
+  let chapter = counter(heading).get().first()
+  let app-start = handbook-appendix-state.get()
+  if chapter == 0 {
+    "0." + str(n)
+  } else if app-start != none and chapter >= app-start {
+    let app-idx = chapter - app-start + 1
+    numbering("A.1", app-idx, n)
+  } else {
+    numbering("1.1", chapter, n)
+  }
+})
+
+// Outline entry for figures and tables in List of Figures / List of Tables
+#show outline.entry: it => {
+  if it.element.func() == figure {
+    let loc = it.element.location()
+    let ch = counter(heading).at(loc).first()
+    let num = it.element.counter.at(loc).first()
+    let app-start = handbook-appendix-state.at(loc)
+    let is-tbl = it.element.kind == "quarto-float-tbl" or it.element.kind == table
+    let sup = if it.element.supplement != auto { it.element.supplement } else if is-tbl { "Table" } else { "Figure" }
+    let num-str = if ch == 0 {
+      let f_num = if is-tbl { handbook-front-tbl.at(loc).first() + 1 } else { handbook-front-fig.at(loc).first() + 1 }
+      "0." + str(f_num)
+    } else if app-start != none and ch >= app-start {
+      let app-idx = ch - app-start + 1
+      numbering("A.1", app-idx, num)
+    } else {
+      numbering("1.1", ch, num)
+    }
+    let pg = counter(page).at(loc).first()
+    link(loc)[
+      #sup #num-str #h(0.5em) #it.element.caption.body #box(width: 1fr, it.fill) #pg
+    ]
+  } else {
+    it
+  }
+}
 
 // Contents -------------------------------------------------------------------
 

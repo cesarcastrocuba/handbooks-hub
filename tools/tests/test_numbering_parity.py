@@ -72,6 +72,26 @@ class NumberingParityUnitTests(unittest.TestCase):
             _transform_chapter(text, "1", path="ch01.qmd")
         self.assertIn("figure caption label '1.3' does not match expected number '1.2'", str(ctx.exception))
 
+    def test_figure_caption_class_first_stripped_when_matching(self) -> None:
+        text = """\
+# Chapter 1
+
+![Figure 1.1 — Section Architecture](diagram1.png){.wide #fig-section-structure}
+"""
+        transformed = _transform_chapter(text, "1")
+        self.assertIn("![Section Architecture](diagram1.png){.wide #fig-section-structure}", transformed)
+        self.assertNotIn("Figure 1.1 —", transformed)
+
+    def test_figure_caption_class_first_mismatch_raises_build_error(self) -> None:
+        text = """\
+# Chapter 1
+
+![Figure 9.9 — Wrong label](diagram1.png){.wide #fig-section-structure}
+"""
+        with self.assertRaises(BuildError) as ctx:
+            _transform_chapter(text, "1", path="ch01.qmd")
+        self.assertIn("figure caption label '9.9' does not match expected number '1.1'", str(ctx.exception))
+
     def test_appendix_figure_prefix_stripped_and_validated(self) -> None:
         text = """\
 # Worked Architecture Cases
@@ -192,6 +212,89 @@ class NumberingParityUnitTests(unittest.TestCase):
             # Appendix A table gets tbl-a-1
             app_transformed = (ws / "app-a.qmd").read_text(encoding="utf-8")
             self.assertIn("{#tbl-a-1}", app_transformed)
+
+            self.assertEqual(rendered.appendix_start, 2)
+
+    def test_render_config_preserves_reading_order_with_appendices_and_references(self) -> None:
+        entries = ["intro.qmd", "ch01.qmd", "conclusions.qmd", "app-a.qmd", "references.qmd"]
+        book = {"title": "Test"}
+        config: dict = {"project": {"type": "book"}}
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp)
+            resources = {
+                "filters/table-layout.lua": workspace / "handbook-render/filters/table-layout.lua",
+                "filters/task-checkbox.lua": workspace / "handbook-render/filters/task-checkbox.lua",
+                "filters/docx-callouts.lua": workspace / "handbook-render/filters/docx-callouts.lua",
+                "filters/front-crossrefs.lua": workspace / "handbook-render/filters/front-crossrefs.lua",
+                "typst/callout-breakable.typ": workspace / "handbook-render/typst/callout-breakable.typ",
+                "typst/handbook-typst.typ": workspace / "handbook-render/typst/handbook-typst.typ",
+                "typst/typst-show.typ": workspace / "handbook-render/typst/typst-show.typ",
+                "docx/reference.docx": workspace / "handbook-render/docx/reference.docx",
+                "html/handbook.css": workspace / "handbook-render/html/handbook.css",
+                "fonts/source-sans3/HandbookSans-Regular.ttf": workspace / "handbook-render/fonts/source-sans3/HandbookSans-Regular.ttf",
+                "fonts/source-serif4/HandbookSerif-Regular.ttf": workspace / "handbook-render/fonts/source-serif4/HandbookSerif-Regular.ttf",
+                "fonts/jetbrains-mono/JetBrainsMono-Regular.ttf": workspace / "handbook-render/fonts/jetbrains-mono/JetBrainsMono-Regular.ttf",
+            }
+            for path in resources.values():
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("fixture\n", encoding="utf-8")
+            rendered = _render_config(
+                book,
+                config,
+                entries,
+                resources,
+                workspace,
+                appendices=["app-a.qmd"],
+            )
+            self.assertEqual(rendered["book"]["chapters"], ["intro.qmd", "ch01.qmd", "conclusions.qmd"])
+            self.assertEqual(rendered["book"]["appendices"], ["app-a.qmd", "references.qmd"])
+
+    def test_negative_build_mismatched_class_first_figure(self) -> None:
+        import subprocess
+        from test_build import make_book, build_book, PROFILE
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, commit = make_book(root, chapter=True)
+            ch_file = repo / "manuscript/chapters/pilot.qmd"
+            content = ch_file.read_text(encoding="utf-8")
+            content += "\n![Figure 9.9 — Wrong label](../images/fixture.png){.wide #fig-section-structure}\n"
+            ch_file.write_text(content, encoding="utf-8")
+            subprocess.run(["git", "-C", str(repo), "commit", "-am", "mismatch"], check=True, capture_output=True)
+            new_commit = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"]).decode().strip()
+            with self.assertRaises(BuildError) as ctx:
+                build_book(repo, new_commit, root / "dist", profile=PROFILE, mode="chapter")
+            self.assertIn("figure caption label '9.9' does not match expected number '1.1'", str(ctx.exception))
+
+    def test_pdf_appendix_letter_numbering(self) -> None:
+        import subprocess
+        from test_build import make_book, build_book, PROFILE
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, commit = make_book(root, chapter=True)
+            # Add an appendix with figure and table
+            app_path = repo / "manuscript/appendices/app-a.qmd"
+            app_path.parent.mkdir(parents=True, exist_ok=True)
+            app_path.write_text(
+                "# Worked Cases\n\n"
+                "| A | B |\n|---|---|\n| 1 | 2 |\n\n: Appendix Table {#tbl-a-1}\n\n"
+                "![Appendix Figure](../images/fixture.png){#fig-a-1}\n",
+                encoding="utf-8",
+            )
+            # Update book.yml to list appendix
+            (repo / "manuscript/book.yml").write_text(
+                "front: []\nchapters:\n  - chapters/pilot.qmd\nback: []\nappendices:\n  - appendices/app-a.qmd\nreferences: []\n",
+                encoding="utf-8",
+            )
+            subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True, capture_output=True)
+            subprocess.run(["git", "-C", str(repo), "commit", "-m", "add appendix"], check=True, capture_output=True)
+            new_commit = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"]).decode().strip()
+            output = root / "dist"
+            build_book(repo, new_commit, output, profile=PROFILE, mode="chapter")
+            pdf_path = output / "book.pdf"
+            self.assertTrue(pdf_path.exists())
+            pdf_text = subprocess.check_output(["pdftotext", "-layout", str(pdf_path), "-"]).decode()
+            self.assertIn("Figure A.1: Appendix Figure", pdf_text)
+            self.assertIn("Table A.1: Appendix Table", pdf_text)
 
 
 if __name__ == "__main__":

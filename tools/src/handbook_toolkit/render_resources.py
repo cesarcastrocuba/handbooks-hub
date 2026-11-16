@@ -16,6 +16,7 @@ RESOURCE_NAMES = (
     "filters/table-layout.lua",
     "filters/task-checkbox.lua",
     "filters/docx-callouts.lua",
+    "filters/front-crossrefs.lua",
     "typst/callout-breakable.typ",
     "typst/handbook-typst.typ",
     "typst/typst-show.typ",

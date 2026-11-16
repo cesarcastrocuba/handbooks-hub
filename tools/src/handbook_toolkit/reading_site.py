@@ -138,9 +138,10 @@ def prepare_reading_site(workspace: Path, config: dict[str, Any], book: dict[str
         front.insert(0, name)
     # The native lists follow Document Control, ahead of other front matter.
     front[1:1] = lists
+    has_appendices = bool(groups.get("appendices"))
     chapters: list[Any] = ["index.qmd"]
     for group, title in PARTS:
-        if group == "appendices":
+        if has_appendices and group in ("appendices", "references"):
             continue
         chapters.extend(_navigation_entries(title, front if group == "front" else groups[group]))
     license_text = license_label(book["license"]["content"])
@@ -150,8 +151,11 @@ def prepare_reading_site(workspace: Path, config: dict[str, Any], book: dict[str
                  status, license_text, downloads)
     bc = config["book"]
     bc["chapters"] = chapters
-    if groups.get("appendices"):
-        bc["appendices"] = list(groups["appendices"])
+    if has_appendices:
+        app_list: list[Any] = list(groups["appendices"])
+        if groups.get("references"):
+            app_list.extend(_navigation_entries("References", groups["references"]))
+        bc["appendices"] = app_list
     bc["description"] = str(book["catalog"]["summary"])
     config["format"]["html"]["description-meta"] = bc["description"]
     bc["open-graph"] = True

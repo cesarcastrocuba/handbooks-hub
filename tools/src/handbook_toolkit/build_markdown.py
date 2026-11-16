@@ -16,6 +16,7 @@ from .print_layout import (
 from .build_types import BuildError, _run
 from .build_staging import (
     _appendix_letter,
+    _count_figures,
     _count_tables,
     _is_unnumbered,
     _transform_chapter,
@@ -59,6 +60,7 @@ def _markdown_sources(
     chapter_counter = 0
     appendix_counter = 0
     front_table_counter = 0
+    front_figure_counter = 0
 
     for entry in entries:
         try:
@@ -69,18 +71,20 @@ def _markdown_sources(
         if entry in appendix_set:
             appendix_counter += 1
             letter = _appendix_letter(appendix_counter)
-            ch_label, tbl_pfx, start_idx = letter, letter.lower(), 0
+            ch_label, tbl_pfx, start_idx, f_start_idx = letter, letter.lower(), 0, 0
             meta_json = json.dumps({"bookItemType": "appendix", "bookItemNumber": appendix_counter})
             meta_b64 = base64.b64encode(meta_json.encode("utf-8")).decode("ascii")
             appendix_meta = f"```{{=html}}\n<!-- quarto-file-metadata: {meta_b64} -->\n```\n\n"
         elif _is_unnumbered(text):
             start_idx = front_table_counter
             front_table_counter += _count_tables(text)
+            f_start_idx = front_figure_counter
+            front_figure_counter += _count_figures(text)
             ch_label, tbl_pfx = None, "0"
             appendix_meta = ""
         else:
             chapter_counter += 1
-            ch_label, tbl_pfx, start_idx = str(chapter_counter), str(chapter_counter), 0
+            ch_label, tbl_pfx, start_idx, f_start_idx = str(chapter_counter), str(chapter_counter), 0, 0
             appendix_meta = ""
 
         # Use the same chapter wrapper and automatic table IDs as the other writers,
@@ -90,6 +94,7 @@ def _markdown_sources(
             ch_label,
             tbl_prefix=tbl_pfx,
             table_start=start_idx,
+            figure_start=f_start_idx,
             strip_heading_numbers=False,
             path=entry,
         )
@@ -281,6 +286,11 @@ def _render_markdown(
         "filters": [
             {"at": "pre-ast", "path": resources["filters/table-layout.lua"].relative_to(workspace).as_posix()},
             {"at": "pre-ast", "path": resources["filters/task-checkbox.lua"].relative_to(workspace).as_posix()},
+            *(
+                [{"at": "post-render", "path": resources["filters/front-crossrefs.lua"].relative_to(workspace).as_posix()}]
+                if "filters/front-crossrefs.lua" in resources
+                else []
+            ),
         ],
         "execute": {"enabled": False},
     }

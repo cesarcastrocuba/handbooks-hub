@@ -233,6 +233,8 @@ def build_book(
         entry_texts = [(workspace / entry).read_text(encoding="utf-8") for entry in entries]
         depth = toc_depth(entry_texts)
 
+        rendered_entries = _prepare_render(workspace, entries, appendices=appendix_entries)
+
         title = str(book.get("title", ""))
         licenses = book.get("license", {})
         license_text = license_label(str(licenses.get("content", "")))
@@ -243,6 +245,7 @@ def build_book(
                 title=title,
                 license_text=license_text,
                 running_header=running_header,
+                appendix_start=getattr(rendered_entries, "appendix_start", None),
             ),
             encoding="utf-8",
         )
@@ -268,8 +271,6 @@ def build_book(
             encoding="utf-8",
         )
         resources["typst/front.typ"] = front_file
-
-        rendered_entries = _prepare_render(workspace, entries, appendices=appendix_entries)
 
         (workspace / "_quarto.yml").write_text(
             yaml.safe_dump(

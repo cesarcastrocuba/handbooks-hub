@@ -119,6 +119,10 @@ def _count_tables(text: str) -> int:
     return count
 
 
+def _count_figures(text: str) -> int:
+    return len([m for m in re.finditer(r"!\[[^\]]*\]\([^)]*\)\{[^}]*#fig-[A-Za-z0-9_-]+[^}]*\}", text)])
+
+
 FIGURE_PREFIX = re.compile(
     r"^Figure\s+(?P<label>[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*)\s*(?:[—–:]|-)\s*(?P<rest>.*)$",
     re.IGNORECASE,
@@ -138,6 +142,7 @@ def _transform_chapter(
     *,
     tbl_prefix: str | None = None,
     table_start: int = 0,
+    figure_start: int = 0,
     strip_heading_numbers: bool = True,
     path: str = "",
 ) -> str:
@@ -220,15 +225,16 @@ def _transform_chapter(
             line = f"{heading_match.group(1)} {_strip_heading_number(heading_match.group(2))}"
 
         # Figure prefix stripping and mismatch validation
-        if "![" in line and "{#fig-" in line:
+        if "![" in line and "#fig-" in line:
             def replace_figure(m: re.Match[str]) -> str:
                 nonlocal figure_number
                 alt = m.group("alt")
                 src = m.group("src")
                 attrs = m.group("attrs") or ""
-                if "{#fig-" in attrs:
+                if re.search(r"#fig-[A-Za-z0-9_-]+", attrs):
                     figure_number += 1
-                    expected = f"{ch_str}.{figure_number}" if ch_str else str(figure_number)
+                    assigned_fig = figure_start + figure_number
+                    expected = f"{ch_str}.{figure_number}" if ch_str else f"0.{assigned_fig}"
                     pm = FIGURE_PREFIX.match(alt.strip())
                     if pm:
                         label = pm.group("label")
@@ -239,7 +245,7 @@ def _transform_chapter(
                                     + (f" in {path}" if path else "")
                                 )
                         else:
-                            if label.casefold() != expected.casefold() and label.casefold() != f"0.{figure_number}":
+                            if label.casefold() != expected.casefold() and label.casefold() != str(figure_number).casefold():
                                 raise BuildError(
                                     f"figure caption label {label!r} does not match expected number {expected!r}"
                                     + (f" in {path}" if path else "")
@@ -258,7 +264,8 @@ def _transform_chapter(
             explicit_label = re.search(r"\{#tbl-([^}]+)\}\s*$", caption_text)
             clean_caption = re.sub(r"\s*\{[^}]*\}\s*$", "", caption_text).strip()
 
-            expected_tbl = f"{ch_str}.{table_number}" if ch_str else str(table_number)
+            assigned_num = table_start + table_number
+            expected_tbl = f"{ch_str}.{table_number}" if ch_str else f"0.{assigned_num}"
             tpm = TABLE_PREFIX.match(clean_caption)
             if tpm:
                 tbl_label = tpm.group("label")
@@ -269,7 +276,7 @@ def _transform_chapter(
                             + (f" in {path}" if path else "")
                         )
                 else:
-                    if tbl_label.casefold() != expected_tbl.casefold() and tbl_label.casefold() != f"0.{table_number}":
+                    if tbl_label.casefold() != expected_tbl.casefold() and tbl_label.casefold() != str(table_number).casefold():
                         raise BuildError(
                             f"table caption label {tbl_label!r} does not match expected number {expected_tbl!r}"
                             + (f" in {path}" if path else "")
@@ -279,7 +286,6 @@ def _transform_chapter(
             if explicit_label:
                 line = f": {clean_caption} {{#tbl-{explicit_label.group(1)}}}"
             else:
-                assigned_num = table_start + table_number
                 line = f": {clean_caption} {{#tbl-{actual_tbl_prefix}-{assigned_num}}}"
             output.extend(["", line, ""])
             previous = ""
@@ -330,6 +336,13 @@ def _rebase_images(text: str, directory: PurePosixPath) -> str:
     return "\n".join(lines)
 
 
+class RenderedEntries(list[str]):
+    appendix_start: int | None = None
+
+
+yaml.SafeDumper.add_representer(RenderedEntries, yaml.SafeDumper.represent_list)
+
+
 def _prepare_render(
     workspace: Path,
     entries: list[str],
@@ -351,19 +364,25 @@ def _prepare_render(
     chapter_counter = 0
     appendix_counter = 0
     front_table_counter = 0
+    front_figure_counter = 0
+    first_appendix_start = None
 
-    def get_assignment(entry: str, text: str) -> tuple[str | None, str, int]:
-        nonlocal chapter_counter, appendix_counter, front_table_counter
+    def get_assignment(entry: str, text: str) -> tuple[str | None, str, int, int]:
+        nonlocal chapter_counter, appendix_counter, front_table_counter, front_figure_counter, first_appendix_start
         if entry in appendix_set:
+            if first_appendix_start is None:
+                first_appendix_start = chapter_counter + 1
             appendix_counter += 1
             letter = _appendix_letter(appendix_counter)
-            return letter, letter.lower(), 0
+            return letter, letter.lower(), 0, 0
         if _is_unnumbered(text):
-            start = front_table_counter
+            t_start = front_table_counter
             front_table_counter += _count_tables(text)
-            return None, "0", start
+            f_start = front_figure_counter
+            front_figure_counter += _count_figures(text)
+            return None, "0", t_start, f_start
         chapter_counter += 1
-        return str(chapter_counter), str(chapter_counter), 0
+        return str(chapter_counter), str(chapter_counter), 0, 0
 
     first = entries[0]
     first_path = workspace / first
@@ -371,12 +390,13 @@ def _prepare_render(
         first_text = first_path.read_text(encoding="utf-8")
     except OSError as exc:
         raise BuildError(f"cannot read staged chapter {first}: {exc}") from exc
-    ch_label, tbl_pfx, start_idx = get_assignment(first, first_text)
+    ch_label, tbl_pfx, start_idx, f_start_idx = get_assignment(first, first_text)
     index_text = _transform_chapter(
         first_text,
         ch_label,
         tbl_prefix=tbl_pfx,
         table_start=start_idx,
+        figure_start=f_start_idx,
         path=first,
     )
     first_path.write_text(index_text, encoding="utf-8")
@@ -384,23 +404,25 @@ def _prepare_render(
         _rebase_images(index_text, PurePosixPath(first).parent), encoding="utf-8"
     )
 
-    rendered: list[str] = ["index.qmd"]
+    rendered = RenderedEntries(["index.qmd"])
     for entry in entries[1:]:
         path = workspace / entry
         try:
             text = path.read_text(encoding="utf-8")
         except OSError as exc:
             raise BuildError(f"cannot read staged chapter {entry}: {exc}") from exc
-        ch_label, tbl_pfx, start_idx = get_assignment(entry, text)
+        ch_label, tbl_pfx, start_idx, f_start_idx = get_assignment(entry, text)
         transformed = _transform_chapter(
             text,
             ch_label,
             tbl_prefix=tbl_pfx,
             table_start=start_idx,
+            figure_start=f_start_idx,
             path=entry,
         )
         path.write_text(transformed, encoding="utf-8")
         rendered.append(entry)
+    rendered.appendix_start = first_appendix_start
     return rendered
 
 def _render_config(
@@ -426,10 +448,11 @@ def _render_config(
         raise BuildError("publishing/_quarto.yml book section must be a mapping")
     book_config["title"] = book["title"]
     if appendices:
-        book_config["chapters"] = [e for e in entries if e not in appendices]
-        book_config["appendices"] = list(appendices)
+        first_app_idx = min(entries.index(a) for a in appendices)
+        book_config["chapters"] = list(entries[:first_app_idx])
+        book_config["appendices"] = list(entries[first_app_idx:])
     else:
-        book_config["chapters"] = entries
+        book_config["chapters"] = list(entries)
     if edition_date is not None:
         # The edition date comes from the source commit, never a hand-kept value.
         book_config["date"] = edition_date
@@ -449,6 +472,11 @@ def _render_config(
         {"at": "pre-ast", "path": (resources["filters/task-checkbox.lua"]).relative_to(workspace).as_posix()},
         {"at": "pre-ast", "path": (resources["filters/docx-callouts.lua"]).relative_to(workspace).as_posix()},
     ]
+    if "filters/front-crossrefs.lua" in resources:
+        config["filters"].append({
+            "at": "post-render",
+            "path": resources["filters/front-crossrefs.lua"].relative_to(workspace).as_posix(),
+        })
 
     if "filters/index-resources.lua" in resources:
         config["filters"].insert(0, {
@@ -475,10 +503,10 @@ def _render_config(
     # cover is laid out; the generated cover and Contents open the body.
     header_includes = [
         typst_tokens.relative_to(workspace).as_posix(),
-        staged("typst/handbook-typst.typ"),
     ]
     if "typst/book-data.typ" in resources:
         header_includes.append(staged("typst/book-data.typ"))
+    header_includes.append(staged("typst/handbook-typst.typ"))
     typst_format["include-in-header"] = header_includes
     if "typst/front.typ" in resources:
         typst_format["include-before-body"] = staged("typst/front.typ")
