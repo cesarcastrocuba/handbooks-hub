@@ -61,6 +61,8 @@ def _markdown_sources(
     appendix_counter = 0
     front_table_counter = 0
     front_figure_counter = 0
+    bm_table_counter = 0
+    bm_figure_counter = 0
 
     for entry in entries:
         try:
@@ -76,12 +78,20 @@ def _markdown_sources(
             meta_b64 = base64.b64encode(meta_json.encode("utf-8")).decode("ascii")
             appendix_meta = f"```{{=html}}\n<!-- quarto-file-metadata: {meta_b64} -->\n```\n\n"
         elif _is_unnumbered(text):
-            start_idx = front_table_counter
-            front_table_counter += _count_tables(text)
-            f_start_idx = front_figure_counter
-            front_figure_counter += _count_figures(text)
-            ch_label, tbl_pfx = None, "0"
-            appendix_meta = ""
+            if chapter_counter > 0 or appendix_counter > 0:
+                start_idx = bm_table_counter
+                bm_table_counter += _count_tables(text)
+                f_start_idx = bm_figure_counter
+                bm_figure_counter += _count_figures(text)
+                ch_label, tbl_pfx = "BM", "bm"
+                appendix_meta = ""
+            else:
+                start_idx = front_table_counter
+                front_table_counter += _count_tables(text)
+                f_start_idx = front_figure_counter
+                front_figure_counter += _count_figures(text)
+                ch_label, tbl_pfx = None, "0"
+                appendix_meta = ""
         else:
             chapter_counter += 1
             ch_label, tbl_pfx, start_idx, f_start_idx = str(chapter_counter), str(chapter_counter), 0, 0

@@ -192,14 +192,25 @@ class NumberingParityUnitTests(unittest.TestCase):
 
 : Appendix Table One
 """
+        # Conclusions back matter table (unnumbered)
+        conclusions_text = """\
+# Conclusions {.unnumbered}
+
+| K | L |
+|---|---|
+| 11 | 12 |
+
+: Conclusions Table One
+"""
         with tempfile.TemporaryDirectory() as temp:
             ws = Path(temp)
             (ws / "intro.qmd").write_text(intro_text, encoding="utf-8")
             (ws / "role.qmd").write_text(role_text, encoding="utf-8")
             (ws / "ch01.qmd").write_text(ch1_text, encoding="utf-8")
+            (ws / "conclusions.qmd").write_text(conclusions_text, encoding="utf-8")
             (ws / "app-a.qmd").write_text(app_text, encoding="utf-8")
 
-            entries = ["intro.qmd", "role.qmd", "ch01.qmd", "app-a.qmd"]
+            entries = ["intro.qmd", "role.qmd", "ch01.qmd", "conclusions.qmd", "app-a.qmd"]
             rendered = _prepare_render(ws, entries, appendices=["app-a.qmd"])
 
             # Intro tables get tbl-0-1, tbl-0-2
@@ -214,6 +225,10 @@ class NumberingParityUnitTests(unittest.TestCase):
             # Chapter 1 table starts at tbl-1-1 (front matter does not count)
             ch1_transformed = (ws / "ch01.qmd").read_text(encoding="utf-8")
             self.assertIn("{#tbl-1-1}", ch1_transformed)
+
+            # Conclusions unnumbered back-matter table gets tbl-bm-1
+            conclusions_transformed = (ws / "conclusions.qmd").read_text(encoding="utf-8")
+            self.assertIn("{#tbl-bm-1}", conclusions_transformed)
 
             # Appendix A table gets tbl-a-1
             app_transformed = (ws / "app-a.qmd").read_text(encoding="utf-8")

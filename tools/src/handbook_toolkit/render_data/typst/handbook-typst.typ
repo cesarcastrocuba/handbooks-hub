@@ -117,18 +117,42 @@
 #let handbook-front-fig = counter("handbook-front-fig")
 
 #show figure.where(kind: "quarto-float-tbl"): it => context {
-  let ch = counter(heading).get().first()
-  if ch == 0 {
-    handbook-front-tbl.step()
+  let is-bm = it.has("label") and str(it.label).starts-with("tbl-bm-")
+  let is-front = it.has("label") and str(it.label).starts-with("tbl-0-")
+  if is-bm {
+    let num-str = "BM." + str(it.label).slice("tbl-bm-".len())
+    show figure.caption: c => align(center)[#text(style: "italic", font: hb-font, size: 9pt, fill: hb-muted)[#c.supplement #num-str: #c.body]]
+    it
+  } else if is-front {
+    let num-str = "0." + str(it.label).slice("tbl-0-".len())
+    show figure.caption: c => align(center)[#text(style: "italic", font: hb-font, size: 9pt, fill: hb-muted)[#c.supplement #num-str: #c.body]]
+    it
+  } else {
+    let ch = counter(heading).get().first()
+    if ch == 0 {
+      handbook-front-tbl.step()
+    }
+    it
   }
-  it
 }
 #show figure.where(kind: "quarto-float-fig"): it => context {
-  let ch = counter(heading).get().first()
-  if ch == 0 {
-    handbook-front-fig.step()
+  let is-bm = it.has("label") and str(it.label).starts-with("fig-bm-")
+  let is-front = it.has("label") and str(it.label).starts-with("fig-0-")
+  if is-bm {
+    let num-str = "BM." + str(it.label).slice("fig-bm-".len())
+    show figure.caption: c => align(center)[#text(style: "italic", font: hb-font, size: 9pt, fill: hb-muted)[#c.supplement #num-str: #c.body]]
+    it
+  } else if is-front {
+    let num-str = "0." + str(it.label).slice("fig-0-".len())
+    show figure.caption: c => align(center)[#text(style: "italic", font: hb-font, size: 9pt, fill: hb-muted)[#c.supplement #num-str: #c.body]]
+    it
+  } else {
+    let ch = counter(heading).get().first()
+    if ch == 0 {
+      handbook-front-fig.step()
+    }
+    it
   }
-  it
 }
 
 #show figure.where(kind: "quarto-float-tbl"): set figure(numbering: n => context {
@@ -179,7 +203,15 @@
     let app-start = handbook-appendix-state.at(loc)
     let is-tbl = it.element.kind == "quarto-float-tbl" or it.element.kind == table
     let sup = if it.element.supplement != auto { it.element.supplement } else if is-tbl { "Table" } else { "Figure" }
-    let num-str = if ch == 0 {
+    let num-str = if it.element.has("label") and str(it.element.label).starts-with("tbl-bm-") {
+      "BM." + str(it.element.label).slice("tbl-bm-".len())
+    } else if it.element.has("label") and str(it.element.label).starts-with("fig-bm-") {
+      "BM." + str(it.element.label).slice("fig-bm-".len())
+    } else if it.element.has("label") and str(it.element.label).starts-with("tbl-0-") {
+      "0." + str(it.element.label).slice("tbl-0-".len())
+    } else if it.element.has("label") and str(it.element.label).starts-with("fig-0-") {
+      "0." + str(it.element.label).slice("fig-0-".len())
+    } else if ch == 0 {
       let f_num = if is-tbl { handbook-front-tbl.at(loc).first() + 1 } else { handbook-front-fig.at(loc).first() + 1 }
       "0." + str(f_num)
     } else if app-start != none and ch >= app-start {

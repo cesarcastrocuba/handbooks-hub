@@ -365,10 +365,12 @@ def _prepare_render(
     appendix_counter = 0
     front_table_counter = 0
     front_figure_counter = 0
+    bm_table_counter = 0
+    bm_figure_counter = 0
     first_appendix_start = None
 
     def get_assignment(entry: str, text: str) -> tuple[str | None, str, int, int]:
-        nonlocal chapter_counter, appendix_counter, front_table_counter, front_figure_counter, first_appendix_start
+        nonlocal chapter_counter, appendix_counter, front_table_counter, front_figure_counter, bm_table_counter, bm_figure_counter, first_appendix_start
         if entry in appendix_set:
             if first_appendix_start is None:
                 first_appendix_start = chapter_counter + 1
@@ -376,11 +378,18 @@ def _prepare_render(
             letter = _appendix_letter(appendix_counter)
             return letter, letter.lower(), 0, 0
         if _is_unnumbered(text):
-            t_start = front_table_counter
-            front_table_counter += _count_tables(text)
-            f_start = front_figure_counter
-            front_figure_counter += _count_figures(text)
-            return None, "0", t_start, f_start
+            if chapter_counter > 0 or appendix_counter > 0:
+                t_start = bm_table_counter
+                bm_table_counter += _count_tables(text)
+                f_start = bm_figure_counter
+                bm_figure_counter += _count_figures(text)
+                return "BM", "bm", t_start, f_start
+            else:
+                t_start = front_table_counter
+                front_table_counter += _count_tables(text)
+                f_start = front_figure_counter
+                front_figure_counter += _count_figures(text)
+                return None, "0", t_start, f_start
         chapter_counter += 1
         return str(chapter_counter), str(chapter_counter), 0, 0
 

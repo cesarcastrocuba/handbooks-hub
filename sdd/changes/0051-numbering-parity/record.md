@@ -56,7 +56,7 @@ nor `docs/decisions.md` is modified.
    - With continuous front matter numbering, HTML, DOCX, and PDF all render `Table 0.1` through `Table 0.7` continuously across the unnumbered front-matter group, resolving the duplicate `Table 1, 2, 3, 1, 2, 3, 4` issue in `tables.html` and matching v3.0.0.
    - Sample book change: `handbook-sample-01` front matter table in introduction changed from `Table 1` to `Table 0.1`.
    - Sample heading change: Appendix heading `Appendix A — Brief and Outline Templates` in sample is adapted to `Brief and Outline Templates` because the appendix letter is supplied by Quarto/Typst.
-   - Conclusions back-matter table: renders as `Table 19.1` in the new build vs `Table BM.1` in v3.0.0. Uniqueness is guaranteed (no other table has 19.1 in the book), and no prose references point to it.
+   - Conclusions back-matter table: renders as `Table BM.1` in HTML, DOCX, and Typst PDF, matching v3.0.0's `Table BM.1`. Unnumbered back-matter files (appearing after numbered chapters/appendices) receive the `BM` chapter prefix and `tbl-bm-` label prefix.
    - Note on desktop Word verification: Owner desktop Word approval is required before the toolkit 0.12.0 tag, but does not block merging this PR.
 
 5. **Sample Book Regression (`handbook-sample-01`)**:
@@ -88,12 +88,12 @@ DOCX BODY Figure counts 121 121 full ordered equality True
 DOCX BODY Figure chapter/appendix ordered equality True
 DOCX BODY Figure other labels [] => []
 DOCX LIST Figure counts 121 121 core equality True
-HTML Table counts 263 263 full ordered equality False
+HTML Table counts 263 263 full ordered equality True
 HTML Table chapter/appendix count 255 ordered equality True
-HTML Table other labels ['0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', 'BM.1'] => ['0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '19.1']
-DOCX BODY Table counts 263 263 full ordered equality False
+HTML Table other labels ['0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', 'BM.1'] => ['0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', 'BM.1']
+DOCX BODY Table counts 263 263 full ordered equality True
 DOCX BODY Table chapter/appendix ordered equality True
-DOCX BODY Table other labels ['0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', 'BM.1'] => ['0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '19.1']
+DOCX BODY Table other labels ['0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', 'BM.1'] => ['0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', 'BM.1']
 DOCX LIST Table counts 263 263 core equality True
 PDF Figure appendix letter labels ['A.1']
 PDF Table appendix letter labels ['A.1', 'A.2', 'B.1', 'B.10', 'B.11', 'B.12', 'B.13', 'B.14', 'B.2', 'B.3', 'B.4', 'B.5', 'B.6', 'B.7', 'B.8', 'B.9', 'C.1', 'D.1', 'E.1', 'E.10', 'E.2', 'E.3', 'E.4', 'E.5', 'E.6', 'E.7', 'E.8', 'E.9', 'F.1', 'F.10', 'F.11', 'F.2', 'F.3', 'F.4', 'F.5', 'F.6', 'F.7', 'F.8', 'F.9', 'G.1', 'H.1', 'H.10', 'H.11', 'H.12', 'H.13', 'H.14', 'H.15', 'H.16', 'H.17', 'H.18', 'H.2', 'H.3', 'H.4', 'H.5', 'H.6', 'H.7', 'H.8', 'H.9', 'I.1', 'I.10', 'I.11', 'I.12', 'I.13', 'I.14', 'I.15', 'I.16', 'I.17', 'I.18', 'I.2', 'I.3', 'I.4', 'I.5', 'I.6', 'I.7', 'I.8', 'I.9', 'J.1', 'J.2', 'J.3', 'J.4', 'J.5', 'J.6', 'J.7']
@@ -104,7 +104,7 @@ Across all 18 numbered chapters and 10 appendices (A–J):
 - **121 figures** match v3.0.0 100% identically in sequence and numbering in HTML, DOCX, and PDF.
 - **255 captioned chapter and appendix tables** match v3.0.0 100% identically in sequence and numbering (`Table 1.1`–`Table 18.8`, `Table A.1`–`Table J.7`).
 - **Front matter tables**: `Table 0.1` through `Table 0.7` continuous in HTML, DOCX, and PDF LoT/LoF.
-- **Back-matter table**: The 1 table in `conclusions.qmd` is `Table 19.1` in the new build vs `Table BM.1` in v3.0.0 (no prose references exist).
+- **Back-matter table**: The 1 table in `conclusions.qmd` is `Table BM.1` in HTML, DOCX, and Typst PDF, matching v3.0.0's `Table BM.1` 100%. All 263 tables achieve full ordered equality.
 
 ## Test Suite and Verification
 
