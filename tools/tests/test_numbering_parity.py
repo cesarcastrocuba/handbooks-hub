@@ -1,6 +1,7 @@
 """Regression and parity tests for figure, table and appendix numbering (0051)."""
 from pathlib import Path
 import re
+import shutil
 import sys
 import tempfile
 import unittest
@@ -19,6 +20,11 @@ from handbook_toolkit.build_staging import (
     _transform_chapter,
 )
 from handbook_toolkit.build_types import BuildError
+
+QUARTO = shutil.which("quarto")
+PDFINFO = shutil.which("pdfinfo")
+PDFTOTEXT = shutil.which("pdftotext")
+BUILD_AVAILABLE = QUARTO is not None and PDFINFO is not None
 
 
 class NumberingParityUnitTests(unittest.TestCase):
@@ -249,6 +255,7 @@ class NumberingParityUnitTests(unittest.TestCase):
             self.assertEqual(rendered["book"]["chapters"], ["intro.qmd", "ch01.qmd", "conclusions.qmd"])
             self.assertEqual(rendered["book"]["appendices"], ["app-a.qmd", "references.qmd"])
 
+    @unittest.skipUnless(BUILD_AVAILABLE, "Quarto and pdfinfo are required for the real build")
     def test_negative_build_mismatched_class_first_figure(self) -> None:
         import subprocess
         from test_build import make_book, build_book, PROFILE
@@ -265,6 +272,7 @@ class NumberingParityUnitTests(unittest.TestCase):
                 build_book(repo, new_commit, root / "dist", profile=PROFILE, mode="chapter")
             self.assertIn("figure caption label '9.9' does not match expected number '1.1'", str(ctx.exception))
 
+    @unittest.skipUnless(BUILD_AVAILABLE and PDFTOTEXT, "Quarto, pdfinfo, and pdftotext are required for the PDF build test")
     def test_pdf_appendix_letter_numbering(self) -> None:
         import subprocess
         from test_build import make_book, build_book, PROFILE
