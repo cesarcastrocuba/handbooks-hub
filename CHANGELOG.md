@@ -7,11 +7,19 @@ semantic versioning once the toolkit is published.
 
 ### Added
 
-- Opt-in glossary definition pointers and a final analytic Index (change `0053`, G9/G4), with declared glossary/vocabulary inputs, cross-edition internal links and protected print rows; prose term auto-linking remains off.
+- Book-owned extra release assets (change `0057`, gap G6): template `release.yml` optionally runs `make release-assets RELEASE_ASSETS_DIR="$RUNNER_TEMP/extra-assets"` when defined in the book's `Makefile`, verifies that the working tree remains clean, validates regular file constraints (names matching `^[A-Za-z0-9][A-Za-z0-9._-]*$`, caps of max 100 files, 10 MB per file, 50 MB total, and no collisions with publication payloads), packages them deterministically into `book-extras.zip`, and writes `EXTRAS-SHA256SUMS.txt`. Books without the target publish only the standard seven files.
+
+## [0.13.0] - Unreleased
+
+Toolkit release prepared by change `0058`: changes `0052`, `0053` and `0055`. The tag
+`toolkit-v0.13.0` needs the Owner's approval and desktop Word check, because the DOCX gains links,
+the Index and recompressed images.
+
+### Added
 
 - Opt-in `publication.cross_reference_links`: staged, whitelist-only prose navigation with stable section anchors and cross-page HTML links (change `0052`, G8); existing books remain opted out.
-- Lossless artifact size optimization (`HUB-DEC-045`, change `0055`): staged PNG diagrams are losslessly recompressed (filter 0, zlib level 9) with exact pixel-identity verification before Quarto rendering, and ZIP distributions (Word `.docx` package and HTML site archive `book-html.zip`) are compressed at zlib level 9. The `--no-optimize` build flag opts out of both PNG recompression and ZIP level 9 compression.
-- Book-owned extra release assets (change `0057`, gap G6): template `release.yml` optionally runs `make release-assets RELEASE_ASSETS_DIR="$RUNNER_TEMP/extra-assets"` when defined in the book's `Makefile`, verifies that the working tree remains clean, validates regular file constraints (names matching `^[A-Za-z0-9][A-Za-z0-9._-]*$`, caps of max 100 files, 10 MB per file, 50 MB total, and no collisions with publication payloads), packages them deterministically into `book-extras.zip`, and writes `EXTRAS-SHA256SUMS.txt`. Books without the target publish only the standard seven files.
+- Opt-in glossary definition pointers and a final analytic Index (change `0053`, G9/G4), with declared glossary/vocabulary inputs, cross-edition internal links and protected print rows; prose term auto-linking remains off.
+- Lossless artifact size optimization (change `0055`), on by default: staged PNG diagrams are losslessly recompressed (filter 0, zlib level 9) with exact pixel-identity verification before Quarto rendering, and ZIP distributions (Word `.docx` package and HTML site archive `book-html.zip`) are compressed at zlib level 9. The `--no-optimize` build flag opts out of both PNG recompression and ZIP level 9 compression.
 
 ## [1.7.0] - Unreleased
 
