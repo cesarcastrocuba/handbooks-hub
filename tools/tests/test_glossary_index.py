@@ -152,6 +152,31 @@ class GlossaryIndexTests(unittest.TestCase):
                 p.write_text(text)
             self.assertIn("{#" + slug + "}", (w / "m/terms.qmd").read_text())
 
+    def test_word_and_html_leave_glossary_code_examples_unchanged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            w = Path(tmp)
+            b, g, entries, texts, nav = self.fixture(w)
+            name = stage_glossary_index(w, b, g, nav, texts)
+            entries.append(name)
+            (w / "index.qmd").write_text("# Home\n")
+            code = "`[Latency](#gl-latency)`\n\n````md\n[Latency](#gl-latency)\n```\n[Latency](#gl-latency)\n````\n"
+            source = w / "m/ch.qmd"
+            source.write_text(source.read_text() + "\n" + code)
+            word_glossary_sources(w, entries, nav)
+            self.assertIn(code, source.read_text())
+            rewrite_glossary_links(w, entries, nav)
+            self.assertIn(code, source.read_text())
+
+    def test_glossary_root_alias_rebases_author_links(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            w = Path(tmp)
+            b, g, entries, texts, nav = self.fixture(w)
+            nav.pages["gl-latency"] = "./index.qmd"
+            rewrite_glossary_links(w, ["m/ch.qmd"], nav, "handbook-source-index.qmd")
+            self.assertIn(
+                "../handbook-source-index.qmd#gl-latency", (w / "m/ch.qmd").read_text()
+            )
+
     def test_code_is_excluded_and_front_back_are_not_index_locations(self):
         with tempfile.TemporaryDirectory() as tmp:
             w = Path(tmp)

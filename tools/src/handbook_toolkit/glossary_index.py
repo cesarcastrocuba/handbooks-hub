@@ -598,12 +598,27 @@ def word_glossary_sources(
     for entry in dict.fromkeys(["index.qmd", *entries]):
         path = workspace / entry
         text = path.read_text()
-        # Generated span identifiers and fragment links are the only replacements.
-        changed = re.sub(
-            r"(?<=\{#)gl-[A-Za-z0-9_-]+|(?<=\]\(#)gl-[A-Za-z0-9_-]+",
-            lambda m: mapping.get(m[0], m[0]),
-            text,
-        )
+        # Encode actual spans/links, never code examples of the same syntax.
+        visible = _visible(text)
+        lines = text.split("\n")
+        for i, line in enumerate(lines):
+            if i not in visible:
+                continue
+            code = [(a, b) for a, b in _protected_spans(line) if line[a : a + 1] == "`"]
+
+            def encode(match: re.Match[str]) -> str:
+                return (
+                    match[0]
+                    if _overlaps(match.span(), code)
+                    else mapping.get(match[0], match[0])
+                )
+
+            lines[i] = re.sub(
+                r"(?<=\{#)gl-[A-Za-z0-9_-]+|(?<=\]\(#)gl-[A-Za-z0-9_-]+",
+                encode,
+                line,
+            )
+        changed = "\n".join(lines)
         if changed != text:
             originals[path] = text
             path.write_text(changed)
