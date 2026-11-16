@@ -83,10 +83,11 @@ roll back as in section 3.
 Neither gate above shows what a reader will see. A release is immutable, so the editions are
 inspected before anything is tagged (`HUB-DEC-036`).
 
-Every pull request runs the `edition-preview` job of `ci.yml`. It builds the template book and the
-sample book with the pull request's toolkit, as a `--preview` build that cannot pass for a release,
-and uploads one artifact per book, `edition-preview-template` and `edition-preview-sample`, kept for
-14 days:
+Every pull request runs the `edition-preview` job of `ci.yml`. It builds the template book, the
+sample book and the Solutions Architecture Handbook (the platform's first full-size book, Phase 6)
+with the pull request's toolkit, as a `--preview` build that cannot pass for a release, and uploads
+one artifact per book, `edition-preview-template`, `edition-preview-sample` and
+`edition-preview-solutions-architecture`, kept for 14 days:
 
 | Path in the artifact | What it is |
 | --- | --- |

@@ -195,7 +195,7 @@ jobs:
   edition-preview:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 45
     permissions:
       contents: read
     strategy:
@@ -205,6 +205,8 @@ jobs:
           - book: template
           - book: sample
             repository: cesarcastrocuba/handbook-sample-01
+          - book: solutions-architecture
+            repository: cesarcastrocuba/handbook-solutions-architecture
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

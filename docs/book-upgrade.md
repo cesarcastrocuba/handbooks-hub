@@ -3,6 +3,24 @@
 Books pin exact toolkit and profile versions. Upgrades are deliberate changes reviewed like any
 other contribution; nothing upgrades automatically.
 
+## Example: toolkit 0.11.0 to 0.12.0 and profile 1.0.0 to 1.1.0
+
+1. Set `toolkit: "0.12.0"` and the profile `version: "1.1.0"` in `book.yaml`, and pin
+   `0824ddfaebd28f170f157fcb38641c7dc65d6c20` (`toolkit-v0.12.0`) in `requirements.txt`. Profile `1.0.0`
+   stays resolvable; `1.1.0` only relaxes rules (qualified callout titles, the appendix rule and the
+   unit relaxations of `HUB-DEC-044`), so no manuscript text has to change.
+2. Update the book's release workflow from template 1.7.0: the version input accepts `X.Y.Z` or
+   `X.Y.Z-rc.N`, and a pre-release is published with `--prerelease --latest=false` while the Pages
+   deployment and the deployed-site check still run.
+3. Figure and table numbering now follows the displayed chapters (change `0051`). Tables and
+   figures in unnumbered front matter become `0.1`, `0.2`, … (the sample's `Table 1` becomes
+   `Table 0.1`), appendices use their letter (`Table A.1`) in every edition, and unnumbered back
+   matter uses `BM.1`. A caption that starts with its own label (`Figure 1.1 — …`) keeps the text
+   after the label; a label that disagrees with the figure's position fails the build. Rebuild
+   once and check the List of Tables and List of Figures in the PDF and DOCX.
+4. Reinstall dependencies, run the book's checks and build its editions once; open the DOCX in
+   desktop Word before the next tag.
+
 ## Example: toolkit 0.10.3 to 0.11.0
 
 1. Set `toolkit: "0.11.0"` in `book.yaml` and pin

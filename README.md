@@ -5,7 +5,7 @@ contracts, the versioned Python toolkit, the standard editorial profile, the boo
 catalog and the static portal. Each book repository owns its canonical manuscript and publishes its
 own reading site and release downloads.
 
-Status: **Phases 1 to 5 complete, with the preview-aligned release in toolkit `0.11.0`.** See
+Status: **Phases 1 to 5 complete; Phase 6 in progress, with toolkit `0.12.0`.** See
 [`STATUS.md`](STATUS.md) and the [implementation plan](docs/implementation-plan.md).
 
 ## Who this is for
@@ -52,10 +52,10 @@ activation and troubleshooting, start with [`docs/setup.md`](docs/setup.md).
 | --- | --- |
 | `docs/` | Architecture, contracts, decisions, assumptions, setup guide and phased plan |
 | `docs/design.md` | Design contract: colour roles, contrast floors, the brand typeface and per-surface mapping |
-| `profiles/standard/` | Approved standard editorial profile `1.0.0` with per-rule validation classification |
+| `profiles/standard/` | Approved standard editorial profile `1.1.0` with per-rule validation classification |
 | `tools/` | Versioned `handbook-toolkit` package with deterministic validators and tests |
 | `tools/src/handbook_toolkit/schemas/` | JSON Schema contracts for books, profiles and the catalog, shipped inside the toolkit package |
-| `template/book/` | Book template `1.6.0` with publishing config, licenses, workflows, search/contribution actions and `make check`/`build`/`full` |
+| `template/book/` | Book template `1.7.0` with publishing config, licenses, workflows, search/contribution actions and `make check`/`build`/`full` |
 | `catalog/` | Catalog of approved book releases |
 | `tools/src/handbook_toolkit/render_data/portal/` | Packaged Quarto guide pages, living Design page and library templates; opt-in candidate behind the page-weight parity gate |
 | `docs/publication-build.md` | Local seven-file build with staging, payload inspection and atomic finalization |

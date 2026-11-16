@@ -172,10 +172,13 @@ class EditionPreviewJobTests(unittest.TestCase):
         self.assertEqual(self.job["if"], "github.event_name == 'pull_request'")
         self.assertEqual(self.job["permissions"], {"contents": "read"})
 
-    def test_it_previews_the_template_and_the_sample_independently(self) -> None:
+    def test_it_previews_the_template_and_the_books_independently(self) -> None:
         strategy = self.job["strategy"]
         self.assertFalse(strategy["fail-fast"])
-        self.assertEqual([entry["book"] for entry in strategy["matrix"]["include"]], ["template", "sample"])
+        self.assertEqual(
+            [entry["book"] for entry in strategy["matrix"]["include"]],
+            ["template", "sample", "solutions-architecture"],
+        )
 
     def test_template_job_uploads_portal_parity_and_screenshots(self) -> None:
         step=next(step for step in self.job['steps'] if step.get('name')=='Preview both portal engines and their parity')

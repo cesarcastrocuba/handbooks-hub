@@ -5,6 +5,14 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+## [1.7.0] - Unreleased
+
+Template release prepared by change `0056`. Template `1.7.0` pins toolkit `0.12.0` at
+`0824ddfaebd28f170f157fcb38641c7dc65d6c20` (`toolkit-v0.12.0` once the Owner approves the tag) and
+standard profile `1.1.0`. The template mirror and tag are published by the coordinator after the
+merge and the Owner's approval. Hub CI's edition preview also builds the Solutions Architecture
+Handbook.
+
 ### Changed
 
 - Template `release.yml` accepts pre-release versions `X.Y.Z-rc.N` alongside stable `X.Y.Z`, publishing pre-releases with `--prerelease --latest=false` while keeping Pages deployment and site verification active (Gap G1).
