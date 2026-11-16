@@ -9,7 +9,7 @@ No toolkit version bump or tag is created here; this change ships with toolkit 0
 
 ## Pins and Scope
 
-- **Hub Base**: `12b83f1d2fa7847c2fe668dcbb809c999335a092` (`origin/main`, merge of PR #84).
+- **Hub Base**: `12b83f1bf2c20f9af7dc95ccda16e9da7a2769a7` (`origin/main`, merge of PR #84).
 - **Branch / Worktree**: `feat/0050-profile-1.1.0`, `/home/ubuntu/github/handbooks-hub.worktrees/profile110`.
 - **Write set**:
   - `profiles/standard/profile.yaml` (canonical profile updated to version 1.1.0)
@@ -51,7 +51,7 @@ The template's `book.yaml` keeps profile 1.0.0 for now.
      - A unit may contain multiple closing elements of the same kind (e.g. two `**Example.**` paragraphs in `ch03` and `ch17`).
      - A label body may be a block list following the label paragraph (e.g. `**What it includes.**` followed by bullet items in `ch06`).
      - The unit scanner ignores text inside table cells (e.g. Table cell containing `Example` in `ch16`).
-     - Bold paragraph labels inside matching heading sections (e.g. `**Worked example.**` narrative inside `## 17.5 Worked Example`) are recognized as section body prose rather than wrong-form headings.
+     - Bold paragraph labels inside matching heading sections (e.g. `**Worked example.**` narrative inside `## 17.5 Worked Example`) are recognized as section body prose rather than wrong-form headings. **Note:** This fourth relaxation is beyond the three named in `HUB-DEC-044 (2)` and needs Owner confirmation before the toolkit 0.12.0 tag.
    - Under profile 1.0.0, strict unit rules remain unchanged.
 
 4. **Version Resolution & Distribution**:
@@ -100,15 +100,15 @@ In `/home/ubuntu/github/handbook-sample-01` (at commit `8ed1b7035430ab3dc25fb65d
 
 ## Hub Verification Evidence
 
-In worktree `/home/ubuntu/github/handbooks-hub.worktrees/profile110`:
+In worktree `/home/ubuntu/github/handbooks-hub.worktrees/profile110` using dedicated virtual environment built from `requirements-dev.txt` (`.venv/bin/python`):
 - **Unit & Integration Tests**:
-  `make test PYTHON=/tmp/codex-pr84-venv/bin/python`
-  **Ran 448 tests in 286.041s, OK (skipped=3)**.
+  `make test PYTHON=.venv/bin/python`
+  **Ran 454 tests in 308.066s, OK (skipped=3)**.
 - **Fast Gate Verification**:
-  `make verify PYTHON=/tmp/codex-pr84-venv/bin/python`
+  `make verify PYTHON=.venv/bin/python`
   **VERIFY: 5 check(s), 0 problem(s)**.
 - **Full Gate Verification**:
-  `make verify-full PYTHON=/tmp/codex-pr84-venv/bin/python`
+  `make verify-full PYTHON=.venv/bin/python`
   **VERIFY (full): 7 check(s), 0 problem(s)**.
 - **Whitespace / Formatting**:
   `git diff --check`: **Clean, exit code 0**.
