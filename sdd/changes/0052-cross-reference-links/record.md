@@ -36,7 +36,7 @@ brief. Terminal full stops after chapter numbers work; value ranges stay plain a
 
 No glossary auto-linking, glossary pointers or analytic Index: change 0053 owns those features.
 The opt-in path gives unnumbered captioned tables file-scoped IDs to avoid collisions with numbered
-chapter labels before change 0051 lands. It does not change displayed figure/table numbering.
+chapter labels before change 0051 lands. Unnumbered table IDs use a short file hash so Pandoc/Word cannot truncate them. The runtime fixture covers an unnumbered front table. It does not change displayed figure/table numbering.
 
 ## Verification
 

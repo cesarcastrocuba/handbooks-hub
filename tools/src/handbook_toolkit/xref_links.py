@@ -10,6 +10,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 import posixpath
+import hashlib
 import re
 
 from .build_types import BuildError
@@ -956,7 +957,7 @@ def stage_cross_references(workspace: Path, entries: list[str]) -> Registry:
                         f"{chapter}-{table_number}"
                         if chapter
                         else "nav-"
-                        + re.sub(r"[^a-z0-9]+", "-", entry.lower()).strip("-")
+                        + hashlib.sha256(entry.encode()).hexdigest()[:12]
                         + f"-{table_number}"
                     )
                 )

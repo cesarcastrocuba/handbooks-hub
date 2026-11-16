@@ -1045,6 +1045,10 @@ class CrossReferenceBuildTests(unittest.TestCase):
             second.write_text(content)
             reading = repo / "manuscript/book.yml"
             order = yaml.safe_load(reading.read_text());order["chapters"].append("chapters/two.qmd")
+            intro = repo / "manuscript/front-matter/introduction.qmd"
+            intro.parent.mkdir()
+            intro.write_text("# Welcome {.unnumbered}\n\n| A | B |\n| --- | --- |\n| C | D |\n\n: Opening summary.\n")
+            order["front"] = ["front-matter/introduction.qmd"]
             reading.write_text(yaml.safe_dump(order))
             commit = commit_all(repo)
             output = root / "dist"
@@ -1072,6 +1076,7 @@ class CrossReferenceBuildTests(unittest.TestCase):
             bookmarks = {node.get(W+"name") for node in document.iter(W+"bookmarkStart")}
             anchors = [node.get(W+"anchor") for node in document.iter(W+"hyperlink") if node.get(W+"anchor")]
             self.assertFalse(set(anchors) - bookmarks)
+            self.assertTrue(any(name.startswith("B_tbl_nav_") for name in bookmarks))
             for name in ("sec_ch_1", "sec_ch_2", "custom_destination", "fig-remote", "tbl-2-1"):
                 self.assertIn(bookmark_name(name), bookmarks)
                 self.assertIn(bookmark_name(name), anchors)

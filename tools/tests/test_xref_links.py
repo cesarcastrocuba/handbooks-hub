@@ -234,6 +234,9 @@ See Chapter 2 and Section 1.2.
             registry = stage_cross_references(root, ["front.qmd", "chapter.qmd"])
             self.assertIn("tbl-1-1", registry.pages)
             self.assertEqual(len(registry.targets[2]), 2)
+            self.assertTrue(
+                all(len(identity) <= 40 for identity in registry.targets[2].values())
+            )
 
     def test_duplicate_anchors_fail_before_linking(self):
         with tempfile.TemporaryDirectory() as tmp:
