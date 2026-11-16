@@ -5,6 +5,14 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+### Added
+
+- Standard profile version 1.1.0 (`HUB-DEC-044`):
+  - Qualified callout titles (G3): callout titles may include domain qualifiers preceding the title on word boundaries (e.g. `Architecture Review Checklist — Requirements` satisfies `Review Checklist`).
+  - Appendix rule (G2): appendices in chapter mode and appendix mode are validated by a dedicated appendix rule (single H1, non-empty body) instead of textbook chapter anatomy.
+  - Unit relaxations: permits multiple closing elements of the same kind, block list bodies following a label paragraph, and ignores table cells in the unit scanner.
+- Packaged snapshot `tools/src/handbook_toolkit/profile_data/standard-1.1.0.yaml`; profile 1.0.0 and 0.2.0 remain resolvable.
+
 ### Changed
 
 - Template `release.yml` accepts pre-release versions `X.Y.Z-rc.N` alongside stable `X.Y.Z`, publishing pre-releases with `--prerelease --latest=false` while keeping Pages deployment and site verification active (Gap G1).

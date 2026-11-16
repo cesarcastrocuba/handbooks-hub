@@ -63,9 +63,13 @@ def _validate_manuscripts(
     else:
         # Front matter, back matter and references are separate special groups.
         targets = [*chapters, *appendices]
+    is_v11 = profile.get("version", "1.0.0") not in ("1.0.0", "0.2.0")
     for entry in targets:
         path = workspace / entry
-        result = validate_manuscript(path, profile, mode)
+        target_mode = mode
+        if is_v11 and entry in appendices and mode == "chapter":
+            target_mode = "appendix"
+        result = validate_manuscript(path, profile, target_mode)
         if not result.ok:
             raise BuildError(
                 f"manuscript validation failed for {entry}: "

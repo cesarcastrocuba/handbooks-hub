@@ -15,20 +15,22 @@ from handbook_toolkit.validation import DocumentError
 
 class ProfileResourceTests(unittest.TestCase):
     def test_exact_profile_is_approved_and_freshly_loaded(self):
-        profile = load_profile("standard", "1.0.0")
+        profile = load_profile("standard", "1.1.0")
         self.assertEqual(profile["status"], "approved")
         profile["title"] = "local mutation"
-        self.assertNotEqual(load_profile("standard", "1.0.0")["title"], "local mutation")
+        self.assertNotEqual(load_profile("standard", "1.1.0")["title"], "local mutation")
 
     def test_packaged_snapshot_matches_canonical_approved_profile(self):
         source = support.REPO_ROOT / "profiles/standard/profile.yaml"
-        packaged = support.SRC / "handbook_toolkit/profile_data/standard-1.0.0.yaml"
+        packaged = support.SRC / "handbook_toolkit/profile_data/standard-1.1.0.yaml"
         self.assertEqual(source.read_bytes(), packaged.read_bytes())
-        self.assertEqual(load_profile("standard", "1.0.0"), support.profile_document())
+        self.assertEqual(load_profile("standard", "1.1.0"), support.profile_document())
 
-    def test_previous_0_2_snapshot_remains_resolvable(self):
-        profile = load_profile("standard", "0.2.0")
-        self.assertEqual((profile["version"], profile["status"]), ("0.2.0", "approved"))
+    def test_previous_snapshots_remain_resolvable(self):
+        for version in ("1.0.0", "0.2.0"):
+            with self.subTest(version=version):
+                profile = load_profile("standard", version)
+                self.assertEqual((profile["version"], profile["status"]), (version, "approved"))
 
     def test_missing_version_ranges_and_traversal_fail_without_fallback(self):
         for identity, version in (("standard", "9.9.9"), ("standard", ">=1.0.0"),

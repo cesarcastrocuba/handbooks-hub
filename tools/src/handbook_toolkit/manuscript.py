@@ -56,6 +56,8 @@ class Manuscript:
     plain_lines: tuple[tuple[int, str], ...]
     malformed: tuple[tuple[int, str], ...]
     line_count: int
+    table_lines: frozenset[int] = frozenset()
+    fence_lines: frozenset[int] = frozenset()
 
 
 def _slice(manuscript: Manuscript, start: int, end: int) -> Manuscript:
@@ -68,6 +70,8 @@ def _slice(manuscript: Manuscript, start: int, end: int) -> Manuscript:
         tuple(item for item in manuscript.plain_lines if start <= item[0] < end),
         (),
         manuscript.line_count,
+        frozenset(line for line in manuscript.table_lines if start <= line < end),
+        frozenset(line for line in manuscript.fence_lines if start <= line < end),
     )
 
 
@@ -86,15 +90,32 @@ def _meaningful_title(title: str) -> bool:
     return base.strip(" .:-_").casefold() not in PLACEHOLDER_TITLES
 
 
-def _matches_title(actual: str, expected: str) -> bool:
+def _matches_title(actual: str, expected: str, *, allow_qualified: bool = False) -> bool:
     actual_base = _base_title(actual).casefold()
     expected_base = _clean_title(expected).casefold()
     if actual_base == expected_base:
         return True
-    return any(
+    separators = (" —", " –", " -", ":")
+    if any(
         actual_base.startswith(expected_base + separator)
-        for separator in (" —", " –", " -", ":")
-    )
+        for separator in separators
+    ):
+        return True
+    if allow_qualified:
+        start = 0
+        while True:
+            idx = actual_base.find(expected_base, start)
+            if idx == -1:
+                break
+            before = actual_base[:idx]
+            after = actual_base[idx + len(expected_base):]
+            start = idx + 1
+            # Word-boundary check: one or more whitespace-separated words must precede expected_base.
+            # "Pre-Review Checklist" must NOT match: before is "pre-" which does not end with a space.
+            if before.endswith(" ") and bool(before.strip()):
+                if after == "" or any(after.startswith(separator) for separator in separators):
+                    return True
+    return False
 
 
 def _matches_label(actual: str, expected: str) -> bool:
@@ -109,7 +130,44 @@ def _inside_callout(line: int, callouts: tuple[Callout, ...]) -> bool:
     return any(callout.line < line < callout.end_line for callout in callouts)
 
 
-def scan(text: str) -> Manuscript:
+def _find_table_lines(lines: list[str]) -> set[int]:
+    """Find line numbers belonging to pipe tables so table cell text is ignored."""
+    table_lines: set[int] = set()
+    table_sep = re.compile(r"^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$")
+    n = len(lines)
+    i = 0
+    while i < n:
+        line = lines[i]
+        stripped = line.strip()
+        if stripped.startswith("|"):
+            table_lines.add(i + 1)
+            i += 1
+            continue
+        if table_sep.match(stripped):
+            table_lines.add(i + 1)
+            # preceding header lines
+            j = i - 1
+            while j >= 0 and "|" in lines[j] and lines[j].strip():
+                table_lines.add(j + 1)
+                j -= 1
+            # following body lines
+            j = i + 1
+            while j < n and "|" in lines[j] and lines[j].strip():
+                table_lines.add(j + 1)
+                j += 1
+            i = j + 1
+            continue
+        i += 1
+    return table_lines
+
+
+def scan(
+    text: str,
+    *,
+    ignore_table_cells: bool = False,
+    allow_custom_containers: bool = False,
+    allow_fenced_callout_body: bool = False,
+) -> Manuscript:
     """Parse headings, callouts and bold-label paragraphs outside fenced code."""
 
     headings: list[Heading] = []
@@ -122,6 +180,8 @@ def scan(text: str) -> Manuscript:
     fence_char = ""
     fence_length = 0
     lines = text.splitlines()
+    table_lines = _find_table_lines(lines)
+    fence_lines: set[int] = set()
 
     for number, line in enumerate(lines, start=1):
         stripped = line.strip()
@@ -132,6 +192,9 @@ def scan(text: str) -> Manuscript:
                 in_fence = True
                 fence_char = marker[0]
                 fence_length = len(marker)
+                fence_lines.add(number)
+                if stack and allow_fenced_callout_body:
+                    stack[-1][3].append(line)
                 continue
             if (
                 marker[0] == fence_char
@@ -141,8 +204,14 @@ def scan(text: str) -> Manuscript:
                 in_fence = False
                 fence_char = ""
                 fence_length = 0
+                fence_lines.add(number)
+                if stack and allow_fenced_callout_body:
+                    stack[-1][3].append(line)
                 continue
         if in_fence:
+            fence_lines.add(number)
+            if stack and allow_fenced_callout_body:
+                stack[-1][3].append(line)
             continue
 
         callout = CALLOUT_START.match(stripped)
@@ -168,9 +237,13 @@ def scan(text: str) -> Manuscript:
                 callouts.append(
                     Callout(start, number, title, kind, "\n".join(body_lines).strip())
                 )
-            else:
+            elif title:
                 malformed.append(
-                    (start, f'callout "{title or "untitled"}" has no callout-* class')
+                    (start, f'callout "{title}" has no callout-* class')
+                )
+            elif not allow_custom_containers:
+                malformed.append(
+                    (start, 'callout "untitled" has no callout-* class')
                 )
             continue
 
@@ -184,12 +257,13 @@ def scan(text: str) -> Manuscript:
             )
             continue
 
-        paragraph = PARAGRAPH.match(stripped)
-        if paragraph:
-            paragraphs.append(
-                Paragraph(number, paragraph.group("label").strip(), paragraph.group("rest").strip())
-            )
-            continue
+        if not (ignore_table_cells and number in table_lines):
+            paragraph = PARAGRAPH.match(stripped)
+            if paragraph:
+                paragraphs.append(
+                    Paragraph(number, paragraph.group("label").strip(), paragraph.group("rest").strip())
+                )
+                continue
 
         if stripped:
             plain_lines.append((number, stripped))
@@ -208,6 +282,8 @@ def scan(text: str) -> Manuscript:
         tuple(plain_lines),
         tuple(malformed),
         len(lines),
+        frozenset(table_lines),
+        frozenset(fence_lines),
     )
 
 
@@ -218,6 +294,8 @@ def _occurrence_issue(
     expected: str,
     correct: list[int],
     wrong: list[tuple[int, str]],
+    *,
+    allow_multiple: bool = False,
 ) -> None:
     if not correct:
         if wrong:
@@ -226,7 +304,7 @@ def _occurrence_issue(
         else:
             issues.append(Issue(path, f"missing {element}: expected {expected}"))
         return
-    if len(correct) > 1:
+    if len(correct) > 1 and not allow_multiple:
         issues.append(
             Issue(
                 f"{path}:{correct[0]}",
@@ -247,13 +325,31 @@ def _require_paragraph_body(
     issues: list[Issue],
     lines: list[int],
     label: str,
+    *,
+    allow_block_body: bool = False,
 ) -> None:
     by_line = {paragraph.line: paragraph for paragraph in manuscript.paragraphs}
     for line in lines:
-        if not by_line[line].rest.strip():
-            issues.append(
-                Issue(f"{path}:{line}", f'{label} must include non-empty body text')
+        if by_line[line].rest.strip():
+            continue
+        if allow_block_body:
+            next_elements = [
+                h.line for h in manuscript.headings if h.line > line
+            ] + [
+                c.line for c in manuscript.callouts if c.line > line
+            ] + [
+                p.line for p in manuscript.paragraphs if p.line > line
+            ]
+            next_limit = min(next_elements, default=manuscript.line_count + 1)
+            has_plain_body = any(
+                line < item[0] < next_limit and item[1].strip()
+                for item in manuscript.plain_lines
             )
+            if has_plain_body:
+                continue
+        issues.append(
+            Issue(f"{path}:{line}", f'{label} must include non-empty body text')
+        )
 
 
 def _require_callout_body(
@@ -272,31 +368,69 @@ def _require_callout_body(
 
 
 def _wrong_forms(
-    title: str, manuscript: Manuscript, expected: str
+    title: str,
+    manuscript: Manuscript,
+    expected: str,
+    *,
+    allow_qualified: bool = False,
+    allow_heading_body_label: bool = False,
+    ignore_table_cells: bool = False,
 ) -> list[tuple[int, str]]:
     """Return occurrences of the element title in a form other than *expected*."""
 
     wrong: list[tuple[int, str]] = []
     if expected == "heading":
         for callout in manuscript.callouts:
-            if _matches_title(callout.title, title):
+            if _matches_title(callout.title, title, allow_qualified=allow_qualified):
                 wrong.append((callout.line, "found a callout instead of the required heading"))
+
+        # Headings matching title define the section for this element;
+        # paragraphs and plain lines inside that section are body content.
+        section_spans: list[tuple[int, int]] = []
+        if allow_heading_body_label:
+            for h in manuscript.headings:
+                if _matches_title(h.title, title, allow_qualified=allow_qualified):
+                    next_h_line = min(
+                        (
+                            other.line
+                            for other in manuscript.headings
+                            if other.line > h.line and other.level <= h.level
+                        ),
+                        default=manuscript.line_count + 1,
+                    )
+                    section_spans.append((h.line, next_h_line))
+
+        def _inside_matching_section(line: int) -> bool:
+            return any(start <= line < end for start, end in section_spans)
+
         for paragraph in manuscript.paragraphs:
+            if ignore_table_cells and paragraph.line in manuscript.table_lines:
+                continue
+            if _inside_matching_section(paragraph.line):
+                continue
             if _matches_label(paragraph.label, title + "."):
                 wrong.append((paragraph.line, "found a bold paragraph instead of a heading"))
         for line, text in manuscript.plain_lines:
+            if ignore_table_cells and line in manuscript.table_lines:
+                continue
+            if _inside_matching_section(line):
+                continue
             if text.casefold().startswith(_clean_title(title).casefold()):
                 wrong.append((line, "found plain text instead of a heading"))
     else:
         for heading in manuscript.headings:
-            if _matches_title(heading.title, title):
+            if _matches_title(heading.title, title, allow_qualified=allow_qualified):
                 wrong.append((heading.line, "found a heading instead of the required callout"))
         for paragraph in manuscript.paragraphs:
+            if ignore_table_cells and paragraph.line in manuscript.table_lines:
+                continue
             if _matches_label(paragraph.label, title + "."):
                 wrong.append(
                     (paragraph.line, "found a bold paragraph instead of the required callout")
                 )
         for line, text in manuscript.plain_lines:
+            if ignore_table_cells and line in manuscript.table_lines:
+                continue
             if text.casefold().startswith(_clean_title(title).casefold()):
                 wrong.append((line, "found plain text instead of the required callout"))
     return wrong
@@ -336,6 +470,7 @@ def _check_labels(
     profile: dict[str, Any],
     issues: list[Issue],
 ) -> None:
+    is_v11 = profile.get("version", "1.0.0") not in ("1.0.0", "0.2.0")
     labels = profile["unit"]["required_labels"]
     label_positions: list[int] = []
     for label in labels:
@@ -358,6 +493,8 @@ def _check_labels(
             ):
                 wrong.append((paragraph.line, "found the label inside a callout, not a paragraph"))
         for line, text in manuscript.plain_lines:
+            if is_v11 and line in manuscript.table_lines:
+                continue
             if text.casefold().startswith(label.casefold()):
                 wrong.append((line, "found plain text instead of a bold paragraph"))
         _occurrence_issue(
@@ -368,7 +505,9 @@ def _check_labels(
             correct,
             wrong,
         )
-        _require_paragraph_body(path, manuscript, issues, correct, f'required label "{label}"')
+        _require_paragraph_body(
+            path, manuscript, issues, correct, f'required label "{label}"', allow_block_body=is_v11
+        )
         if len(correct) == 1:
             label_positions.append(correct[0])
 
@@ -387,9 +526,11 @@ def _check_closing(
     profile: dict[str, Any],
     issues: list[Issue],
 ) -> None:
+    is_v11 = profile.get("version", "1.0.0") not in ("1.0.0", "0.2.0")
     section_elements = {
         element["id"]: element for element in profile["section"]["required_elements"]
     }
+    element_positions: list[tuple[str, list[int]]] = []
     closing_positions: list[int] = []
     for element_id in profile["section"]["closing_order"]:
         element = section_elements[element_id]
@@ -406,12 +547,12 @@ def _check_closing(
             wrong = [
                 (callout.line, "found a callout instead of a bold paragraph")
                 for callout in manuscript.callouts
-                if _matches_title(callout.title, title)
+                if _matches_title(callout.title, title, allow_qualified=is_v11)
             ]
             wrong.extend(
                 (heading.line, "found a heading instead of a bold paragraph")
                 for heading in manuscript.headings
-                if _matches_title(heading.title, title)
+                if _matches_title(heading.title, title, allow_qualified=is_v11)
             )
             wrong.extend(
                 (paragraph.line, "found the label inside a callout, not a paragraph")
@@ -426,25 +567,31 @@ def _check_closing(
                 f'a bold paragraph starting with "**{label}**"',
                 correct,
                 wrong,
+                allow_multiple=is_v11,
             )
             _require_paragraph_body(
-                path, manuscript, issues, correct, f'closing element "{title}"'
+                path,
+                manuscript,
+                issues,
+                correct,
+                f'closing element "{title}"',
+                allow_block_body=is_v11,
             )
         elif kind in {"callout", "checklist-callout"}:
             correct = [
                 callout.line
                 for callout in manuscript.callouts
-                if _matches_title(callout.title, title)
+                if _matches_title(callout.title, title, allow_qualified=is_v11)
             ]
             wrong = [
                 (heading.line, "found a heading instead of the required callout")
                 for heading in manuscript.headings
-                if _matches_title(heading.title, title)
+                if _matches_title(heading.title, title, allow_qualified=is_v11)
             ]
             wrong.extend(
                 (paragraph.line, "found a bold paragraph instead of the required callout")
                 for paragraph in manuscript.paragraphs
-                if _matches_title(paragraph.label.rstrip("."), title)
+                if _matches_title(paragraph.label.rstrip("."), title, allow_qualified=is_v11)
             )
             _occurrence_issue(
                 path,
@@ -453,6 +600,7 @@ def _check_closing(
                 f'a callout titled "{title}"',
                 correct,
                 wrong,
+                allow_multiple=is_v11,
             )
             _require_callout_body(
                 path, manuscript, issues, correct, f'closing element "{title}"'
@@ -462,20 +610,45 @@ def _check_closing(
                 Issue(path, f'unsupported section element kind "{kind}" for "{title}"')
             )
             continue
-        if len(correct) == 1:
-            closing_positions.append(correct[0])
+        if correct:
+            element_positions.append((element_id, correct))
+            if len(correct) == 1:
+                closing_positions.append(correct[0])
 
-    if closing_positions != sorted(closing_positions):
-        issues.append(
-            Issue(
-                path,
-                "section closing elements are misordered; expected "
-                + ", ".join(
-                    section_elements[element_id]["title"]
-                    for element_id in profile["section"]["closing_order"]
-                ),
+    if is_v11:
+        misordered = False
+        for i in range(len(element_positions)):
+            for j in range(i + 1, len(element_positions)):
+                lines_i = element_positions[i][1]
+                lines_j = element_positions[j][1]
+                if lines_i and lines_j and max(lines_i) > min(lines_j):
+                    misordered = True
+                    break
+            if misordered:
+                break
+        if misordered:
+            issues.append(
+                Issue(
+                    path,
+                    "section closing elements are misordered; expected "
+                    + ", ".join(
+                        section_elements[element_id]["title"]
+                        for element_id in profile["section"]["closing_order"]
+                    ),
+                )
             )
-        )
+    else:
+        if closing_positions != sorted(closing_positions):
+            issues.append(
+                Issue(
+                    path,
+                    "section closing elements are misordered; expected "
+                    + ", ".join(
+                        section_elements[element_id]["title"]
+                        for element_id in profile["section"]["closing_order"]
+                    ),
+                )
+            )
 
 
 def _check_section(
@@ -501,6 +674,7 @@ def _check_chapter(
     profile: dict[str, Any],
     issues: list[Issue],
 ) -> None:
+    is_v11 = profile.get("version", "1.0.0") not in ("1.0.0", "0.2.0")
     h1 = next((heading for heading in manuscript.headings if heading.level == 1), None)
     if h1 is None:
         issues.append(Issue(path, "missing chapter heading: expected an H1 with a real title"))
@@ -530,9 +704,9 @@ def _check_chapter(
         correct = [
             callout.line
             for callout in manuscript.callouts
-            if _matches_title(callout.title, title)
+            if _matches_title(callout.title, title, allow_qualified=is_v11)
         ]
-        wrong = _wrong_forms(title, manuscript, "callout")
+        wrong = _wrong_forms(title, manuscript, "callout", allow_qualified=is_v11, ignore_table_cells=is_v11)
         _occurrence_issue(path, issues, f'chapter element "{title}"', f'a callout titled "{title}"', correct, wrong)
         _require_callout_body(path, manuscript, issues, correct, f'chapter element "{title}"')
         if len(correct) == 1:
@@ -555,7 +729,14 @@ def _check_chapter(
         element = elements["worked-example"]
         title = element["title"]
         correct = [heading for heading in h2 if _matches_title(heading.title, title)]
-        wrong = _wrong_forms(title, manuscript, "heading")
+        wrong = _wrong_forms(
+            title,
+            manuscript,
+            "heading",
+            allow_qualified=is_v11,
+            allow_heading_body_label=is_v11,
+            ignore_table_cells=is_v11,
+        )
         _occurrence_issue(
             path,
             issues,
@@ -583,9 +764,9 @@ def _check_chapter(
         correct = [
             callout.line
             for callout in manuscript.callouts
-            if _matches_title(callout.title, title)
+            if _matches_title(callout.title, title, allow_qualified=is_v11)
         ]
-        wrong = _wrong_forms(title, manuscript, "callout")
+        wrong = _wrong_forms(title, manuscript, "callout", allow_qualified=is_v11, ignore_table_cells=is_v11)
         _occurrence_issue(
             path,
             issues,
@@ -635,7 +816,14 @@ def _check_chapter(
         element = elements["further-reading"]
         title = element["title"]
         correct = [heading for heading in h2 if _matches_title(heading.title, title)]
-        wrong = _wrong_forms(title, manuscript, "heading")
+        wrong = _wrong_forms(
+            title,
+            manuscript,
+            "heading",
+            allow_qualified=is_v11,
+            allow_heading_body_label=is_v11,
+            ignore_table_cells=is_v11,
+        )
         _occurrence_issue(
             path,
             issues,
@@ -704,6 +892,48 @@ def _check_chapter(
             _check_section(path, section_slice, profile, issues)
 
 
+def _check_appendix(
+    path: str,
+    manuscript: Manuscript,
+    profile: dict[str, Any],
+    issues: list[Issue],
+) -> None:
+    """Validate an appendix under profile 1.1.0 appendix rules."""
+
+    h1 = [heading for heading in manuscript.headings if heading.level == 1]
+    if not h1:
+        issues.append(Issue(path, "appendix must start with an H1 heading"))
+    else:
+        _check_heading(
+            path,
+            h1[0],
+            issues,
+            allowed_levels=(1,),
+            label="appendix",
+        )
+        if len(h1) > 1:
+            issues.append(
+                Issue(
+                    f"{path}:{h1[1].line}",
+                    f"appendix must contain exactly one H1 heading; found {len(h1)}",
+                )
+            )
+
+    has_body = bool(
+        manuscript.plain_lines
+        or manuscript.paragraphs
+        or manuscript.callouts
+        or manuscript.fence_lines
+    )
+    if not has_body:
+        issues.append(Issue(path, "appendix body must not be empty"))
+
+
+def _is_appendix_path(path: Path | str) -> bool:
+    p = Path(path)
+    return "appendices" in p.parts or p.name.startswith("appendix-") or p.name.startswith("appendix_")
+
+
 def validate_manuscript(
     path: Path, profile: dict[str, Any], mode: str
 ) -> CheckResult:
@@ -718,15 +948,29 @@ def validate_manuscript(
     if not text.strip():
         return CheckResult(label, (Issue(label, "manuscript file is empty"),))
 
-    manuscript = scan(text)
+    is_v11 = profile.get("version", "1.0.0") not in ("1.0.0", "0.2.0")
+    manuscript = scan(
+        text,
+        ignore_table_cells=is_v11,
+        allow_custom_containers=is_v11,
+        allow_fenced_callout_body=is_v11,
+    )
     issues: list[Issue] = [
         Issue(f"{path}:{line}", f"malformed manuscript: {message}")
         for line, message in manuscript.malformed
     ]
     if mode == "section-pilot":
         _check_section(label, manuscript, profile, issues)
+    elif mode == "appendix":
+        if is_v11:
+            _check_appendix(label, manuscript, profile, issues)
+        else:
+            issues.append(Issue(label, f'unsupported mode "{mode}"'))
     elif mode == "chapter":
-        _check_chapter(label, manuscript, profile, issues)
+        if is_v11 and _is_appendix_path(path):
+            _check_appendix(label, manuscript, profile, issues)
+        else:
+            _check_chapter(label, manuscript, profile, issues)
     else:
         issues.append(Issue(label, f'unsupported mode "{mode}"'))
 
