@@ -57,6 +57,7 @@ from .build_staging import (
     _extract_source,
 )
 from .reading_site import prepare_reading_site, restore_first_source
+from .artifact_optimize import optimize_staged_pngs
 from .web_lists import generate_list_pages
 from .build_html import (
     _payload_paths,
@@ -83,6 +84,7 @@ def build_book(
     mode: str = "chapter",
     preview: bool = False,
     require_page_numbers: bool = False,
+    optimize: bool = True,
 ) -> BuildResult:
     """Build a verified seven-file publication directory at *output*.
 
@@ -130,6 +132,8 @@ def build_book(
                 "source inspection failed: " + "; ".join(map(str, source_issues))
             )
         _extract_source(source_zip, workspace)
+        if optimize:
+            optimize_staged_pngs(workspace)
 
         book_path = workspace / "book.yaml"
         book_result = validate_book(book_path, load_packaged_schema("book.schema.json"))
@@ -308,10 +312,12 @@ def build_book(
         _run([quarto, "render", ".", "--to", "html", "--no-clean", "--no-execute"],
              cwd=workspace, env=environment)
 
-        payloads = _payload_paths(workspace, dist, source_epoch)
+        compresslevel = 9 if optimize else None
+        payloads = _payload_paths(workspace, dist, source_epoch, compresslevel=compresslevel)
         from .docx_pages import cache_page_numbers
         tool_versions.update(cache_page_numbers(
-            payloads["docx"], workspace / RENDER_DIRECTORY / "fonts", required=require_page_numbers))
+            payloads["docx"], workspace / RENDER_DIRECTORY / "fonts", required=require_page_numbers,
+            compresslevel=compresslevel))
         markdown_text = _markdown_header(book, fields, commit) + _clean_markdown(
             _render_markdown(workspace, markdown_source, resources, quarto, environment,
                              crossref=html_config.get('crossref'), language=language)

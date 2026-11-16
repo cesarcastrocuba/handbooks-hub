@@ -407,19 +407,20 @@ def _display_options(members: dict[str, bytes], root: ET.Element, word: str) -> 
         )
 
 
-def _write_package(path: Path, members: dict[str, bytes]) -> None:
+def _write_package(path: Path, members: dict[str, bytes], compresslevel: int | None = 9) -> None:
     temporary = path.with_suffix(".tmp.docx")
-    with ZipFile(temporary, "w", ZIP_DEFLATED) as archive:
+    zip_kwargs = {"compresslevel": compresslevel} if compresslevel is not None else {}
+    with ZipFile(temporary, "w", ZIP_DEFLATED, **zip_kwargs) as archive:
         for name, data in sorted(members.items()):
             info = ZipInfo(name, (1980, 1, 1, 0, 0, 0))
             info.compress_type = ZIP_DEFLATED
             info.create_system = 3
             info.external_attr = 0o100644 << 16
-            archive.writestr(info, data)
+            archive.writestr(info, data, **zip_kwargs)
     temporary.replace(path)
 
 
-def prepare_docx(path: Path) -> None:
+def prepare_docx(path: Path, compresslevel: int | None = 9) -> None:
     """Prepare native fields and valid, deterministic Word layout properties."""
     word = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
     with ZipFile(path) as archive:
@@ -452,4 +453,4 @@ def prepare_docx(path: Path) -> None:
     register_namespaces()
     order_properties(root)
     members["word/document.xml"] = ET.tostring(root, encoding="utf-8", xml_declaration=True)
-    _write_package(path, members)
+    _write_package(path, members, compresslevel=compresslevel)

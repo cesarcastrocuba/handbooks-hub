@@ -134,6 +134,7 @@ def command_build(args: argparse.Namespace) -> int:
             mode=args.mode,
             preview=args.preview,
             require_page_numbers=args.require_page_numbers,
+            optimize=args.optimize,
         )
     except (BuildError, DocumentError, OSError, ValueError) as exc:
         print(f"BUILD: FAILED: {exc}", file=sys.stderr)
@@ -274,6 +275,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     build.add_argument("--require-page-numbers", action="store_true",
                        help="require verified LibreOffice page numbers in native Word indexes")
+    build.add_argument(
+        "--no-optimize",
+        dest="optimize",
+        action="store_false",
+        default=True,
+        help="opt out of lossless PNG and ZIP size optimization",
+    )
     build.set_defaults(func=command_build)
 
     references = subparsers.add_parser(
