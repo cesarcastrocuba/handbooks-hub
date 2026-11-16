@@ -322,36 +322,15 @@ Demonstration text.
             f"Expected wrong-form heading finding in: {[str(i) for i in res_020.issues]}",
         )
 
-    def test_untitled_container_reports_malformed_under_all_profiles(self) -> None:
-        untitled_container = """\
-# 1. Test Chapter
-
-::: {.custom-container}
-Custom content inside container.
-:::
-
-## 1.1 First Section
-
-**Definition.** Def.
-**Purpose.** Purpose.
-**What it includes.** Scope.
-**Why it is needed.** Need.
-**Example.** Ex.
-::: {.callout-warning appearance="simple" icon=false title="Common Pitfall"}
-Pitfall.
-:::
-::: {.callout-important appearance="simple" icon=false title="Decision & Trade-off"}
-Tradeoff.
-:::
-## 1.2 Worked Example
-Demo.
-::: {.callout-note appearance="simple" icon=false title="Review Checklist"}
-- Item.
-:::
-## 1.3 Further Reading
-- Reading.
-"""
-        for prof in (self.profile_020, self.profile_100, self.profile_110):
+    def test_untitled_container_reports_malformed_under_100_and_020(self) -> None:
+        untitled_container = SYNTHETIC_CHAPTER.replace(
+            "## 1.1 First Section",
+            "::: {.custom-container}\nCustom content inside container.\n:::\n\n## 1.1 First Section",
+        ).replace(
+            'title="Architecture Review Checklist — Domain"',
+            'title="Review Checklist"',
+        )
+        for prof in (self.profile_020, self.profile_100):
             with self.subTest(profile_version=prof["version"]):
                 res = self._check(untitled_container, prof, "chapter")
                 self.assertFalse(res.ok)
@@ -359,6 +338,25 @@ Demo.
                     any('callout "untitled" has no callout-* class' in i.message for i in res.issues),
                     f"Expected malformed container diagnostic in {[str(i) for i in res.issues]}",
                 )
+
+        # Under 1.1.0, untitled generic divs are permitted, but titled non-callout containers fail
+        res_110_untitled = self._check(
+            untitled_container.replace('title="Review Checklist"', 'title="Architecture Review Checklist — Domain"'),
+            self.profile_110,
+            "chapter",
+        )
+        self.assertTrue(res_110_untitled.ok, [str(i) for i in res_110_untitled.issues])
+
+        titled_container = untitled_container.replace(
+            "::: {.custom-container}",
+            '::: {title="Missing Callout Class"}',
+        )
+        res_110_titled = self._check(titled_container, self.profile_110, "chapter")
+        self.assertFalse(res_110_titled.ok)
+        self.assertTrue(
+            any('callout "Missing Callout Class" has no callout-* class' in i.message for i in res_110_titled.issues),
+            f"Expected malformed container diagnostic in {[str(i) for i in res_110_titled.issues]}",
+        )
 
     def test_appendix_mode_dispatch_rejected_under_100_and_020(self) -> None:
         appendix_text = "# Appendix A — Data Catalog\n\nSome body text.\n"
@@ -427,6 +425,28 @@ def example():
 ```
 """
         res_110 = self._check(appendix_with_code, self.profile_110, "appendix")
+        self.assertTrue(res_110.ok, [str(i) for i in res_110.issues])
+
+
+    def test_callout_with_only_fenced_code_fails_under_100_and_020_but_passes_under_110(self) -> None:
+        code_callout = SYNTHETIC_SECTION.replace(
+            "::: {.callout-important appearance=\"simple\" icon=false title=\"Decision & Trade-off\"}\nA synthetic decision and trade-off table.\n:::",
+            "::: {.callout-important appearance=\"simple\" icon=false title=\"Decision & Trade-off\"}\n"
+            "```text\n"
+            "An example value.\n"
+            "```\n"
+            ":::",
+        )
+        for prof in (self.profile_020, self.profile_100):
+            with self.subTest(profile_version=prof["version"]):
+                res = self._check(code_callout, prof, "section-pilot")
+                self.assertFalse(res.ok)
+                self.assertTrue(
+                    any('closing element "Decision & Trade-off" must include non-empty body text' in i.message for i in res.issues),
+                    f"Expected non-empty body text finding in {[str(i) for i in res.issues]}",
+                )
+
+        res_110 = self._check(code_callout, self.profile_110, "section-pilot")
         self.assertTrue(res_110.ok, [str(i) for i in res_110.issues])
 
 

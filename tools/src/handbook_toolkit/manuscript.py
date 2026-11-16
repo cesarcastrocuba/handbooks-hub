@@ -161,7 +161,13 @@ def _find_table_lines(lines: list[str]) -> set[int]:
     return table_lines
 
 
-def scan(text: str, *, ignore_table_cells: bool = False) -> Manuscript:
+def scan(
+    text: str,
+    *,
+    ignore_table_cells: bool = False,
+    allow_custom_containers: bool = False,
+    allow_fenced_callout_body: bool = False,
+) -> Manuscript:
     """Parse headings, callouts and bold-label paragraphs outside fenced code."""
 
     headings: list[Heading] = []
@@ -187,7 +193,7 @@ def scan(text: str, *, ignore_table_cells: bool = False) -> Manuscript:
                 fence_char = marker[0]
                 fence_length = len(marker)
                 fence_lines.add(number)
-                if stack:
+                if stack and allow_fenced_callout_body:
                     stack[-1][3].append(line)
                 continue
             if (
@@ -199,12 +205,12 @@ def scan(text: str, *, ignore_table_cells: bool = False) -> Manuscript:
                 fence_char = ""
                 fence_length = 0
                 fence_lines.add(number)
-                if stack:
+                if stack and allow_fenced_callout_body:
                     stack[-1][3].append(line)
                 continue
         if in_fence:
             fence_lines.add(number)
-            if stack:
+            if stack and allow_fenced_callout_body:
                 stack[-1][3].append(line)
             continue
 
@@ -231,9 +237,13 @@ def scan(text: str, *, ignore_table_cells: bool = False) -> Manuscript:
                 callouts.append(
                     Callout(start, number, title, kind, "\n".join(body_lines).strip())
                 )
-            else:
+            elif title:
                 malformed.append(
-                    (start, f'callout "{title or "untitled"}" has no callout-* class')
+                    (start, f'callout "{title}" has no callout-* class')
+                )
+            elif not allow_custom_containers:
+                malformed.append(
+                    (start, 'callout "untitled" has no callout-* class')
                 )
             continue
 
@@ -939,7 +949,12 @@ def validate_manuscript(
         return CheckResult(label, (Issue(label, "manuscript file is empty"),))
 
     is_v11 = profile.get("version", "1.0.0") not in ("1.0.0", "0.2.0")
-    manuscript = scan(text, ignore_table_cells=is_v11)
+    manuscript = scan(
+        text,
+        ignore_table_cells=is_v11,
+        allow_custom_containers=is_v11,
+        allow_fenced_callout_body=is_v11,
+    )
     issues: list[Issue] = [
         Issue(f"{path}:{line}", f"malformed manuscript: {message}")
         for line, message in manuscript.malformed
