@@ -202,12 +202,12 @@ See Chapter 2 and Section 1.2.
             )
             other = root / "chapters/two.qmd"
             other.write_text(
-                "# 2. Destination {.unnumbered}\n\n## 2.1 Choice {#custom-choice .unlisted}\n\n| A | B |\n| --- | --- |\n| C | D |\n\n: Summary\n\nSee Chapter 1.\n"
+                "# 2. Destination {.unlisted}\n\n## 2.1 Choice {#custom-choice .unlisted}\n\n| A | B |\n| --- | --- |\n| C | D |\n\n: Summary\n\nSee Chapter 1.\n"
             )
             entries = ["./index.qmd", "chapters/two.qmd"]
             registry = stage_cross_references(root, entries)
             self.assertIn("{#custom-choice .unlisted}", other.read_text())
-            self.assertIn("{.unnumbered #sec_ch_2}", other.read_text())
+            self.assertIn("{.unlisted #sec_ch_2}", other.read_text())
             self.assertIn("{#tbl-2-1}", other.read_text())
             self.assertIn("](#custom-choice)", (root / "index.qmd").read_text())
             (root / "handbook-source-index.qmd").write_text(
@@ -237,6 +237,43 @@ See Chapter 2 and Section 1.2.
             self.assertTrue(
                 all(len(identity) <= 40 for identity in registry.targets[2].values())
             )
+
+    def test_native_front_back_appendix_and_custom_caption_assignments(self):
+        from handbook_toolkit.build_staging import _prepare_render
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            table = "\n| A | B |\n| --- | --- |\n| C | D |\n\n: Summary\n"
+            files = {
+                "intro.qmd": "# Introduction {.unnumbered}\n" + table,
+                "role.qmd": "# Role {.unnumbered}\n" + table,
+                "chapter.qmd": "# 1. Chapter\n"
+                + table.replace(": Summary", ": Summary {.wide #tbl-custom}")
+                + "\nSee Table 0.1, Table 0.2, Table BM.1 and Table A.1.\n",
+                "back.qmd": "# Conclusions {.unnumbered}\n" + table,
+                "appendix.qmd": "# Appendix A — Cases\n" + table,
+            }
+            for name, text in files.items():
+                (root / name).write_text(text)
+            entries = list(files)
+            groups = {"appendices": ["appendix.qmd"]}
+            registry = stage_cross_references(root, entries, groups=groups)
+            self.assertEqual(
+                registry.targets[2],
+                {
+                    "tbl-0-1": "tbl-0-1",
+                    "tbl-0-2": "tbl-0-2",
+                    "tbl-1-1": "tbl-custom",
+                    "tbl-bm-1": "tbl-bm-1",
+                    "tbl-a-1": "tbl-a-1",
+                },
+            )
+            _prepare_render(root, entries, appendices=groups["appendices"])
+            self.assertIn("{#tbl-custom .wide}", (root / "chapter.qmd").read_text())
+            for label in ("0.1", "0.2", "BM.1", "A.1"):
+                self.assertIn(
+                    "[Table " + label + "]", (root / "chapter.qmd").read_text()
+                )
 
     def test_duplicate_anchors_fail_before_linking(self):
         with tempfile.TemporaryDirectory() as tmp:

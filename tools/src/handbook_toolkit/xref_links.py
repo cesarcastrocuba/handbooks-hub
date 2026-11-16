@@ -10,10 +10,15 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 import posixpath
-import hashlib
 import re
 
 from .build_types import BuildError
+from .build_staging import (
+    _appendix_letter,
+    _count_figures,
+    _count_tables,
+    _is_unnumbered,
+)
 from .references import FENCE
 from .docx_fields import bookmark_name
 
@@ -886,7 +891,9 @@ class Registry:
     pages: dict[str, str]
 
 
-def stage_cross_references(workspace: Path, entries: list[str]) -> Registry:
+def stage_cross_references(
+    workspace: Path, entries: list[str], *, groups: dict[str, list[str]] | None = None
+) -> Registry:
     """Build the whitelist first, then link prose across the entire reading order."""
     targets: Targets = ({}, {}, {})
     pages: dict[str, str] = {}
@@ -902,11 +909,30 @@ def stage_cross_references(workspace: Path, entries: list[str]) -> Registry:
         targets[kind][symbolic] = actual
         pages[actual] = entry
 
+    appendix_set = set((groups or {}).get("appendices", []))
+    chapter_number = appendix_number = 0
+    shared: dict[str, tuple[int, int]] = {"0": (0, 0), "bm": (0, 0)}
     for entry in entries:
-        lines = (workspace / entry).read_text(encoding="utf-8").split("\n")
-        visible = _visible("\n".join(lines))
+        text = (workspace / entry).read_text(encoding="utf-8")
+        # Mirror 0051's native assignments using its scanners. Do not infer a
+        # float number from file position or a manually prefixed caption.
+        if entry in appendix_set:
+            appendix_number += 1
+            float_prefix = _appendix_letter(appendix_number).lower()
+        elif _is_unnumbered(text):
+            float_prefix = "bm" if chapter_number or appendix_number else "0"
+        else:
+            chapter_number += 1
+            float_prefix = str(chapter_number)
+        table_start, figure_start = shared.get(float_prefix, (0, 0))
+        if float_prefix in shared:
+            shared[float_prefix] = (
+                table_start + _count_tables(text),
+                figure_start + _count_figures(text),
+            )
+        lines = text.split("\n")
+        visible = _visible(text)
         heading_seen: dict[str, int] = {}
-        chapter = ""
         figure_number = table_number = 0
         previous = ""
         for index, line in enumerate(lines):
@@ -927,17 +953,9 @@ def stage_cross_references(workspace: Path, entries: list[str]) -> Registry:
                 actual = explicit[1] if explicit else bookmark_name(symbolic)
                 register(0, symbolic, actual, entry)
                 lines[index] = _with_id(line, actual)
-                if level == 1:
-                    number = re.match(r"^(\d+)[.]?\s|^Appendix ([A-Z])\b", title)
-                    chapter = (number[1] or number[2]).lower() if number else ""
             elif line.lstrip().startswith("!["):
                 figure_number += 1
-                number = re.match(r"!\[Figure ([0-9A-Z]+\.\d+)\s+[—–-]", line.lstrip())
-                display = (
-                    number[1].lower().replace(".", "-")
-                    if number
-                    else f"{chapter}-{figure_number}" if chapter else ""
-                )
+                display = f"{float_prefix}-{figure_start + figure_number}"
                 if display:
                     symbolic = "fig-" + display
                     actual = explicit[1] if explicit else symbolic
@@ -947,25 +965,24 @@ def stage_cross_references(workspace: Path, entries: list[str]) -> Registry:
                 "|"
             ):
                 table_number += 1
-                number = re.match(
-                    r"^(?::|Table:)\s+Table ([0-9A-Z]+\.\d+)\s+[—–-]", line
-                )
-                display = (
-                    number[1].lower().replace(".", "-")
-                    if number
-                    else (
-                        f"{chapter}-{table_number}"
-                        if chapter
-                        else "nav-"
-                        + hashlib.sha256(entry.encode()).hexdigest()[:12]
-                        + f"-{table_number}"
-                    )
-                )
+                display = f"{float_prefix}-{table_start + table_number}"
                 if display:
                     symbolic = "tbl-" + display
                     actual = explicit[1] if explicit else symbolic
                     register(2, symbolic, actual, entry)
-                    lines[index] = _with_id(line, actual)
+                    staged = _with_id(line, actual)
+                    attrs = ATTRIBUTES.search(staged)
+                    assert attrs is not None
+                    rest = re.sub(
+                        r"(?<!\S)#" + re.escape(actual) + r"(?=\s|$)", "", attrs[1]
+                    ).strip()
+                    lines[index] = (
+                        staged[: attrs.start()]
+                        + " {#"
+                        + actual
+                        + (" " + rest if rest else "")
+                        + "}"
+                    )
             if line.strip():
                 previous = line
         texts[entry] = "\n".join(lines)

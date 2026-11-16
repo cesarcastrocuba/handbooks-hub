@@ -1033,7 +1033,7 @@ class CrossReferenceBuildTests(unittest.TestCase):
             descriptor.write_text(yaml.safe_dump(book))
             first = repo / "manuscript/chapters/pilot.qmd"
             first.write_text(first.read_text().replace("**Example.** A labeled example.",
-                "**Example.** See Chapter 2, Section 2.1, Figure 2.1 and Table 2.1. "
+                "**Example.** See Chapter 2, Section 2.1, Figure 2.1, Table 2.1 and Table 0.1. "
                 "TLS 1.2 stays plain."))
             second = repo / "manuscript/chapters/two.qmd"
             content = CHAPTER.replace("# 1.", "# 2.").replace("## 1.", "## 2.")
@@ -1041,7 +1041,7 @@ class CrossReferenceBuildTests(unittest.TestCase):
             content = content.replace("**Example.** A labeled example.",
                 "**Example.** Return to Chapter 1.\n\n"
                 "![A fixture diagram.](../images/fixture.png){#fig-remote}\n\n"
-                "| A | B |\n| --- | --- |\n| C | D |\n\n: A fixture summary.\n")
+                "| A | B |\n| --- | --- |\n| C | D |\n\n: A fixture summary. {.wide #tbl-remote}\n")
             second.write_text(content)
             reading = repo / "manuscript/book.yml"
             order = yaml.safe_load(reading.read_text());order["chapters"].append("chapters/two.qmd")
@@ -1068,7 +1068,7 @@ class CrossReferenceBuildTests(unittest.TestCase):
                     self.assertIn(path, documents)
                     self.assertTrue(any(node.attrs.get("id") == unquote(target.fragment)
                                         for node in documents[path].walk()), (page, link.attrs))
-            self.assertEqual(len(generated), 5)
+            self.assertEqual(len(generated), 6)
             self.assertTrue(any("two.html#custom_destination" in link.attrs["href"] for _, link in generated))
             self.assertFalse(any(link.text() == "1.2" for _, link in generated))
             with zipfile.ZipFile(output / "book.docx") as archive:
@@ -1076,8 +1076,8 @@ class CrossReferenceBuildTests(unittest.TestCase):
             bookmarks = {node.get(W+"name") for node in document.iter(W+"bookmarkStart")}
             anchors = [node.get(W+"anchor") for node in document.iter(W+"hyperlink") if node.get(W+"anchor")]
             self.assertFalse(set(anchors) - bookmarks)
-            self.assertTrue(any(name.startswith("B_tbl_nav_") for name in bookmarks))
-            for name in ("sec_ch_1", "sec_ch_2", "custom_destination", "fig-remote", "tbl-2-1"):
+            self.assertIn(bookmark_name("tbl-0-1"), bookmarks)
+            for name in ("sec_ch_1", "sec_ch_2", "custom_destination", "fig-remote", "tbl-remote", "tbl-0-1"):
                 self.assertIn(bookmark_name(name), bookmarks)
                 self.assertIn(bookmark_name(name), anchors)
             destinations = subprocess.check_output([PDFINFO, "-dests", str(output / "book.pdf")], text=True)

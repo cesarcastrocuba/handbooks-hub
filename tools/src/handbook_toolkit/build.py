@@ -228,7 +228,7 @@ def build_book(
         navigation = None
         if book.get("publication", {}).get("cross_reference_links", False):
             from .xref_links import stage_cross_references
-            navigation = stage_cross_references(workspace, entries)
+            navigation = stage_cross_references(workspace, entries, groups=groups)
         markdown_source = _markdown_sources(workspace, entries, appendices=appendix_entries)
         for entry in entries:
             entry_path = workspace / entry
