@@ -43,7 +43,7 @@ the slug `solutions-architecture-handbook`).
 ### 2. Configure the repository once
 
 Set **Settings → Pages → Source** to **GitHub Actions**, and protect `main` with a pull-request rule
-that requires the `ci` status check. The release workflow deploys the HTML edition; branch protection
+that requires the `Fast checks` status check. The release workflow deploys the HTML edition; branch protection
 keeps the released commit clean.
 
 The default `GITHUB_TOKEN` of a new repository can create branches, commits and releases. It cannot
@@ -62,7 +62,7 @@ category. The workflow:
   `LICENSE-CODE` and the README title with a Python step that handles YAML safely;
 - runs `make check`, commits to `init/<id>`, pushes the branch and prints the compare URL.
 
-It does not open a pull request. Open the pull request from the compare link, wait for `ci` and merge.
+It does not open a pull request. Open the pull request from the compare link, wait for `Fast checks` and merge.
 
 ### 4. Write, check and release
 
@@ -71,9 +71,9 @@ Run `make check` on every change; it validates the descriptor, the reading order
 cross-reference gate without Quarto. `make full` also renders and verifies the editions locally.
 
 When the manuscript is ready, merge to `main` and run **Actions → release → Run workflow** with a
-stable `X.Y.Z` version. The release workflow refuses to run outside the default branch, refuses an
+stable `X.Y.Z` version or a pre-release `X.Y.Z-rc.N`. The release workflow refuses to run outside the default branch, refuses an
 existing tag or release, and refuses a book whose identifier is still `template-book`. It runs
-`make check`, builds once from the exact commit, verifies the output and publishes it.
+`make check`, builds once from the exact commit, verifies the output and publishes it. Stable releases are published as latest; pre-releases are published with `--prerelease --latest=false`.
 
 ### 5. Request catalog listing
 
@@ -175,9 +175,7 @@ to a live reading site; both are verified before listing.
 **Can I change the categories later?** Yes. Categories are catalog metadata, so a change is a manual
 catalog pull request reviewed by the Owner. Use the same listing form and say what changes.
 
-**Can I publish a pre-release?** The release workflow accepts stable `X.Y.Z` versions because the
-catalog requires stable release tags. Use a temporary branch or a local `make full` build for
-previews; do not attach preview assets to a catalog release.
+**Can I publish a pre-release?** Yes. The release workflow accepts `X.Y.Z-rc.N` tags (with no leading zeros, such as `3.1.0-rc.1`). Pre-releases are published to GitHub Releases marked as a pre-release (`--prerelease --latest=false`) and deploy their reading site with full verification. However, pre-releases can never be listed in the hub catalog; the catalog schema and catalog verification (`catalog_verification.py`) strictly require stable semantic versions (`X.Y.Z`).
 
 **Can the reading site use a custom domain?** Yes. `reading_url` in the catalog is explicit, so a
 custom domain is allowed. Keep it HTTPS and keep it live for as long as the book is listed.

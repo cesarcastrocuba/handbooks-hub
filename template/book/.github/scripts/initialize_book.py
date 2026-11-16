@@ -216,6 +216,45 @@ def replace_once(text: str, old: str, new: str, path: Path) -> str:
     return text.replace(old, new, 1)
 
 
+def generate_book_readme(root: Path, title: str, summary: str) -> str:
+    """Generate a clean, deterministic README for the initialized book."""
+
+    lines = [
+        f"# {title}",
+        "",
+        summary,
+        "",
+        "## Overview",
+        "",
+    ]
+    if (root / "PROJECT_STATUS.md").is_file():
+        lines.append("- Current release state: [`PROJECT_STATUS.md`](PROJECT_STATUS.md).")
+    if (root / "DECISIONS.md").is_file():
+        lines.append("- Decisions: [`DECISIONS.md`](DECISIONS.md).")
+    lines.extend([
+        "- Contributor rules: [`AGENTS.md`](AGENTS.md).",
+        "- Licensing and attribution: [`NOTICE.md`](NOTICE.md).",
+        "- Canonical manuscript sources live under `manuscript/`.",
+        "",
+        "## Development and checks",
+        "",
+        "Install the pinned toolkit in a local virtual environment:",
+        "",
+        "```bash",
+        "python3 -m venv .venv",
+        "source .venv/bin/activate",
+        "python3 -m pip install --upgrade pip",
+        "python3 -m pip install -r requirements.txt",
+        "make check",
+        "```",
+        "",
+        "`make check` validates the book descriptor, reading order, and cross-references.",
+        "`make full` additionally renders and verifies all editions locally.",
+        "",
+    ])
+    return "\n".join(lines)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Replace the template identifiers with the identity of a new book."
@@ -313,7 +352,7 @@ def main(argv: list[str] | None = None) -> int:
     heading = re.compile(r"^# Book template \d+\.\d+\.\d+\s*$", re.MULTILINE)
     if not heading.search(readme):
         fail(f"{paths['readme']} no longer starts with the template heading")
-    readme = heading.sub(f"# {args.title}", readme, count=1)
+    readme = generate_book_readme(root, args.title, summary)
 
     commit(
         {
