@@ -17,6 +17,28 @@
     "publication",
     "catalog"
   ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "publication": {
+            "required": [
+              "index_vocabulary"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "manuscript": {
+            "required": [
+              "glossary"
+            ]
+          }
+        }
+      }
+    }
+  ],
   "properties": {
     "schema_version": { "const": "1.0" },
     "id": {
@@ -71,6 +93,10 @@
           "type": "string",
           "pattern": "^(?!/)(?!.*\\.\\.)[A-Za-z0-9._/-]+$"
         },
+        "glossary": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*\\.\\.)[A-Za-z0-9._/-]+\\.qmd$"
+        },
         "reading_order": {
           "type": "string",
           "pattern": "^(?!/)(?!.*\\.\\.)[A-Za-z0-9._/-]+\\.ya?ml$"
@@ -94,6 +120,10 @@
         "cross_reference_links": {
           "type": "boolean",
           "description": "Opt in to whitelist-only prose navigation links and stable staged section anchors."
+        },
+        "index_vocabulary": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*\\.\\.)[A-Za-z0-9._/-]+\\.ya?ml$"
         },
         "manifest": {
           "type": "string",

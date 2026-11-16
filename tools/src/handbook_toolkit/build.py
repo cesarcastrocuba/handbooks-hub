@@ -226,9 +226,16 @@ def build_book(
         # The Markdown edition carries its own document-control header, so it is captured
         # before the print editions inject the table into the front matter.
         navigation = None
-        if book.get("publication", {}).get("cross_reference_links", False):
+        glossary_enabled = bool(book["manuscript"].get("glossary"))
+        original_texts = {e: (workspace/e).read_text() for e in entries} if glossary_enabled else {}
+        if glossary_enabled or book.get("publication", {}).get("cross_reference_links", False):
             from .xref_links import stage_cross_references
-            navigation = stage_cross_references(workspace, entries, groups=groups)
+            navigation = stage_cross_references(workspace, entries, groups=groups,
+                link_prose=book.get("publication", {}).get("cross_reference_links", False))
+        if glossary_enabled:
+            from .glossary_index import stage_glossary_index
+            index_entry = stage_glossary_index(workspace, book, groups, navigation, original_texts)
+            entries.append(index_entry)
         markdown_source = _markdown_sources(workspace, entries, appendices=appendix_entries)
         for entry in entries:
             entry_path = workspace / entry
@@ -300,14 +307,25 @@ def build_book(
         environment = os.environ.copy()
         environment["SOURCE_DATE_EPOCH"] = str(source_epoch)
         for print_format in ("typst", "docx"):
-            _run([quarto, "render", ".", "--to", print_format, "--no-clean", "--no-execute"],
-                 cwd=workspace, env=environment)
+            originals = {}
+            if glossary_enabled and print_format == "docx":
+                from .glossary_index import word_glossary_sources
+                originals = word_glossary_sources(workspace, entries, navigation)
+            try:
+                _run([quarto, "render", ".", "--to", print_format, "--no-clean", "--no-execute"],
+                     cwd=workspace, env=environment)
+            finally:
+                for path, text in originals.items():
+                    path.write_text(text)
 
         # Lists are native HTML chapters; print and Markdown keep their own indexes.
         html_config = yaml.safe_load((workspace / "_quarto.yml").read_text())
         source_alias = restore_first_source(workspace, entries, groups)
         if source_alias:
             html_config["handbook-root-source-index"] = source_alias
+        if glossary_enabled:
+            from .glossary_index import rewrite_glossary_links
+            rewrite_glossary_links(workspace, entries, navigation, source_alias)
         if navigation is not None:
             from .xref_links import rewrite_html_links
             rewrite_html_links(workspace, entries, navigation, source_alias)
@@ -315,6 +333,8 @@ def build_book(
         html_config = prepare_reading_site(workspace, html_config, book, metadata, groups,
                                            lists, fields, author, book_version,
                                            date_str, preview)
+        if glossary_enabled:
+            html_config["book"]["appendices" if appendix_entries else "chapters"].append(index_entry)
         (workspace / "_quarto.yml").write_text(yaml.safe_dump(html_config), encoding="utf-8")
         _run([quarto, "render", ".", "--to", "html", "--no-clean", "--no-execute"],
              cwd=workspace, env=environment)

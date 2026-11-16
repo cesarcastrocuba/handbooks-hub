@@ -335,6 +335,15 @@ def _style_table_cells(root: ET.Element) -> None:
     from .docx_xml import W
     values = design.docx_values()
     for table in root.iter(W + 'tbl'):
+        if any(mark.get(W + 'name') == 'handbook_analytic_index_rows'
+               for mark in table.iter(W + 'bookmarkStart')):
+            for row in table.findall(W + 'tr'):
+                properties = row.find(W + 'trPr')
+                if properties is None:
+                    properties = ET.Element(W + 'trPr')
+                    row.insert(0, properties)
+                if properties.find(W + 'cantSplit') is None:
+                    ET.SubElement(properties, W + 'cantSplit')
         if any(child is not table for child in table.iter(W + 'tbl')):
             continue
         style = table.find(W + 'tblPr/' + W + 'tblStyle')

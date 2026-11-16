@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Analytic Index vocabulary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "terms"
+  ],
+  "properties": {
+    "terms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "term"
+        ],
+        "properties": {
+          "term": {
+            "type": "string",
+            "minLength": 1
+          },
+          "aliases": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "defined": {
+            "type": "string"
+          },
+          "see": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rationale": {
+            "type": "string"
+          }
+        },
+        "not": {
+          "required": [
+            "see",
+            "defined"
+          ]
+        }
+      }
+    }
+  }
+}
