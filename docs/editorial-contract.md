@@ -4,10 +4,13 @@ The machine-readable contract is [`profiles/standard/profile.yaml`](../profiles/
 and [`profile.schema.json`](../tools/src/handbook_toolkit/schemas/profile.schema.json). This document
 explains the intent; the profile is authoritative when the two differ.
 
-The profile is **Approved** (owner decision, 2026-11-06). `1.0.0` is the default for new books. It
-preserves every approved `0.2.0` rule unchanged and adds an explicit `automated`, `assisted` or
-`manual` classification for each rule; `0.2.0` remains resolvable for books that pin it.
-Alternative profiles and explicit, owner-approved exceptions remain allowed.
+The profile is **Approved** (owner decision, 2026-11-06; updated to 1.1.0 under HUB-DEC-044 on
+2026-11-16). `1.1.0` is the default for new books. It preserves every approved `1.0.0` and `0.2.0` rule
+and adds qualified callout titles (`Architecture Review Checklist — Requirements`), dedicated appendix
+validation (single H1, non-empty body, no textbook chapter anatomy required), and unit relaxations
+(block list bodies after labels, multiple closing elements of the same kind, and ignoring table cells
+in the unit scanner). `1.0.0` and `0.2.0` remain resolvable for books that pin them. Alternative
+profiles and explicit, owner-approved exceptions remain allowed.
 
 ## Why a profile exists
 

@@ -190,7 +190,7 @@ title: Build Fixture
 status: draft
 profile:
   id: standard
-  version: "1.0.0"
+  version: "1.1.0"
 toolkit: "0.11.0"
 license:
   content: CC-BY-SA-4.0

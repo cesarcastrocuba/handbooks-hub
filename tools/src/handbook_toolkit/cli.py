@@ -237,8 +237,8 @@ def build_parser() -> argparse.ArgumentParser:
     manuscript.add_argument(
         "--mode",
         required=True,
-        choices=("section-pilot", "chapter"),
-        help="structural mode: one section pilot or a full chapter",
+        choices=("section-pilot", "chapter", "appendix"),
+        help="structural mode: one section pilot, a full chapter, or an appendix",
     )
     manuscript.add_argument(
         "--profile",

@@ -120,8 +120,10 @@ def validate_profile(path: Path, schema: dict[str, Any]) -> CheckResult:
         )
 
     validation = data.get("validation")
-    if data["version"] == "1.0.0" and validation is None:
-        issues.append(Issue(f"{label}:validation", "profile 1.0.0 requires rule classifications"))
+    if data["version"] in ("1.0.0", "1.1.0") and validation is None:
+        issues.append(
+            Issue(f"{label}:validation", f"profile {data['version']} requires rule classifications")
+        )
     if validation is not None:
         rules = validation["rules"]
         rule_ids = [rule["id"] for rule in rules]

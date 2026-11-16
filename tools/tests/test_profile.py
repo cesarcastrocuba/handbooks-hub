@@ -144,7 +144,7 @@ class ProfileTests(unittest.TestCase):
 
     def test_profile_1_rules_have_complete_classifications(self) -> None:
         document = support.profile_document()
-        self.assertEqual(document["version"], "1.0.0")
+        self.assertEqual(document["version"], "1.1.0")
         rules = document["validation"]["rules"]
         self.assertEqual(len({rule["id"] for rule in rules}), len(rules))
         self.assertEqual({rule["classification"] for rule in rules} - {"automated", "assisted", "manual"}, set())
