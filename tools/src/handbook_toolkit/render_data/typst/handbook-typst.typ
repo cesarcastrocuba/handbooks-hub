@@ -62,23 +62,18 @@
 // reference handbook. Front matter, appendices and references arrive from
 // Quarto as unnumbered headings and keep their literal labels. The layout in
 // typst-show.typ passes this function to `article` as its section numbering.
-#let handbook-numbering(..nums) = context {
+//
+// The function stays plain: a `context` function cannot be resolved when Typst
+// assembles the PDF bookmarks, which then lose the number and keep only the
+// separating space (issue #99). Appendix headings are literal "Appendix A — …"
+// and "A.1 …" text staged as unnumbered headings (change 0060), so no state
+// lookup is needed here.
+#let handbook-numbering(..nums) = {
   let parts = nums.pos()
-  let ch = parts.first()
-  let app-start = handbook-appendix-state.get()
-  if app-start != none and ch >= app-start {
-    let app-idx = ch - app-start + 1
-    if parts.len() == 1 {
-      "Appendix " + numbering("A", app-idx) + " — "
-    } else {
-      numbering("A.1", app-idx, ..parts.slice(1))
-    }
+  if parts.len() == 1 {
+    numbering("1.", parts.first())
   } else {
-    if parts.len() == 1 {
-      numbering("1.", ch)
-    } else {
-      numbering("1.1", ..parts)
-    }
+    numbering("1.1", ..parts)
   }
 }
 #set heading(numbering: handbook-numbering)

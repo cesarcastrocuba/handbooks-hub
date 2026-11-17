@@ -50,6 +50,7 @@ def build_book(repo: Path, commit: str, output: Path, **kwargs):
 
 QUARTO = shutil.which("quarto")
 PDFINFO = shutil.which("pdfinfo")
+QPDF = shutil.which("qpdf")
 BUILD_AVAILABLE = QUARTO is not None and PDFINFO is not None
 PROFILE = support.REPO_ROOT / "profiles/standard/profile.yaml"
 
@@ -1025,6 +1026,28 @@ class BuildTests(unittest.TestCase):
             output = root / "dist"
             result = build_book(repo, commit, output, profile=PROFILE, mode="section-pilot")
             self.assertTrue(result.output.is_dir())
+
+    @unittest.skipUnless(BUILD_AVAILABLE and QPDF, "Quarto, pdfinfo and qpdf are required")
+    def test_pdf_bookmarks_keep_the_section_numbers_of_the_contents(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, commit = make_book(root, chapter=True)
+            output = root / "dist"
+            build_book(repo, commit, output, profile=PROFILE, mode="chapter", optimize=False)
+
+            def titles(nodes):
+                for node in nodes:
+                    yield node["title"]
+                    yield from titles(node.get("kids", []))
+
+            data = json.loads(subprocess.check_output(
+                [QPDF, "--json=2", "--json-key=outlines", str(output / "book.pdf")], text=True))
+            bookmarks = list(titles(data["outlines"]))
+            # A contextual heading-numbering function drops the number from the PDF
+            # bookmark and leaves only its separating space (issue #99).
+            self.assertIn("1. A Build Chapter", bookmarks)
+            self.assertIn("1.1 A Content Section", bookmarks)
+            self.assertEqual([title for title in bookmarks if title != title.strip()], [])
 
 
 @unittest.skipUnless(BUILD_AVAILABLE, "Quarto and pdfinfo required")

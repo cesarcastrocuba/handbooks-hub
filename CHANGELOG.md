@@ -18,6 +18,12 @@ semantic versioning once the toolkit is published.
 
 ### Fixed
 
+- PDF bookmarks keep their section numbers (change `0063`, issue #99). The heading numbering
+  function is no longer `context`: Typst cannot resolve a contextual function while it assembles the
+  PDF outline, so numbered headings lost their number and kept only the separating space in the
+  bookmark. Chapter and section bookmarks now read exactly like the Contents page (`1. Why Handbooks
+  Fail`, `3.3 Diagrams, Tables and Explicit Cross-References`); unnumbered front matter, References,
+  the Index and the literal appendix entries are unchanged.
 - Appendices and Document Control normalization (change `0060`):
   - Appendix headings read the literal "Appendix X — Title" in the body, the PDF Contents and bookmarks, the DOCX heading and cached contents, and the HTML page title and sidebar, for sources that carry the label and for `{.unnumbered}` and numbered ones alike, with no double space after the dash.
   - Appendix sections are staged as literal "A.N Title" headings, so their numbering is the same in HTML, PDF, DOCX and Markdown.
