@@ -128,5 +128,22 @@ VERIFY (full): 7 check(s), 0 problem(s)
 
 ### CI
 
-The edition-preview artifacts of the pull request are re-checked after CI is green and the result is
-appended here.
+Run `44156774390` on head `0ee937a`: every job passed, including the three edition previews. The
+sample (`8ed1b70`) and Solutions Architecture (`176c6aa`) artifacts were downloaded and compared with
+builds of the same content made by the toolkit before this change (`6d464ef`):
+
+```
+== sample: entries 84/84; leading-space 48 -> 0; changed 48; unnumbered changed 0
+   first: (' Why Handbooks Fail', '1. Why Handbooks Fail')
+   last:  (' Further Reading', '8.5 Further Reading')
+   appendix/reference/index entries intact: True
+== solutions-architecture (176c6aa): entries 619/619; leading-space 482 -> 0; changed 482
+   first: (' Architecture Requirements', '1. Architecture Requirements')
+   last:  (' Further Reading', '18.10 Further Reading')
+   changed entries that were already clean: []
+   appendix/reference entries intact: True
+```
+
+The Solutions Architecture baseline is a build of `176c6aa` (the merged document-control change) with
+hub `6d464ef`, so the comparison isolates this change; the local comparison above used `ba9e1df`,
+whose outline still contained the removed "Planned Revisions" entry.
