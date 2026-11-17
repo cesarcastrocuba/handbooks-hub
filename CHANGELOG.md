@@ -16,6 +16,17 @@ semantic versioning once the toolkit is published.
   `build.optimization.pdf` (tool, version, status, and bytes before and after) and hub CI, the
   template CI and the template release workflow install qpdf.
 
+### Fixed
+
+- Appendices and Document Control normalization (change `0060`):
+  - Appendix headings read the literal "Appendix X — Title" in the body, the PDF Contents and bookmarks, the DOCX heading and cached contents, and the HTML page title and sidebar, for sources that carry the label and for `{.unnumbered}` and numbered ones alike, with no double space after the dash.
+  - Appendix sections are staged as literal "A.N Title" headings, so their numbering is the same in HTML, PDF, DOCX and Markdown.
+  - The print editions keep one flat chapter list: Quarto's native `book.appendices` no longer opens a standalone page holding only "Appendices".
+  - The reading site builds an "Appendices" part that holds only the appendices; References and the analytic Index stay top level after it and the References breadcrumb reads "References". The post-render HTML rewriting is removed.
+  - Appendix figure and table labels (`tbl-a-1`, `fig-f-1`) read "Table A.1" and "Figure F.1" in HTML, DOCX and the list pages; section anchors, glossary pointers, cross-reference links and Index locations keep their parity.
+  - A book-owned Document Control `| Field | Value |` table is validated against the edition version instead of receiving a duplicate table.
+
+
 ## [1.8.0] - Unreleased
 
 Template release prepared by change `0059`. Template `1.8.0` pins toolkit `0.13.0` at

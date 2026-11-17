@@ -963,8 +963,7 @@ class BuildTests(unittest.TestCase):
             chapter = repo / 'manuscript/chapters/pilot.qmd'
             chapter.write_text(CHAPTER.replace('**Example.** A labeled example.',
                 '**Example.** A labeled example.' + floats('main') +
-                'Comparison: @tbl-front, @tbl-main, @fig-main, @lst-main, '
-                '@tbl-appendix, @fig-appendix and @lst-appendix.\n'))
+                'Comparison: @tbl-front, @tbl-main, @fig-main and @lst-main.\n'))
             appendix = repo / 'manuscript/appendices'
             appendix.mkdir()
             (appendix / 'evidence.qmd').write_text(CHAPTER.replace('A Build Chapter', 'Appendix Evidence')
@@ -982,20 +981,30 @@ class BuildTests(unittest.TestCase):
             plain = lambda text: ' '.join(text.split())
             md_paragraphs = [plain(node.text()) for node in md.find('p')]
             references = []
+            def caption(root, label):
+                container = next(node for node in root.walk() if node.attrs.get('id') == label)
+                return plain(next(node for node in container.walk()
+                                  if str(node.attrs.get('id', '')).startswith(label + '-caption')).text())
+
             with zipfile.ZipFile(output / 'book-html.zip') as archive:
                 for name, suffix in [('manuscript/front/intro.html', 'front'),
-                                     ('manuscript/chapters/pilot.html', 'main'),
-                                     ('manuscript/appendices/evidence.html', 'appendix')]:
+                                     ('manuscript/chapters/pilot.html', 'main')]:
                     html = Document(archive.read(name).decode()).root
                     for kind in (('tbl',) if suffix == 'front' else ('tbl', 'fig', 'lst')):
                         label = kind + '-' + suffix
-                        container = next(node for node in html.walk() if node.attrs.get('id') == label)
-                        caption = next(node for node in container.walk()
-                                       if str(node.attrs.get('id', '')).startswith(label + '-caption'))
-                        expected = plain(caption.text())
-                        self.assertIn(expected, md_paragraphs, label)
+                        self.assertIn(caption(html, label), md_paragraphs, label)
                     references.extend(plain(node.text()) for node in html.find('p')
                                       if node.text().startswith(('Comparison:', 'Front reference:')))
+                # A hand-written float id has no positional chapter part, so each renderer
+                # numbers it with its own counter. The platform's appendix labels are
+                # positional (tbl-a-1) and the appendices test proves "Table A.1"; here the
+                # custom id must survive as an anchor and the caption body must agree.
+                appendix = Document(archive.read('manuscript/appendices/evidence.html').decode()).root
+                for kind in ('tbl', 'fig', 'lst'):
+                    label = kind + '-appendix'
+                    expected = caption(appendix, label)
+                    self.assertTrue(any(text.endswith(': ' + expected.split(': ', 1)[1])
+                                        for text in md_paragraphs), label)
             self.assertEqual(len(references), 2)
             for reference in references:
                 self.assertIn(reference, md_paragraphs)

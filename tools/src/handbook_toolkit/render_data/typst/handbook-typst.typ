@@ -69,7 +69,7 @@
   if app-start != none and ch >= app-start {
     let app-idx = ch - app-start + 1
     if parts.len() == 1 {
-      numbering("A.", app-idx)
+      "Appendix " + numbering("A", app-idx) + " — "
     } else {
       numbering("A.1", app-idx, ..parts.slice(1))
     }
@@ -101,12 +101,10 @@
 // Every front-matter page, chapter and appendix starts on a new page.
 #show heading.where(level: 1): it => {
   pagebreak(weak: true)
-  if it.numbering != none {
-    counter(figure.where(kind: "quarto-float-tbl")).update(0)
-    counter(figure.where(kind: "quarto-float-fig")).update(0)
-    counter(figure.where(kind: table)).update(0)
-    counter(figure.where(kind: image)).update(0)
-  }
+  counter(figure.where(kind: "quarto-float-tbl")).update(0)
+  counter(figure.where(kind: "quarto-float-fig")).update(0)
+  counter(figure.where(kind: table)).update(0)
+  counter(figure.where(kind: image)).update(0)
   it
 }
 
@@ -119,12 +117,18 @@
 #show figure.where(kind: "quarto-float-tbl"): it => context {
   let is-bm = it.has("label") and str(it.label).starts-with("tbl-bm-")
   let is-front = it.has("label") and str(it.label).starts-with("tbl-0-")
+  let is-app = it.has("label") and str(it.label).matches(regex("^tbl-[a-z]+-[0-9]+$")).len() > 0
   if is-bm {
     let num-str = "BM." + str(it.label).slice("tbl-bm-".len())
     show figure.caption: c => align(center)[#text(style: "italic", font: hb-font, size: 9pt, fill: hb-muted)[#c.supplement #num-str: #c.body]]
     it
   } else if is-front {
     let num-str = "0." + str(it.label).slice("tbl-0-".len())
+    show figure.caption: c => align(center)[#text(style: "italic", font: hb-font, size: 9pt, fill: hb-muted)[#c.supplement #num-str: #c.body]]
+    it
+  } else if is-app {
+    let parts = str(it.label).split("-")
+    let num-str = upper(parts.at(1)) + "." + parts.at(2)
     show figure.caption: c => align(center)[#text(style: "italic", font: hb-font, size: 9pt, fill: hb-muted)[#c.supplement #num-str: #c.body]]
     it
   } else {
@@ -138,12 +142,18 @@
 #show figure.where(kind: "quarto-float-fig"): it => context {
   let is-bm = it.has("label") and str(it.label).starts-with("fig-bm-")
   let is-front = it.has("label") and str(it.label).starts-with("fig-0-")
+  let is-app = it.has("label") and str(it.label).matches(regex("^fig-[a-z]+-[0-9]+$")).len() > 0
   if is-bm {
     let num-str = "BM." + str(it.label).slice("fig-bm-".len())
     show figure.caption: c => align(center)[#text(style: "italic", font: hb-font, size: 9pt, fill: hb-muted)[#c.supplement #num-str: #c.body]]
     it
   } else if is-front {
     let num-str = "0." + str(it.label).slice("fig-0-".len())
+    show figure.caption: c => align(center)[#text(style: "italic", font: hb-font, size: 9pt, fill: hb-muted)[#c.supplement #num-str: #c.body]]
+    it
+  } else if is-app {
+    let parts = str(it.label).split("-")
+    let num-str = upper(parts.at(1)) + "." + parts.at(2)
     show figure.caption: c => align(center)[#text(style: "italic", font: hb-font, size: 9pt, fill: hb-muted)[#c.supplement #num-str: #c.body]]
     it
   } else {
@@ -211,6 +221,9 @@
       "0." + str(it.element.label).slice("tbl-0-".len())
     } else if it.element.has("label") and str(it.element.label).starts-with("fig-0-") {
       "0." + str(it.element.label).slice("fig-0-".len())
+    } else if it.element.has("label") and str(it.element.label).matches(regex("^(tbl|fig)-[a-z]+-[0-9]+$")).len() > 0 {
+      let parts = str(it.element.label).split("-")
+      upper(parts.at(1)) + "." + parts.at(2)
     } else if ch == 0 {
       let f_num = if is-tbl { handbook-front-tbl.at(loc).first() + 1 } else { handbook-front-fig.at(loc).first() + 1 }
       "0." + str(f_num)
@@ -224,6 +237,24 @@
       loc,
       it.indented([#sup #num-str], it.inner()),
     )
+  } else {
+    it
+  }
+}
+
+#show ref: it => {
+  let el = it.element
+  if el != none and el.func() == figure and el.has("label") {
+    let lbl = str(el.label)
+    if lbl.matches(regex("^(tbl|fig)-[a-z]+-[0-9]+$")).len() > 0 {
+      let parts = lbl.split("-")
+      let is-tbl = el.kind == "quarto-float-tbl" or el.kind == table
+      let sup = if el.supplement != auto { el.supplement } else if is-tbl { [Table] } else { [Figure] }
+      let num-str = upper(parts.at(1)) + "." + parts.at(2)
+      link(el.location(), [#sup #num-str])
+    } else {
+      it
+    }
   } else {
     it
   }

@@ -240,7 +240,7 @@ def build_book(
         for entry in entries:
             entry_path = workspace / entry
             content = entry_path.read_text(encoding="utf-8")
-            injected = inject_document_control(content, control_table)
+            injected = inject_document_control(content, control_table, version=book_version)
             if injected is not None:
                 entry_path.write_text(injected, encoding="utf-8")
                 break
@@ -295,7 +295,6 @@ def build_book(
                     rendered_entries,
                     resources,
                     workspace,
-                    appendices=appendix_entries,
                     toc_depth=depth,
                     edition_date=date_str,
                 ),
@@ -334,7 +333,7 @@ def build_book(
                                            lists, fields, author, book_version,
                                            date_str, preview)
         if glossary_enabled:
-            html_config["book"]["appendices" if appendix_entries else "chapters"].append(index_entry)
+            html_config["book"]["chapters"].append(index_entry)
         (workspace / "_quarto.yml").write_text(yaml.safe_dump(html_config), encoding="utf-8")
         _run([quarto, "render", ".", "--to", "html", "--no-clean", "--no-execute"],
              cwd=workspace, env=environment)
