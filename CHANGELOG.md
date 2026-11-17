@@ -5,10 +5,17 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+## [0.14.0] - Unreleased
+
+Toolkit release prepared by change `0064`: changes `0060`, `0061`, `0062` and `0063`, the fixes from
+the Owner's review of the toolkit 0.13.0 previews. It also carries everything prepared for `0.12.0`
+and `0.13.0`, which are superseded and never tagged (Owner decision, 2026-11-17): `toolkit-v0.14.0`
+is the first toolkit tag after `toolkit-v0.11.0`. The tag needs the Owner's approval and desktop Word
+check, because the DOCX gains appendix labels, keep-with-next tables and natural-size figures.
+
 ### Added
 
 - Page-sized tables stay with their captions and with the heading or lead-in that precedes them in PDF and Word; raster figures keep their natural physical size and the tall-page cap in every edition, with light-only raster background blending in HTML (change `0061`).
-
 - Lossless PDF compaction with qpdf (change `0062`), on by default: `build-book` runs qpdf 11 or
   later with `--deterministic-id --object-streams=generate --compress-streams=y
   --stream-data=compress --recompress-flate --compression-level=9`, verifies the result with
@@ -46,7 +53,9 @@ The template mirror and tag are published by the coordinator after the merge and
 
 - Book-owned extra release assets (change `0057`, gap G6): template `release.yml` optionally runs `make release-assets RELEASE_ASSETS_DIR="$RUNNER_TEMP/extra-assets"` when defined in the book's `Makefile`, verifies that the working tree remains clean, validates regular file constraints (names matching `^[A-Za-z0-9][A-Za-z0-9._-]*$`, caps of max 100 files, 10 MB per file, 50 MB total, and no collisions with publication payloads), packages them deterministically into `book-extras.zip`, and writes `EXTRAS-SHA256SUMS.txt`. Books without the target publish only the standard seven files.
 
-## [0.13.0] - Unreleased
+## [0.13.0] - Superseded, never tagged
+
+Superseded by `0.14.0` (Owner decision, 2026-11-17); its changes ship in `toolkit-v0.14.0`.
 
 Toolkit release prepared by change `0058`: changes `0052`, `0053` and `0055`. The tag
 `toolkit-v0.13.0` needs the Owner's approval and desktop Word check, because the DOCX gains links,
@@ -72,7 +81,9 @@ Handbook.
 - Template `initialize_book.py` writes a clean, tailored book README with book title, summary, contributor pointers, and verification commands (Gap G11).
 - Align author guide and template quickstart documentation to specify the exact required branch protection status check `Fast checks` (Gap G10).
 
-## [0.12.0] - Unreleased
+## [0.12.0] - Superseded, never tagged
+
+Superseded by `0.14.0` (Owner decision, 2026-11-17); its changes ship in `toolkit-v0.14.0`.
 
 Toolkit release prepared by change `0054`: changes `0050` and `0051`. The tag `toolkit-v0.12.0`
 needs the Owner's approval and the Owner's desktop Word check of a DOCX built with it, because the

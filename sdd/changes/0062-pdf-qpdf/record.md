@@ -29,8 +29,9 @@ the provenance trailer allowed by `HUB-DEC-025`.
 ## Attribution
 
 `optimize_pdf` is a port of `optimize_pdf` from
-`/tmp/agy-sa/src/scripts/artifact_optimize.py` at commit `13d295b` (the frozen v3.0.0 source of the
-Solutions Architecture Handbook). Same author, MIT-licensed repository code. The port keeps the
+`src/scripts/artifact_optimize.py` at tag `v3.0.0` (`13d295b`) of
+`cesarcastrocuba/solutions-architecture-handbook`, the frozen v3.0.0 source of the Solutions
+Architecture Handbook, read from a local read-only copy. Same author, MIT-licensed repository code. The port keeps the
 option set and verification steps and adapts them to the hub toolkit (typed result dictionary,
 `BuildError`, release/preview behaviour, manifest record).
 
