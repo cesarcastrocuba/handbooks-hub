@@ -198,17 +198,43 @@ def keep_fitting_tables(
     if section is None:
         raise BuildError("Word table measurement requires page geometry")
     body.clear()
+    parents = {child: parent for parent in root.iter() for child in parent}
     marks = set()
     boundaries = []
     for i, (table, caption, after) in enumerate(tables):
-        t = deepcopy(table)
-        c = deepcopy(caption) if caption is not None else None
-        blocks = (
-            [c, t] if c is not None and not after else [t, c] if c is not None else [t]
-        )
+        # Quarto wraps a captioned float in a one-cell layout table. Measure that
+        # wrapper, not a flattened table and caption: its cell padding is part of
+        # the space the float occupies on the page.
+        wrapper = parents.get(caption) if caption is not None else None
+        if wrapper is not None:
+            row = parents.get(wrapper)
+            wrapper = parents.get(row) if row is not None and wrapper.tag == W + "tc" else None
+            wrapper = wrapper if wrapper is not None and wrapper.tag == W + "tbl" else None
+        if wrapper is not None:
+            unit = deepcopy(wrapper)
+            cell = unit.find(W + "tr/" + W + "tc")
+            assert cell is not None
+            t = cell.find(W + "tbl")
+            assert t is not None
+            c = next(
+                (
+                    p
+                    for p in cell.iter(W + "p")
+                    if (style := p.find(W + "pPr/" + W + "pStyle")) is not None
+                    and style.get(W + "val") in CAPTION_STYLES
+                ),
+                None,
+            )
+            blocks = [unit]
+        else:
+            t = deepcopy(table)
+            c = deepcopy(caption) if caption is not None else None
+            blocks = (
+                [c, t] if c is not None and not after else [t, c] if c is not None else [t]
+            )
         for block in blocks:
             body.append(block)
-        first = next(blocks[0].iter(W + "p")) if blocks[0].tag != W + "p" else blocks[0]
+        first = next(t.iter(W + "p"))
         start = _ensure_bookmark(first, probe, f"TableFitStart{i}")
         ends = []
         # Every final-row cell matters: the final XML cell need not be the tallest.
@@ -242,9 +268,9 @@ def keep_fitting_tables(
                 run = ET.SubElement(p, W + "r")
                 text = ET.SubElement(run, W + "t")
                 text.text = "\u2060"
-            parents = {child: parent for parent in p.iter() for child in parent}
-            run = parents[text]
-            container = parents[run]
+            owners = {child: parent for parent in p.iter() for child in parent}
+            run = owners[text]
+            container = owners[run]
             match = re.search(r"\S(?=\s*$)", text.text)
             assert match is not None
             tail = text.text[match.start() :]
@@ -286,7 +312,6 @@ def keep_fitting_tables(
         pdf = export_pdf(probe_path, directory / "pdf", env=env)
         pages = destination_pages(pdf, marks)
     kept = 0
-    parents = {child: parent for parent in root.iter() for child in parent}
     for i, (table, caption, after) in enumerate(tables):
         start, ends = boundaries[i]
         if all(pages[start] == pages[end] for end in ends):
