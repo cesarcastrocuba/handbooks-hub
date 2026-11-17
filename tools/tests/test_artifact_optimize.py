@@ -1,23 +1,31 @@
-"""Tests for lossless artifact optimization (change 0055)."""
+"""Tests for lossless artifact optimization (change 0055, PDF in change 0062)."""
 
 import hashlib
 from io import BytesIO
+import json
+import os
 from pathlib import Path
 import shutil
 import struct
+import subprocess
 import tempfile
 import unittest
+from unittest import mock
 import zipfile
 import zlib
 
 import support
 from handbook_toolkit.artifact_optimize import (
     PNG_SIGNATURE,
+    QPDF_MINIMUM_MAJOR,
     _chunk,
+    optimize_pdf,
     optimize_png_file,
     optimize_staged_pngs,
     png_pixels,
     png_recompress,
+    qpdf_path,
+    qpdf_version,
 )
 from handbook_toolkit.artifacts import archive_tree
 from handbook_toolkit.build import build_book
@@ -48,6 +56,40 @@ def _make_test_png(width: int = 16, height: int = 16, compress_level: int = 1) -
         + _chunk(b"IDAT", idat_payload)
         + _chunk(b"IEND", b"")
     )
+
+
+def _make_test_pdf(padding: int = 1) -> bytes:
+    """A well-formed one-page PDF whose content stream is not compressed."""
+    content = b"BT 20 100 Td (" + b"A" * padding + b") Tj ET"
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R >>",
+        b"<< /Length %d >>\nstream\n" % len(content) + content + b"\nendstream",
+    ]
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = []
+    for index, body in enumerate(objects, start=1):
+        offsets.append(len(out))
+        out += b"%d 0 obj\n" % index + body + b"\nendobj\n"
+    xref = len(out)
+    out += b"xref\n0 %d\n0000000000 65535 f \n" % (len(objects) + 1)
+    for offset in offsets:
+        out += b"%010d 00000 n \n" % offset
+    out += b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (
+        len(objects) + 1,
+        xref,
+    )
+    return bytes(out)
+
+
+def _pdf_pages(path: Path) -> int:
+    tool = qpdf_path()
+    return int(subprocess.run([tool, "--show-npages", str(path)],
+                              capture_output=True, text=True, check=True).stdout)
+
+
+QPDF = qpdf_path()
 
 
 class ArtifactOptimizeTests(unittest.TestCase):
@@ -174,6 +216,104 @@ class ArtifactOptimizeTests(unittest.TestCase):
             self.assertTrue((out_no_opt / "book.docx").is_file())
             self.assertTrue((out_opt / "book-html.zip").is_file())
             self.assertTrue((out_no_opt / "book-html.zip").is_file())
+
+
+class PdfOptimizeTests(unittest.TestCase):
+    def test_missing_qpdf_fails_a_release_build_and_skips_a_preview(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            path = root / "book.pdf"
+            data = _make_test_pdf(padding=2048)
+            path.write_bytes(data)
+            with mock.patch.dict(os.environ, {"QPDF": str(root / "no-such-qpdf")}):
+                self.assertIsNone(qpdf_path())
+                with self.assertRaises(BuildError) as ctx:
+                    optimize_pdf(path, required=True)
+                self.assertIn("qpdf", str(ctx.exception))
+                result = optimize_pdf(path, required=False)
+            self.assertEqual(result["status"], "skipped: qpdf not found")
+            self.assertEqual(result["before"], len(data))
+            self.assertEqual(result["after"], len(data))
+            self.assertEqual(result["saved"], 0)
+            self.assertEqual(path.read_bytes(), data)
+
+    @unittest.skipUnless(QPDF, "qpdf is not installed")
+    def test_qpdf_version_is_parsed(self) -> None:
+        version = qpdf_version(QPDF)
+        self.assertGreaterEqual(int(version.split(".")[0]), QPDF_MINIMUM_MAJOR)
+
+    @unittest.skipUnless(QPDF, "qpdf is not installed")
+    def test_optimize_pdf_is_lossless_and_deterministic(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "book.pdf"
+            path.write_bytes(_make_test_pdf(padding=200_000))
+            original_size = path.stat().st_size
+            pages = _pdf_pages(path)
+            result = optimize_pdf(path, required=True)
+            self.assertEqual(result["status"], "optimized")
+            self.assertEqual(result["tool"], "qpdf")
+            self.assertEqual(result["before"], original_size)
+            self.assertLess(result["after"], result["before"])
+            self.assertEqual(result["saved"], result["before"] - result["after"])
+            self.assertEqual(path.stat().st_size, result["after"])
+            self.assertEqual(_pdf_pages(path), pages)
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            again = optimize_pdf(path, required=True)
+            self.assertEqual(again["status"], "kept: no gain")
+            self.assertEqual(again["saved"], 0)
+            self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), digest)
+
+    @unittest.skipUnless(QPDF, "qpdf is not installed")
+    def test_optimize_pdf_rejects_changed_page_count(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "book.pdf"
+            path.write_bytes(_make_test_pdf(padding=2048))
+            from handbook_toolkit import artifact_optimize
+
+            original = artifact_optimize._pdf_pages
+            calls = {"count": 0}
+
+            def changing(tool: str, target: Path) -> int:
+                calls["count"] += 1
+                return original(tool, target) + (1 if calls["count"] == 1 else 0)
+
+            with mock.patch.object(artifact_optimize, "_pdf_pages", changing):
+                with self.assertRaises(BuildError) as ctx:
+                    optimize_pdf(path, required=True)
+            self.assertIn("page count", str(ctx.exception))
+
+    @unittest.skipUnless(BUILD_AVAILABLE, "Quarto and pdfinfo are required for full build test")
+    def test_build_book_records_the_pdf_optimization(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, commit = make_book(root)
+            out = root / "dist"
+            build_book(repo, commit, out, profile=PROFILE, mode="section-pilot", preview=True)
+            manifest = json.loads((out / "publication-manifest.json").read_text(encoding="utf-8"))
+            record = manifest["build"]["optimization"]["pdf"]
+            self.assertEqual(record["tool"], "qpdf")
+            self.assertEqual(record["saved"], record["before"] - record["after"])
+            self.assertGreaterEqual(record["before"], record["after"])
+            self.assertEqual((out / "book.pdf").stat().st_size, record["after"])
+            if QPDF:
+                self.assertIn(record["status"], ("optimized", "kept: no gain"))
+                self.assertIn("qpdf", manifest["build"]["tool_versions"])
+            else:
+                self.assertEqual(record["status"], "skipped: qpdf not found")
+
+    @unittest.skipUnless(BUILD_AVAILABLE, "Quarto and pdfinfo are required for full build test")
+    def test_no_optimize_skips_pdf_compaction(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, commit = make_book(root)
+            out = root / "dist"
+            build_book(repo, commit, out, profile=PROFILE, mode="section-pilot",
+                       preview=True, optimize=False)
+            manifest = json.loads((out / "publication-manifest.json").read_text(encoding="utf-8"))
+            record = manifest["build"]["optimization"]["pdf"]
+            self.assertEqual(record["status"], "skipped: --no-optimize")
+            self.assertEqual(record["saved"], 0)
+            self.assertEqual((out / "book.pdf").stat().st_size, record["after"])
 
 
 if __name__ == "__main__":

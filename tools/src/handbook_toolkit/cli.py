@@ -271,7 +271,7 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument(
         "--preview",
         action="store_true",
-        help="explicit non-release preview: allow a book.yaml toolkit pin that differs from the builder",
+        help="explicit non-release preview: allow a book.yaml toolkit pin that differs from the builder and skip the required qpdf compaction",
     )
     build.add_argument("--require-page-numbers", action="store_true",
                        help="require verified LibreOffice page numbers in native Word indexes")
@@ -280,7 +280,7 @@ def build_parser() -> argparse.ArgumentParser:
         dest="optimize",
         action="store_false",
         default=True,
-        help="opt out of lossless PNG and ZIP size optimization",
+        help="opt out of lossless PNG, ZIP and PDF (qpdf) size optimization",
     )
     build.set_defaults(func=command_build)
 
