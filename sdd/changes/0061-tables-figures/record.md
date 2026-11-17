@@ -1,126 +1,301 @@
 # Change 0061 — Table fit and raster figure layout
 
-Implementer Codex; reviewer/merger Claude. Branch `fix/0061-tables-figures` in the assigned new
-worktree, started at `39c524c` (0062 qpdf compaction), rebased onto merged 0060/PR 96 (`6d464ef`). No version bump, tag or self-merge.
-0060 owns appendix transforms/numbering and Document Control; this change stays out of those regions.
+Implementer OpenCode 2 (takeover of the draft from Codex, whose credit ran out); reviewer and merger
+Claude. Branch `fix/0061-tables-figures`, rebased onto `eee5411` (main with 0063 merged). No version
+bump, tag or self-merge. This change stays out of the 0060 appendix/Document Control and 0063 Typst
+numbering regions.
 
 ## Design
 
 Raster widths are staged once for every writer, using PNG pHYs density, the shared print page
-geometry and the frozen v3.0.0 natural/tall caps. Stated smaller widths win. SVG and rasters without
-physical density retain their widths. Code examples are protected; image bytes are never rewritten
-by this feature. The light-screen raster CSS rule uses multiply; dark mode and print remain native.
+geometry and the frozen v3.0.0 natural/tall caps. Stated smaller widths win; SVG and rasters without
+physical density keep their widths; code examples are protected and image bytes are never rewritten.
+The light-screen CSS rule uses `mix-blend-mode: multiply`; dark mode and print stay native.
 
-Typst measures the entire table float, including its caption, against the complete page body.
-Only oversized table/lead-in groups may break; page-sized groups move whole. Caption space is reserved below table fragments and reclaimed with strong negative spacing,
-keeping the final row and bottom caption together without making a long table sticky. Transparent context avoids accidentally boxing/clipping
-long tables. The native figure remains internally breakable; its measured outer block owns fit.
-The metadata tags are invisible and support mechanical start/end page checks in the proof harness.
+Typst measures the complete table float, caption included, against the page body. A float that fits
+moves whole; an oversized float breaks with a repeated header and keeps its caption with the final
+row. A heading and one short introduction (at most 80 words and 600 characters) are measured with the
+float and placed in an unbreakable block only when the group fits the page body; otherwise the lead
+stays and the float may break. The filter emits the group as flat Typst blocks: a Pandoc Div would
+render as a breakable `#block[`, and Typst scales an image down to the remaining space inside it.
+A breakable helper wrapper was tried first and rejected for the same reason; it shrank three SA
+figures by up to 27 %.
 
-Word probes actual data tables, excluding one-row layout wrappers, in isolated fresh sections
-using their own page geometry, styles and bundled fonts. First-row and last-character markers
-measure every final-row cell and caption. Only page-sized tables receive keepNext row chains and
-cantSplit; taller tables retain their existing properties. Probe markers are never published.
-This runs before the existing verified native page-number cache, so the cache uses final layout.
+Word measures every data table in isolated fresh sections with the workbook's page geometry, styles
+and bundled fonts, using bookmarks on the first paragraph and on the final row and caption. Quarto
+writes a table float's caption into the same one-cell layout table that wraps the table and styles it
+`ImageCaption`, not `TableCaption`; the caption is therefore found in that cell, the whole wrapper is
+measured including its cell spacing, and only floats that fit one page are kept. Keeping sets the
+paragraph keep chain, `cantSplit` on every data row, and `cantSplit` on the wrapper row, which is what
+LibreOffice honours across the nested-table boundary. Taller tables keep their existing properties.
+Probe markers are never published, and this step runs before the verified native page-number cache so
+the cache sees the final layout.
 
 Source algorithm: same-author MIT `cesarcastrocuba/solutions-architecture-handbook`, frozen tag
-`v3.0.0` / `13d295b`, `scripts/build_book.py:_figure_width` and `figure_layout`. The read-only
-`/tmp/agy-sa/src` is used; the original reference repository is never touched. Committed fixtures
-are synthetic. Full source hashes and proof commands will be appended from actual tools.
+`v3.0.0` / `13d295b`, `scripts/build_book.py:_figure_width` and `figure_layout`; the read-only
+reference at `/tmp/agy-sa/src` was used and the original repository was never touched.
 
-## Initial evidence
+## Reviewer R1 — heading and caption-only pages
 
-Own venv from `requirements-dev.txt`. Four raster/geometry unit tests pass (0.018s), two native
-layout/Word-property tests pass (0.953s), and one complete synthetic all-edition publication test
-passes (24.620s). It contains a short table near a page boundary, a tall repeated-header table,
-a natural raster, a tall raster and an SVG, plus Word keep-chain assertions on real data rows.
+The [early review](https://github.com/cesarcastrocuba/handbooks-hub/pull/100#issuecomment-6956425024)
+found SA page 470 holding only "I.2 Chapter 2: Architecture Principles" while Table I.2 moved to page
+471: keeping a table whole had traded an orphan caption for an orphan heading. The lead group now
+keeps a heading and one short introduction with the float, in Typst and in Word, and the semantic PDF
+audit reports no page whose body is only a heading or only a caption.
 
-`figure-widths.csv` contains all 121 SA figures and the actual frozen function comparison:
+## Takeover round (OpenCode 2)
+
+Three defects were reproduced and fixed on top of R1.
+
+1. **The lead group scaled figures.** A breakable group block made Typst shrink an image to the
+   remaining space instead of moving it to the next page. On the 8ae8b17 CI artifact, Figures 5.3,
+   8.8 and 8.9 rendered at 83.0 %, 83.9 % and 43.9 % of the body instead of 85 %, 86 % and 60 %.
+   The group is now measured and made unbreakable only when it fits; a figure that cannot share a
+   page with its lead keeps its stated width, and a regression test pins the rendered resolution
+   through `pdfimages`.
+2. **Word captions were never found.** `candidates` required the `TableCaption` style; Quarto emits
+   `ImageCaption` inside the float's layout cell. The caption therefore fell outside the keep chain
+   and the measured end bookmark. On the main baseline the LibreOffice rendering of the SA DOCX has
+   15 pages that begin with a caption whose table ended on the previous page; the R1 build, which
+   kept tables without their captions, has 17. Captions are now discovered in the cell, the whole
+   wrapper is measured, and the wrapper row is guarded with `cantSplit`. The first attempt guarded
+   the row without measuring the wrapper; it left one float that the probe called page-sized but
+   LibreOffice could not place, with its caption on the next page. Both are fixed together.
+3. **Pandoc wrapped the lead group in a breakable Div.** Even with the group helper fixed, the AST
+   filter returned a `pandoc.Div`, which the Typst writer renders as `#block[`. A breakable block
+   still shrank an image to the remaining page space, which is why the CI artifact at d476566 kept
+   the three distortions. The filter now emits flat raw blocks, so the helper owns the only block.
+   A filter test parses the generated Typst and rejects the `#block[` wrapper.
+
+## Commands and evidence
+
+All numbers below come from runs in this round: hub `f6db9af` (rebased onto `eee5411`); SA book
+`176c6aa43485a652eb05e87f651fd46a3d6acd60`; sample `8ed1b7035430ab3dc25fb65d712577bc197394ef`;
+before = toolkit at `6d464ef`, after = this branch. Builds use
+`tools/scripts/edition_preview.py --require-tools` (the CI path) with local Quarto 1.11.9,
+LibreOffice 24.2.7.2, qpdf 11.9.0 and poppler 24.02.
+
+### 1. Natural raster width, all 121 SA figures
 
 ```text
+$ .venv/bin/python /tmp/opencode/oc2-0061/widths.py
 figures 121 below100 83 min 43 median 94 all_match True
 {'id': 'fig-1-2', 'px_width': 904, 'px_height': 893, 'dpi': 199.9996, 'toolkit_percent': 69, 'reference_percent': 69}
 {'id': 'fig-1-4', 'px_width': 1059, 'px_height': 1046, 'dpi': 199.9996, 'toolkit_percent': 81, 'reference_percent': 81}
+committed_csv_equal True
 ```
 
-Baseline SA PDF semantic tags: 378 tables, 263 captioned; 63 table bodies span pages; five captions
-are orphaned (6.6, 16.9, F.11, H.12, H.17). The proof walks the tagged PDF structure and associates
-captions with their actual table, including native Div wrappers, instead of guessing by text.
-Baseline and final split lists will be recorded with the complete build inputs and outputs.
+The script re-stages book `176c6aa`, imports v3.0.0 `_figure_width` from the read-only reference and
+regenerates `figure-widths.csv` byte-for-byte.
 
-## Pending final gates
-
-Whole-book after builds, screenshots, `make full`, CI previews and rechecking the CI artifacts
-are not yet complete. These are required before ready. Owner desktop Word acceptance, tags,
-publication and deployment are not performed. Rollback removes the figure hook/module/shared
-geometry wiring, table measurement/wrapping/probe hook, CSS rule and their tests together.
-
-## Reviewer R1 — preceding heading and short introduction
-
-[Early review](https://github.com/cesarcastrocuba/handbooks-hub/pull/100#issuecomment-6956425024)
-identified a heading-only SA page 470. A semantic PDF structure audit independently reproduced it.
-The sticky wrapper on a long table caused the heading to strand. Removing stickiness alone then
-exposed caption-only boundary cases, so the fix reserves caption space explicitly and keeps the
-leading heading and one short introduction with the first table/figure fragment. A short introduction
-is at most 80 words and 600 Unicode characters; other paragraphs remain ordinary flowing text.
-When the complete heading/introduction/float group exceeds the page body, the table may break;
-its first fragment stays with the lead and its caption stays with its last row. This also covers a
-table that fits alone but cannot fit together with its heading and caption.
-
-The Typst leading measurement includes collapsed block spacing using a 1 pt probe only inside
-`measure`; the probe is never rendered. Caption padding sits outside the clipped table surface,
-so the row corners retain their radius. Strong negative spacing is necessary: a negative weak
-`below` spacing collapses against the native caption gap and can still orphan a caption.
-Word explicitly keeps preceding headings and one bounded lead-in with table/image wrappers,
-including across bookmark nodes, before the verified pagination cache is rebuilt.
-
-Actual focused outputs after the fix:
+The three figures distorted by the R1 group (CI run 44151226793) and the same check on the final
+build:
 
 ```text
-$ .venv/bin/python -m unittest discover -s tools/tests -p test_table_fit.py
-Ran 5 tests in 3.891s
-OK
-$ .venv/bin/python -m unittest discover -s tools/tests -p test_tables_figures_build.py
-Ran 1 test in 26.948s
-OK
+$ .venv/bin/python /tmp/opencode/oc2-0061/pdf_width_probe.py <edition>   # 8ae8b17 CI artifact
+raster figures seen: 121, mismatched: 3
+('fig-5-3', 85, 83.0, 127)
+('fig-8-8', 86, 83.9, 214)
+('fig-8-9', 60, 43.9, 217)
+$ .venv/bin/python /tmp/opencode/oc2-0061/pdf_width_probe.py <final SA edition>
+raster figures seen: 121, mismatched: 0
+$ .venv/bin/python /tmp/opencode/oc2-0061/figures.py <final SA edition> ci-sa-final
+HTML widths + raster class: 121/121; PDF widths + image/caption body bounds: 121/121; DOCX widths + unchanged HTML/Word PNG pixels: 121/121
+maximum PDF image + caption height: 603.459 pt; body: 705.827 pt
 ```
 
-The native boundary test checks all row counts 10 through 45, including the caption-fit boundary;
-headings share the first row's page and captions share the final row's page. The complete synthetic
-book also checks headings and short introductions before both tables and an image, repeated
-headers on every tall-table page, all three formats and Word's explicit keepNext properties.
-Both runtime test modules now run in the publication-build CI job with Quarto and LibreOffice.
-The final whole-book heading/caption-only page audit, rebuilt artifacts and refreshed CI evidence
-will follow before this draft is marked ready.
+Every raster figure keeps its staged percentage in HTML, PDF and DOCX, the decoded PNG pixels are
+unchanged in HTML and Word, and no figure plus caption is taller than the body.
 
-### Convergence check
+`tools/scripts/edition_preview.py` reports zero skipped steps for SA and sample, and the sample (SVG
+figures) is unchanged: 61 PDF pages before and after.
 
-The whole-book recheck caught a Typst convergence warning in the first R1 implementation even
-though its physical page audit passed. Shared caption reservation state has been removed. A local
-`show table: set block(inset: ...)` passes the measured caption reservation to the table helper,
-which captures and clears that native style before laying out cells. The fixed leading budget is
-independent of table layout. Both native and complete synthetic tests now reject convergence
-warnings explicitly. A fresh native compile of all SA content produced an empty warning log:
+### 2. Table bodies, captions and heading/caption-only pages
+
+`tools/scripts/pdf_float_audit.py` walks the tagged PDF structure tree, associates every caption with
+its table, and classifies pages whose only tagged body content is a heading or a caption.
 
 ```text
-$ quarto typst compile /tmp/codex-0061-sa-after-r1-typst/index.typ /tmp/codex-0061-evidence/sa-style-reserve.pdf --font-path /tmp/codex-0061-sa-after-r1-typst/handbook-render/fonts --root /tmp/codex-0061-sa-after-r1-typst
-exit 0
-$ wc -c /tmp/codex-0061-evidence/sa-style-reserve.log
-0 /tmp/codex-0061-evidence/sa-style-reserve.log
-$ .venv/bin/python /tmp/codex-0061-evidence/orphan-pages.py /tmp/codex-0061-evidence/sa-style-reserve.pdf
+$ .venv/bin/python tools/scripts/pdf_float_audit.py <before SA edition> before.json
 {
-  "pages": 515,
+  "all_tables": 376,
+  "captioned_tables": 263,
+  "pdf_pages": 511,
+  "heading_or_caption_only": {
+    "441": [
+      "caption"
+    ]
+  }
+}
+split tables: 63 orphan captions: 5
+$ .venv/bin/python tools/scripts/pdf_float_audit.py <after SA edition> after.json
+{
+  "all_tables": 376,
+  "captioned_tables": 263,
+  "pdf_pages": 514,
   "heading_or_caption_only": {}
 }
-$ .venv/bin/python -m unittest discover -s tools/tests -p test_table_fit.py
-Ran 5 tests in 3.688s
-OK
-$ .venv/bin/python -m unittest discover -s tools/tests -p test_tables_figures_build.py
-Ran 1 test in 30.393s
-OK
+split tables: 5 orphan captions: 0
+$ .venv/bin/python tools/scripts/pdf_float_audit.py <after sample edition> sample.json
+{
+  "all_tables": 33,
+  "captioned_tables": 2,
+  "pdf_pages": 61,
+  "heading_or_caption_only": {}
+}
+split tables: 0 orphan captions: 0
 ```
 
-The physical page audit follows the PDF's semantic structure (heading, caption and other body
-content); running furniture is excluded by the PDF tags. Layout metadata's embedded page-counter
-values are not used as physical page evidence: measured content can report a stale counter value.
-Final evidence below uses actual semantic table pages and physical locations.
+The sample is unchanged: 33 table bodies, none split, no orphan caption and no heading/caption-only
+page before or after.
+
+The five baseline orphan captions are gone: 6.6, 16.9, F.11, H.12 and H.17. Baseline page 441 held
+only the F.11 caption.
+
+**Split table bodies before (63) and after (5).** Only tables taller than the page body may split.
+
+```text
+before (6d464ef): 0.3 21-23; 0.5 24-25; 0.6 25-26; 1.3 34-35; 1.4 40-41; 2.1 50-51; 3.3 86-87;
+4.4 104-105; 4.5 106-107; 5.3 122-123; 6.3 147-148; 6.7 158-159; 7.5 174-175; 7.6 175-176;
+7.11 181-182; 7.12 184-185; 8.4 198-199; 8.12 210-211; 8.13 212-213; 8.14 214-215; 8.15 218-219;
+9.1 225-226; 9.2 228-229; 9.9 249-250; 9.10 251-252; 10.5 267-268; 11.1 274-275; 11.7 283-284;
+11.10 287-288; 12.2 295-296; 12.5 303-304; 12.6 304-305; 12.7 306-307; 13.1 310-311; 14.3 327-328;
+14.6 332-333; 15.1 337-338; 16.3 353-354; 16.6 357-358; 16.10 361-362; 16.12 362-363;
+16.15 366-367; 17.1 371-372; 18.2 390-391; BM.1 414-415; A.1 418-419; B.6 423-424; B.8 424-425;
+B.14 427-428; E.2 431-432; E.5 432-433; E.7 433-434; F.3 436-437; F.7 438-439; F.10 439-440;
+G.1 442-467; I.2 474-475; I.8 477-478; I.14 480-481; I.17 481-482; J.2 483-484; version history
+(uncaptioned) 16-18 (3 pages); index (uncaptioned) 491-511 (21 pages)
+after (f6db9af): version history (uncaptioned) 16-18 (3 pages); 0.3 21-23; G.1 443-468 (26 pages);
+I.2 475-476; index (uncaptioned) 494-514 (21 pages)
+```
+
+The five remainders are the version history and the index, which are uncaptioned front/back matter,
+plus Tables 0.3, G.1 and I.2. The Typst fit metadata marks exactly those three captioned floats as
+taller than the body; the two uncaptioned tables run over several pages in every engine:
+
+```text
+$ quarto typst query index.typ '<handbook-table-fit>' --field value --root .   # final staged book
+figure-wrapped table bodies 263 taller than the body: 3
+  tbl-0-3: 1027.2 > 656.6 pt, starts p.22
+  tbl-g-1: 16349.5 > 688.7 pt, starts p.438
+  tbl-i-2: 720.4 > 683.3 pt, starts p.470
+```
+
+The Word probe measures its own page and reports 370/376 fitting. Its six oversized floats are the
+five PDF splits plus Table F.7, which fits the Typst page (498.8 pt against a 683.3 pt body) but not
+the Word page. Each engine splits only its own oversized floats; no table that fits its engine's page
+is split. The ordinal sequence is identical in both documents, so the comparison is positional:
+
+```text
+$ .venv/bin/python /tmp/opencode/oc2-0061/cross_check.py after.json <after SA DOCX>
+tables 376 word tables 376 labels aligned True
+pdf split 5 word oversized 6 identical False
+  uncaptioned-2: pages 16-18 (3), 23 rows
+  Table 0.3: pages 21-23 (3), 49 rows
+  Table G.1: pages 443-468 (26), 493 rows
+  Table I.2: pages 475-476 (2), 17 rows
+  uncaptioned-376: pages 494-514 (21), 529 rows
+```
+
+The sixth Word float is Table F.7; the PDF keeps it whole on one page.
+
+### 3. Word
+
+The build records its own measurement in `publication-manifest.json`:
+
+```text
+SA:     "docx_table_fit": "370/376 page-sized tables kept together (isolated LibreOffice measurement)"
+sample: "docx_table_fit": "33/33 page-sized tables kept together (isolated LibreOffice measurement)"
+```
+
+Fitting tables carry the keep chain (`cantSplit` on every row, `keepNext` on every row except the
+last, and on the caption after it) and the wrapper row; oversized tables keep their properties. The
+end-to-end synthetic test asserts this on a real Quarto build, and unit tests pin caption discovery
+in the `ImageCaption` layout cell.
+
+The LibreOffice rendering of the DOCX is checked page by page: a caption printed below its table must
+not be the first body content of a page, and no page may hold only a heading.
+
+```text
+$ .venv/bin/python /tmp/opencode/oc2-0061/lo_page_audit.py <baseline SA DOCX-as-LibreOffice.pdf>
+pages: 601
+caption-first pages: 15
+heading-only pages: 0
+$ .venv/bin/python /tmp/opencode/oc2-0061/lo_page_audit.py <R1 8ae8b17 SA DOCX-as-LibreOffice.pdf>
+pages: 606
+caption-first pages: 17
+heading-only pages: 0
+$ .venv/bin/python /tmp/opencode/oc2-0061/lo_page_audit.py <final SA DOCX-as-LibreOffice.pdf>
+pages: 639
+caption-first pages: 0
+heading-only pages: 0
+$ .venv/bin/python /tmp/opencode/oc2-0061/lo_page_audit.py <final sample DOCX-as-LibreOffice.pdf>
+pages: 71
+caption-first pages: 0
+heading-only pages: 0
+```
+
+### 4. Figure background, light and dark
+
+The SA reader site from the final build shows `mix-blend-mode: multiply` on Figure 1.2 in the light
+theme only:
+
+```text
+$ .venv/bin/python /tmp/opencode/oc2-0061/screenshots.py <final SA edition> sa
+{
+  "light": { "blend": "multiply", "canvas": "rgb(246, 241, 231)", "width": 520.9375, "height": 514.59375 },
+  "dark":  { "blend": "normal",   "canvas": "rgb(20, 26, 27)",     "width": 520.9375, "height": 514.59375 }
+}
+```
+
+Screenshots: `sa-figure-1-2-light.png` and `sa-figure-1-2-dark.png` in `/tmp/opencode/oc2-0061/`;
+the CI edition-preview artifact carries the same figure and tables pages under `screenshots/`.
+
+### 5. Repository checks and CI
+
+```text
+$ make full PYTHON=.venv/bin/python
+Ran 549 tests in 610.572s
+
+OK
+...
+VERIFY (full): 7 check(s), 0 problem(s)
+```
+
+```text
+$ gh run view 44169052627
+checks            success    quickstart         success
+template-install  success    wheel-install      success
+publication-build success    edition-preview (template) success
+edition-preview (sample, cesarcastrocuba/handbook-sample-01) success
+edition-preview (solutions-architecture, cesarcastrocuba/handbook-solutions-architecture) success
+```
+
+The checks above are re-run on the downloaded artifacts of that run, not on a local build:
+
+```text
+$ .venv/bin/python tools/scripts/pdf_float_audit.py ci/edition ci.json | tail -1
+split tables: 5 orphan captions: 0
+$ .venv/bin/python /tmp/opencode/oc2-0061/lo_page_audit.py ci/libreoffice/book-docx-as-libreoffice.pdf
+pages: 639
+caption-first pages: 0
+heading-only pages: 0
+$ .venv/bin/python /tmp/opencode/oc2-0061/pdf_width_probe.py ci/edition
+raster figures seen: 121, mismatched: 0
+```
+
+The local build of the same commit reproduces every number: 370/376 Word floats kept, 514 PDF pages,
+5 split bodies and 0 orphan captions, 639 LibreOffice pages with 0 caption-first and 0 heading-only
+pages, and 121/121 raster widths. The sample artifact is identical locally and in CI: 33/33 Word
+floats kept, 61 pages, 0 splits, 0 orphans, 0 heading/caption-only pages, 71 LibreOffice pages, no
+caption-first or heading-only page. The sample figures are SVG, so the raster-width checks do not
+apply there; its HTML, PDF and DOCX are otherwise unchanged.
+
+## Known gaps and not done
+
+- LibreOffice pagination differs from the Typst PDF in page count; the DOCX keep logic is verified on
+  the LibreOffice rendering, not on desktop Word. Owner acceptance in desktop Word, release tagging,
+  publication and deployment are not part of this change.
+- The `build.optimization.pdf` block and other 0062 behaviour are untouched.
+- Rollback removes the figure hook/module/shared geometry wiring, the table measurement, lead group
+  and probe hooks, the CSS rule and their tests together.
