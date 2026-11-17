@@ -267,7 +267,7 @@
 #show table.cell: set block(breakable: false)
 #show table.cell: set text(hyphenate: false)
 #show table.cell: set par(justify: false)
-#import "handbook-render/typst/table-fit.typ": handbook-fit-table, handbook-fit-float
+#import "handbook-render/typst/table-fit.typ": handbook-fit-table, handbook-fit-float, handbook-float-group
 #show table: it => handbook-fit-table(it, hb-card-radius)
 
 // Captions -------------------------------------------------------------------

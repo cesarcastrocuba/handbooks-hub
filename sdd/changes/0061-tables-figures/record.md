@@ -1,9 +1,8 @@
 # Change 0061 — Table fit and raster figure layout
 
 Implementer Codex; reviewer/merger Claude. Branch `fix/0061-tables-figures` in the assigned new
-worktree, based on `39c524c` (0062 qpdf compaction). No version bump, tag or self-merge.
-Parallel 0060/PR 96 owns appendix transforms/numbering and Document Control; this change stays
-out of those regions. Rebase and final evidence follow before handoff.
+worktree, started at `39c524c` (0062 qpdf compaction), rebased onto merged 0060/PR 96 (`6d464ef`). No version bump, tag or self-merge.
+0060 owns appendix transforms/numbering and Document Control; this change stays out of those regions.
 
 ## Design
 
@@ -13,8 +12,8 @@ physical density retain their widths. Code examples are protected; image bytes a
 by this feature. The light-screen raster CSS rule uses multiply; dark mode and print remain native.
 
 Typst measures the entire table float, including its caption, against the complete page body.
-Only oversized tables may break; page-sized floats move whole. The table's sticky block keeps a
-bottom caption with its final fragment. Transparent context avoids accidentally boxing/clipping
+Only oversized table/lead-in groups may break; page-sized groups move whole. Caption space is reserved below table fragments and reclaimed with strong negative spacing,
+keeping the final row and bottom caption together without making a long table sticky. Transparent context avoids accidentally boxing/clipping
 long tables. The native figure remains internally breakable; its measured outer block owns fit.
 The metadata tags are invisible and support mechanical start/end page checks in the proof harness.
 
@@ -55,3 +54,41 @@ Whole-book after builds, screenshots, `make full`, CI previews and rechecking th
 are not yet complete. These are required before ready. Owner desktop Word acceptance, tags,
 publication and deployment are not performed. Rollback removes the figure hook/module/shared
 geometry wiring, table measurement/wrapping/probe hook, CSS rule and their tests together.
+
+## Reviewer R1 — preceding heading and short introduction
+
+[Early review](https://github.com/cesarcastrocuba/handbooks-hub/pull/100#issuecomment-6956425024)
+identified a heading-only SA page 470. A semantic PDF structure audit independently reproduced it.
+The sticky wrapper on a long table caused the heading to strand. Removing stickiness alone then
+exposed caption-only boundary cases, so the fix reserves caption space explicitly and keeps the
+leading heading and one short introduction with the first table/figure fragment. A short introduction
+is at most 80 words and 600 Unicode characters; other paragraphs remain ordinary flowing text.
+When the complete heading/introduction/float group exceeds the page body, the table may break;
+its first fragment stays with the lead and its caption stays with its last row. This also covers a
+table that fits alone but cannot fit together with its heading and caption.
+
+The Typst leading measurement includes collapsed block spacing using a 1 pt probe only inside
+`measure`; the probe is never rendered. Caption padding sits outside the clipped table surface,
+so the row corners retain their radius. Strong negative spacing is necessary: a negative weak
+`below` spacing collapses against the native caption gap and can still orphan a caption.
+Word explicitly keeps preceding headings and one bounded lead-in with table/image wrappers,
+including across bookmark nodes, before the verified pagination cache is rebuilt.
+
+Actual focused outputs after the fix:
+
+```text
+$ .venv/bin/python -m unittest discover -s tools/tests -p test_table_fit.py
+Ran 5 tests in 3.891s
+OK
+$ .venv/bin/python -m unittest discover -s tools/tests -p test_tables_figures_build.py
+Ran 1 test in 26.948s
+OK
+```
+
+The native boundary test checks all row counts 10 through 45, including the caption-fit boundary;
+headings share the first row's page and captions share the final row's page. The complete synthetic
+book also checks headings and short introductions before both tables and an image, repeated
+headers on every tall-table page, all three formats and Word's explicit keepNext properties.
+Both runtime test modules now run in the publication-build CI job with Quarto and LibreOffice.
+The final whole-book heading/caption-only page audit, rebuilt artifacts and refreshed CI evidence
+will follow before this draft is marked ready.

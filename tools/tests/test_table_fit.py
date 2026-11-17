@@ -3,7 +3,7 @@
 from pathlib import Path
 import json, re, shutil, subprocess, tempfile, unittest
 import xml.etree.ElementTree as ET
-from handbook_toolkit.docx_tables import keep_rows
+from handbook_toolkit.docx_tables import keep_rows, keep_leadins
 from handbook_toolkit.docx_xml import W
 
 
@@ -93,3 +93,83 @@ class TableFitTests(unittest.TestCase):
             self.assertEqual(containing("SHORTFIRST"), containing("SHORTCAPTION"))
             self.assertEqual(containing("LONGROW99"), containing("LONGCAPTION"))
             self.assertGreater(len(containing("LONGHEADER")), 1)
+
+    @unittest.skipUnless(
+        shutil.which("quarto") and shutil.which("pdftotext"),
+        "native pagination tools required",
+    )
+    def test_heading_and_caption_stay_with_boundary_height_tables(self):
+        helper = (
+            Path(__file__).resolve().parents[1]
+            / "src/handbook_toolkit/render_data/typst/table-fit.typ"
+        )
+        source = f"""#set page(width:160mm,height:120mm,margin:10mm)
+#set table(inset:6pt)
+#import "{helper}": handbook-fit-table, handbook-fit-float, handbook-float-group
+#show table: it=>handbook-fit-table(it,2pt)
+#show figure.where(kind:table):set block(breakable:true)
+#show figure.where(kind:table):handbook-fit-float
+"""
+        for n in range(10, 46):
+            source += f"""#pagebreak(weak:true)
+#handbook-float-group(lead:[#heading(level:2)[HEADING{n}X]],body:[#figure(table(columns:1,table.header[HEADER{n}X],..range({n}).map(i=>[ROW{n}X#i#sym.zws])),caption:figure.caption(position:bottom)[CAP{n}X]) <case{n}>])
+"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "boundary.typ"
+            path.write_text(source)
+            subprocess.run(
+                ["quarto", "typst", "compile", str(path), "--root", "/"],
+                check=True,
+                capture_output=True,
+            )
+            pages = subprocess.check_output(
+                ["pdftotext", "-layout", str(path.with_suffix(".pdf")), "-"], text=True
+            ).split("\f")
+            containing = lambda token: [
+                i for i, page in enumerate(pages) if token in page
+            ]
+            for n in range(10, 46):
+                with self.subTest(rows=n):
+                    self.assertEqual(
+                        containing(f"HEADING{n}X"), containing(f"ROW{n}X0")
+                    )
+                    self.assertEqual(
+                        containing(f"ROW{n}X{n-1}"), containing(f"CAP{n}X")
+                    )
+
+    def test_word_leadin_crosses_bookmarks_and_keeps_heading_with_table_or_image(self):
+        root = ET.Element(W + "document")
+        body = ET.SubElement(root, W + "body")
+        heading = ET.SubElement(body, W + "p")
+        pp = ET.SubElement(heading, W + "pPr")
+        ET.SubElement(pp, W + "pStyle", {W + "val": "Heading2"})
+        ET.SubElement(pp, W + "keepNext", {W + "val": "0"})
+        ET.SubElement(ET.SubElement(heading, W + "r"), W + "t").text = "Heading"
+        intro = ET.SubElement(body, W + "p")
+        ET.SubElement(ET.SubElement(intro, W + "r"), W + "t").text = (
+            "A short introduction."
+        )
+        ET.SubElement(body, W + "bookmarkEnd")
+        table = ET.SubElement(body, W + "tbl")
+        ET.SubElement(
+            ET.SubElement(table, W + "tblPr"), W + "tblLook", {W + "firstRow": "1"}
+        )
+        self.assertEqual(keep_leadins(root), 2)
+        for p in [heading, intro]:
+            self.assertEqual(p.find(W + "pPr/" + W + "keepNext").get(W + "val"), "1")
+        body.remove(table)
+        picture = ET.SubElement(body, W + "p")
+        ET.SubElement(ET.SubElement(picture, W + "r"), W + "drawing")
+        self.assertEqual(keep_leadins(root), 2)
+
+    def test_word_does_not_chain_long_body_paragraphs_to_floats(self):
+        root = ET.Element(W + "document")
+        body = ET.SubElement(root, W + "body")
+        p = ET.SubElement(body, W + "p")
+        ET.SubElement(ET.SubElement(p, W + "r"), W + "t").text = "word " * 81
+        table = ET.SubElement(body, W + "tbl")
+        ET.SubElement(
+            ET.SubElement(table, W + "tblPr"), W + "tblLook", {W + "firstRow": "1"}
+        )
+        self.assertEqual(keep_leadins(root), 0)
+        self.assertIsNone(p.find(W + "pPr/" + W + "keepNext"))

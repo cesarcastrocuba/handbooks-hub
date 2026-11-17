@@ -84,21 +84,94 @@ def keep_rows(table: ET.Element, caption: ET.Element | None, after: bool) -> Non
             ET.SubElement(pp, W + "keepNext")
 
 
+def keep_leadins(root: ET.Element) -> int:
+    """Keep headings and one short introduction with the following float."""
+    changed = set()
+    for container in root.iter():
+        if container.tag not in {W + "body", W + "tc"}:
+            continue
+        children = list(container)
+        for i, item in enumerate(children):
+            is_float = item.find(".//" + W + "drawing") is not None
+            if item.tag == W + "tbl":
+                is_float = is_float or any(
+                    look.get(W + "firstRow") in {"1", "true", "on"}
+                    for look in item.iter(W + "tblLook")
+                )
+            if not is_float:
+                continue
+            lead = False
+            for p in reversed(children[:i]):
+                if p.tag in {W + "bookmarkStart", W + "bookmarkEnd"}:
+                    continue
+                if p.tag != W + "p" or p.find(".//" + W + "sectPr") is not None:
+                    break
+                if any(br.get(W + "type") == "page" for br in p.iter(W + "br")):
+                    break
+                text = "".join(t.text or "" for t in p.iter(W + "t")).strip()
+                style = p.find(W + "pPr/" + W + "pStyle")
+                name = style.get(W + "val", "") if style is not None else ""
+                heading = name.startswith("Heading")
+                if not heading and text:
+                    if lead or name not in {
+                        "",
+                        "Normal",
+                        "BodyText",
+                        "FirstParagraph",
+                        "Compact",
+                    }:
+                        break
+                    if (
+                        len(text.split()) > 80
+                        or len(text) > 600
+                        or p.find(W + "pPr/" + W + "numPr") is not None
+                    ):
+                        break
+                    lead = True
+                pp = p.find(W + "pPr")
+                if pp is None:
+                    pp = ET.Element(W + "pPr")
+                    p.insert(0, pp)
+                keep = pp.find(W + "keepNext")
+                if keep is None:
+                    keep = ET.SubElement(pp, W + "keepNext")
+                keep.set(W + "val", "1")
+                changed.add(id(p))
+                if heading:
+                    lead = True
+    return len(changed)
+
+
 def keep_fitting_tables(
     path: Path, fonts: Path, *, required: bool, compresslevel: int | None = 9
 ) -> dict[str, str]:
     from .docx_pages import export_pdf, font_environment, destination_pages
 
-    if not shutil.which("soffice") or not shutil.which("pdfinfo"):
-        if required:
-            raise BuildError("Word table measurement requires LibreOffice and pdfinfo")
-        return {"docx_table_fit": "not measured (LibreOffice or pdfinfo unavailable)"}
     with ZipFile(path) as archive:
         members = {n: archive.read(n) for n in archive.namelist()}
     root = ET.fromstring(members["word/document.xml"])
+    leads = keep_leadins(root)
+    lead_info = {
+        "docx_float_leadins": f"{leads} heading/lead-in paragraphs kept with floats"
+    }
+    available = shutil.which("soffice") and shutil.which("pdfinfo")
+    if required and not available:
+        raise BuildError("Word table measurement requires LibreOffice and pdfinfo")
     tables = candidates(root)
-    if not tables:
-        return {"docx_table_fit": "no data tables"}
+    if not tables or not available:
+        order_properties(root)
+        members["word/document.xml"] = ET.tostring(
+            root, encoding="utf-8", xml_declaration=True
+        )
+        _write_package(path, members, compresslevel=compresslevel)
+        return {
+            **lead_info,
+            "docx_table_fit": (
+                "no data tables"
+                if not tables
+                else "not measured (LibreOffice or pdfinfo unavailable)"
+            ),
+        }
     probe = deepcopy(root)
     body = probe.find(W + "body")
     assert body is not None
@@ -205,5 +278,6 @@ def keep_fitting_tables(
     )
     _write_package(path, members, compresslevel=compresslevel)
     return {
-        "docx_table_fit": f"{kept}/{len(tables)} page-sized tables kept together (isolated LibreOffice measurement)"
+        **lead_info,
+        "docx_table_fit": f"{kept}/{len(tables)} page-sized tables kept together (isolated LibreOffice measurement)",
     }

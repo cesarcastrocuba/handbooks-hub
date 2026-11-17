@@ -14,6 +14,7 @@ RENDER_DIRECTORY = "handbook-render"
 RESOURCE_NAMES = (
     "filters/index-resources.lua",
     "filters/table-layout.lua",
+    "filters/float-leadins.lua",
     "filters/task-checkbox.lua",
     "filters/docx-callouts.lua",
     "filters/front-crossrefs.lua",

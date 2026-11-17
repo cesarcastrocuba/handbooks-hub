@@ -552,6 +552,11 @@ def _render_config(
         {"at": "pre-ast", "path": (resources["filters/task-checkbox.lua"]).relative_to(workspace).as_posix()},
         {"at": "pre-ast", "path": (resources["filters/docx-callouts.lua"]).relative_to(workspace).as_posix()},
     ]
+    if "filters/float-leadins.lua" in resources:
+        config["filters"].append({
+            "at": "pre-ast",
+            "path": resources["filters/float-leadins.lua"].relative_to(workspace).as_posix(),
+        })
     if "filters/front-crossrefs.lua" in resources:
         config["filters"].append({
             "at": "post-render",

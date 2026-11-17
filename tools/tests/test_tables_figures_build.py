@@ -22,16 +22,19 @@ class TablesFiguresBuildTests(unittest.TestCase):
                 '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"><rect width="200" height="100" fill="white"/></svg>'
             )
             chapter = repo / "manuscript/chapters/pilot.qmd"
-            extra = "\n\n```{=typst}\n#v(16cm)\n```\n\n| SHORTKEY | Value |\n| --- | --- |\n| SHORTFIRST | A |\n| SHORTLAST | B |\n\n: Page-sized fixture. {#tbl-short}\n\n"
+            extra = "\n\n```{=typst}\n#v(16cm)\n```\n\n### SHORTHEADING\n\nSHORTINTRO A short introduction.\n\n| SHORTKEY | Value |\n| --- | --- |\n| SHORTFIRST | A |\n| SHORTLAST | B |\n\n: Page-sized fixture. {#tbl-short}\n\n"
             extra += (
-                "| LONGKEY | Value |\n| --- | --- |\n"
+                "### LONGHEADING\n\nLONGINTRO A short introduction.\n\n| LONGKEY | Value |\n| --- | --- |\n"
                 + "".join(
                     f"| LONGROW{i:03d} | A long table entry. |\n" for i in range(100)
                 )
                 + "\n: Tall table fixture. {#tbl-long}\n\n"
             )
-            extra += '![Natural fixture.](../images/natural.png){#fig-natural width="100%"}\n\n![Tall fixture.](../images/tall.png){#fig-tall width="100%"}\n\n![Vector fixture.](../images/vector.svg){#fig-vector width="60%"}\n'
-            chapter.write_text(chapter.read_text() + extra)
+            extra += '### IMAGEHEADING\n\nIMAGEINTRO A short introduction.\n\n![Natural fixture.](../images/natural.png){#fig-natural width="100%"}\n\n![Tall fixture.](../images/tall.png){#fig-tall width="100%"}\n\n![Vector fixture.](../images/vector.svg){#fig-vector width="60%"}\n'
+            marker = '::: {.callout-important appearance="simple" icon=false title="Review Checklist'
+            original = chapter.read_text()
+            self.assertIn(marker, original)
+            chapter.write_text(original.replace(marker, extra + marker))
             out = root / "dist"
             build_book(
                 repo, commit_all(repo), out, mode="chapter", require_page_numbers=True
@@ -40,6 +43,13 @@ class TablesFiguresBuildTests(unittest.TestCase):
                 ["pdftotext", "-layout", str(out / "book.pdf"), "-"], text=True
             ).split("\f")
             containing = lambda token: [i for i, p in enumerate(pages) if token in p]
+            for heading, intro, first in [
+                ("SHORTHEADING", "SHORTINTRO", "SHORTFIRST"),
+                ("LONGHEADING", "LONGINTRO", "LONGROW000"),
+                ("IMAGEHEADING", "IMAGEINTRO", "Natural fixture."),
+            ]:
+                self.assertEqual(containing(heading)[-1], containing(first)[-1])
+                self.assertEqual(containing(intro)[-1], containing(first)[-1])
             self.assertEqual(containing("SHORTFIRST"), containing("SHORTLAST"))
             self.assertEqual(
                 containing("SHORTLAST")[-1], containing("Page-sized fixture.")[-1]
@@ -69,6 +79,29 @@ class TablesFiguresBuildTests(unittest.TestCase):
                 self.assertNotIn("handbook-raster", vector.attrs.get("class", ""))
             with ZipFile(out / "book.docx") as z:
                 doc = ET.fromstring(z.read("word/document.xml"))
+            for token in [
+                "SHORTHEADING",
+                "SHORTINTRO",
+                "LONGHEADING",
+                "LONGINTRO",
+                "IMAGEHEADING",
+                "IMAGEINTRO",
+            ]:
+                paragraphs = [
+                    p
+                    for p in doc.iter(W + "p")
+                    if token in "".join(t.text or "" for t in p.iter(W + "t"))
+                ]
+                paragraphs = [
+                    p
+                    for p in paragraphs
+                    if (style := p.find(W + "pPr/" + W + "pStyle")) is None
+                    or not style.get(W + "val", "").startswith("TOC")
+                ]
+                self.assertEqual(len(paragraphs), 1, token)
+                keep = paragraphs[0].find(W + "pPr/" + W + "keepNext")
+                self.assertIsNotNone(keep, token)
+                self.assertNotEqual(keep.get(W + "val"), "0", token)
             tables = [t for t in doc.iter(W + "tbl") if len(t.findall(W + "tr")) > 1]
             short = next(
                 t
