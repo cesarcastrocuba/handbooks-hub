@@ -123,6 +123,40 @@ class TableFitTests(unittest.TestCase):
             self.assertEqual(containing("LONGROW99"), containing("LONGCAPTION"))
             self.assertGreater(len(containing("LONGHEADER")), 1)
 
+    @unittest.skipUnless(shutil.which("quarto"), "Quarto pandoc required")
+    def test_lead_group_is_not_wrapped_in_a_breakable_div(self):
+        # A Div renders as a breakable #block[ and Typst then shrinks an image to
+        # the remaining space instead of moving it to the next page.
+        leadins = (
+            Path(__file__).resolve().parents[1]
+            / "src/handbook_toolkit/render_data/filters/float-leadins.lua"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "lead.md"
+            source.write_text(
+                '### Heading Two\n\nA short introduction.\n\n'
+                '![Caption](img.png){#fig-x width="60%"}\n'
+            )
+            result = subprocess.run(
+                [
+                    "quarto",
+                    "pandoc",
+                    "-f",
+                    "markdown",
+                    "-t",
+                    "typst",
+                    "--lua-filter",
+                    str(leadins),
+                    str(source),
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            self.assertTrue(result.stdout.startswith("#handbook-float-group("))
+            self.assertNotIn("#block[", result.stdout)
+            self.assertIn("#figure(", result.stdout)
+
     @unittest.skipUnless(
         shutil.which("quarto") and shutil.which("pdfimages"),
         "native pagination tools required",

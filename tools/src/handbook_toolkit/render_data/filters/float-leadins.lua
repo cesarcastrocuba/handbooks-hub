@@ -31,12 +31,13 @@ function Blocks(blocks)
         lead:insert(1, result:remove(#result))
       end
       if #lead > 0 then
-        local group = pandoc.List({pandoc.RawBlock("typst", "#handbook-float-group(lead: [")})
-        group:extend(lead)
-        group:insert(pandoc.RawBlock("typst", "], body: ["))
-        group:insert(block)
-        group:insert(pandoc.RawBlock("typst", "])"))
-        result:insert(pandoc.Div(group))
+        -- Flat raw blocks, not a Div: a Div renders as a breakable #block[ and
+        -- Typst shrinks an image to that block's remaining space.
+        result:insert(pandoc.RawBlock("typst", "#handbook-float-group(lead: ["))
+        result:extend(lead)
+        result:insert(pandoc.RawBlock("typst", "], body: ["))
+        result:insert(block)
+        result:insert(pandoc.RawBlock("typst", "])"))
       else result:insert(block) end
     else result:insert(block) end
   end
