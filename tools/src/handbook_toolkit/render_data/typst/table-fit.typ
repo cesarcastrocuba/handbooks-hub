@@ -26,10 +26,12 @@
   handbook-float-budget.update(previous)
 }
 
-#let handbook-caption-reserve = state("handbook-caption-reserve", 0pt)
-
 #let handbook-fit-table(it, radius) = context {
-  let reserve = handbook-caption-reserve.get()
+  // A local table show-set passes the caption reservation through native styles.
+  let inset = block.inset
+  let bottom = if type(inset) == dictionary { inset.at("bottom", default: inset.at("y", default: inset.at("rest", default: 0pt))) } else { inset }
+  let reserve = if type(bottom) == relative { bottom.length + bottom.ratio * handbook-body-height() } else { bottom }
+  set block(inset: 0pt)
   let full = measure(it, width: handbook-body-width()).height
   let budget = handbook-float-budget.get()
   let limit = (if budget == none { handbook-body-height() } else { budget }) - reserve
@@ -45,10 +47,8 @@
   let full = measure(it, width: handbook-body-width()).height
   let budget = handbook-float-budget.get()
   let limit = if budget == none { handbook-body-height() } else { budget }
-  let previous = handbook-caption-reserve.get()
   let reserve = calc.max(0pt, full - measure(it.body, width: handbook-body-width()).height)
-  handbook-caption-reserve.update(reserve)
+  show table: set block(inset: (bottom: reserve))
   let name = if it.has("label") { str(it.label) } else { "unlabelled" }
   block(breakable: full > limit)[#context [#metadata((event: "start", name: name, height: full.pt(), body: limit.pt(), page: counter(page).get().first())) <handbook-table-fit>]#it#context [#metadata((event: "end", name: name, page: counter(page).get().first())) <handbook-table-fit>]]
-  handbook-caption-reserve.update(previous)
 }

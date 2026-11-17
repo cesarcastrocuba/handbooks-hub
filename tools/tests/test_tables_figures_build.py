@@ -3,6 +3,7 @@
 from pathlib import Path
 import json, posixpath, re, subprocess, tempfile, unittest, xml.etree.ElementTree as ET
 from zipfile import ZipFile
+from unittest.mock import patch
 from test_build import make_book, commit_all, build_book, BUILD_AVAILABLE
 from test_figure_layout import png
 from html_support import Document
@@ -36,9 +37,23 @@ class TablesFiguresBuildTests(unittest.TestCase):
             self.assertIn(marker, original)
             chapter.write_text(original.replace(marker, extra + marker))
             out = root / "dist"
-            build_book(
-                repo, commit_all(repo), out, mode="chapter", require_page_numbers=True
-            )
+            real_run = subprocess.run
+
+            def checked_run(*args, **kwargs):
+                result = real_run(*args, **kwargs)
+                self.assertNotIn(
+                    "did not converge", str(result.stdout) + str(result.stderr)
+                )
+                return result
+
+            with patch("subprocess.run", side_effect=checked_run):
+                build_book(
+                    repo,
+                    commit_all(repo),
+                    out,
+                    mode="chapter",
+                    require_page_numbers=True,
+                )
             pages = subprocess.check_output(
                 ["pdftotext", "-layout", str(out / "book.pdf"), "-"], text=True
             ).split("\f")

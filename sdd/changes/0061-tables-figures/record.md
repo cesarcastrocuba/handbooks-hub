@@ -92,3 +92,35 @@ headers on every tall-table page, all three formats and Word's explicit keepNext
 Both runtime test modules now run in the publication-build CI job with Quarto and LibreOffice.
 The final whole-book heading/caption-only page audit, rebuilt artifacts and refreshed CI evidence
 will follow before this draft is marked ready.
+
+### Convergence check
+
+The whole-book recheck caught a Typst convergence warning in the first R1 implementation even
+though its physical page audit passed. Shared caption reservation state has been removed. A local
+`show table: set block(inset: ...)` passes the measured caption reservation to the table helper,
+which captures and clears that native style before laying out cells. The fixed leading budget is
+independent of table layout. Both native and complete synthetic tests now reject convergence
+warnings explicitly. A fresh native compile of all SA content produced an empty warning log:
+
+```text
+$ quarto typst compile /tmp/codex-0061-sa-after-r1-typst/index.typ /tmp/codex-0061-evidence/sa-style-reserve.pdf --font-path /tmp/codex-0061-sa-after-r1-typst/handbook-render/fonts --root /tmp/codex-0061-sa-after-r1-typst
+exit 0
+$ wc -c /tmp/codex-0061-evidence/sa-style-reserve.log
+0 /tmp/codex-0061-evidence/sa-style-reserve.log
+$ .venv/bin/python /tmp/codex-0061-evidence/orphan-pages.py /tmp/codex-0061-evidence/sa-style-reserve.pdf
+{
+  "pages": 515,
+  "heading_or_caption_only": {}
+}
+$ .venv/bin/python -m unittest discover -s tools/tests -p test_table_fit.py
+Ran 5 tests in 3.688s
+OK
+$ .venv/bin/python -m unittest discover -s tools/tests -p test_tables_figures_build.py
+Ran 1 test in 30.393s
+OK
+```
+
+The physical page audit follows the PDF's semantic structure (heading, caption and other body
+content); running furniture is excluded by the PDF tags. Layout metadata's embedded page-counter
+values are not used as physical page evidence: measured content can report a stale counter value.
+Final evidence below uses actual semantic table pages and physical locations.

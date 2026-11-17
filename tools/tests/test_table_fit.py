@@ -46,7 +46,7 @@ class TableFitTests(unittest.TestCase):
 """.replace("HELPER", helper.as_posix())
             path = root / "test.typ"
             path.write_text(script)
-            subprocess.run(
+            compiled = subprocess.run(
                 [
                     "quarto",
                     "typst",
@@ -59,6 +59,7 @@ class TableFitTests(unittest.TestCase):
                 check=True,
                 capture_output=True,
             )
+            self.assertNotIn(b"did not converge", compiled.stdout + compiled.stderr)
             result = subprocess.run(
                 [
                     "quarto",
@@ -117,11 +118,12 @@ class TableFitTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "boundary.typ"
             path.write_text(source)
-            subprocess.run(
+            compiled = subprocess.run(
                 ["quarto", "typst", "compile", str(path), "--root", "/"],
                 check=True,
                 capture_output=True,
             )
+            self.assertNotIn(b"did not converge", compiled.stdout + compiled.stderr)
             pages = subprocess.check_output(
                 ["pdftotext", "-layout", str(path.with_suffix(".pdf")), "-"], text=True
             ).split("\f")
