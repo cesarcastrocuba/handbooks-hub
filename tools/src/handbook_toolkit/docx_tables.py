@@ -14,6 +14,9 @@ from .docx_fields import _ensure_bookmark
 from .docx_post import _write_package
 
 
+CAPTION_STYLES = {"TableCaption", "ImageCaption"}
+
+
 def candidates(root: ET.Element) -> list[tuple[ET.Element, ET.Element | None, bool]]:
     body = root.find(W + "body")
     if body is None:
@@ -39,9 +42,11 @@ def candidates(root: ET.Element) -> list[tuple[ET.Element, ET.Element | None, bo
                 if p.tag != W + "p":
                     break
                 ps = p.find(W + "pPr/" + W + "pStyle")
+                # Quarto places a table float's caption in the same layout cell and
+                # styles it ImageCaption, like a figure caption.
                 if (
                     ps is not None
-                    and ps.get(W + "val") == "TableCaption"
+                    and ps.get(W + "val") in CAPTION_STYLES
                     and id(p) not in used
                 ):
                     caption = p
@@ -58,7 +63,12 @@ def candidates(root: ET.Element) -> list[tuple[ET.Element, ET.Element | None, bo
     return found
 
 
-def keep_rows(table: ET.Element, caption: ET.Element | None, after: bool) -> None:
+def keep_rows(
+    table: ET.Element,
+    caption: ET.Element | None,
+    after: bool,
+    wrapper: ET.Element | None = None,
+) -> None:
     rows = table.findall(W + "tr")
     for i, row in enumerate(rows):
         rp = row.find(W + "trPr")
@@ -75,6 +85,15 @@ def keep_rows(table: ET.Element, caption: ET.Element | None, after: bool) -> Non
                     p.insert(0, pp)
                 if pp.find(W + "keepNext") is None:
                     ET.SubElement(pp, W + "keepNext")
+    # Quarto puts the table caption in the same cell of a one-row layout table.
+    # Guard that wrapper row as a unit: keepNext alone does not cross the table boundary.
+    if wrapper is not None:
+        rp = wrapper.find(W + "trPr")
+        if rp is None:
+            rp = ET.Element(W + "trPr")
+            wrapper.insert(0, rp)
+        if rp.find(W + "cantSplit") is None:
+            ET.SubElement(rp, W + "cantSplit")
     if caption is not None and not after:
         pp = caption.find(W + "pPr")
         if pp is None:
@@ -267,10 +286,17 @@ def keep_fitting_tables(
         pdf = export_pdf(probe_path, directory / "pdf", env=env)
         pages = destination_pages(pdf, marks)
     kept = 0
+    parents = {child: parent for parent in root.iter() for child in parent}
     for i, (table, caption, after) in enumerate(tables):
         start, ends = boundaries[i]
         if all(pages[start] == pages[end] for end in ends):
-            keep_rows(table, caption, after)
+            wrapper = None
+            cell = parents.get(caption) if caption is not None else None
+            if cell is not None and cell.tag == W + "tc":
+                row = parents.get(cell)
+                if row is not None and row.tag == W + "tr":
+                    wrapper = row
+            keep_rows(table, caption, after, wrapper)
             kept += 1
     order_properties(root)
     members["word/document.xml"] = ET.tostring(

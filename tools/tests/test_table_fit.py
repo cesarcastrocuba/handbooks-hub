@@ -3,7 +3,7 @@
 from pathlib import Path
 import json, re, shutil, subprocess, tempfile, unittest
 import xml.etree.ElementTree as ET
-from handbook_toolkit.docx_tables import keep_rows, keep_leadins
+from handbook_toolkit.docx_tables import candidates, keep_rows, keep_leadins
 from handbook_toolkit.docx_xml import W
 
 
@@ -24,6 +24,34 @@ class TableFitTests(unittest.TestCase):
                 p.find(W + "pPr/" + W + "keepNext") is not None for p in t.iter(W + "p")
             )
         )
+
+    def test_word_layout_cell_caption_is_found_and_kept(self):
+        # Quarto wraps a table float in a one-cell layout table and styles its
+        # caption ImageCaption; only the caption style differs from a figure.
+        root = ET.Element(W + "document")
+        body = ET.SubElement(root, W + "body")
+        layout = ET.SubElement(body, W + "tbl")
+        row = ET.SubElement(layout, W + "tr")
+        cell = ET.SubElement(row, W + "tc")
+        table = ET.SubElement(cell, W + "tbl")
+        properties = ET.SubElement(table, W + "tblPr")
+        ET.SubElement(properties, W + "tblStyle", {W + "val": "Table"})
+        ET.SubElement(properties, W + "tblLook", {W + "firstRow": "1"})
+        for i in range(2):
+            data_row = ET.SubElement(table, W + "tr")
+            data_cell = ET.SubElement(data_row, W + "tc")
+            ET.SubElement(data_cell, W + "p")
+        caption = ET.SubElement(cell, W + "p")
+        caption_properties = ET.SubElement(caption, W + "pPr")
+        ET.SubElement(caption_properties, W + "pStyle", {W + "val": "ImageCaption"})
+        found = candidates(root)
+        self.assertEqual([(value[0], value[1], value[2]) for value in found], [(table, caption, True)])
+        keep_rows(table, caption, True, row)
+        final = table.findall(W + "tr")[-1]
+        self.assertTrue(
+            all(p.find(W + "pPr/" + W + "keepNext") is not None for p in final.iter(W + "p"))
+        )
+        self.assertIsNotNone(row.find(W + "trPr/" + W + "cantSplit"))
 
     @unittest.skipUnless(shutil.which("quarto"), "Quarto Typst required")
     def test_measured_short_moves_whole_and_tall_breaks_with_its_caption(self):
@@ -94,6 +122,53 @@ class TableFitTests(unittest.TestCase):
             self.assertEqual(containing("SHORTFIRST"), containing("SHORTCAPTION"))
             self.assertEqual(containing("LONGROW99"), containing("LONGCAPTION"))
             self.assertGreater(len(containing("LONGHEADER")), 1)
+
+    @unittest.skipUnless(
+        shutil.which("quarto") and shutil.which("pdfimages"),
+        "native pagination tools required",
+    )
+    def test_figure_in_lead_group_keeps_its_stated_width(self):
+        # A breakable wrapper around the group scaled images down to the remaining
+        # space instead of moving them to the next page.
+        from test_figure_layout import png as fixture
+
+        helper = (
+            Path(__file__).resolve().parents[1]
+            / "src/handbook_toolkit/render_data/typst/table-fit.typ"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            image = root / "tall.png"
+            image.write_bytes(fixture(1000, 1200))
+            source = root / "figure.typ"
+            source.write_text(
+                f"""#set page(paper:"a4",margin:(x:2.2cm,y:2.4cm))
+#import "{helper}": handbook-float-group
+#v(20cm)
+#handbook-float-group(lead:[LEADTEXT], body:[#figure(image("{image}", width: 60%), caption: [CAPTIONTEXT])])
+"""
+            )
+            subprocess.run(
+                ["quarto", "typst", "compile", str(source), "--root", "/"],
+                check=True,
+                capture_output=True,
+            )
+            pages = subprocess.check_output(
+                ["pdftotext", "-layout", str(root / "figure.pdf"), "-"], text=True
+            ).split("\f")
+            containing = lambda token: [i for i, page in enumerate(pages) if token in page]
+            self.assertEqual(containing("LEADTEXT"), containing("CAPTIONTEXT"))
+            listing = subprocess.check_output(
+                ["pdfimages", "-list", str(root / "figure.pdf")], text=True
+            )
+            columns = next(
+                line.split()
+                for line in listing.splitlines()
+                if line.split()[:1] and line.split()[0].isdigit()
+            )
+            ppi = float(columns[-4])
+            body = (21.0 - 2 * 2.2) / 2.54 * 72
+            self.assertAlmostEqual(ppi, 1000 / (0.6 * body / 72), delta=2)
 
     @unittest.skipUnless(
         shutil.which("quarto") and shutil.which("pdftotext"),

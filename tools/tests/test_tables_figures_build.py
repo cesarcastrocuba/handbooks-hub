@@ -140,3 +140,19 @@ class TablesFiguresBuildTests(unittest.TestCase):
                     for p in long.findall(W + "tr")[1].iter(W + "p")
                 )
             )
+            # Quarto writes the table caption into the float's layout cell with the
+            # ImageCaption style; the final row must stay with it.
+            captions = [
+                p
+                for p in doc.iter(W + "p")
+                if (style := p.find(W + "pPr/" + W + "pStyle")) is not None
+                and style.get(W + "val") == "ImageCaption"
+                and "Page-sized fixture." in "".join(t.text or "" for t in p.iter(W + "t"))
+            ]
+            self.assertEqual(len(captions), 1)
+            self.assertTrue(
+                all(
+                    p.find(W + "pPr/" + W + "keepNext") is not None
+                    for p in short.findall(W + "tr")[-1].iter(W + "p")
+                )
+            )

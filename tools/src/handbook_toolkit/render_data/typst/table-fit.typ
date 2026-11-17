@@ -20,9 +20,18 @@
 #let handbook-float-budget = state("handbook-float-budget", none)
 #let handbook-float-group(lead: [], body: []) = context {
   let previous = handbook-float-budget.get()
-  let leading = measure([#block(sticky: true, lead)#block(height: 1pt)[#rect(width: 1pt, height: 1pt)]], width: handbook-body-width()).height - 1pt
+  let probe = block(height: 1pt)[#rect(width: 1pt, height: 1pt)]
+  let leading = measure([#block(sticky: true, lead)#probe], width: handbook-body-width()).height - 1pt
+  // A breakable wrapper around an image would scale it down to the remaining space;
+  // measure the group, then keep it unbreakable when it fits the page body.
+  let full = measure([#block(sticky: true, lead)#probe#body], width: handbook-body-width()).height - 1pt
   handbook-float-budget.update(handbook-body-height() - leading)
-  block(breakable: true)[#block(sticky: true, lead)#body]
+  if full <= handbook-body-height() {
+    block(breakable: false)[#lead#body]
+  } else {
+    lead
+    body
+  }
   handbook-float-budget.update(previous)
 }
 
