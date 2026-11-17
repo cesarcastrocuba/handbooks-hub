@@ -19,11 +19,12 @@ semantic versioning once the toolkit is published.
 ### Fixed
 
 - Appendices and Document Control normalization (change `0060`):
-  - Appendix L1 headings consistently display literal "Appendix X — Title" across HTML, PDF, DOCX, and Markdown editions regardless of whether source headings specify `.unnumbered`.
-  - Suppressed standalone "Appendices" part page in PDF/Typst output while keeping literal "Appendix A — …" entries in Contents and bookmarks.
-  - HTML sidebar organizes Appendices into a dedicated part containing only appendices; References and Analytic Index remain top-level items directly following it.
-  - Retained cross-edition numbering parity for sections (A.1…), tables, and figures (A.N, BM.N, 0.N) and anchors.
-  - Validates edition version on book-owned Document Control tables instead of redundantly injecting a duplicate table.
+  - Appendix headings read the literal "Appendix X — Title" in the body, the PDF Contents and bookmarks, the DOCX heading and cached contents, and the HTML page title and sidebar, for sources that carry the label and for `{.unnumbered}` and numbered ones alike, with no double space after the dash.
+  - Appendix sections are staged as literal "A.N Title" headings, so their numbering is the same in HTML, PDF, DOCX and Markdown.
+  - The print editions keep one flat chapter list: Quarto's native `book.appendices` no longer opens a standalone page holding only "Appendices".
+  - The reading site builds an "Appendices" part that holds only the appendices; References and the analytic Index stay top level after it and the References breadcrumb reads "References". The post-render HTML rewriting is removed.
+  - Appendix figure and table labels (`tbl-a-1`, `fig-f-1`) read "Table A.1" and "Figure F.1" in HTML, DOCX and the list pages; section anchors, glossary pointers, cross-reference links and Index locations keep their parity.
+  - A book-owned Document Control `| Field | Value |` table is validated against the edition version instead of receiving a duplicate table.
 
 
 ## [1.8.0] - Unreleased
