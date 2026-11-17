@@ -74,10 +74,11 @@ jobs:
         with:
           version: "1.11.9"
 
-      - name: Install system inspection dependencies
+      - name: Install system inspection and PDF compaction dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends poppler-utils libreoffice-writer
+          sudo apt-get install -y --no-install-recommends poppler-utils qpdf libreoffice-writer
+          test "$(qpdf --version | head -1 | cut -d' ' -f3 | cut -d. -f1)" -ge 11
 
       - name: Verify the Quarto version
         run: test "$(quarto --version)" = "1.11.9"
@@ -135,6 +136,11 @@ jobs:
               raise SystemExit("manifest commit does not match the checked-out commit")
           if manifest["book"]["version"] != os.environ["VERSION"]:
               raise SystemExit("manifest version does not match the requested version")
+          compaction = manifest["build"].get("optimization", {}).get("pdf", {})
+          if compaction.get("status") not in {"optimized", "kept: no gain"}:
+              raise SystemExit(f"release PDF was not compacted with qpdf: {compaction.get('status')}")
+          if compaction.get("saved", 0) != compaction.get("before", 0) - compaction.get("after", 1):
+              raise SystemExit("manifest PDF compaction sizes are inconsistent")
           with zipfile.ZipFile(root / "book-html.zip") as archive:
               if "index.html" not in archive.namelist():
                   raise SystemExit("HTML ZIP has no index.html")

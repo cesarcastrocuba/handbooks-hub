@@ -36,5 +36,13 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
+      # Release builds compact the PDF with qpdf 11 or later; install it here too so a
+      # `make build` or `make full` in this workflow behaves like the release workflow.
+      - name: Install qpdf
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends qpdf
+          test "$(qpdf --version | head -1 | cut -d' ' -f3 | cut -d. -f1)" -ge 11
+
       - name: Run the fast checks
         run: make check

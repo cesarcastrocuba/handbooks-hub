@@ -8,6 +8,9 @@ book commit. It does **not** publish, upload, deploy, tag or release anything.
 - Git and a clean book repository at the exact full commit.
 - Quarto `1.11.9`.
 - Poppler `pdfinfo` for PDF inspection.
+- qpdf 11 or later for lossless PDF compaction. It is on by default; a release build fails
+  without it, an explicit `--preview` build records `skipped` in the manifest, and
+  `--no-optimize` turns it off together with the PNG and ZIP optimization.
 - No profile argument by default: the toolkit resolves the exact `book.yaml` profile pin from its
   installed `profile_data/`. `--profile PATH` remains an explicit reviewed override; there is no
   parent-checkout fallback.
@@ -109,7 +112,9 @@ the reading and print editions. Its limits:
   used as needles.
 
 The manifest records the exact commit, book version, toolkit/profile versions, build command, source
-epoch, and Quarto/Pandoc/Typst/Python/zlib runtime versions.
+epoch, and Quarto/Pandoc/Typst/Python/zlib runtime versions. `build.optimization.pdf` records the
+compaction tool and version, whether the PDF was `optimized`, `kept: no gain` or `skipped` (with the
+reason), and the size before and after in bytes.
 
 ## Limits
 

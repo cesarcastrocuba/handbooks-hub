@@ -65,7 +65,14 @@ does not produce a partial catalog entry.
       "pandoc": "3.10",
       "typst": "0.15.1",
       "python": "3.12",
-      "zlib": "1.3"
+      "zlib": "1.3",
+      "qpdf": "11.9.0"
+    },
+    "optimization": {
+      "pdf": {
+        "tool": "qpdf", "version": "11.9.0", "status": "optimized",
+        "before": 21360875, "after": 15416076, "saved": 5944799
+      }
     }
   },
   "artifacts": [
