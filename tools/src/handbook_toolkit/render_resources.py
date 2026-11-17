@@ -18,6 +18,7 @@ RESOURCE_NAMES = (
     "filters/docx-callouts.lua",
     "filters/front-crossrefs.lua",
     "typst/callout-breakable.typ",
+    "typst/table-fit.typ",
     "typst/handbook-typst.typ",
     "typst/typst-show.typ",
     "docx/reference.docx",

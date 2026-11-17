@@ -12,6 +12,7 @@ from .manuscript import validate_manuscript
 from .references import FENCE, IMAGE
 
 from .build_types import BuildError
+from .page_geometry import MARGINS, PAPER
 
 def _reading_groups(book: dict[str, Any], repo: Path) -> dict[str, list[str]]:
     manuscript = book["manuscript"]
@@ -595,8 +596,9 @@ def _render_config(
     typst_format["toc"] = False
     if "template-partials" not in typst_format:
         typst_format["template-partials"] = [staged("typst/typst-show.typ")]
+    typst_format.setdefault("papersize", PAPER)
     if "margin" not in typst_format:
-        typst_format["margin"] = {"x": "2.2cm", "y": "2.4cm"}
+        typst_format["margin"] = dict(MARGINS)
 
     docx_format = config["format"]["docx"]
     if "reference-doc" not in docx_format:

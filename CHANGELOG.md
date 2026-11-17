@@ -7,6 +7,8 @@ semantic versioning once the toolkit is published.
 
 ### Added
 
+- Page-sized tables stay with their captions in PDF and Word; raster figures respect their natural physical size and the tall-page cap in every edition, with light-only raster background blending in HTML (change `0061`).
+
 - Lossless PDF compaction with qpdf (change `0062`), on by default: `build-book` runs qpdf 11 or
   later with `--deterministic-id --object-streams=generate --compress-streams=y
   --stream-data=compress --recompress-flate --compression-level=9`, verifies the result with

@@ -65,7 +65,10 @@ class DesignTokenTests(unittest.TestCase):
         self.assertNotIn("hb-table-stripe", typst)
         self.assertIn("else { hb-surface }", typst)
         self.assertIn("stroke: (x: none, y: 0.5pt + hb-border)", typst)
-        self.assertIn("radius: hb-card-radius, clip: true, breakable: true", typst)
+        self.assertIn("handbook-fit-table(it, hb-card-radius)", typst)
+        table_fit = files("handbook_toolkit").joinpath("render_data/typst/table-fit.typ").read_text()
+        self.assertIn("radius: radius, clip: true", table_fit)
+        self.assertIn("breakable: full > limit", table_fit)
         self.assertEqual(design.docx_values()["surface"], tokens["color"]["surface"]["print"])
 
     def test_print_rules_match_the_light_web_border(self) -> None:

@@ -267,7 +267,8 @@
 #show table.cell: set block(breakable: false)
 #show table.cell: set text(hyphenate: false)
 #show table.cell: set par(justify: false)
-#show table: it => align(center, block(radius: hb-card-radius, clip: true, breakable: true)[#it])
+#import "handbook-render/typst/table-fit.typ": handbook-fit-table, handbook-fit-float
+#show table: it => handbook-fit-table(it, hb-card-radius)
 
 // Captions -------------------------------------------------------------------
 #show figure.caption: it => align(center)[
@@ -275,6 +276,7 @@
 ]
 #show figure.where(kind: "quarto-float-tbl"): set figure.caption(position: bottom)
 #show figure.where(kind: "quarto-float-tbl"): set block(breakable: true)
+#show figure.where(kind: "quarto-float-tbl"): handbook-fit-float
 
 // Callouts / Themed Alert Boxes ---------------------------------------------
 #let callout(

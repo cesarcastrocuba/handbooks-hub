@@ -221,6 +221,8 @@ def build_book(
             author=author,
             language=language,
         )
+        from .figure_layout import stage_figures
+        stage_figures(workspace, entries, config)
         control_table = document_control_table(fields)
         appendix_entries = list(groups.get("appendices", []))
         # The Markdown edition carries its own document-control header, so it is captured
@@ -353,6 +355,10 @@ def build_book(
                 "after": pdf_bytes,
                 "saved": 0,
             }
+        from .docx_tables import keep_fitting_tables
+        tool_versions.update(keep_fitting_tables(
+            payloads["docx"], workspace / RENDER_DIRECTORY / "fonts",
+            required=require_page_numbers, compresslevel=compresslevel))
         from .docx_pages import cache_page_numbers
         tool_versions.update(cache_page_numbers(
             payloads["docx"], workspace / RENDER_DIRECTORY / "fonts", required=require_page_numbers,

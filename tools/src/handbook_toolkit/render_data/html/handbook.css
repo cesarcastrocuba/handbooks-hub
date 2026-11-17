@@ -302,3 +302,10 @@ body:has(.list-of-tables) #title-block-header .title { margin-bottom: {{book-met
 
 #quarto-document-content h2 { font-size: var(--web-section-px); }
 #quarto-document-content h3 { font-size: var(--web-card-title-px); }
+
+/* Raster white blends with the light canvas; image files and dark mode stay native. */
+@media screen {
+  body.quarto-light .quarto-figure img.handbook-raster,
+  body.quarto-light figure img.handbook-raster,
+  body.quarto-light .quarto-figure.handbook-raster img { mix-blend-mode: multiply; }
+}
