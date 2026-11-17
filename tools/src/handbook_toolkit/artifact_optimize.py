@@ -1,19 +1,35 @@
 """Lossless, deterministic artifact optimization for publication builds.
 
 Recompresses staged PNG diagrams with filter 0 and zlib level 9, asserting
-decoded pixel equality before replacing.
+decoded pixel equality before replacing. Compacts the PDF with qpdf object
+streams and Flate recompression, keeping it only when it verifies and is
+strictly smaller (change 0062).
 """
 
 from __future__ import annotations
 
 import binascii
+import os
 from pathlib import Path
+import re
+import shutil
 import struct
+import subprocess
+import tempfile
 import zlib
 
 from .build_types import BuildError
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+QPDF_MINIMUM_MAJOR = 11
+QPDF_OPTIONS = (
+    "--deterministic-id",
+    "--object-streams=generate",
+    "--compress-streams=y",
+    "--stream-data=compress",
+    "--recompress-flate",
+    "--compression-level=9",
+)
 
 
 def _chunks(data: bytes) -> list[tuple[bytes, bytes]]:
@@ -171,4 +187,109 @@ def optimize_staged_pngs(root: Path) -> dict[str, int]:
         "before": sum(r["before"] for r in results),
         "after": sum(r["after"] for r in results),
         "saved": sum(r["saved"] for r in results),
+    }
+
+
+def qpdf_path() -> str | None:
+    """The qpdf executable: ``$QPDF`` when it names a file, else the one on ``PATH``."""
+    explicit = os.environ.get("QPDF")
+    if explicit:
+        return explicit if Path(explicit).is_file() else None
+    return shutil.which("qpdf")
+
+
+def qpdf_version(tool: str) -> str:
+    """The version qpdf reports, for example ``11.9.0``."""
+    try:
+        completed = subprocess.run(
+            [tool, "--version"], capture_output=True, text=True, check=True
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise BuildError(f"cannot run qpdf: {exc}") from exc
+    match = re.search(r"qpdf version (\d+\.\d+(?:\.\d+)?)", completed.stdout)
+    if not match:
+        raise BuildError("cannot parse the qpdf version")
+    return match.group(1)
+
+
+def _pdf_pages(tool: str, path: Path) -> int:
+    completed = subprocess.run(
+        [tool, "--show-npages", str(path)], capture_output=True, text=True, check=False
+    )
+    if completed.returncode != 0:
+        raise BuildError(f"qpdf could not count the pages of {path}: {completed.stderr.strip()}")
+    try:
+        return int(completed.stdout.strip())
+    except ValueError as exc:
+        raise BuildError(f"qpdf did not report a page count for {path}") from exc
+
+
+def _qpdf(tool: str, arguments: list[str], action: str) -> None:
+    completed = subprocess.run([tool, *arguments], capture_output=True, text=True, check=False)
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout).strip()
+        raise BuildError(f"qpdf {action} failed: {detail}")
+
+
+def optimize_pdf(path: Path, *, required: bool = False) -> dict[str, object]:
+    """Compact a PDF losslessly with qpdf, keeping the result only when it verifies.
+
+    ``required`` marks a release build: a missing or too old qpdf raises instead
+    of silently publishing an uncompacted PDF. A preview build reports the skip
+    so the manifest says exactly what happened.
+    """
+    path = Path(path)
+    before = path.stat().st_size
+    tool = qpdf_path()
+    if tool is None:
+        if required:
+            raise BuildError(
+                "qpdf 11 or later is required to compact a release PDF; "
+                "install qpdf or run an explicit preview build"
+            )
+        return {
+            "tool": "qpdf",
+            "status": "skipped: qpdf not found",
+            "before": before,
+            "after": before,
+            "saved": 0,
+        }
+    version = qpdf_version(tool)
+    if int(version.split(".")[0]) < QPDF_MINIMUM_MAJOR:
+        if required:
+            raise BuildError(
+                f"qpdf {version} cannot compact a release PDF; qpdf {QPDF_MINIMUM_MAJOR} or later is required"
+            )
+        return {
+            "tool": "qpdf",
+            "version": version,
+            "status": f"skipped: qpdf {QPDF_MINIMUM_MAJOR} or later is required",
+            "before": before,
+            "after": before,
+            "saved": 0,
+        }
+    with tempfile.TemporaryDirectory(dir=path.parent) as temporary:
+        candidate = Path(temporary) / path.name
+        _qpdf(tool, [*QPDF_OPTIONS, str(path), str(candidate)], "optimization")
+        _qpdf(tool, ["--check", "--warning-exit-0", str(candidate)], "verification")
+        if _pdf_pages(tool, candidate) != _pdf_pages(tool, path):
+            raise BuildError("PDF optimization changed the page count")
+        after = candidate.stat().st_size
+        if after >= before:
+            return {
+                "tool": "qpdf",
+                "version": version,
+                "status": "kept: no gain",
+                "before": before,
+                "after": before,
+                "saved": 0,
+            }
+        os.replace(candidate, path)
+    return {
+        "tool": "qpdf",
+        "version": version,
+        "status": "optimized",
+        "before": before,
+        "after": after,
+        "saved": before - after,
     }

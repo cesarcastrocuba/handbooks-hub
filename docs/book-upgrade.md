@@ -10,15 +10,19 @@ other contribution; nothing upgrades automatically.
 2. Lossless size optimization is on by default: staged PNG figures are recompressed with a pixel
    check, and the DOCX and HTML zip use zlib level 9. Only those two files change; build with
    `--no-optimize` to reproduce 0.12.0's bytes.
-3. Optional features, off unless the book opts in: `publication.cross_reference_links: true` links
+3. Lossless PDF compaction with qpdf is on by default. Install qpdf 11 or later in the book's release
+   workflow next to `poppler-utils` and LibreOffice Writer: a release build fails without it, a
+   `--preview` build records `skipped` in `build.optimization.pdf`, and `--no-optimize` turns the
+   compaction off.
+4. Optional features, off unless the book opts in: `publication.cross_reference_links: true` links
    prose references such as "Section 6.2" or "Table 4.1"; `manuscript.glossary` (a reading-order file)
    adds stable glossary anchors and definition pointers; with it, `publication.index_vocabulary` (a
    YAML file validated against the packaged schema) adds the analytic Index as the last page. See
    `docs/publication-build.md`.
-4. Update the book's release workflow from template 1.8.0. A book may add a `release-assets`
+5. Update the book's release workflow from template 1.8.0. A book may add a `release-assets`
    Makefile target that writes its own deliverables to `$(RELEASE_ASSETS_DIR)`; the release then
    adds `book-extras.zip` and `EXTRAS-SHA256SUMS.txt`. Books without the target are unchanged.
-5. Rebuild once and open the DOCX in desktop Word before the next tag.
+6. Rebuild once and open the DOCX in desktop Word before the next tag.
 
 ## Example: toolkit 0.11.0 to 0.12.0 and profile 1.0.0 to 1.1.0
 

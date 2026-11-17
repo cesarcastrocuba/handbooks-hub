@@ -80,7 +80,7 @@ make build
 make full
 ```
 
-`make build` requires a clean git commit, Quarto `1.11.9` and Poppler `pdfinfo`. It validates every
+`make build` requires a clean git commit, Quarto `1.11.9`, Poppler `pdfinfo` and qpdf 11 or later. It validates every
 chapter against the profile, renders a single-file Markdown edition and renders HTML, Typst/PDF and
 DOCX once with `--no-execute`, inspects the payloads and atomically creates a seven-file directory in
 `../dist`:

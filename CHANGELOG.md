@@ -5,6 +5,17 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+### Added
+
+- Lossless PDF compaction with qpdf (change `0062`), on by default: `build-book` runs qpdf 11 or
+  later with `--deterministic-id --object-streams=generate --compress-streams=y
+  --stream-data=compress --recompress-flate --compression-level=9`, verifies the result with
+  `qpdf --check` and an unchanged page count, and keeps it only when it is strictly smaller. A
+  release build fails without qpdf; an explicit `--preview` build records `skipped` in the manifest;
+  `--no-optimize` turns the compaction off with the PNG and ZIP optimization. The manifest adds
+  `build.optimization.pdf` (tool, version, status, and bytes before and after) and hub CI, the
+  template CI and the template release workflow install qpdf.
+
 ## [1.8.0] - Unreleased
 
 Template release prepared by change `0059`. Template `1.8.0` pins toolkit `0.13.0` at

@@ -33,6 +33,23 @@
         "tool_versions": {
           "type": "object", "required": ["quarto", "pandoc", "typst", "python", "zlib"],
           "additionalProperties": {"type": "string", "minLength": 1}
+        },
+        "optimization": {
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "pdf": {
+              "type": "object", "additionalProperties": false,
+              "required": ["tool", "status", "before", "after", "saved"],
+              "properties": {
+                "tool": {"type": "string", "minLength": 1},
+                "version": {"type": "string", "minLength": 1},
+                "status": {"type": "string", "minLength": 1},
+                "before": {"type": "integer", "minimum": 1},
+                "after": {"type": "integer", "minimum": 1},
+                "saved": {"type": "integer", "minimum": 0}
+              }
+            }
+          }
         }
       }
     },

@@ -57,7 +57,7 @@ from .build_staging import (
     _extract_source,
 )
 from .reading_site import prepare_reading_site, restore_first_source
-from .artifact_optimize import optimize_staged_pngs
+from .artifact_optimize import optimize_pdf, optimize_staged_pngs
 from .web_lists import generate_list_pages
 from .build_html import (
     _payload_paths,
@@ -341,6 +341,19 @@ def build_book(
 
         compresslevel = 9 if optimize else None
         payloads = _payload_paths(workspace, dist, source_epoch, compresslevel=compresslevel)
+        if optimize:
+            pdf_optimization = optimize_pdf(payloads["pdf"], required=not preview)
+            if isinstance(pdf_optimization.get("version"), str):
+                tool_versions["qpdf"] = str(pdf_optimization["version"])
+        else:
+            pdf_bytes = payloads["pdf"].stat().st_size
+            pdf_optimization = {
+                "tool": "qpdf",
+                "status": "skipped: --no-optimize",
+                "before": pdf_bytes,
+                "after": pdf_bytes,
+                "saved": 0,
+            }
         from .docx_pages import cache_page_numbers
         tool_versions.update(cache_page_numbers(
             payloads["docx"], workspace / RENDER_DIRECTORY / "fonts", required=require_page_numbers,
@@ -383,6 +396,7 @@ def build_book(
                 + (" --require-page-numbers" if require_page_numbers else ""),
                 "source_date_epoch": source_epoch,
                 "tool_versions": tool_versions,
+                "optimization": {"pdf": pdf_optimization},
             },
         }
         write_manifest(dist, metadata, {role: payloads[role].name for role in ROLES})
