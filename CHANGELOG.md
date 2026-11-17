@@ -5,6 +5,20 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+## [1.9.0] - Unreleased
+
+Template release prepared by change `0065`. Template `1.9.0` pins toolkit `0.14.0` at
+`80b833875bce2018b6c15a2ee0acc4726b659175` (`toolkit-v0.14.0` once the Owner approves the tag) and keeps standard
+profile `1.1.0`. It also carries everything prepared for templates `1.7.0` and `1.8.0`, which are
+superseded and never tagged (Owner decision, 2026-11-17): `template-v1.9.0` is the first template tag
+after `template-v1.6.0`. The template mirror and tag are published by the coordinator after the merge
+and the Owner's approval.
+
+### Changed
+
+- Template `release.yml` and `ci.yml` install qpdf 11 or later, and a release whose manifest shows no
+  compacted PDF fails (change `0062`).
+
 ## [0.14.0] - Unreleased
 
 Toolkit release prepared by change `0064`: changes `0060`, `0061`, `0062` and `0063`, the fixes from
@@ -42,7 +56,9 @@ check, because the DOCX gains appendix labels, keep-with-next tables and natural
   - A book-owned Document Control `| Field | Value |` table is validated against the edition version instead of receiving a duplicate table.
 
 
-## [1.8.0] - Unreleased
+## [1.8.0] - Superseded, never tagged
+
+Superseded by `1.9.0` (Owner decision, 2026-11-17); its changes ship in `template-v1.9.0`.
 
 Template release prepared by change `0059`. Template `1.8.0` pins toolkit `0.13.0` at
 `4b9e3114d0a6c638eb7715784e7f0bb622f88322` (`toolkit-v0.13.0` once the Owner approves the tag) and keeps standard
@@ -67,7 +83,9 @@ the Index and recompressed images.
 - Opt-in glossary definition pointers and a final analytic Index (change `0053`, G9/G4), with declared glossary/vocabulary inputs, cross-edition internal links and protected print rows; prose term auto-linking remains off.
 - Lossless artifact size optimization (change `0055`), on by default: staged PNG diagrams are losslessly recompressed (filter 0, zlib level 9) with exact pixel-identity verification before Quarto rendering, and ZIP distributions (Word `.docx` package and HTML site archive `book-html.zip`) are compressed at zlib level 9. The `--no-optimize` build flag opts out of both PNG recompression and ZIP level 9 compression.
 
-## [1.7.0] - Unreleased
+## [1.7.0] - Superseded, never tagged
+
+Superseded by `1.9.0` (Owner decision, 2026-11-17); its changes ship in `template-v1.9.0`.
 
 Template release prepared by change `0056`. Template `1.7.0` pins toolkit `0.12.0` at
 `0824ddfaebd28f170f157fcb38641c7dc65d6c20` (`toolkit-v0.12.0` once the Owner approves the tag) and
