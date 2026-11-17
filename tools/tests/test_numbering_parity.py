@@ -265,10 +265,11 @@ class NumberingParityUnitTests(unittest.TestCase):
                 entries,
                 resources,
                 workspace,
-                appendices=["app-a.qmd"],
             )
-            self.assertEqual(rendered["book"]["chapters"], ["intro.qmd", "ch01.qmd", "conclusions.qmd"])
-            self.assertEqual(rendered["book"]["appendices"], ["app-a.qmd", "references.qmd"])
+            # Print editions keep one flat chapter list: a native ``book.appendices``
+            # part opens a standalone "Appendices" page in Typst (change 0060).
+            self.assertEqual(rendered["book"]["chapters"], entries)
+            self.assertNotIn("appendices", rendered["book"])
 
     @unittest.skipUnless(BUILD_AVAILABLE, "Quarto and pdfinfo are required for the real build")
     def test_negative_build_mismatched_class_first_figure(self) -> None:

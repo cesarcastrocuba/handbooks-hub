@@ -149,12 +149,16 @@ def prepare_reading_site(workspace: Path, config: dict[str, Any], book: dict[str
                 break
     # The native lists follow Document Control, ahead of other front matter.
     front[1:1] = lists
-    has_appendices = bool(groups.get("appendices"))
     chapters: list[Any] = ["index.qmd"]
     for group, title in PARTS:
-        if has_appendices and group in ("appendices", "references"):
-            continue
-        chapters.extend(_navigation_entries(title, front if group == "front" else groups[group]))
+        if group == "appendices":
+            # The appendices are a reading-site part, so References and the Index stay
+            # at the top level after it. Print editions keep a flat chapter list.
+            appendices = groups.get("appendices", [])
+            if appendices:
+                chapters.append({"part": "Appendices", "chapters": list(appendices)})
+        else:
+            chapters.extend(_navigation_entries(title, front if group == "front" else groups[group]))
     license_text = license_label(book["license"]["content"])
     status = "Preview — not a released edition" if preview else str(metadata.get("status") or book["status"])
     release, downloads = release_links(metadata, preview)
@@ -162,11 +166,7 @@ def prepare_reading_site(workspace: Path, config: dict[str, Any], book: dict[str
                  status, license_text, downloads)
     bc = config["book"]
     bc["chapters"] = chapters
-    if has_appendices:
-        app_list: list[Any] = list(groups["appendices"])
-        if groups.get("references"):
-            app_list.extend(_navigation_entries("References", groups["references"]))
-        bc["appendices"] = app_list
+    bc.pop("appendices", None)
     bc["description"] = str(book["catalog"]["summary"])
     config["format"]["html"]["description-meta"] = bc["description"]
     bc["open-graph"] = True

@@ -3,7 +3,6 @@
 from __future__ import annotations
 import os
 from pathlib import Path
-import re
 import shutil
 import tempfile
 from typing import Any
@@ -72,34 +71,6 @@ from .build_markdown import (
 )
 
 __all__ = ["build_book", "BuildError", "BuildResult", "PAYLOADS", "ROLES", "_render_config", "_clean_markdown", "_markdown_header", "_markdown_sources", "_reject_local_paths"]
-
-def _adjust_html_sidebar(output_dir: Path, targets: set[str]) -> None:
-    """Ensure References and Index are top-level navigation items outside Appendices."""
-    pattern = re.compile(
-        r'(<li class="sidebar-item sidebar-item-section">\s*<div [^>]*>.*?<span [^>]*>Appendices</span>.*?<ul [^>]*>)(.*?)(</ul>\s*</li>)',
-        re.DOTALL,
-    )
-    li_pattern = re.compile(r'(<li class="sidebar-item">.*?</li>)', re.DOTALL)
-    for html_file in output_dir.rglob("*.html"):
-        content = html_file.read_text(encoding="utf-8")
-        match = pattern.search(content)
-        if not match:
-            continue
-        header, items_block, footer = match.groups()
-        kept_items: list[str] = []
-        extracted_items: list[str] = []
-        for item_m in li_pattern.finditer(items_block):
-            item = item_m.group(1)
-            if any(re.search(r'href="[^"]*' + re.escape(t) + r'"', item) for t in targets):
-                extracted_items.append(item)
-            else:
-                kept_items.append(item)
-        if not extracted_items:
-            continue
-        new_block = header + "\n".join(kept_items) + "\n" + footer + "\n" + "\n".join(extracted_items)
-        new_content = content[:match.start()] + new_block + content[match.end():]
-        html_file.write_text(new_content, encoding="utf-8")
-
 
 def build_book(
     repo: Path,
@@ -324,7 +295,6 @@ def build_book(
                     rendered_entries,
                     resources,
                     workspace,
-                    appendices=appendix_entries,
                     toc_depth=depth,
                     edition_date=date_str,
                 ),
@@ -363,18 +333,10 @@ def build_book(
                                            lists, fields, author, book_version,
                                            date_str, preview)
         if glossary_enabled:
-            html_config["book"]["appendices" if appendix_entries else "chapters"].append(index_entry)
+            html_config["book"]["chapters"].append(index_entry)
         (workspace / "_quarto.yml").write_text(yaml.safe_dump(html_config), encoding="utf-8")
         _run([quarto, "render", ".", "--to", "html", "--no-clean", "--no-execute"],
              cwd=workspace, env=environment)
-
-        ref_targets = {
-            Path(p).name.removesuffix(".qmd") + ".html"
-            for p in groups.get("references", [])
-        }
-        ref_targets.add("references.html")
-        ref_targets.add("analytic-index.html")
-        _adjust_html_sidebar(workspace / "_output", ref_targets)
 
         compresslevel = 9 if optimize else None
         payloads = _payload_paths(workspace, dist, source_epoch, compresslevel=compresslevel)

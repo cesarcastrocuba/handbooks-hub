@@ -134,34 +134,61 @@ class AppendicesDocumentControlUnitTests(unittest.TestCase):
         self.assertIn(generated_table, injected)
 
     def test_transform_chapter_appendix_l1_and_l2_formatting(self) -> None:
-        # L1 without .unnumbered and with prefix
+        # The literal "Appendix X — Title" label belongs to the staged heading and the
+        # heading is unnumbered, so every edition shows the same text.
         text_a = """\
 # Appendix A — Architecture Principles
 
 Some intro.
 
 ## A.1 Principle One
+
 Details.
+
+## Principle Two
+
+More details.
 """
         staged_a = _transform_chapter(text_a, "A", is_appendix=True)
-        self.assertTrue(staged_a.startswith("# Architecture Principles"))
-        self.assertNotIn(".unnumbered", staged_a.splitlines()[0])
+        lines = staged_a.splitlines()
+        self.assertEqual(lines[0], "# Appendix A — Architecture Principles {.unnumbered}")
+        self.assertIn("## A.1 Principle One {.unnumbered}", lines)
+        # A section without a source number gets the next one, never the renderer's.
+        self.assertIn("## A.2 Principle Two {.unnumbered}", lines)
 
-        staged_a_md = _transform_chapter(text_a, "A", is_appendix=True, strip_heading_numbers=False)
-        self.assertTrue(staged_a_md.startswith("# Appendix A — Architecture Principles"))
+        staged_md = _transform_chapter(text_a, "A", is_appendix=True, strip_heading_numbers=False)
+        self.assertTrue(staged_md.startswith("# Appendix A — Architecture Principles {.unnumbered}"))
+        self.assertIn("## A.2 Principle Two {.unnumbered}", staged_md.splitlines())
 
-        # L1 with .unnumbered and anchor
+        # A colon instead of an em dash and authored attributes are normalized, not lost.
         text_b = """\
 # Appendix B: Reference Checklists {#sec_checklists .unnumbered}
 
 ## B.1 Release Gate Checklist {#sec_b1}
+
 Checklist items.
 """
         staged_b = _transform_chapter(text_b, "B", is_appendix=True)
         self.assertTrue(
-            staged_b.startswith("# Reference Checklists {#sec_checklists}")
+            staged_b.startswith("# Appendix B — Reference Checklists {#sec_checklists .unnumbered}")
         )
-        self.assertNotIn(".unnumbered", staged_b.splitlines()[0])
+        self.assertIn("## B.1 Release Gate Checklist {#sec_b1 .unnumbered}", staged_b)
+
+        # Headings inside a fenced code block are content, not sections.
+        text_c = """\
+# Appendix C — Templates
+
+```
+# Not a heading
+## Not a section
+```
+
+## C.1 Real Section
+"""
+        staged_c = _transform_chapter(text_c, "C", is_appendix=True)
+        self.assertIn("# Not a heading", staged_c)
+        self.assertIn("## Not a section", staged_c)
+        self.assertIn("## C.1 Real Section {.unnumbered}", staged_c)
 
 
 class AppendicesDocumentControlIntegrationTests(unittest.TestCase):
@@ -244,20 +271,45 @@ class AppendicesDocumentControlIntegrationTests(unittest.TestCase):
                 app_a_html = z.read("manuscript/appendices/app-a.html").decode("utf-8")
                 self.assertIn("Appendix A — Worked Architecture Cases", app_a_html)
                 self.assertIn("First Worked Example", app_a_html)
-                self.assertIn("header-section-number\">A.1</span>", app_a_html)
+                self.assertIn("A.1 First Worked Example", app_a_html)
+                self.assertNotIn("Appendix A —  Worked", app_a_html)
 
                 app_b_html = z.read("manuscript/appendices/app-b.html").decode("utf-8")
                 self.assertIn("Appendix B — Operational Checklists", app_b_html)
-                self.assertIn("Readiness Checklist", app_b_html)
-                self.assertIn("header-section-number\">B.1</span>", app_b_html)
+                self.assertIn("B.1 Readiness Checklist", app_b_html)
 
-                # Check HTML sidebar: Appendices part contains only appendices, references is outside
-                sidebar_m = re.search(r"<nav id=\"quarto-sidebar\"[^>]*>(.*?)</nav>", app_a_html, re.DOTALL)
+                # The reading site keeps the appendices in one part and References at
+                # the top level after it; the sidebar entries carry the literal labels.
+                sidebar_m = re.search(r'<nav id="quarto-sidebar"[^>]*>(.*?)</nav>', app_a_html, re.DOTALL)
                 self.assertIsNotNone(sidebar_m)
                 assert sidebar_m is not None
                 sidebar = sidebar_m.group(1)
                 self.assertIn("Appendices", sidebar)
                 self.assertIn("References", sidebar)
+                self.assertIn("Appendix A — Worked Architecture Cases", sidebar)
+                self.assertIn("Appendix B — Operational Checklists", sidebar)
+                part_m = re.search(
+                    r'<span class="menu-text" id="[^"]*">Appendices</span>.*?(<ul [^>]*>.*?</ul>)',
+                    sidebar,
+                    re.DOTALL,
+                )
+                self.assertIsNotNone(part_m)
+                assert part_m is not None
+                part_html = part_m.group(1)
+                self.assertIn("app-a.html", part_html)
+                self.assertIn("app-b.html", part_html)
+                self.assertNotIn("references.html", part_html)
+                self.assertIsNone(re.search(r'chapter-number">[^<]*</span>\s*<span class="chapter-title">Appendix', sidebar))
+
+                # The References breadcrumb is top level, not "Appendices › References".
+                refs_html = z.read("manuscript/back-matter/references.html").decode("utf-8")
+                bread_m = re.search(
+                    r'<nav class="quarto-page-breadcrumbs[^"]*"[^>]*>(.*?)</nav>', refs_html, re.DOTALL
+                )
+                self.assertIsNotNone(bread_m)
+                assert bread_m is not None
+                self.assertNotIn("Appendices", bread_m.group(1))
+                self.assertIn("References", bread_m.group(1))
 
             # Verify PDF
             pdf_path = output / "book.pdf"
@@ -275,9 +327,12 @@ class AppendicesDocumentControlIntegrationTests(unittest.TestCase):
                     f"Found standalone Appendices page at page {idx + 1}",
                 )
 
-            # PDF Contents outline lists Appendix A and Appendix B
+            # PDF Contents outline lists Appendix A and Appendix B, with one space
             self.assertIn("Appendix A — Worked Architecture Cases", pdf_text)
             self.assertIn("Appendix B — Operational Checklists", pdf_text)
+            self.assertNotIn("Appendix A —  Worked", pdf_text)
+            self.assertIn("A.1 First Worked Example", pdf_text)
+            self.assertIn("B.1 Readiness Checklist", pdf_text)
             # Table and figure captions
             self.assertIn("Table A.1: Failover Results", pdf_text)
             self.assertIn("Figure A.1: Appendix Diagram", pdf_text)

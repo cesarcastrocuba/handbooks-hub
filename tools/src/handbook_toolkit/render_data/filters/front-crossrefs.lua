@@ -73,25 +73,34 @@ function Div(el)
   local fig_0 = el.identifier:match("^fig%-0%-(%d+)$")
   local tbl_bm = el.identifier:match("^tbl%-bm%-(%d+)$")
   local fig_bm = el.identifier:match("^fig%-bm%-(%d+)$")
+  local tbl_app_let, tbl_app_n = el.identifier:match("^tbl%-([a-z]+)%-(%d+)$")
+  local fig_app_let, fig_app_n = el.identifier:match("^fig%-([a-z]+)%-(%d+)$")
+  if tbl_app_let == "0" or tbl_app_let == "bm" then tbl_app_let = nil end
+  if fig_app_let == "0" or fig_app_let == "bm" then fig_app_let = nil end
 
   -- GFM fallback: check if rawblock has div id
-  if not (tbl_0 or fig_0 or tbl_bm or fig_bm) then
+  if not (tbl_0 or fig_0 or tbl_bm or fig_bm or tbl_app_let or fig_app_let) then
     for _, b in ipairs(el.content) do
       if b.tag == "RawBlock" and b.text then
         tbl_0 = b.text:match("tbl%-0%-(%d+)")
         fig_0 = b.text:match("fig%-0%-(%d+)")
         tbl_bm = b.text:match("tbl%-bm%-(%d+)")
         fig_bm = b.text:match("fig%-bm%-(%d+)")
-        if tbl_0 or fig_0 or tbl_bm or fig_bm then break end
+        tbl_app_let, tbl_app_n = b.text:match("tbl%-([a-z]+)%-(%d+)")
+        fig_app_let, fig_app_n = b.text:match("fig%-([a-z]+)%-(%d+)")
+        if tbl_app_let == "0" or tbl_app_let == "bm" then tbl_app_let = nil end
+        if fig_app_let == "0" or fig_app_let == "bm" then fig_app_let = nil end
+        if tbl_0 or fig_0 or tbl_bm or fig_bm or tbl_app_let or fig_app_let then break end
       end
     end
   end
 
   local is_bm = (tbl_bm or fig_bm) ~= nil
-  local n = tbl_0 or fig_0 or tbl_bm or fig_bm
+  local is_app = (tbl_app_let or fig_app_let) ~= nil
+  local n = tbl_0 or fig_0 or tbl_bm or fig_bm or tbl_app_n or fig_app_n
   if n then
-    local pfx = is_bm and "BM." or "0."
-    local word = (tbl_0 or tbl_bm) and "Table" or "Figure"
+    local pfx = is_bm and "BM." or (is_app and (string.upper(tbl_app_let or fig_app_let) .. ".") or "0.")
+    local word = (tbl_0 or tbl_bm or tbl_app_let) and "Table" or "Figure"
     el = el:walk({
       Plain = function(p)
         replace_number_inlines(p.content, pfx .. n, word)
@@ -111,11 +120,16 @@ function Link(el)
   local fig_0 = el.target:match("fig%-0%-(%d+)")
   local tbl_bm = el.target:match("tbl%-bm%-(%d+)")
   local fig_bm = el.target:match("fig%-bm%-(%d+)")
+  local tbl_app_let, tbl_app_n = el.target:match("tbl%-([a-z]+)%-(%d+)")
+  local fig_app_let, fig_app_n = el.target:match("fig%-([a-z]+)%-(%d+)")
+  if tbl_app_let == "0" or tbl_app_let == "bm" then tbl_app_let = nil end
+  if fig_app_let == "0" or fig_app_let == "bm" then fig_app_let = nil end
   local is_bm = (tbl_bm or fig_bm) ~= nil
-  local n = tbl_0 or fig_0 or tbl_bm or fig_bm
+  local is_app = (tbl_app_let or fig_app_let) ~= nil
+  local n = tbl_0 or fig_0 or tbl_bm or fig_bm or tbl_app_n or fig_app_n
   if n then
-    local pfx = is_bm and "BM." or "0."
-    local word = (tbl_0 or tbl_bm) and "Table" or "Figure"
+    local pfx = is_bm and "BM." or (is_app and (string.upper(tbl_app_let or fig_app_let) .. ".") or "0.")
+    local word = (tbl_0 or tbl_bm or tbl_app_let) and "Table" or "Figure"
     replace_number_inlines(el.content, pfx .. n, word)
   end
   return el

@@ -134,6 +134,35 @@ TABLE_PREFIX = re.compile(
 IMAGE_WITH_ATTRS = re.compile(
     r"!\[(?P<alt>[^\]]*)\]\((?P<src>[^)]*)\)(?P<attrs>\{[^}]*\})?"
 )
+APPENDIX_SECTION_PREFIX = re.compile(r"^[A-Za-z]\.\d+(?:\.\d+)*[ .]+")
+
+
+def _number_appendix_section(line: str, letter: str | None, counters: list[int]) -> str:
+    """Give an appendix section heading its literal "A.N Title" label.
+
+    The appendix level-1 heading is unnumbered (it carries the literal
+    "Appendix A — Title"), so every section is numbered here instead of by the
+    renderer: HTML, PDF, DOCX and Markdown then agree, and an authored
+    ``.unnumbered`` section keeps its own text.
+    """
+    match = re.match(r"^(#{2,6})\s+(.*)$", line)
+    if match is None:
+        return line
+    hashes, rest = match.groups()
+    level = len(hashes)
+    attr_match = re.search(r"\s*(\{[^}]*\})\s*$", rest)
+    attrs = attr_match.group(1) if attr_match else ""
+    body = rest[: attr_match.start()] if attr_match else rest
+    body = APPENDIX_SECTION_PREFIX.sub("", body.strip()).strip()
+    if not body or re.search(r"\.unnumbered\b", attrs):
+        return line
+    counters[level - 2] += 1
+    for deeper in range(level - 1, len(counters)):
+        counters[deeper] = 0
+    number = ".".join(str(value) for value in counters[: level - 1])
+    label = f"{letter}.{number}" if letter else number
+    attrs = attrs[:-1].rstrip() + " .unnumbered}" if attrs and attrs != "{}" else "{.unnumbered}"
+    return f"{hashes} {label} {body} {attrs}".rstrip()
 
 
 def _transform_chapter(
@@ -195,18 +224,21 @@ def _transform_chapter(
         raw_heading = heading
     raw_title = re.sub(r"^#{1,3}\s+", "", raw_heading).strip()
     if is_app:
+        # Appendices read "Appendix A — Title" in every edition. The literal label is
+        # part of the staged heading and the heading stays unnumbered, so HTML, PDF,
+        # DOCX and Markdown show the same text in the body, contents, bookmarks and
+        # sidebar, and no renderer adds a second number. Sections are numbered below
+        # as literal "A.N Title" headings for the same reason.
         clean_title = _strip_heading_number(raw_title)
-        if attrs and strip_heading_numbers:
-            attrs = re.sub(r"\.unnumbered\b", "", attrs).strip()
-            attrs = re.sub(r"\s+", " ", attrs).replace("{ ", "{").replace(" }", "}")
-            if attrs == "{}":
-                attrs = ""
-        if not strip_heading_numbers:
-            title = f"Appendix {ch_str} — {clean_title}"
-            first_heading_line = f"# {title} {attrs}".rstrip()
-        else:
-            title = clean_title
-            first_heading_line = f"# {title} {attrs}".rstrip()
+        if len(re.findall(r"[A-Za-z]", clean_title)) < 3:
+            raise BuildError("staged appendix heading is not meaningful")
+        attrs = re.sub(r"\s+", " ", attrs).strip()
+        if attrs in ("", "{}"):
+            attrs = "{.unnumbered}"
+        elif not re.search(r"\.unnumbered\b", attrs):
+            attrs = attrs[:-1].rstrip() + " .unnumbered}"
+        title = f"Appendix {ch_str} — {clean_title}"
+        first_heading_line = f"# {title} {attrs}".rstrip()
     else:
         if strip_heading_numbers:
             raw_title = _strip_heading_number(raw_title)
@@ -224,6 +256,7 @@ def _transform_chapter(
         output = ["---", *yaml.safe_dump(front, sort_keys=False).splitlines(), "---", "", *output]
     table_number = 0
     figure_number = 0
+    appendix_sections = [0] * 5
     previous = ""
     in_fence = False
     fence_char = ""
@@ -254,7 +287,9 @@ def _transform_chapter(
             continue
 
         heading_match = re.match(r"^(#{1,6})\s+(.*)$", line)
-        if heading_match and strip_heading_numbers:
+        if heading_match and is_app:
+            line = _number_appendix_section(line, ch_str, appendix_sections)
+        elif heading_match and strip_heading_numbers:
             line = f"{heading_match.group(1)} {_strip_heading_number(heading_match.group(2))}"
 
         # Figure prefix stripping and mismatch validation
@@ -476,7 +511,6 @@ def _render_config(
     resources: dict[str, Path],
     workspace: Path,
     *,
-    appendices: list[str] | None = None,
     toc_depth: int | None = None,
     edition_date: str | None = None,
 ) -> dict[str, Any]:
@@ -491,12 +525,13 @@ def _render_config(
     if not isinstance(book_config, dict):
         raise BuildError("publishing/_quarto.yml book section must be a mapping")
     book_config["title"] = book["title"]
-    if appendices:
-        first_app_idx = min(entries.index(a) for a in appendices)
-        book_config["chapters"] = list(entries[:first_app_idx])
-        book_config["appendices"] = list(entries[first_app_idx:])
-    else:
-        book_config["chapters"] = list(entries)
+    # The print editions keep one flat chapter list. Quarto's native ``book.appendices``
+    # opens a standalone "Appendices" part page in Typst and numbers appendix floats
+    # from the appendix counter; the staged headings already carry the literal
+    # "Appendix A — Title" label, so the appendices are ordinary chapters here and the
+    # reading site builds its "Appendices" part separately.
+    book_config["chapters"] = list(entries)
+    book_config.pop("appendices", None)
     if edition_date is not None:
         # The edition date comes from the source commit, never a hand-kept value.
         book_config["date"] = edition_date
