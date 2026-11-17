@@ -93,6 +93,12 @@ Every one of the 620 bookmarks is present in both builds. The 482 that change ar
 numbered chapter and section headings; they gain their number and lose the leading space. Appendices
 (`Appendix A — …` through `A.1 …`), front matter, References and the Index are byte-identical.
 
+Level 1 and level 2 bookmarks match their Contents line, except one heading that keeps straight
+quotes in the outline where the printed page sets curly ones (`1.6 Worked Example: Turning
+"Always-On Checkout" …`). Both builds show it, so it precedes this change and is unrelated to the
+number. Level 3 and deeper headings (318 of the 620) are not printed in the Contents; they also gain
+their number, e.g. `1.1.1 Business Capabilities`.
+
 ### Hub checks
 
 ```
