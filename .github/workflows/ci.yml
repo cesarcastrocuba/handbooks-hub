@@ -109,6 +109,10 @@ jobs:
         run: python3 -m unittest discover -s tools/tests -p test_build.py -v
       - name: Run render-resource runtime tests
         run: python3 -m unittest discover -s tools/tests -p test_render_resources.py -v
+      - name: Run table and raster layout runtime tests
+        run: |
+          python3 -m unittest discover -s tools/tests -p test_table_fit.py -v
+          python3 -m unittest discover -s tools/tests -p test_tables_figures_build.py -v
       - name: Copy and build the template in a temporary repository
         run: python3 -m unittest discover -s tools/tests -p test_template.py -v
 
