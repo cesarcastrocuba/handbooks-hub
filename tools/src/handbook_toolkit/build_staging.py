@@ -145,6 +145,7 @@ def _transform_chapter(
     figure_start: int = 0,
     strip_heading_numbers: bool = True,
     path: str = "",
+    is_appendix: bool = False,
 ) -> str:
     """Stage a chapter wrapper, explicit table captions and normalized figure captions without changing source."""
 
@@ -157,6 +158,12 @@ def _transform_chapter(
     else:
         ch_str = None
         actual_tbl_prefix = tbl_prefix if tbl_prefix is not None else "0"
+
+    is_app = is_appendix or (
+        isinstance(chapter_label, str)
+        and chapter_label not in ("BM", "0")
+        and chapter_label.isalpha()
+    )
 
     front: dict[str, Any] = {}
     body = text
@@ -179,14 +186,40 @@ def _transform_chapter(
     if first is None:
         raise BuildError("staged chapter has no heading to use as the rendered chapter title")
     heading = lines[first]
-    title = re.sub(r"^#{1,3}\s+", "", heading)
-    if strip_heading_numbers:
-        title = _strip_heading_number(title)
-    if len(re.findall(r"[A-Za-z]", title)) < 3:
-        raise BuildError("staged chapter heading is not meaningful")
+    attr_match = re.search(r"\s*(\{[^}]*\})\s*$", heading)
+    if attr_match:
+        attrs = attr_match.group(1)
+        raw_heading = heading[:attr_match.start()]
+    else:
+        attrs = ""
+        raw_heading = heading
+    raw_title = re.sub(r"^#{1,3}\s+", "", raw_heading).strip()
+    if is_app:
+        clean_title = _strip_heading_number(raw_title)
+        if attrs and strip_heading_numbers:
+            attrs = re.sub(r"\.unnumbered\b", "", attrs).strip()
+            attrs = re.sub(r"\s+", " ", attrs).replace("{ ", "{").replace(" }", "}")
+            if attrs == "{}":
+                attrs = ""
+        if not strip_heading_numbers:
+            title = f"Appendix {ch_str} — {clean_title}"
+            first_heading_line = f"# {title} {attrs}".rstrip()
+        else:
+            title = clean_title
+            first_heading_line = f"# {title} {attrs}".rstrip()
+    else:
+        if strip_heading_numbers:
+            raw_title = _strip_heading_number(raw_title)
+        if len(re.findall(r"[A-Za-z]", raw_title)) < 3:
+            raise BuildError("staged chapter heading is not meaningful")
+        if attrs:
+            first_heading_line = f"# {raw_title} {attrs}"
+        else:
+            first_heading_line = f"# {raw_title}"
+
     remaining = lines[:first] + lines[first + 1 :]
 
-    output: list[str] = [f"# {title}", ""]
+    output: list[str] = [first_heading_line, ""]
     if front:
         output = ["---", *yaml.safe_dump(front, sort_keys=False).splitlines(), "---", "", *output]
     table_number = 0
@@ -407,6 +440,7 @@ def _prepare_render(
         table_start=start_idx,
         figure_start=f_start_idx,
         path=first,
+        is_appendix=(first in appendix_set),
     )
     first_path.write_text(index_text, encoding="utf-8")
     (workspace / "index.qmd").write_text(
@@ -428,6 +462,7 @@ def _prepare_render(
             table_start=start_idx,
             figure_start=f_start_idx,
             path=entry,
+            is_appendix=(entry in appendix_set),
         )
         path.write_text(transformed, encoding="utf-8")
         rendered.append(entry)

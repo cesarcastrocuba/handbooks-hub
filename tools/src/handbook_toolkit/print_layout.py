@@ -18,11 +18,12 @@ from datetime import datetime, timezone
 import re
 from typing import Any, Iterable
 
+from .build_types import BuildError
 from .indexes import LISTS
 
 FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
 HEADING = re.compile(r"^(#{1,6})\s+\S")
-DOCUMENT_CONTROL = re.compile(r"^#\s+Document Control\b[^\n]*$", re.MULTILINE)
+DOCUMENT_CONTROL = re.compile(r"^#\s+Document Control\b[^\n]*$", re.MULTILINE | re.IGNORECASE)
 LICENSE_LABELS = {
     "CC-BY-SA-4.0": "CC BY-SA 4.0",
     "CC-BY-4.0": "CC BY 4.0",
@@ -126,12 +127,71 @@ def edition_fields(
     ]
 
 
-def inject_document_control(text: str, table: str) -> str | None:
-    """Insert *table* after the first ``# Document Control`` heading, if any."""
+def has_document_control_table(text: str) -> bool:
+    """Return True if the # Document Control section already contains a | Field | Value | table."""
+    match = DOCUMENT_CONTROL.search(text)
+    if not match:
+        return False
+    section = text[match.end():]
+    next_heading = re.search(r"^#{1,6}\s+", section, re.MULTILINE)
+    if next_heading:
+        section = section[:next_heading.start()]
+    return bool(re.search(r"^\s*\|\s*Field\s*\|\s*Value\s*\|", section, re.MULTILINE | re.IGNORECASE))
+
+
+def extract_document_control_version(text: str) -> str | None:
+    """Extract the Version value from the book-owned Document Control table, if present."""
+    match = DOCUMENT_CONTROL.search(text)
+    if not match:
+        return None
+    section = text[match.end():]
+    next_heading = re.search(r"^#{1,6}\s+", section, re.MULTILINE)
+    if next_heading:
+        section = section[:next_heading.start()]
+    m = re.search(r"^\s*\|\s*Version\s*\|\s*([^|\n]+)\|", section, re.MULTILINE | re.IGNORECASE)
+    if m:
+        return m.group(1).strip()
+    return None
+
+
+def validate_document_control_version(text: str, edition_version: str) -> None:
+    """Validate that the book-owned Document Control Version row matches edition_version.
+
+    Matches either the exact edition version, or 'major.minor' when edition_version
+    is a final release 'X.Y.0' (e.g. '3.1 (pre-release 3.1.0-rc.1)' for 3.1.0-rc.1; '3.1' for 3.1.0).
+    """
+    val = extract_document_control_version(text)
+    if val is None:
+        raise BuildError(
+            f"book Document Control table has no Version row to validate against edition {edition_version!r}"
+        )
+    valid = False
+    if re.search(rf"(?<![\w.]){re.escape(edition_version)}(?![\w.])", val):
+        valid = True
+    else:
+        m = re.match(r"^(\d+\.\d+)\.0$", edition_version)
+        if m and re.search(rf"(?<![\w.]){re.escape(m.group(1))}(?![\w.])", val):
+            valid = True
+    if not valid:
+        raise BuildError(
+            f"book Document Control table version {val!r} does not match edition version {edition_version!r}"
+        )
+
+
+def inject_document_control(text: str, table: str, version: str | None = None) -> str | None:
+    """Insert *table* after the first ``# Document Control`` heading, if not already present.
+
+    When the section already contains a | Field | Value | table, nothing is injected;
+    if *version* is provided, the existing Version row is validated.
+    """
 
     match = DOCUMENT_CONTROL.search(text)
     if match is None:
         return None
+    if has_document_control_table(text):
+        if version is not None:
+            validate_document_control_version(text, version)
+        return text
     return text[: match.end()] + "\n\n" + table + "\n" + text[match.end() :]
 
 

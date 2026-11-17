@@ -16,6 +16,16 @@ semantic versioning once the toolkit is published.
   `build.optimization.pdf` (tool, version, status, and bytes before and after) and hub CI, the
   template CI and the template release workflow install qpdf.
 
+### Fixed
+
+- Appendices and Document Control normalization (change `0060`):
+  - Appendix L1 headings consistently display literal "Appendix X — Title" across HTML, PDF, DOCX, and Markdown editions regardless of whether source headings specify `.unnumbered`.
+  - Suppressed standalone "Appendices" part page in PDF/Typst output while keeping literal "Appendix A — …" entries in Contents and bookmarks.
+  - HTML sidebar organizes Appendices into a dedicated part containing only appendices; References and Analytic Index remain top-level items directly following it.
+  - Retained cross-edition numbering parity for sections (A.1…), tables, and figures (A.N, BM.N, 0.N) and anchors.
+  - Validates edition version on book-owned Document Control tables instead of redundantly injecting a duplicate table.
+
+
 ## [1.8.0] - Unreleased
 
 Template release prepared by change `0059`. Template `1.8.0` pins toolkit `0.13.0` at

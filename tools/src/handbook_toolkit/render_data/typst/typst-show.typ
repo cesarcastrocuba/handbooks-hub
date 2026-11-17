@@ -32,7 +32,7 @@
 #show raw: set text(font: ("JetBrains Mono",))
 
 // A book part is an unnumbered, outlined level-1 heading.
-#let part(title) = heading(level: 1, numbering: none)[#title]
+#let part(title) = if title != "Appendices" { heading(level: 1, numbering: none)[#title] }
 
 // Appendices keep their own literal labels ("Appendix A — …", "A.1 …"), which
 // Quarto marks as unnumbered; the state is kept for appendix-aware numbering.
