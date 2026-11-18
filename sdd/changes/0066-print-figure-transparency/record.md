@@ -11,7 +11,7 @@ only HTML, through `mix-blend-mode: multiply` in the light theme.
 ## Design
 
 `print_figures.py` stages a print-only copy of a white-backed PNG and points the Typst and Word
-Markdown at it. The pairs of white-to-transparent pixels use GIMP-style colour-to-alpha: the pixel is
+Markdown at it. Pixels become transparent foreground with GIMP-style colour-to-alpha: the pixel is
 first composited over white (which folds an existing alpha into the visible colour), then
 `a = max_i((255 - c_i) / 255)` and `c'_i = (c_i - 255 * (1 - a)) / a` for `a > 0`. Composited over
 white it reproduces the original pixels; over the cream page it blends like the HTML multiply. The
