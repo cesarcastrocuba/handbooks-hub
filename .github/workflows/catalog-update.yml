@@ -53,7 +53,9 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y poppler-utils
+          sudo apt-get install -y --no-install-recommends poppler-utils qpdf libreoffice-writer
+      - name: Verify the qpdf version
+        run: test "$(qpdf --version | head -1 | cut -d' ' -f3 | cut -d. -f1)" -ge 11
       - name: Install the toolkit
         run: python3 -m pip install -r requirements-dev.txt
       - name: Validate the request and resolve the source repository
