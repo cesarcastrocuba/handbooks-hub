@@ -12,7 +12,9 @@ semantic versioning once the toolkit is published.
   `poppler-utils qpdf libreoffice-writer`, `ci.yml` installs qpdf for its check jobs and verifies the
   version in `publication-build`, and `clean-clone.yml` installs qpdf and LibreOffice on Linux and
   macOS. A test fails if a workflow that runs `make check`/`make full`, `build-book` or the build
-  tests does not install and verify qpdf.
+  tests does not install and verify qpdf. The release verifier also retries transient HTTP
+  429/5xx responses up to three times (2/4/8 s, or a numeric `Retry-After` up to 30 s) without
+  writing partial files.
 - Catalog release verification accepts the optional `book-extras.zip` and `EXTRAS-SHA256SUMS.txt`
   pair alongside the seven declared assets (change `0069`). One of the pair alone, or any other
   name, still fails; the verifier checks the sums line, the ZIP checksum and archive integrity, and

@@ -13,6 +13,7 @@ import re
 import socket
 import ssl
 import tempfile
+import time
 from urllib.parse import quote, urldefrag, urljoin, urlsplit
 from zipfile import BadZipFile, ZipFile
 
@@ -25,6 +26,11 @@ MAX_DOWNLOAD = 512 * 1024 * 1024
 API_HOST = "api.github.com"
 TOKEN_VARIABLE = "GITHUB_TOKEN"
 RATE_LIMITED = {403, 429}
+# Transient statuses from a non-API host. The API host retries every 5xx and 429.
+RETRYABLE_FILE = {429, 500, 502, 503, 504}
+RETRY_ATTEMPTS = 3
+RETRY_AFTER_LIMIT = 30
+_sleep = time.sleep
 EXTRAS_ZIP = "book-extras.zip"
 EXTRAS_SUMS = "EXTRAS-SHA256SUMS.txt"
 EXTRAS = {EXTRAS_ZIP, EXTRAS_SUMS}
@@ -81,8 +87,33 @@ def _failure(host: str, response: http.client.HTTPResponse) -> ValueError:
     return ValueError(message)
 
 
+def _retryable(host: str, response: http.client.HTTPResponse) -> bool:
+    if host == API_HOST:
+        return response.status == 429 or 500 <= response.status <= 599
+    return response.status in RETRYABLE_FILE
+
+
+def _retry_delay(response: http.client.HTTPResponse, attempt: int) -> float:
+    retry_after = response.getheader("Retry-After")
+    if retry_after is not None and re.fullmatch(r"\d+", retry_after.strip()):
+        return min(RETRY_AFTER_LIMIT, int(retry_after.strip()))
+    return float(2 ** (attempt + 1))
+
+
+def _connect(host: str, addresses: list[str]) -> _PinnedHTTPSConnection:
+    for address in addresses:
+        candidate = _PinnedHTTPSConnection(host, address)
+        try:
+            candidate.connect()
+            return candidate
+        except OSError:
+            candidate.close()
+    raise OSError("cannot connect to a verified public destination")
+
+
 def _download(url: str, destination: Path, limit: int) -> None:
-    for _ in range(6):
+    hops = 0
+    while True:
         parsed = urlsplit(url)
         if parsed.scheme != "https" or not parsed.hostname or parsed.port not in (None, 443):
             raise ValueError("downloads require HTTPS on the standard port")
@@ -90,42 +121,40 @@ def _download(url: str, destination: Path, limit: int) -> None:
             raise ValueError("download URLs must not contain credentials")
         host = parsed.hostname.encode("idna").decode("ascii")
         addresses = _public_addresses(host)
-        connection = None
-        for address in addresses:
-            candidate = _PinnedHTTPSConnection(host, address)
+        hops += 1
+        if hops > 6:
+            raise ValueError("download exceeded the redirect limit")
+        target = quote(parsed.path or "/", safe="/%:@-._~!$&'()*+,;=")
+        if parsed.query:
+            target += "?" + quote(parsed.query, safe="=&%:+,;/?@-._~")
+        attempts = 0
+        while True:
+            connection = _connect(host, addresses)
             try:
-                candidate.connect()
-                connection = candidate
-                break
-            except OSError:
-                candidate.close()
-        if connection is None:
-            raise OSError("cannot connect to a verified public destination")
-        try:
-            target = quote(parsed.path or "/", safe="/%:@-._~!$&'()*+,;=")
-            if parsed.query:
-                target += "?" + quote(parsed.query, safe="=&%:+,;/?@-._~")
-            connection.request("GET", target, headers=_request_headers(host))
-            response = connection.getresponse()
-            if response.status in {301, 302, 303, 307, 308}:
-                location = response.getheader("Location")
-                if not location:
-                    raise ValueError("redirect is missing its destination")
-                url = urljoin(url, location)
-                continue  # the next target is resolved, checked and pinned again
-            if response.status != 200:
+                connection.request("GET", target, headers=_request_headers(host))
+                response = connection.getresponse()
+                if response.status in {301, 302, 303, 307, 308}:
+                    location = response.getheader("Location")
+                    if not location:
+                        raise ValueError("redirect is missing its destination")
+                    url = urljoin(url, location)
+                    break  # the next target is resolved, checked and pinned again
+                if response.status == 200:
+                    with destination.open("xb") as stream:
+                        size = 0
+                        while chunk := response.read(64 * 1024):
+                            size += len(chunk)
+                            if size > limit:
+                                raise ValueError("remote asset exceeds its allowed byte limit")
+                            stream.write(chunk)
+                    return
+                if _retryable(host, response) and attempts < RETRY_ATTEMPTS:
+                    _sleep(_retry_delay(response, attempts))
+                    attempts += 1
+                    continue
                 raise _failure(host, response)
-            with destination.open("xb") as stream:
-                size = 0
-                while chunk := response.read(64 * 1024):
-                    size += len(chunk)
-                    if size > limit:
-                        raise ValueError("remote asset exceeds its allowed byte limit")
-                    stream.write(chunk)
-            return
-        finally:
-            connection.close()
-    raise ValueError("download exceeded the redirect limit")
+            finally:
+                connection.close()
 
 
 def _json(url: str) -> dict:

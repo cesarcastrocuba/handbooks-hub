@@ -358,6 +358,64 @@ class CatalogVerificationTests(unittest.TestCase):
                 _download("https://api.github.com/repos/o/r", destination, 100)
         self.assertFalse(destination.exists())
 
+    def transient(self, status, retry_after=None):
+        response = MagicMock()
+        response.status = status
+        headers = {"Retry-After": retry_after} if retry_after is not None else {}
+        response.getheader.side_effect = headers.get
+        return response
+
+    def test_a_transient_server_error_is_retried(self):
+        destination = Path(self.temp.name) / "retried"
+        with patch("handbook_toolkit.catalog_verification._public_addresses", return_value=["93.184.216.34"]), patch(
+            "handbook_toolkit.catalog_verification._PinnedHTTPSConnection"
+        ) as connection, patch("handbook_toolkit.catalog_verification._sleep") as sleep:
+            success = MagicMock()
+            success.status = 200
+            success.read.side_effect = [b"bytes", b""]
+            connection.return_value.getresponse.side_effect = [self.transient(503), success]
+            _download("https://public.example/asset", destination, 100)
+        self.assertEqual(destination.read_bytes(), b"bytes")
+        self.assertEqual(connection.call_count, 2)
+        sleep.assert_called_once_with(2.0)
+
+    def test_transient_retry_honours_a_numeric_retry_after(self):
+        destination = Path(self.temp.name) / "retry-after"
+        with patch("handbook_toolkit.catalog_verification._public_addresses", return_value=["93.184.216.34"]), patch(
+            "handbook_toolkit.catalog_verification._PinnedHTTPSConnection"
+        ) as connection, patch("handbook_toolkit.catalog_verification._sleep") as sleep:
+            success = MagicMock()
+            success.status = 200
+            success.read.side_effect = [b"bytes", b""]
+            connection.return_value.getresponse.side_effect = [
+                self.transient(503, retry_after="7"), success
+            ]
+            _download("https://public.example/asset", destination, 100)
+        sleep.assert_called_once_with(7.0)
+
+    def test_four_transient_errors_fail_with_the_existing_message(self):
+        destination = Path(self.temp.name) / "never-written"
+        with patch("handbook_toolkit.catalog_verification._public_addresses", return_value=["93.184.216.34"]), patch(
+            "handbook_toolkit.catalog_verification._PinnedHTTPSConnection"
+        ) as connection, patch("handbook_toolkit.catalog_verification._sleep") as sleep:
+            connection.return_value.getresponse.side_effect = [self.transient(503) for _ in range(4)]
+            with self.assertRaisesRegex(ValueError, r"remote asset returned HTTP 503 from public\.example$"):
+                _download("https://public.example/asset", destination, 100)
+        self.assertEqual(sleep.call_count, 3)
+        self.assertFalse(destination.exists())
+
+    def test_a_not_found_response_is_not_retried(self):
+        destination = Path(self.temp.name) / "not-found"
+        with patch("handbook_toolkit.catalog_verification._public_addresses", return_value=["93.184.216.34"]), patch(
+            "handbook_toolkit.catalog_verification._PinnedHTTPSConnection"
+        ) as connection, patch("handbook_toolkit.catalog_verification._sleep") as sleep:
+            connection.return_value.getresponse.return_value = self.transient(404)
+            with self.assertRaisesRegex(ValueError, r"HTTP 404 from public\.example$"):
+                _download("https://public.example/asset", destination, 100)
+        self.assertEqual(connection.call_count, 1)
+        sleep.assert_not_called()
+        self.assertFalse(destination.exists())
+
     def test_pinned_connection_preserves_tls_hostname_without_resolving_again(self):
         connection = _PinnedHTTPSConnection("public.example", "93.184.216.34")
         with patch("handbook_toolkit.catalog_verification.socket.create_connection") as connect, patch.object(
