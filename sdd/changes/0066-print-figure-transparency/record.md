@@ -148,4 +148,14 @@ VERIFY (full): 7 check(s), 0 problem(s)
 
 ### 6. CI
 
-CI_RUN
+```text
+$ gh run view 44207727480
+checks success, quickstart success, template-install success, wheel-install success,
+publication-build success, edition-preview (template|sample|solutions-architecture) success
+```
+
+The downloaded SA artifact is byte-identical to the local release build
+(`sha256 fd4d9c47524cd48cc1792e5012e075474436e78490692de86ff52ec9b4474840` for both), and the CI
+recheck prints the same numbers: 121 figure pages, **0** pure-white pixels in figure boxes,
+121/121 Word figure media with alpha, 121/121 HTML originals, 121/121 widths in HTML/PDF/DOCX,
+514 pages; the CI sample stays at 61 pages with a byte-identical SVG.
