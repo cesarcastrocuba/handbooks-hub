@@ -41,6 +41,10 @@ check, because the DOCX gains appendix labels, keep-with-next tables and natural
 
 ### Fixed
 
+- Print editions no longer show a white box around raster figures (change `0066`). Typst and Word
+  embed a staged colour-to-alpha copy of a white-backed PNG, while HTML keeps the original image and
+  its light-only CSS blending. Figure ids, widths, captions, anchors and the Markdown edition are
+  unchanged; the source PNGs in the book repository are never modified.
 - PDF bookmarks keep their section numbers (change `0063`, issue #99). The heading numbering
   function is no longer `context`: Typst cannot resolve a contextual function while it assembles the
   PDF outline, so numbered headings lost their number and kept only the separating space in the

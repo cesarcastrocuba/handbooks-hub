@@ -251,6 +251,8 @@ def build_book(
         depth = toc_depth(entry_texts)
 
         rendered_entries = _prepare_render(workspace, entries, appendices=appendix_entries)
+        from .print_figures import stage_print_figures
+        print_figures = stage_print_figures(workspace, rendered_entries)
 
         title = str(book.get("title", ""))
         licenses = book.get("license", {})
@@ -318,6 +320,7 @@ def build_book(
             finally:
                 for path, text in originals.items():
                     path.write_text(text)
+        print_figures.restore(workspace)
 
         # Lists are native HTML chapters; print and Markdown keep their own indexes.
         html_config = yaml.safe_load((workspace / "_quarto.yml").read_text())
