@@ -9,6 +9,16 @@ import yaml
 
 from .build_types import BuildError, QUARTO_VERSION, COMMIT, VERSION, _run, _git
 
+PREVIEW_SUFFIX = "-preview"
+
+
+def validation_version(version: str, preview: bool) -> str:
+    """The release version a preview describes; release builds stay strict and exact."""
+    if preview and version.endswith(PREVIEW_SUFFIX):
+        return version[: -len(PREVIEW_SUFFIX)]
+    return version
+
+
 def _require_clean_commit(repo: Path, commit: str) -> None:
     if not COMMIT.fullmatch(commit):
         raise BuildError("commit must be a full 40-character lowercase SHA")
