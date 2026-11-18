@@ -7,6 +7,10 @@ semantic versioning once the toolkit is published.
 
 ### Fixed
 
+- Catalog release verification accepts the optional `book-extras.zip` and `EXTRAS-SHA256SUMS.txt`
+  pair alongside the seven declared assets (change `0069`). One of the pair alone, or any other
+  name, still fails; the verifier checks the sums line, the ZIP checksum and archive integrity, and
+  rejects unsafe member paths. Extras are not catalog asset roles.
 - Preview builds validate a book-owned Document Control `Version` row against the release version
   they preview (change `0068`): the `-preview` suffix is removed only for that check, so a final
   `3.1.0` book that states `3.1` previews, while release builds stay strict and exact. The suffix is
