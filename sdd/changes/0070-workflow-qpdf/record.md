@@ -94,7 +94,7 @@ runner without a global identity.
 
 ```text
 $ make full PYTHON=.venv/bin/python
-Ran 571 tests in 632.694s
+Ran 575 tests in 626.715s
 
 OK (skipped=3)
 ...
@@ -112,7 +112,7 @@ Dispatched runs on the branch (no deploy):
                                               skips; macOS failed on the path tests below
 44355804489  portal-pages  5c2c312  failure  make full passed; catalog verification failed on a transient
                                               HTTP 503 from cesarcastrocuba.github.io (retry added)
-NEW_PORTAL
+44362741668  portal-pages  f349d08  success  build succeeded (make full and the release verification passed); deploy and verify skipped (deploy=false)
 ```
 
 ## Known gaps
