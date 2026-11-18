@@ -48,6 +48,7 @@ from .build_identity import (
     _require_prerelease_version,
     _epoch,
     _tool_versions,
+    validation_version,
 )
 from .build_staging import (
     _reading_groups,
@@ -242,7 +243,9 @@ def build_book(
         for entry in entries:
             entry_path = workspace / entry
             content = entry_path.read_text(encoding="utf-8")
-            injected = inject_document_control(content, control_table, version=book_version)
+            injected = inject_document_control(
+                content, control_table, version=validation_version(book_version, preview)
+            )
             if injected is not None:
                 entry_path.write_text(injected, encoding="utf-8")
                 break

@@ -5,6 +5,13 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+### Fixed
+
+- Preview builds validate a book-owned Document Control `Version` row against the release version
+  they preview (change `0068`): the `-preview` suffix is removed only for that check, so a final
+  `3.1.0` book that states `3.1` previews, while release builds stay strict and exact. The suffix is
+  defined once in the toolkit and reused by `tools/scripts/edition_preview.py`.
+
 ## [1.9.0] - Unreleased
 
 Template release prepared by change `0065` and repinned by change `0067`. Template `1.9.0` pins toolkit `0.14.0` at

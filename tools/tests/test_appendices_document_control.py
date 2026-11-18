@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 
 from handbook_toolkit.build import build_book
 from handbook_toolkit.build_staging import _transform_chapter
+from handbook_toolkit.build_identity import PREVIEW_SUFFIX, validation_version
 from handbook_toolkit.build_types import BuildError
 from handbook_toolkit.print_layout import (
     extract_document_control_version,
@@ -109,6 +110,36 @@ class AppendicesDocumentControlUnitTests(unittest.TestCase):
             validate_document_control_version(text_missing, "1.0.0")
         self.assertIn("has no Version row to validate", str(ctx.exception))
 
+    def test_validation_version_strips_only_a_preview_suffix(self) -> None:
+        self.assertEqual(PREVIEW_SUFFIX, "-preview")
+        self.assertEqual(validation_version("3.1.0-preview", True), "3.1.0")
+        self.assertEqual(validation_version("3.1.0", True), "3.1.0")
+        self.assertEqual(validation_version("3.1.0-rc.1", True), "3.1.0-rc.1")
+        self.assertEqual(validation_version("3.1.0-preview", False), "3.1.0-preview")
+
+    def test_preview_previews_the_release_version_it_describes(self) -> None:
+        text_final = (
+            "# Document Control\n\n"
+            "| Field | Value |\n"
+            "| Version | 3.1 |\n"
+        )
+        text_rc = (
+            "# Document Control\n\n"
+            "| Field | Value |\n"
+            "| Version | 3.1 (pre-release 3.1.0-rc.1) |\n"
+        )
+        # A preview of the final book validates against 3.1.0, and an rc preview keeps its rc.
+        validate_document_control_version(text_final, validation_version("3.1.0-preview", True))
+        validate_document_control_version(text_rc, validation_version("3.1.0-rc.1", True))
+        # Release builds stay strict: the preview identity never matches, and a wrong
+        # release version still fails.
+        with self.assertRaises(BuildError):
+            validate_document_control_version(text_final, validation_version("3.1.0-preview", False))
+        with self.assertRaises(BuildError):
+            validate_document_control_version(text_final, "3.0.0")
+        with self.assertRaises(BuildError):
+            validate_document_control_version(text_rc, "3.2.0-rc.1")
+
     def test_inject_document_control_preserves_existing_table_and_validates(self) -> None:
         existing = (
             "# Document Control {.unnumbered}\n\n"
@@ -192,6 +223,44 @@ Checklist items.
 
 
 class AppendicesDocumentControlIntegrationTests(unittest.TestCase):
+    @unittest.skipUnless(BUILD_AVAILABLE, "Quarto and pdf tools required")
+    def test_preview_of_a_final_book_validates_its_release_document_control(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo, _ = make_book(root, chapter=True, version="1.0.0")
+            control = repo / "manuscript/front-matter/document-control.qmd"
+            control.parent.mkdir(parents=True)
+            control.write_text(
+                "# Document Control {.unnumbered}\n\n"
+                "| Field | Value |\n"
+                "| :--- | :--- |\n"
+                "| Title | Synthetic Handbook |\n"
+                "| Version | 1.0 |\n"
+                "| Status | Released |\n",
+                encoding="utf-8",
+            )
+            (repo / "manuscript/book.yml").write_text(
+                "front:\n"
+                "  - front-matter/document-control.qmd\n"
+                "chapters:\n"
+                "  - chapters/pilot.qmd\n"
+                "back: []\n"
+                "appendices: []\n"
+                "references: []\n",
+                encoding="utf-8",
+            )
+            commit = commit_all(repo, "document control for a final version")
+            build_book(repo, commit, root / "release", profile=PROFILE, mode="chapter")
+            build_book(
+                repo,
+                commit,
+                root / "preview",
+                profile=PROFILE,
+                mode="chapter",
+                version="1.0.0-preview",
+                preview=True,
+            )
+
     @unittest.skipUnless(BUILD_AVAILABLE and PDFTOTEXT, "Quarto and pdf tools required")
     def test_end_to_end_synthetic_book_with_appendices_and_document_control(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
