@@ -7,7 +7,9 @@ from unittest.mock import patch
 from test_build import make_book, commit_all, build_book, BUILD_AVAILABLE
 from test_figure_layout import png
 from html_support import Document
+from handbook_toolkit.artifact_optimize import _ihdr, png_pixels
 from handbook_toolkit.docx_xml import W
+
 
 
 @unittest.skipUnless(BUILD_AVAILABLE, "Quarto and pdfinfo required")
@@ -86,6 +88,17 @@ class TablesFiguresBuildTests(unittest.TestCase):
                 ]
                 self.assertEqual(len(images), 1)
                 self.assertRegex(str(images[0].attrs), r"69(?:\.0)?%")
+                html_image = posixpath.normpath(
+                    posixpath.join(
+                        "manuscript/chapters", images[0].attrs["src"]
+                    )
+                )
+                html_png = z.read(html_image)
+                self.assertEqual(_ihdr(html_png)[3], 2)
+                self.assertEqual(
+                    png_pixels(html_png),
+                    png_pixels((repo / "manuscript/images/natural.png").read_bytes()),
+                )
                 vector = [
                     n
                     for n in doc.find("img")
@@ -94,6 +107,17 @@ class TablesFiguresBuildTests(unittest.TestCase):
                 self.assertNotIn("handbook-raster", vector.attrs.get("class", ""))
             with ZipFile(out / "book.docx") as z:
                 doc = ET.fromstring(z.read("word/document.xml"))
+                print_png = None
+                for name in z.namelist():
+                    if not (name.startswith("word/media/") and name.endswith(".png")):
+                        continue
+                    data = z.read(name)
+                    width, height = _ihdr(data)[0:2]
+                    if (width, height) == (904, 893):
+                        print_png = data
+                self.assertIsNotNone(print_png)
+                self.assertEqual(_ihdr(print_png)[3], 6)
+                self.assertEqual(png_pixels(print_png)[3], 0)
             for token in [
                 "SHORTHEADING",
                 "SHORTINTRO",
