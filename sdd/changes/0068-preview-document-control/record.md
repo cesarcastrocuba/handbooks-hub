@@ -61,3 +61,11 @@ OK (skipped=3)
 VERIFY (full): 7 check(s), 0 problem(s)
 ```
 
+
+### CI
+
+Run 44310926423 at `6543a8b` is green on every job, including the three edition previews. The SA
+edition preview built book main `b50911e7698a300fcfd233ef3c954ee6459684d5` (metadata `3.1.0`,
+Document Control Version `3.1`, Status `Released`) as version `3.1.0-preview`. That is exactly the
+case that failed before this change; the preview completed, and its Document Control page shows
+`Version 3.1` and `Status Released`.
