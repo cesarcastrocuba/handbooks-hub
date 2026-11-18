@@ -111,4 +111,5 @@ at 1280 px, reduced motion, light and dark.
 
 ## CI
 
-The branch is dispatched through `portal-pages.yml` with `deploy=false`; the result is appended here.
+`portal-pages.yml` was dispatched on `feat/0072-portal-authors` with `deploy=false` (run
+`44401553490`): the `build` job succeeded and `deploy` and `verify` were skipped as requested.
