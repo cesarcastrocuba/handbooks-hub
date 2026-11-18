@@ -5,9 +5,18 @@
   "description": "Approved book releases listed by the hub portal.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "books"],
+  "required": [
+    "schema_version",
+    "books"
+  ],
   "properties": {
-    "schema_version": { "enum": ["1.0", "1.1"] },
+    "schema_version": {
+      "enum": [
+        "1.0",
+        "1.1",
+        "1.2"
+      ]
+    },
     "books": {
       "type": "array",
       "items": {
@@ -32,22 +41,44 @@
             "type": "string",
             "pattern": "^[a-z][a-z0-9-]{1,63}$"
           },
-          "title": { "type": "string", "minLength": 1 },
-          "summary": { "type": "string", "minLength": 1, "maxLength": 280 },
-          "reading_url": { "type": "string", "pattern": "^https://[^\\s]+$" },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 280
+          },
+          "reading_url": {
+            "type": "string",
+            "pattern": "^https://[^\\s]+$"
+          },
           "categories": {
             "type": "array",
             "minItems": 1,
             "uniqueItems": true,
             "items": {
               "type": "string",
-              "enum": ["architecture", "authoring", "cloud", "data", "engineering", "governance", "publishing", "security"],
+              "enum": [
+                "architecture",
+                "authoring",
+                "cloud",
+                "data",
+                "engineering",
+                "governance",
+                "publishing",
+                "security"
+              ],
               "pattern": "^[a-z][a-z0-9-]{1,63}$"
             }
           },
           "status": {
             "type": "string",
-            "enum": ["published", "archived"]
+            "enum": [
+              "published",
+              "archived"
+            ]
           },
           "latest_release": {
             "type": "object",
@@ -91,17 +122,70 @@
                 "additionalProperties": false,
                 "minProperties": 1,
                 "properties": {
-                  "pdf": { "type": "string", "pattern": "^https://[^\\s]+$" },
-                  "html": { "type": "string", "pattern": "^https://[^\\s]+$" },
-                  "docx": { "type": "string", "pattern": "^https://[^\\s]+$" },
-                  "markdown": { "type": "string", "pattern": "^https://[^\\s]+$" },
-                  "source": { "type": "string", "pattern": "^https://[^\\s]+$" }
+                  "pdf": {
+                    "type": "string",
+                    "pattern": "^https://[^\\s]+$"
+                  },
+                  "html": {
+                    "type": "string",
+                    "pattern": "^https://[^\\s]+$"
+                  },
+                  "docx": {
+                    "type": "string",
+                    "pattern": "^https://[^\\s]+$"
+                  },
+                  "markdown": {
+                    "type": "string",
+                    "pattern": "^https://[^\\s]+$"
+                  },
+                  "source": {
+                    "type": "string",
+                    "pattern": "^https://[^\\s]+$"
+                  }
                 }
               }
+            }
+          },
+          "authors": {
+            "description": "Book authors, as stated in publishing/metadata.yaml (schema 1.2).",
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "pattern": "^\\S(?:.*\\S)?$"
             }
           }
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "schema_version"
+        ],
+        "properties": {
+          "schema_version": {
+            "const": "1.2"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "books": {
+            "items": {
+              "required": [
+                "authors"
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
 }

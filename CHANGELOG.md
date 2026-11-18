@@ -5,6 +5,16 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+### Added
+
+- Catalog schema `1.2` records each book's `authors`, and the portal shows and filters by them
+  (change `0072`). The catalog lists the authors of both books, `catalog_verification` compares them
+  with `publishing/metadata.yaml` in the release's `book-source.zip`, and the catalog automation
+  keeps the field and the schema version when it moves a book to a newer release. Each card shows
+  `By …` under an author line on the generated cover (`Handbooks Hub · v…`), the toolbar gains an
+  Author select beside the topic chips, the search and the sort, and the footer names the publisher.
+  Schema `1.1` catalogs without `authors` stay valid; the listing request asks for the author names.
+
 ### Fixed
 
 - qpdf 11 or later is installed and version-checked in every hub workflow that runs the toolkit tests
