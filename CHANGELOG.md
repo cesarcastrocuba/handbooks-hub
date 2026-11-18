@@ -24,10 +24,10 @@ semantic versioning once the toolkit is published.
   `3.1.0` book that states `3.1` previews, while release builds stay strict and exact. The suffix is
   defined once in the toolkit and reused by `tools/scripts/edition_preview.py`.
 
-## [1.9.0] - Unreleased
+## [1.9.0] - 2026-11-18
 
 Template release prepared by change `0065` and repinned by change `0067`. Template `1.9.0` pins toolkit `0.14.0` at
-`9dedd3c70bb7ad345eb2e3dbcb54773de9bc4ea2` (`toolkit-v0.14.0` once the Owner approves the tag) and keeps standard
+`9dedd3c70bb7ad345eb2e3dbcb54773de9bc4ea2` (tag `toolkit-v0.14.0`) and keeps standard
 profile `1.1.0`. It also carries everything prepared for templates `1.7.0` and `1.8.0`, which are
 superseded and never tagged (Owner decision, 2026-11-17): `template-v1.9.0` is the first template tag
 after `template-v1.6.0`. The template mirror and tag are published by the coordinator after the merge
@@ -38,7 +38,7 @@ and the Owner's approval.
 - Template `release.yml` and `ci.yml` install qpdf 11 or later, and a release whose manifest shows no
   compacted PDF fails (change `0062`).
 
-## [0.14.0] - Unreleased
+## [0.14.0] - 2026-11-18
 
 Toolkit release prepared by change `0064`: changes `0060`, `0061`, `0062` and `0063`, the fixes from
 the Owner's review of the toolkit 0.13.0 previews, and change `0066` (repinned by change `0067`),
@@ -162,7 +162,7 @@ transition, and the example chapter's neutral Review Checklist role. The release
 the deployed reading site's assets with `site_check` in a read-only job after Pages deployment.
 The template mirror and tag are published by the coordinator after this change is merged.
 
-## [0.11.0] - Unreleased
+## [0.11.0] - 2026-11-15
 
 ### Changed
 
