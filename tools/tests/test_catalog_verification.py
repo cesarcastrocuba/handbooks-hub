@@ -2,6 +2,7 @@
 
 import copy
 import hashlib
+import io
 import json
 from pathlib import Path
 import tempfile
@@ -141,6 +142,92 @@ class CatalogVerificationTests(unittest.TestCase):
         self.assertTrue(self.run_gate().ok)
         self.release["assets"].pop()
         self.assertFalse(self.run_gate().ok)
+
+    def add_extras(self, *, sums=None, zip_bytes=None):
+        if zip_bytes is None:
+            buffer = io.BytesIO()
+            with ZipFile(buffer, "w") as archive:
+                archive.writestr("exports/checklist.csv", "id,status\n1,pass\n")
+            zip_bytes = buffer.getvalue()
+        digest = hashlib.sha256(zip_bytes).hexdigest()
+        sums_bytes = (
+            sums if sums is not None else f"{digest}  book-extras.zip\n"
+        ).encode("utf-8")
+        self.bytes[self.prefix + "book-extras.zip"] = zip_bytes
+        self.bytes[self.prefix + "EXTRAS-SHA256SUMS.txt"] = sums_bytes
+        self.release["assets"].extend(
+            [
+                {
+                    "name": "book-extras.zip",
+                    "state": "uploaded",
+                    "browser_download_url": self.prefix + "book-extras.zip",
+                    "size": len(zip_bytes),
+                },
+                {
+                    "name": "EXTRAS-SHA256SUMS.txt",
+                    "state": "uploaded",
+                    "browser_download_url": self.prefix + "EXTRAS-SHA256SUMS.txt",
+                    "size": len(sums_bytes),
+                },
+            ]
+        )
+
+    def test_optional_extras_pair_passes(self):
+        self.add_extras()
+        self.assertTrue(self.run_gate().ok)
+
+    def test_release_must_carry_both_extras(self):
+        self.add_extras()
+        self.release["assets"] = [
+            asset for asset in self.release["assets"] if asset["name"] != "EXTRAS-SHA256SUMS.txt"
+        ]
+        result = self.run_gate()
+        self.assertIn("must carry both", str(result.issues[0]))
+        self.add_extras()
+        self.release["assets"] = [
+            asset for asset in self.release["assets"] if asset["name"] != "book-extras.zip"
+        ]
+        result = self.run_gate()
+        self.assertIn("must carry both", str(result.issues[0]))
+
+    def test_an_unknown_tenth_asset_fails(self):
+        self.add_extras()
+        self.release["assets"].append(
+            {"name": "notes.txt", "state": "uploaded",
+             "browser_download_url": self.prefix + "notes.txt"}
+        )
+        result = self.run_gate()
+        self.assertIn("exactly", str(result.issues[0]))
+
+    def test_extras_checksum_mismatch_fails(self):
+        self.add_extras(sums="0" * 64 + "  book-extras.zip\n")
+        result = self.run_gate()
+        self.assertIn("checksum does not match", str(result.issues[0]))
+
+    def test_malformed_extras_sums_fails(self):
+        for sums in (
+            "not a checksum\n",
+            f"{'0' * 64}  other.zip\n",
+            f"{'0' * 64}  book-extras.zip\n{'1' * 64}  book-extras.zip\n",
+        ):
+            with self.subTest(sums=sums):
+                self.setUp()
+                self.add_extras(sums=sums)
+                result = self.run_gate()
+                self.assertIn("EXTRAS-SHA256SUMS.txt", str(result.issues[0]))
+
+    def test_extras_zip_with_unsafe_member_fails(self):
+        buffer = io.BytesIO()
+        with ZipFile(buffer, "w") as archive:
+            archive.writestr("../escape.txt", "x")
+        self.add_extras(zip_bytes=buffer.getvalue())
+        result = self.run_gate()
+        self.assertIn("unsafe member path", str(result.issues[0]))
+
+    def test_extras_zip_must_be_a_valid_archive(self):
+        self.add_extras(zip_bytes=b"not a zip")
+        result = self.run_gate()
+        self.assertIn("not a valid ZIP", str(result.issues[0]))
 
     def test_direct_download_links_must_match_the_release_manifest(self):
         self.rewrite_as_legacy()

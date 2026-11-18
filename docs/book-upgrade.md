@@ -41,6 +41,8 @@ that it has not applied yet.
 4. Update the book's release workflow from template 1.8.0. A book may add a `release-assets`
    Makefile target that writes its own deliverables to `$(RELEASE_ASSETS_DIR)`; the release then
    adds `book-extras.zip` and `EXTRAS-SHA256SUMS.txt`. Books without the target are unchanged.
+   Catalog verification accepts that optional pair alongside the seven files and checks its checksum
+   and ZIP contents.
 5. Rebuild once and open the DOCX in desktop Word before the next tag.
 
 ## Example: toolkit 0.11.0 to 0.12.0 (never tagged) and profile 1.0.0 to 1.1.0
@@ -64,7 +66,8 @@ that it has not applied yet.
    deliverables (e.g. checklist exports, spreadsheets, data templates), define a `release-assets`
    target in `Makefile`. The release workflow validates deliverables, requires a clean working tree,
    packages them deterministically into `book-extras.zip`, and writes `EXTRAS-SHA256SUMS.txt`. Books
-   without this target publish only the standard seven files.
+   without this target publish only the standard seven files. Catalog verification accepts the pair
+   alongside the seven files and checks the extras checksum and ZIP.
 
 ## Example: toolkit 0.10.3 to 0.11.0
 

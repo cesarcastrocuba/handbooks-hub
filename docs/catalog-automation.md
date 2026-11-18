@@ -37,7 +37,8 @@ Add `-f dry_run=false` to push a branch. The inputs are:
    under `latest_release.assets` and sets the catalog `schema_version` to `1.1`.
 3. `python -m handbook_toolkit.catalog_verification catalog/catalog.json` checks the published bytes
    of every listed release, and `make full` runs the repository checks. Both run on a dry run and
-   on a no-op too.
+   on a no-op too. The verifier also accepts the optional `book-extras.zip`/`EXTRAS-SHA256SUMS.txt`
+   pair and checks its checksum and ZIP; extras are not catalog asset roles.
 4. **`publish` job (`contents: write`, `actions: write`).** Runs only when this is not a dry run and
    the catalog changed. It runs no repository code. It pushes branch `catalog/<slug>-<tag>`,
    triggers `ci.yml` on it and writes a compare URL to the job summary.

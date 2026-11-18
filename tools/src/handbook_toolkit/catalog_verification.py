@@ -8,13 +8,13 @@ import http.client
 import ipaddress
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import socket
 import ssl
 import tempfile
 from urllib.parse import quote, urldefrag, urljoin, urlsplit
-from zipfile import ZipFile
+from zipfile import BadZipFile, ZipFile
 
 from .artifacts import inspect_payload
 from .catalog import validate_catalog
@@ -25,6 +25,10 @@ MAX_DOWNLOAD = 512 * 1024 * 1024
 API_HOST = "api.github.com"
 TOKEN_VARIABLE = "GITHUB_TOKEN"
 RATE_LIMITED = {403, 429}
+EXTRAS_ZIP = "book-extras.zip"
+EXTRAS_SUMS = "EXTRAS-SHA256SUMS.txt"
+EXTRAS = {EXTRAS_ZIP, EXTRAS_SUMS}
+EXTRAS_SUMS_LIMIT = 64 * 1024
 
 
 def _public_addresses(host: str) -> list[str]:
@@ -190,11 +194,26 @@ def _verify_book(book: dict) -> None:
                 raise ValueError(f"catalog download link for {role} is not an artifact of the release manifest")
         expected = set(names) | {MANIFEST, CHECKSUMS}
         assets = published.get("assets", [])
-        if not isinstance(assets, list) or len(assets) != len(expected) or not all(isinstance(asset, dict) for asset in assets) or {asset.get("name") for asset in assets} != expected:
-            raise ValueError(f"release must contain exactly the {len(expected)} declared assets")
+        if not isinstance(assets, list) or not all(isinstance(asset, dict) for asset in assets):
+            raise ValueError("release assets are malformed")
+        asset_names = [asset.get("name") for asset in assets]
+        if not all(isinstance(name, str) for name in asset_names) or len(set(asset_names)) != len(asset_names):
+            raise ValueError("release assets have missing or duplicate names")
+        present = set(asset_names)
+        if present not in (expected, expected | EXTRAS):
+            if present & EXTRAS and EXTRAS - present:
+                raise ValueError(
+                    "release extras must carry both book-extras.zip and EXTRAS-SHA256SUMS.txt"
+                )
+            raise ValueError(
+                f"release must contain exactly the {len(expected)} declared assets, "
+                "optionally with book-extras.zip and EXTRAS-SHA256SUMS.txt"
+            )
         for asset in assets:
             if asset.get("state") != "uploaded" or asset.get("browser_download_url") != prefix + asset["name"]:
                 raise ValueError("release asset is incomplete or has a mixed-release URL")
+        if present != expected:
+            _verify_extras(prefix, {asset["name"]: asset for asset in assets}, root.parent / "extras")
         _download(release["checksums_url"], root / CHECKSUMS, 2 * 1024 * 1024)
         for entry in entries:
             if entry["bytes"] > MAX_DOWNLOAD:
@@ -225,6 +244,41 @@ def _verify_book(book: dict) -> None:
                 _download(url, live, member.file_size)
                 if hashlib.sha256(live.read_bytes()).digest() != hashlib.sha256(archive.read(member)).digest():
                     raise ValueError(f"live reading asset differs from released HTML: {member.filename}")
+
+
+def _verify_extras(prefix: str, assets: dict[str, dict], directory: Path) -> None:
+    """Verify the optional book-extras pair, never part of the catalog asset roles."""
+    directory.mkdir(parents=True, exist_ok=True)
+    archive = assets[EXTRAS_ZIP]
+    size = archive.get("size")
+    if not isinstance(size, int) or isinstance(size, bool) or size <= 0:
+        raise ValueError("book-extras.zip asset has no usable size")
+    if size > MAX_DOWNLOAD:
+        raise ValueError("book-extras.zip exceeds the online verification size limit")
+    _download(prefix + EXTRAS_SUMS, directory / EXTRAS_SUMS, EXTRAS_SUMS_LIMIT)
+    try:
+        lines = (directory / EXTRAS_SUMS).read_text(encoding="utf-8").splitlines()
+    except UnicodeError as exc:
+        raise ValueError("EXTRAS-SHA256SUMS.txt is not UTF-8 text") from exc
+    if len(lines) != 1:
+        raise ValueError("EXTRAS-SHA256SUMS.txt must contain exactly one checksum line")
+    match = re.fullmatch(r"([0-9a-f]{64}) [ *]book-extras\.zip", lines[0])
+    if match is None:
+        raise ValueError("EXTRAS-SHA256SUMS.txt must name book-extras.zip with its SHA-256")
+    _download(prefix + EXTRAS_ZIP, directory / EXTRAS_ZIP, size)
+    if hashlib.sha256((directory / EXTRAS_ZIP).read_bytes()).hexdigest() != match.group(1):
+        raise ValueError("book-extras.zip checksum does not match EXTRAS-SHA256SUMS.txt")
+    try:
+        with ZipFile(directory / EXTRAS_ZIP) as bundle:
+            if bundle.testzip() is not None:
+                raise ValueError("book-extras.zip failed its archive integrity check")
+            for member in bundle.infolist():
+                name = member.filename
+                path = PurePosixPath(name)
+                if path.is_absolute() or re.match(r"^[A-Za-z]:", name) or ".." in path.parts:
+                    raise ValueError(f"book-extras.zip contains an unsafe member path: {name}")
+    except BadZipFile as exc:
+        raise ValueError("book-extras.zip is not a valid ZIP archive") from exc
 
 
 def verify_catalog_releases(catalog: Path) -> CheckResult:
