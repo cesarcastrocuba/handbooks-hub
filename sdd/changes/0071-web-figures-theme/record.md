@@ -79,9 +79,28 @@ VERIFY (full): 7 check(s), 0 problem(s)
 The CI edition preview of the Solutions Architecture book (this branch's toolkit) is measured with
 Playwright on `ch03-architecture-decisions.html`, Figure 3.1:
 
+CI run 44398778820 at `c08777a` is green on every job, including the three edition previews. The
+Solutions Architecture preview was built from book main `b50911e` with this branch's toolkit.
+
 ```text
-CI_EVIDENCE
+$ python 0071-ci-measure.py <preview edition> <output> <site>
+{
+  "light": {
+    "header": 56, "content": -1223, "transform": "none",
+    "filter": "none", "blend": "multiply",
+    "canvas": "rgb(246, 241, 231)", "pixel": [246, 241, 231], "figure_style": "width:97.0%"
+  },
+  "dark": {
+    "header": 56, "content": -1223, "transform": "none",
+    "filter": "invert(1) hue-rotate(180deg)", "blend": "screen",
+    "canvas": "rgb(20, 26, 27)", "pixel": [20, 26, 27], "figure_style": "width:97.0%"
+  }
+}
 ```
+
+`content` is negative because the page is scrolled to Figure 3.1; it is identical in both schemes,
+as is the 56 px header. The figure's white corner pixel equals each canvas exactly, the section
+transform is `none` at rest in both themes, and Figure 3.1 keeps its `width:97%`.
 
 Light and dark screenshots are committed next to this record as `figure-3-1-light.png` and
 `figure-3-1-dark.png`.
