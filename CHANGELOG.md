@@ -7,6 +7,10 @@ semantic versioning once the toolkit is published.
 
 ### Fixed
 
+- Web reading site: raster figures blend with the light canvas even inside revealed sections, and
+  invert to light lines on the dark canvas (change `0071`); the theme toggle no longer changes the
+  navbar height because both schemes share one navbar padding, and a scheme-parity test keeps every
+  non-colour SCSS variable identical.
 - qpdf 11 or later is installed and version-checked in every hub workflow that runs the toolkit tests
   or builds a book (change `0070`). `portal-pages.yml` and `catalog-update.yml` now install
   `poppler-utils qpdf libreoffice-writer`, `ci.yml` installs qpdf for its check jobs and verifies the

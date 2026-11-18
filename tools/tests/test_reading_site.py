@@ -1,9 +1,12 @@
 """Native reading-site configuration, metadata and accessible CSS behavior."""
 import base64
 from pathlib import Path
+import re
+import struct
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
+import zlib
 
 import tinycss2
 import yaml
@@ -342,4 +345,107 @@ class NativeMotionBrowserTests(unittest.TestCase):
                       let count=0;for(let i=0;i<a.length;i++)if(a[i]!==b[i])count++;return count;
                     }''',images)
                     with self.subTest(width=width,scheme=scheme):self.assertEqual(changed,0)
+            browser.close()
+
+    def test_raster_figure_blends_with_the_canvas_in_both_themes(self):
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            self.skipTest('Playwright is installed by the edition-preview job')
+        tokens = design.load_tokens()
+        motion = tokens['motion']
+
+        def colour(value):
+            return [int(value[index:index + 2], 16) for index in (1, 3, 5)]
+
+        def nav_padding(scheme):
+            match = re.search(r'^\$navbar-padding-y:\s*([^;]+);', design.book_scss(scheme), re.MULTILINE)
+            return match[1].strip()
+
+        def chunk(kind, data):
+            return (struct.pack('>I', len(data)) + kind + data
+                    + struct.pack('>I', zlib.crc32(kind + data) & 0xFFFFFFFF))
+
+        size = 8
+        rows = b''.join(b'\x00' + b'\xff\xff\xff' * size for _ in range(size))
+        image = base64.b64encode(
+            b'\x89PNG\r\n\x1a\n'
+            + chunk(b'IHDR', struct.pack('>IIBBBBB', size, size, 8, 2, 0, 0, 0))
+            + chunk(b'IDAT', zlib.compress(rows, 9))
+            + chunk(b'IEND', b'')
+        ).decode()
+        layout = (
+            'body{margin:0;background:var(--canvas);color:var(--text)}'
+            '#quarto-header .navbar{padding-top:' + nav_padding('light')
+            + ';padding-bottom:' + nav_padding('light') + ';background:var(--canvas)}'
+            'body.quarto-dark #quarto-header .navbar{padding-top:' + nav_padding('dark')
+            + ';padding-bottom:' + nav_padding('dark') + '}'
+            '#quarto-content{margin:0}section.level2{margin:0;padding:0}figure{margin:0}'
+            'img.handbook-raster{display:block;width:80px;height:80px}'
+        )
+        markup = (
+            '<header id="quarto-header"><nav class="navbar" style="height:20px">Theme</nav></header>'
+            '<main id="quarto-content"><section class="level2"><h2>Heading</h2>'
+            '<figure class="quarto-figure handbook-raster">'
+            '<img class="handbook-raster" alt="fixture" src="data:image/png;base64,' + image + '">'
+            '</figure></section></main>'
+        )
+        stylesheet = (
+            '<style>:root{' + design.css_variables('light') + '}body.quarto-dark{'
+            + design.css_variables('dark') + '}' + design.book_layout_css() + design.reading_css()
+            + layout + '</style>'
+        )
+
+        def pixel(page, x, y):
+            png = base64.b64encode(page.screenshot()).decode()
+            script = """async ([png,x,y])=>{
+              const bitmap=await createImageBitmap(await(await fetch('data:image/png;base64,'+png)).blob());
+              const canvas=document.createElement('canvas');canvas.width=bitmap.width;canvas.height=bitmap.height;
+              const context=canvas.getContext('2d');context.drawImage(bitmap,0,0);
+              return [...context.getImageData(x,y,1,1).data].slice(0,3);
+            }"""
+            return page.evaluate(script, [png, round(x), round(y)])
+
+        def chrome(page):
+            return (page.locator('#quarto-header').bounding_box()['height'],
+                    page.locator('#quarto-content').bounding_box()['y'])
+
+        def show(page, scheme):
+            page.locator('body').evaluate('(e,scheme)=>e.classList.add("quarto-"+scheme)', scheme)
+            page.wait_for_timeout(motion['reveal_ms'] + 400)
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            loaded = {}
+            for scheme in ('light', 'dark'):
+                page = browser.new_page(viewport={'width': 800, 'height': 600})
+                page.set_content(stylesheet + markup)
+                show(page, scheme)
+                self.assertEqual(
+                    page.locator('section.level2').evaluate('e=>getComputedStyle(e).transform'), 'none'
+                )
+                box = page.locator('img.handbook-raster').bounding_box()
+                got = pixel(page, box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
+                expected = colour(tokens['color']['canvas'][scheme])
+                tolerance = 2 if scheme == 'dark' else 0
+                self.assertLessEqual(
+                    max(abs(a - b) for a, b in zip(got, expected)), tolerance,
+                    (scheme, got, expected),
+                )
+                loaded[scheme] = chrome(page)
+                page.close()
+            self.assertAlmostEqual(loaded['light'][0], loaded['dark'][0], delta=0.5)
+            self.assertAlmostEqual(loaded['light'][1], loaded['dark'][1], delta=0.5)
+
+            page = browser.new_page(viewport={'width': 800, 'height': 600})
+            page.set_content(stylesheet + markup)
+            show(page, 'light')
+            before = chrome(page)
+            page.locator('body').evaluate(
+                'e=>{e.classList.remove("quarto-light");e.classList.add("quarto-dark")}'
+            )
+            page.wait_for_timeout(100)
+            after = chrome(page)
+            self.assertAlmostEqual(before[0], after[0], delta=0.5)
+            self.assertAlmostEqual(before[1], after[1], delta=0.5)
             browser.close()
