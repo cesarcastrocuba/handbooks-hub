@@ -7,13 +7,24 @@ semantic versioning once the toolkit is published.
 
 ### Added
 
-- Catalog schema `1.2` records each book's `authors`, and the portal shows and filters by them
-  (change `0072`). The catalog lists the authors of both books, `catalog_verification` compares them
-  with `publishing/metadata.yaml` in the release's `book-source.zip`, and the catalog automation
-  keeps the field and the schema version when it moves a book to a newer release. Each card shows
-  `By …` under an author line on the generated cover (`Handbooks Hub · v…`), the toolbar gains an
-  Author select beside the topic chips, the search and the sort, and the footer names the publisher.
-  Schema `1.1` catalogs without `authors` stay valid; the listing request asks for the author names.
+- Catalog schema `1.2` records each book's `authors` (change `0072`): the catalog lists the author of
+  both books, `catalog_verification` compares the field with `publishing/metadata.yaml` in the
+  release's `book-source.zip`, and the catalog automation keeps the field and the schema version when
+  it moves a book to a newer release. Schema `1.1` catalogs without `authors` stay valid, and the
+  listing request asks for the author names.
+
+### Changed
+
+- The portal shows the authors on each card (`By …`) and on the generated cover, adds an Author
+  select beside the topic chips, the search and the sort, matches author names in the search, and
+  names the publisher in the footer (change `0072`).
+
+## [0.14.1] - Unreleased
+
+Toolkit patch release prepared by change `0073`. It carries the fixes merged after `toolkit-v0.14.0`:
+changes `0068` and `0071` change the toolkit that books install; changes `0069` and `0070` change the
+hub's catalog verification and workflows, which run from the hub and are listed here for
+completeness. The PDF and DOCX builders are unchanged. The tag needs the Owner's approval.
 
 ### Fixed
 
