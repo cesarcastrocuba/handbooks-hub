@@ -21,8 +21,9 @@ No version bump and no tag. The change ships in the next toolkit release.
 ## Catalog schema 1.2
 
 `authors` is a required array of one to ten unique, non-empty, trimmed strings (no leading or
-trailing whitespace). `schema_version` accepts `1.2`; a `1.1` document without `authors` remains
-valid and `1.2` requires the field. `catalog/catalog.json` moves to `1.2` and states
+trailing whitespace). A name cannot contain `|`: the portal keeps the authors in `data-authors`
+joined by `" | "`, so the separator would split a name. `schema_version` accepts `1.2`; a `1.1`
+document without `authors` remains valid and `1.2` requires the field. `catalog/catalog.json` moves to `1.2` and states
 `"authors": ["Franz César Castro Cuba"]` for both books, the `author` of each book's
 `publishing/metadata.yaml`.
 

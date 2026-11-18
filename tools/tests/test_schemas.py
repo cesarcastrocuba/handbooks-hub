@@ -78,7 +78,7 @@ class CatalogSchemaTests(unittest.TestCase):
     def test_1_2_rejects_empty_duplicate_or_padded_authors(self) -> None:
         for authors in ([], [" "], ["Example Author", "Example Author"],
                         [" Example Author"], ["Example Author "], [""], ["Example Author"] * 11,
-                        ["Example Author", 3]):
+                        ["Example Author", 3], ["Example | Author"]):
             with self.subTest(authors=authors):
                 self.assertFalse(self.validator.is_valid(self.document("1.2", authors)))
 

@@ -39,7 +39,8 @@ The example is illustrative and is not listed in the catalog.
 
 ### Authors (schema 1.2)
 
-`authors` is a required array of one to ten unique, non-empty, trimmed author names. The catalog
+`authors` is a required array of one to ten unique, non-empty, trimmed author names; a name cannot
+contain `|`, which the portal uses as its filter separator. The catalog
 shows them on each card and cover and offers an Author filter, so they must be the names the book
 states: `catalog_verification` reads `publishing/metadata.yaml` from the release's
 `book-source.zip` and fails when its `author` (a string or a list of strings) differs from the
