@@ -99,12 +99,12 @@ footer.footer .nav-footer a { color: var(--accent); }
       animation-trigger: --handbook-reveal play-once;
     }
     /* Position only during entry; positioned mobile callouts lost outside list markers at rest. */
-    main .callout, main figure, main table:has(caption), #book-grid > .book {
+    main .callout, main figure, main table:has(caption), main section.level2, #book-grid > .book {
       opacity: var(--handbook-reveal-alpha);
       top: calc({{motion-entry-px}} * var(--handbook-reveal-offset));
     }
-    main .callout, main figure, main table:has(caption) { animation-name: handbook-object-reveal; }
-    main section.level2, .card { animation-fill-mode: forwards; }
+    main .callout, main figure, main table:has(caption), main section.level2 { animation-name: handbook-object-reveal; }
+    .card { animation-fill-mode: forwards; }
     #book-grid > .book { animation: handbook-object-reveal {{motion-reveal-ms}} {{motion-enter-easing}} backwards; }
     @supports (animation-delay: calc(sibling-index() * {{motion-stagger-ms}})) {
       #book-grid > .book { animation-delay: calc(min(sibling-index() - 1, {{motion-stagger-limit}}) * {{motion-stagger-ms}}); }
