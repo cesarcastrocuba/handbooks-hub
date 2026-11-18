@@ -5,6 +5,13 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+## [0.14.1] - Unreleased
+
+Toolkit patch release prepared by change `0073`. It carries the fixes merged after `toolkit-v0.14.0`:
+changes `0068` and `0071` change the toolkit that books install; changes `0069` and `0070` change the
+hub's catalog verification and workflows, which run from the hub and are listed here for
+completeness. The PDF and DOCX builders are unchanged. The tag needs the Owner's approval.
+
 ### Fixed
 
 - Web reading site: raster figures blend with the light canvas even inside revealed sections, and
