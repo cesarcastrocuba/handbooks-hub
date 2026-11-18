@@ -9,7 +9,7 @@ Toolkit `0.12.0` and `0.13.0` were never tagged (superseded by `0.14.0`, Owner d
 A book on `0.11.0` or `0.12.0` pins `0.14.0` directly and also applies the steps of the examples below
 that it has not applied yet.
 
-1. Set `toolkit: "0.14.0"` in `book.yaml` and pin `80b833875bce2018b6c15a2ee0acc4726b659175`
+1. Set `toolkit: "0.14.0"` in `book.yaml` and pin `9dedd3c70bb7ad345eb2e3dbcb54773de9bc4ea2`
    (`toolkit-v0.14.0`) in `requirements.txt`. The profile stays `1.1.0`.
 2. Lossless PDF compaction with qpdf is on by default. Install qpdf 11 or later in the book's release
    workflow next to `poppler-utils` and LibreOffice Writer, as template 1.9.0 does: a release build

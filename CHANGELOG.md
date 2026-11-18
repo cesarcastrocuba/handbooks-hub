@@ -7,8 +7,8 @@ semantic versioning once the toolkit is published.
 
 ## [1.9.0] - Unreleased
 
-Template release prepared by change `0065`. Template `1.9.0` pins toolkit `0.14.0` at
-`80b833875bce2018b6c15a2ee0acc4726b659175` (`toolkit-v0.14.0` once the Owner approves the tag) and keeps standard
+Template release prepared by change `0065` and repinned by change `0067`. Template `1.9.0` pins toolkit `0.14.0` at
+`9dedd3c70bb7ad345eb2e3dbcb54773de9bc4ea2` (`toolkit-v0.14.0` once the Owner approves the tag) and keeps standard
 profile `1.1.0`. It also carries everything prepared for templates `1.7.0` and `1.8.0`, which are
 superseded and never tagged (Owner decision, 2026-11-17): `template-v1.9.0` is the first template tag
 after `template-v1.6.0`. The template mirror and tag are published by the coordinator after the merge
@@ -22,7 +22,8 @@ and the Owner's approval.
 ## [0.14.0] - Unreleased
 
 Toolkit release prepared by change `0064`: changes `0060`, `0061`, `0062` and `0063`, the fixes from
-the Owner's review of the toolkit 0.13.0 previews. It also carries everything prepared for `0.12.0`
+the Owner's review of the toolkit 0.13.0 previews, and change `0066` (repinned by change `0067`),
+the fix from the Owner's Word and PDF check of the 0.14.0 previews. It also carries everything prepared for `0.12.0`
 and `0.13.0`, which are superseded and never tagged (Owner decision, 2026-11-17): `toolkit-v0.14.0`
 is the first toolkit tag after `toolkit-v0.11.0`. The tag needs the Owner's approval and desktop Word
 check, because the DOCX gains appendix labels, keep-with-next tables and natural-size figures.
