@@ -3,6 +3,18 @@
 Books pin exact toolkit and profile versions. Upgrades are deliberate changes reviewed like any
 other contribution; nothing upgrades automatically.
 
+## Example: toolkit 0.14.0 to 0.14.1
+
+1. Set `toolkit: "0.14.1"` in `book.yaml` and pin `9c4355e5174c41dbbaaae7fe6304c247768b69d2`
+   (`toolkit-v0.14.1`) in `requirements.txt`. The profile stays `1.1.0`, and the release workflow of
+   template 1.9.0 needs no change.
+2. The reading site changes only: raster figures blend with the cream page in the light theme and
+   read as light lines on the dark page in the dark theme, and switching themes no longer moves the
+   page. The PDF and DOCX builders are unchanged.
+3. A preview build of a final `X.Y.0` book whose Document Control states `X.Y` now passes.
+4. A patch edition `X.Y.Z` with `Z` > 0 must state its exact version in a book-owned Document Control
+   `Version` row. Rebuild once and open the DOCX in desktop Word before the next tag.
+
 ## Example: toolkit 0.13.0 to 0.14.0
 
 Toolkit `0.12.0` and `0.13.0` were never tagged (superseded by `0.14.0`, Owner decision 2026-11-17).
