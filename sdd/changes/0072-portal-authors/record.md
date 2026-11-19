@@ -101,6 +101,27 @@ release verification: OK
 The real catalog verifies online, which now includes the author comparison against both books'
 `book-source.zip` metadata.
 
+## Catalog move to v3.1.1
+
+The Solutions Architecture book published `v3.1.1` (release run 44477761172 from `ed4d86b`) and its
+reading site now serves that edition, so online verification of the listed `v3.1.0` failed with
+`live reading asset differs from released HTML: analytic-index.html`. The entry moved with the same
+core the catalog-update workflow uses, which rewrites only `latest_release` and kept `authors` and
+schema `1.2`:
+
+```
+$ python3 tools/scripts/update_catalog.py apply --catalog catalog/catalog.json \
+    --slug solutions-architecture-handbook --tag v3.1.1 \
+    --source-repo cesarcastrocuba/handbook-solutions-architecture --release-json /tmp/rel.json
+updated: solutions-architecture-handbook v3.1.0 -> v3.1.1 (published 2026-11-19)
+
+$ python -m handbook_toolkit.cli validate-catalog catalog/catalog.json
+.../catalog/catalog.json: OK
+
+$ GITHUB_TOKEN=$(gh auth token) python -m handbook_toolkit.catalog_verification catalog/catalog.json
+release verification: OK
+```
+
 ## Screenshots
 
 - `portal-library-light.png`
