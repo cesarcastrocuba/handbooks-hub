@@ -19,6 +19,18 @@ semantic versioning once the toolkit is published.
   select beside the topic chips, the search and the sort, matches author names in the search, and
   names the publisher in the footer (change `0072`).
 
+## [1.9.1] - Unreleased
+
+Template release prepared by change `0074`. Template `1.9.1` pins toolkit `0.14.1` at
+`9c4355e5174c41dbbaaae7fe6304c247768b69d2` (`toolkit-v0.14.1` once the Owner approves the tag) and keeps standard
+profile `1.1.0` and the workflows of `1.9.0`. The coordinator publishes the template mirror and tag
+after the merge and the Owner's approval.
+
+### Changed
+
+- `book.yaml` and `requirements.txt` pin toolkit `0.14.1`; the reading site gains the figure and
+  theme fixes of change `0071`.
+
 ## [0.14.1] - Unreleased
 
 Toolkit patch release prepared by change `0073`. It carries the fixes merged after `toolkit-v0.14.0`:
