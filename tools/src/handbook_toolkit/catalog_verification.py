@@ -17,6 +17,8 @@ import time
 from urllib.parse import quote, urldefrag, urljoin, urlsplit
 from zipfile import BadZipFile, ZipFile
 
+import yaml
+
 from .artifacts import inspect_payload
 from .catalog import validate_catalog
 from .publication import CHECKSUMS, MANIFEST, verify_publication
@@ -183,6 +185,53 @@ def _tag_commit(api: str, tag: str) -> str:
     raise ValueError("tag does not resolve to a commit within the supported tag depth")
 
 
+
+def _release_authors(source: Path) -> list[str]:
+    """Return the ``author`` names stated by ``publishing/metadata.yaml`` in a source archive."""
+
+    try:
+        with ZipFile(source) as archive:
+            try:
+                payload = archive.read("publishing/metadata.yaml")
+            except KeyError:
+                raise ValueError(
+                    "source archive has no publishing/metadata.yaml to check the catalog authors"
+                ) from None
+    except BadZipFile as exc:
+        raise ValueError("source archive is not a valid ZIP archive") from exc
+    try:
+        document = yaml.safe_load(payload.decode("utf-8"))
+    except (UnicodeError, yaml.YAMLError) as exc:
+        raise ValueError(f"publishing/metadata.yaml is not readable YAML: {exc}") from exc
+    if not isinstance(document, dict):
+        raise ValueError("publishing/metadata.yaml must be a mapping")
+    author = document.get("author")
+    if isinstance(author, str):
+        authors = [author]
+    elif isinstance(author, list) and author and all(isinstance(name, str) for name in author):
+        authors = list(author)
+    else:
+        raise ValueError("publishing/metadata.yaml must state an author name or a list of names")
+    return [name.strip() for name in authors]
+
+
+def _verify_authors(book: dict, entries: list[dict], root: Path) -> None:
+    """The catalog authors must be the release's own author names."""
+
+    expected = book.get("authors")
+    if expected is None:
+        return
+    source = next((entry for entry in entries if entry["role"] == "source"), None)
+    if source is None:
+        raise ValueError("catalog authors cannot be verified: the release has no source payload")
+    actual = _release_authors(root / source["path"])
+    if actual != expected:
+        raise ValueError(
+            "catalog authors differ from publishing/metadata.yaml in the release source: "
+            f"{expected!r} != {actual!r}"
+        )
+
+
 def _verify_book(book: dict) -> None:
     release = book["latest_release"]
     parsed = urlsplit(release["url"])
@@ -251,6 +300,7 @@ def _verify_book(book: dict) -> None:
         integrity = verify_publication(root)
         if not integrity.ok:
             raise ValueError("remote integrity failure: " + "; ".join(map(str, integrity.issues)))
+        _verify_authors(book, entries, root)
         for entry in entries:
             issues = inspect_payload(
                 root / entry["path"], entry["role"], source_commit=commit, build_invariants=False

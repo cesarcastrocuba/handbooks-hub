@@ -143,6 +143,55 @@ class CatalogVerificationTests(unittest.TestCase):
         self.release["assets"].pop()
         self.assertFalse(self.run_gate().ok)
 
+    def configure_authors(self, authors, metadata_author="Example Author"):
+        """State catalog authors and write the matching metadata into the release source zip."""
+
+        self.document["schema_version"] = "1.2"
+        self.document["books"][0]["authors"] = authors
+        assets = Path(self.temp.name) / "assets"
+        source = assets / "source.zip"
+        with ZipFile(source, "w") as archive:
+            if metadata_author is not None:
+                archive.writestr(
+                    "publishing/metadata.yaml",
+                    "author: " + json.dumps(metadata_author) + "\n",
+                )
+        manifest_path = assets / "publication-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        data = source.read_bytes()
+        for entry in manifest["artifacts"]:
+            if entry["role"] == "source":
+                entry["sha256"] = hashlib.sha256(data).hexdigest()
+                entry["bytes"] = len(data)
+        encoded = (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode("utf-8")
+        manifest_path.write_bytes(encoded)
+        digests = {entry["path"]: entry["sha256"] for entry in manifest["artifacts"]}
+        digests["publication-manifest.json"] = hashlib.sha256(encoded).hexdigest()
+        (assets / "SHA256SUMS.txt").write_text(
+            "".join(f"{digests[name]}  {name}\n" for name in sorted(digests)), encoding="utf-8"
+        )
+        for name in ("source.zip", "publication-manifest.json", "SHA256SUMS.txt"):
+            self.bytes[self.prefix + name] = (assets / name).read_bytes()
+
+    def test_catalog_authors_match_the_release_metadata(self):
+        self.configure_authors(["Example Author"])
+        self.assertTrue(self.run_gate().ok)
+
+    def test_catalog_authors_accept_a_metadata_list(self):
+        self.configure_authors(["Example Author", "Second Author"],
+                               metadata_author=["Example Author", "Second Author"])
+        self.assertTrue(self.run_gate().ok)
+
+    def test_catalog_authors_mismatch_fails(self):
+        self.configure_authors(["Someone Else"])
+        result = self.run_gate()
+        self.assertIn("catalog authors differ", str(result.issues[0]))
+
+    def test_a_release_without_metadata_cannot_verify_catalog_authors(self):
+        self.configure_authors(["Example Author"], metadata_author=None)
+        result = self.run_gate()
+        self.assertIn("publishing/metadata.yaml", str(result.issues[0]))
+
     def add_extras(self, *, sums=None, zip_bytes=None):
         if zip_bytes is None:
             buffer = io.BytesIO()

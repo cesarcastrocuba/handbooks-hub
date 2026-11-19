@@ -112,6 +112,57 @@ class PortalTests(unittest.TestCase):
         self.assertEqual({n.text() for n in formats},set(FORMATS.values())-{'Markdown'})
         self.assertEqual({n.attrs['href'] for n in formats},set(document['books'][0]['latest_release']['assets'].values()))
 
+    def with_authors(self, authors, second_authors=None):
+        document = document_with_assets()
+        document['schema_version'] = '1.2'
+        document['books'][0]['authors'] = authors
+        if second_authors is not None:
+            second = support.copy_document(document['books'][0])
+            second['id'] = second['slug'] = 'second-book'
+            second['title'] = 'Second Book'
+            second['reading_url'] = 'https://example.github.io/second-book/'
+            second['authors'] = second_authors
+            release = second['latest_release']
+            for field in ('url', 'manifest_url', 'checksums_url'):
+                release[field] = release[field].replace('example/example-book', 'example/second-book')
+            release['assets'] = {role: url.replace('example/example-book', 'example/second-book')
+                                 for role, url in release['assets'].items()}
+            document['books'].append(second)
+        return document
+
+    def test_card_and_cover_show_the_authors_and_the_publisher(self):
+        page = self.build(self.with_authors(['Franz César Castro Cuba', 'Second <Author>']))
+        article = page.find('article')[0]
+        self.assertEqual(article.find('p', **{'class': 'authors'})[0].text(),
+                         'By Franz César Castro Cuba and Second <Author>')
+        cover = article.find('div', **{'class': 'cover'})[0]
+        self.assertEqual(cover.find('span', **{'class': 'cover-author'})[0].text(),
+                         'Franz César Castro Cuba and Second <Author>')
+        self.assertEqual(cover.find('span', **{'class': 'cover-foot'})[0].text(),
+                         'Handbooks Hub · v1.0.0')
+        self.assertEqual(article.attrs['data-authors'], 'Franz César Castro Cuba | Second <Author>')
+        self.assertFalse(article.find('script'))
+        self.assertIn('Handbooks Hub — an independent publisher of open handbooks', page.text())
+
+    def test_author_select_lists_each_distinct_author_once(self):
+        document = self.with_authors(['Zoe Author', 'Álvaro Author'], ['Zoe Author'])
+        page = self.build(document)
+        select = page.find('select', id='author')[0]
+        options = [option.text() for option in select.find('option')]
+        self.assertEqual(options[0], 'All authors')
+        self.assertEqual(sorted(options[1:]), sorted(['Zoe Author', 'Álvaro Author']))
+        self.assertEqual(len(options), 3)
+        self.assertEqual(select.find('option')[0].attrs['value'], 'all')
+        label = page.find('label', **{'for': 'author'})[0]
+        self.assertEqual(label.text().split()[0], 'Author')
+
+    def test_a_catalog_without_authors_keeps_the_card_clean(self):
+        page = self.build(document_with_assets())
+        article = page.find('article')[0]
+        self.assertFalse(article.find('p', **{'class': 'authors'}))
+        self.assertFalse(article.find('span', **{'class': 'cover-author'}))
+        self.assertEqual(article.attrs['data-authors'], '')
+
     def test_guides_and_contribution_links_exist(self):
         page=self.build(support.catalog_document())
         for anchor in ('library','how-it-works','create','publishing','contribute','faq'):
@@ -197,6 +248,7 @@ class QuartoPortalTests(unittest.TestCase):
         self.assertEqual(len(page.find('input',id='search')),1)
         self.assertTrue(page.find('a',id='quarto-skip-link'))
         self.assertTrue(page.find('link',rel='canonical'))
+        self.assertIn('Handbooks Hub — an independent publisher of open handbooks',page.text())
         self.assertEqual((self.site/'llms.txt').read_bytes(),self._legacy_llms())
 
     def test_every_local_asset_of_every_page_is_publishable(self):
@@ -296,6 +348,47 @@ class QuartoPortalTests(unittest.TestCase):
                     finally:
                         context.close()
             browser.close()
+
+    def test_author_filter_and_search_work_in_the_browser(self):
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            self.skipTest('Playwright is installed by the edition-preview job')
+        document = support.catalog_document()
+        document['schema_version'] = '1.2'
+        book = document['books'][0]
+        book['authors'] = ['Zoe Author']
+        second = support.copy_document(book)
+        second['id'] = second['slug'] = 'second-book'
+        second['title'] = 'Second Book'
+        second['reading_url'] = 'https://example.github.io/second-book/'
+        second['authors'] = ['Álvaro <Author>']
+        release = second['latest_release']
+        for field in ('url', 'manifest_url', 'checksums_url'):
+            release[field] = release[field].replace('example/example-book', 'example/second-book')
+        document['books'].append(second)
+        catalog = self.root / 'authors.json'
+        support.write_json(catalog, document)
+        site = build_portal(catalog, self.root / 'authors-site', engine='quarto').parent
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch()
+            try:
+                page = browser.new_page()
+                page.goto((site / 'index.html').as_uri())
+                visible = lambda: page.locator('.book:not([hidden])').count()
+                self.assertEqual(visible(), 2)
+                self.assertEqual(page.locator('#results').inner_text(), 'Showing 2 of 2 handbooks')
+                page.select_option('#author', 'Álvaro <Author>')
+                self.assertEqual(visible(), 1)
+                self.assertEqual(page.locator('#results').inner_text(), 'Showing 1 of 2 handbooks')
+                page.select_option('#author', 'all')
+                self.assertEqual(visible(), 2)
+                page.fill('#search', 'Álvaro')
+                self.assertEqual(visible(), 1)
+                page.fill('#search', 'zoe')
+                self.assertEqual(visible(), 1)
+            finally:
+                browser.close()
 
     def _legacy_llms(self):
         return (build_portal(self.catalog,self.root/'legacy').parent/'llms.txt').read_bytes()

@@ -5,6 +5,20 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+### Added
+
+- Catalog schema `1.2` records each book's `authors` (change `0072`): the catalog lists the author of
+  both books, `catalog_verification` compares the field with `publishing/metadata.yaml` in the
+  release's `book-source.zip`, and the catalog automation keeps the field and the schema version when
+  it moves a book to a newer release. Schema `1.1` catalogs without `authors` stay valid, and the
+  listing request asks for the author names.
+
+### Changed
+
+- The portal shows the authors on each card (`By …`) and on the generated cover, adds an Author
+  select beside the topic chips, the search and the sort, matches author names in the search, and
+  names the publisher in the footer (change `0072`).
+
 ## [1.9.1] - Unreleased
 
 Template release prepared by change `0074`. Template `1.9.1` pins toolkit `0.14.1` at

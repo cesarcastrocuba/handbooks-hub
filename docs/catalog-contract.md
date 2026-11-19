@@ -5,18 +5,19 @@ their approved releases; it does not mirror manuscript content.
 
 Machine-readable contract: [`catalog/catalog.json`](../catalog/catalog.json) and
 [`catalog.schema.json`](../tools/src/handbook_toolkit/schemas/catalog.schema.json). Current state:
-one approved book; see [`STATUS.md`](../STATUS.md).
+two approved books; see [`STATUS.md`](../STATUS.md).
 
 ## Entry model
 
 ```json
 {
-  "schema_version": "1.0",
+  "schema_version": "1.2",
   "books": [
     {
       "id": "handbook-authoring-and-publishing",
       "slug": "handbook-authoring-and-publishing",
       "title": "Handbook Authoring and Publishing",
+      "authors": ["Franz César Castro Cuba"],
       "summary": "A practical guide to writing, reviewing and publishing a handbook.",
       "categories": ["authoring", "publishing"],
       "status": "published",
@@ -35,6 +36,19 @@ one approved book; see [`STATUS.md`](../STATUS.md).
 ```
 
 The example is illustrative and is not listed in the catalog.
+
+### Authors (schema 1.2)
+
+`authors` is a required array of one to ten unique, non-empty, trimmed author names; a name cannot
+contain `|`, which the portal uses as its filter separator. The catalog
+shows them on each card and cover and offers an Author filter, so they must be the names the book
+states: `catalog_verification` reads `publishing/metadata.yaml` from the release's
+`book-source.zip` and fails when its `author` (a string or a list of strings) differs from the
+catalog entry. Schema `1.1` documents without `authors` remain valid; `1.2` requires the field.
+
+```json
+"authors": ["Franz César Castro Cuba", "Second Author"]
+```
 
 ### Direct download links (schema 1.1)
 
@@ -68,6 +82,7 @@ The toolkit enforces these deterministically:
 | Release, manifest and checksums URLs are HTTPS and share the same tag | No mutable or mixed-release links |
 | `published_at` is an ISO date (`YYYY-MM-DD`) | Deterministic rendering |
 | Categories are unique controlled lowercase slugs | Stable portal grouping |
+| `authors` lists one to ten unique, trimmed names (schema 1.2) | The card, the cover and the Author filter show the book's real authors |
 | `reading_url` is explicit HTTPS | Reading sites may use custom domains and cannot be inferred from release URLs |
 | Each `assets` URL is the canonical file of its role under the same release as `manifest_url` | No link to another release, host or file |
 | Online verification: each `assets` URL is an artifact of the release manifest with the same role | The link downloads verified bytes |
@@ -102,7 +117,10 @@ categories; empty categories are explicitly marked as planned facets.
 
 - One card per book: a generated cover, title, summary, categories, latest version, links to the
   reading site and release downloads, and one button per edition listed under `assets`.
-- Filter by category, sort by title or release date, and search the text of the cards in the browser.
+- Show the authors under each cover and in the card (`By …`), and the publisher and version on the
+  generated cover (`Handbooks Hub · v…`).
+- Filter by category and author, sort by title or release date, and search the text of the cards
+  and their author names in the browser.
 - Static guide sections explain the platform, the author path, publishing and withdrawal.
 - `llms.txt` is written next to `index.html` and lists every book for AI tools.
 - The portal is static HTML generated from the catalog and deployed to Pages.

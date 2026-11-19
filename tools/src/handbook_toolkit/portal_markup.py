@@ -24,12 +24,17 @@ def link(url: str, label: str, *, css: str = '', accessible: str | None = None) 
 
 
 def card(book: dict[str, Any]) -> str:
-    from .portal import FORMATS, _repository_url
+    from .portal import FORMATS, _repository_url, authors_text
     release = book['latest_release']
     repository = _repository_url(release['url'])
+    authors = list(book.get('authors', []))
+    byline = text(authors_text(authors)) if authors else ''
     values = {name: text(book[name]) for name in ('title', 'summary', 'reading_url')}
     values.update(version=text(release['version']), date=text(release['published_at']),
                   category=text(book['categories'][0]), category_keys=' '.join(book['categories']),
+                  authors_attr=text(' | '.join(authors)),
+                  cover_author=f'<span class="cover-author">{byline}</span>' if byline else '',
+                  authors_line=f'<p class="authors">By {byline}</p>' if byline else '',
                   tags=''.join(template('tag.html', category=text(category.title())) for category in book['categories']),
                   archived=resource('archived.html') if book['status']=='archived' else '',
                   source=link(repository, 'Source and issues') if repository else '',
@@ -47,7 +52,12 @@ def library_page(books: list[dict[str, Any]]) -> str:
     categories = sorted({category for book in books for category in book['categories']})
     if books:
         controls = ''.join(template('category.html', category=text(category), label=text(category.title())) for category in categories)
+        author_names = sorted({name for book in books for name in book.get('authors', [])},
+                              key=lambda value: (value.casefold(), value))
+        author_options = ''.join(template('author.html', author=text(name), label=text(name))
+                                 for name in author_names)
         content = '```{=html}\n' + template('library.html', categories=controls,
+                       authors=author_options,
                        count=str(len(books)), noun='handbook' if len(books)==1 else 'handbooks',
                        cards=''.join(map(card, books))) + '\n```'
     else:

@@ -26,6 +26,16 @@ WITHDRAWAL_URL = f"{HUB_URL}/issues/new?template=request-withdrawal.yml"
 # Label of each downloadable edition, in the order the buttons are shown.
 FORMATS = {"pdf": "PDF", "html": "HTML", "docx": "DOCX", "markdown": "Markdown", "source": "Source"}
 
+
+def authors_text(authors: list[str]) -> str:
+    """Join author names for display: one name, "A and B", or "A, B and C"."""
+
+    if len(authors) == 1:
+        return authors[0]
+    if len(authors) == 2:
+        return f"{authors[0]} and {authors[1]}"
+    return ", ".join(authors[:-1]) + " and " + authors[-1]
+
 STYLE_LAYOUT = """
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;line-height:1.6}a{color:var(--accent);text-underline-offset:4px}a:hover{text-decoration-thickness:2px}
 h1,h2,h3{font-family:var(--font-display);font-weight:700;letter-spacing:-.01em;text-wrap:balance}
@@ -57,11 +67,11 @@ button{cursor:pointer}button[aria-pressed=true]{background:var(--accent-solid);c
 background:linear-gradient(90deg,#0004 0 .45rem,#fff2 .45rem .55rem,#0000 .55rem),linear-gradient(155deg,#fff2,#0000 55%),var(--tone);box-shadow:3px 4px 10px #0003}
 .cover-kicker{font-size:.56rem;text-transform:uppercase;letter-spacing:.14em;opacity:.85}
 .cover-title{font-family:var(--font-display);font-weight:700;font-size:.82rem;line-height:1.25;overflow-wrap:anywhere}
-.cover-foot{font-family:var(--font-mono);font-size:.6rem;opacity:.85}
+.cover-foot{font-family:var(--font-mono);font-size:.6rem;opacity:.85}.cover-author{font-size:.58rem;line-height:1.25;opacity:.9}
 .details{display:flex;flex-direction:column;min-width:0}.book h3{font-size:1.08rem;line-height:1.3;margin:.4rem 0}
 .summary{color:var(--muted);margin:0;flex-grow:1;font-size:.9rem}.tags{display:flex;gap:.4rem;flex-wrap:wrap}
 .tag{font-size:.66rem;background:var(--paper);color:var(--ink);padding:.16rem .48rem;border:1px solid var(--line);border-radius:4px}
-.version{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-top:.65rem}
+.version{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-top:.65rem}.authors{color:var(--muted);font-size:.82rem;margin:.2rem 0 0}
 .links{display:flex;gap:.75rem;flex-wrap:nowrap;align-items:center;margin-top:.65rem;font-size:.76rem;white-space:nowrap}.read{font-weight:700}
 .formats{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.7rem}
 .fmt{display:inline-flex;align-items:center;min-height:30px;padding:.18rem .55rem;border:1px solid var(--line);border-radius:5px;background:var(--paper);font-size:.74rem;font-weight:650;text-decoration:none}
@@ -166,6 +176,11 @@ def _card(book: dict) -> str:
     tags = "".join(f'<span class="tag">{escape(category.title())}</span>' for category in book["categories"])
     archived = '<span class="archived">Archived handbook</span>' if book["status"] == "archived" else ''
     title = escape(book["title"])
+    author_names = list(book.get("authors", []))
+    byline = escape(authors_text(author_names)) if author_names else ""
+    cover_author = f'<span class="cover-author">{byline}</span>' if byline else ""
+    authors_line = f'<p class="authors">By {byline}</p>' if byline else ""
+    authors_data = escape(" | ".join(author_names), quote=True)
     assets = release.get("assets", {})
     formats = "".join(
         f'<a class="fmt" href="{escape(assets[role], quote=True)}" aria-label="Download {escape(book["title"], quote=True)} as {label}">{label}</a>'
@@ -179,9 +194,9 @@ def _card(book: dict) -> str:
         if repository
         else ''
     )
-    return f'''<article class="book" data-title="{escape(book['title'], quote=True)}" data-date="{release['published_at']}" data-categories="{' '.join(book['categories'])}">
-<div class="cover" data-tone="{book['categories'][0]}" aria-hidden="true"><span class="cover-kicker">{escape(book['categories'][0])}</span><span class="cover-title">{title}</span><span class="cover-foot">v{release['version']}</span></div>
-<div class="details"><div class="tags">{tags}</div>{archived}<h3>{title}</h3><p class="summary">{escape(book['summary'])}</p>
+    return f'''<article class="book" data-title="{escape(book['title'], quote=True)}" data-date="{release['published_at']}" data-categories="{' '.join(book['categories'])}" data-authors="{authors_data}">
+<div class="cover" data-tone="{book['categories'][0]}" aria-hidden="true"><span class="cover-kicker">{escape(book['categories'][0])}</span><span class="cover-title">{title}</span>{cover_author}<span class="cover-foot">Handbooks Hub · v{release['version']}</span></div>
+<div class="details"><div class="tags">{tags}</div>{archived}<h3>{title}</h3>{authors_line}<p class="summary">{escape(book['summary'])}</p>
 <div class="version">v{release['version']} · <time datetime="{release['published_at']}">{release['published_at']}</time></div>
 <div class="links"><a class="read" href="{escape(book['reading_url'], quote=True)}">Read handbook →</a>{source}<a href="{escape(release['url'], quote=True)}">Release downloads</a></div>{formats}
 <div class="assets"><a href="{escape(release['manifest_url'], quote=True)}">Manifest</a><a href="{escape(release['checksums_url'], quote=True)}">Checksums</a></div></div></article>'''
@@ -247,8 +262,11 @@ def build_portal(catalog: Path, output: Path, *, engine: str = "legacy") -> Path
     if books:
         buttons = '<button type="button" data-filter="all" aria-controls="book-grid" aria-pressed="true">All topics</button>'
         buttons += "".join(f'<button type="button" data-filter="{category}" aria-controls="book-grid" aria-pressed="false">{category.title()}</button>' for category in categories)
+        author_names = sorted({name for book in books for name in book.get("authors", [])}, key=lambda value: (value.casefold(), value))
+        author_options = "".join(f'<option value="{escape(name, quote=True)}">{escape(name)}</option>' for name in author_names)
         content = f'''<div class="toolbar"><div class="filters" role="group" aria-label="Filter by topic">{buttons}</div>
-<div class="tools"><label for="search">Search <input type="search" id="search" autocomplete="off" aria-controls="book-grid"></label>
+<div class="tools"><label for="author">Author <select id="author" aria-controls="book-grid"><option value="all">All authors</option>{author_options}</select></label>
+<label for="search">Search <input type="search" id="search" autocomplete="off" aria-controls="book-grid"></label>
 <label for="sort">Sort by <select id="sort"><option value="az">Title A–Z</option><option value="za">Title Z–A</option><option value="latest">Latest release</option></select></label></div></div>
 <p class="results" id="results" aria-live="polite">Showing {len(books)} of {len(books)} {'handbook' if len(books) == 1 else 'handbooks'}</p><div class="grid" id="book-grid">{''.join(_card(book) for book in books)}</div>'''
     else:
@@ -263,7 +281,7 @@ def build_portal(catalog: Path, output: Path, *, engine: str = "legacy") -> Path
 <header><div class="wrap"><p class="eyebrow">Independent books · Shared standards</p><h1>Knowledge worth keeping.<br>Handbooks worth sharing.</h1><p class="intro">An open library of practical technical handbooks. Read online, download an edition, or write the next one.</p>
 <p class="cta"><a class="btn primary" href="#library">Browse the library</a><a class="btn" href="#create">Create your handbook</a></p><p class="statusline">{published} published · {archived} archived · Verified release downloads</p></div></header>
 <main class="wrap"><section id="library" aria-labelledby="library-title"><h2 id="library-title">Explore the library</h2>{content}</section>{GUIDE}</main>
-<footer><div class="wrap">Each handbook owns its source, review process and releases. This catalog links to approved editions; it does not mirror manuscript content.<br>Content: CC BY-SA 4.0 · Platform code: MIT · Fonts: <a href="fonts/source-sans3/OFL.txt">Source Sans OFL</a>, <a href="fonts/source-serif4/OFL.txt">Source Serif OFL</a>, <a href="fonts/jetbrains-mono/OFL.txt">JetBrains Mono OFL</a> · <a href="{HUB_URL}">Source and contribution guide</a> · <a href="llms.txt">llms.txt</a></div></footer><script>{SCRIPT}</script></body></html>'''
+<footer><div class="wrap">Handbooks Hub — an independent publisher of open handbooks.<br>Each handbook owns its source, review process and releases. This catalog links to approved editions; it does not mirror manuscript content.<br>Content: CC BY-SA 4.0 · Platform code: MIT · Fonts: <a href="fonts/source-sans3/OFL.txt">Source Sans OFL</a>, <a href="fonts/source-serif4/OFL.txt">Source Serif OFL</a>, <a href="fonts/jetbrains-mono/OFL.txt">JetBrains Mono OFL</a> · <a href="{HUB_URL}">Source and contribution guide</a> · <a href="llms.txt">llms.txt</a></div></footer><script>{SCRIPT}</script></body></html>'''
     if output.exists() or output.is_symlink():
         raise FileExistsError(output)
     output.parent.mkdir(parents=True, exist_ok=True)
