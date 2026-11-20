@@ -77,6 +77,14 @@ template 1.9.2 carry the fixes; the book pins 0.14.2 (book PR 22). After the Own
 approval, `toolkit-v0.14.2`, `template-v1.9.2` and the book's `v4.0.0` are published, listed (PR 125)
 and served (2026-11-20).
 
+The Owner's review of the table of contents (2026-11-20) reorders the book for edition `5.0.0`
+(book DEC-024): Documentation, Evaluation and the artifacts chapter follow Governance, AI precedes
+the frameworks reference chapter, sections move in three chapters, two principles merge, the
+platform section of the infrastructure chapter moves to the platform chapter, and Appendices G and J
+swap. The book renumbers with its own positional tool, `scripts/renumber.py` (book PRs 24–28, merged).
+No hub change is needed; the `edition-preview` job of the pull request that records this builds the
+`5.0.0` DOCX for the Owner's desktop Word check before the tag `v5.0.0`.
+
 Open follow-ups, none blocking:
 
 1. Issue 98: `book-html.zip` differs by 5 bytes between identical builds.
