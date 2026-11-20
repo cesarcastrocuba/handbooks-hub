@@ -3,6 +3,19 @@
 Books pin exact toolkit and profile versions. Upgrades are deliberate changes reviewed like any
 other contribution; nothing upgrades automatically.
 
+## Example: toolkit 0.14.1 to 0.14.2
+
+1. Set `toolkit: "0.14.2"` in `book.yaml` and pin `47c37e23819abb801b1c8635401d6b64e7e14fad`
+   (`toolkit-v0.14.2`) in `requirements.txt`. The profile stays `1.1.0`, and the release workflow of
+   template 1.9.0 needs no change.
+2. The Word edition changes: captioned tables and figures are no longer inside Quarto's one-cell
+   layout table, so desktop Word keeps a heading and a short introduction with the table or figure
+   after them, and a short introduction between two headings keeps with the next heading. Page
+   numbers in the DOCX can move; the Contents and the indexes are rebuilt by the build.
+3. Cross-reference links: a location after another location in the same sentence ("…, Section 2.12
+   sets …") becomes a link in every edition. Version lists stay plain.
+4. Rebuild once and open the DOCX in desktop Word before the next tag.
+
 ## Example: toolkit 0.14.0 to 0.14.1
 
 1. Set `toolkit: "0.14.1"` in `book.yaml` and pin `9c4355e5174c41dbbaaae7fe6304c247768b69d2`
