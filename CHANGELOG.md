@@ -5,6 +5,15 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+## [0.14.2] - Unreleased
+
+Toolkit patch release prepared by change `0077`. It carries the changes merged after
+`toolkit-v0.14.1`: changes `0075` (cross-reference links) and `0076` (Word floats and section
+introductions) change the toolkit that books install, from the Owner's review of the Solutions
+Architecture Handbook 4.0.0 preview; change `0072` changes the catalog verification and the portal,
+which run from the hub. The PDF and HTML builders are unchanged apart from the added links. The Owner
+checked the CI-built 4.0.0 DOCX of change `0076` in desktop Word. The tag needs the Owner's approval.
+
 ### Added
 
 - Catalog schema `1.2` records each book's `authors` (change `0072`): the catalog lists the author of
