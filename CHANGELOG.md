@@ -5,10 +5,10 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
-## [1.9.2] - Unreleased
+## [1.9.2] - 2026-11-20
 
 Template release prepared by change `0078`. Template `1.9.2` pins toolkit `0.14.2` at
-`47c37e23819abb801b1c8635401d6b64e7e14fad` (`toolkit-v0.14.2` once the Owner approves the tag) and
+`47c37e23819abb801b1c8635401d6b64e7e14fad` (tag `toolkit-v0.14.2`) and
 keeps standard profile `1.1.0` and the workflows of `1.9.0`. The coordinator publishes the template
 mirror and tag after the merge and the Owner's approval.
 
@@ -17,7 +17,7 @@ mirror and tag after the merge and the Owner's approval.
 - `book.yaml` and `requirements.txt` pin toolkit `0.14.2`; the Word edition gains the float and
   section-introduction fixes of change `0076`, and every edition the links of change `0075`.
 
-## [0.14.2] - Unreleased
+## [0.14.2] - 2026-11-20
 
 Toolkit patch release prepared by change `0077`. It carries the changes merged after
 `toolkit-v0.14.1`: changes `0075` (cross-reference links) and `0076` (Word floats and section
