@@ -220,6 +220,17 @@ MAGNITUDE_WORDS = {
     "percent",
     "fold",
 }
+# Handbook structure words are in VERSION_WORDS so that the number right after
+# them is never read as a bare section reference ("Table 4.2" is linked as a
+# table). They do not start a version list: in "Table 8.3 gives …, Section 8.1.2"
+# the later number is still a location.
+STRUCTURE_WORDS = {"table", "figure", "chapter", "chapters", "appendix", "section"}
+VERSION_LIST = re.compile(
+    r"\b("
+    + "|".join(re.escape(w) for w in sorted(VERSION_WORDS - STRUCTURE_WORDS))
+    + r")\s+\d+(?:\.\d+)+\b[^.;|()\[\]]*$",
+    re.I,
+)
 SECTION_NUMBER = r"\d{1,2}(?:\.\d{1,2}){1,3}"
 APPENDIX_NUMBER = r"[A-Z](?:\.\d{1,2}){1,2}"
 REF_NUMBER = r"(?:[0-9A-Z]{1,2}|BM|0)\.\d{1,2}(?!\w|\.\d)"
@@ -453,14 +464,9 @@ def _section_ok(
     if previous in VERSION_WORDS or previous in CONTEXT_WORDS:
         return False
     # A version list such as "TLS 1.2 minimum, 1.3 preferred": the later numbers are versions too.
+    # A handbook location ("Section 8.4 introduces …, Section 2.12 sets …") starts no version list.
     earlier = _plain_before(text, start, 320)
-    if re.search(
-        r"\b("
-        + "|".join(re.escape(w) for w in VERSION_WORDS)
-        + r")\s+\d+(?:\.\d+)+\b[^.;|()\[\]]*$",
-        earlier,
-        re.I,
-    ):
+    if VERSION_LIST.search(earlier):
         return False
     if (
         following in UNIT_WORDS

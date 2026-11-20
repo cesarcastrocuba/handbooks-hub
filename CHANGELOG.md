@@ -19,6 +19,12 @@ semantic versioning once the toolkit is published.
   select beside the topic chips, the search and the sort, matches author names in the search, and
   names the publisher in the footer (change `0072`).
 
+### Fixed
+
+- Cross-reference links: a handbook location ("Section 8.4", "Table 8.8") no longer starts a version
+  list, so a later location in the same sentence is linked ("…, Section 2.12 sets …"). Software and
+  standard version lists ("TLS 1.2 minimum, 1.3 preferred") stay plain (change `0075`).
+
 ## [1.9.1] - 2026-11-19
 
 Template release prepared by change `0074`. Template `1.9.1` pins toolkit `0.14.1` at
