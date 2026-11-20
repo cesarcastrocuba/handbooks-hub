@@ -103,6 +103,117 @@ def keep_rows(
             ET.SubElement(pp, W + "keepNext")
 
 
+def _style_name(paragraph: ET.Element) -> str:
+    style = paragraph.find(W + "pPr/" + W + "pStyle")
+    return style.get(W + "val", "") if style is not None else ""
+
+
+def _set_keep_next(paragraph: ET.Element) -> None:
+    properties = paragraph.find(W + "pPr")
+    if properties is None:
+        properties = ET.Element(W + "pPr")
+        paragraph.insert(0, properties)
+    keep = properties.find(W + "keepNext")
+    if keep is None:
+        keep = ET.SubElement(properties, W + "keepNext")
+    keep.set(W + "val", "1")
+
+
+def unwrap_float_layouts(root: ET.Element) -> tuple[int, int]:
+    """Replace Quarto's one-cell float layout tables with their content.
+
+    Quarto writes every captioned table and figure into a one-row, one-cell
+    layout table that holds the data table or the image paragraph and the
+    caption. Desktop Word does not carry a heading's keep-with-next into that
+    wrapper, so a heading or a short introduction stays at the foot of a page
+    while the float moves on; LibreOffice does carry it, so its rendering hid
+    the defect. Unwrapped, the data table, its caption and the image paragraph
+    are ordinary body blocks, as Pandoc writes an uncaptioned table, and the
+    keep chain below reaches them in both engines. Callouts and other one-cell
+    tables have no caption in their cell and are left alone.
+    """
+    body = root.find(W + "body")
+    if body is None:
+        return 0, 0
+    tables = figures = 0
+    for wrapper in list(body.findall(W + "tbl")):
+        rows = wrapper.findall(W + "tr")
+        if len(rows) != 1:
+            continue
+        cells = rows[0].findall(W + "tc")
+        if len(cells) != 1:
+            continue
+        content = [child for child in cells[0] if child.tag != W + "tcPr"]
+        captions = [
+            child
+            for child in content
+            if child.tag == W + "p" and _style_name(child) in CAPTION_STYLES
+        ]
+        nested = [child for child in content if child.tag == W + "tbl"]
+        images = [
+            child
+            for child in content
+            if child.tag == W + "p" and child.find(".//" + W + "drawing") is not None
+        ]
+        if len(captions) != 1 or len(nested) + len(images) != 1:
+            continue
+        if nested:
+            tables += 1
+        else:
+            figures += 1
+            # A figure's image paragraph stays with the caption that follows it.
+            if content.index(images[0]) < content.index(captions[0]):
+                _set_keep_next(images[0])
+        at = list(body).index(wrapper)
+        body.remove(wrapper)
+        for offset, child in enumerate(content):
+            body.insert(at + offset, child)
+    return tables, figures
+
+
+def keep_section_intros(root: ET.Element) -> int:
+    """Keep a heading's one short introduction with the heading that follows it.
+
+    "9.3 Responsibilities …" followed by a two-sentence introduction and then
+    "9.3.1 …" must not leave the heading and its introduction at the foot of a
+    page. Headings already keep with the next paragraph; the introduction now
+    keeps with the next heading, so the group moves only when it would be left
+    alone. The limits are those of a float lead-in.
+    """
+    body = root.find(W + "body")
+    if body is None:
+        return 0
+    blocks = [
+        child
+        for child in body
+        if child.tag not in {W + "bookmarkStart", W + "bookmarkEnd"}
+    ]
+    changed = 0
+    for before, intro, after in zip(blocks, blocks[1:], blocks[2:]):
+        if not all(block.tag == W + "p" for block in (before, intro, after)):
+            continue
+        if not (
+            _style_name(before).startswith("Heading")
+            and _style_name(after).startswith("Heading")
+        ):
+            continue
+        if _style_name(intro) not in {"", "Normal", "BodyText", "FirstParagraph", "Compact"}:
+            continue
+        text = "".join(t.text or "" for t in intro.iter(W + "t")).strip()
+        if (
+            not text
+            or len(text.split()) > 80
+            or len(text) > 600
+            or intro.find(W + "pPr/" + W + "numPr") is not None
+            or intro.find(".//" + W + "sectPr") is not None
+            or any(br.get(W + "type") == "page" for br in intro.iter(W + "br"))
+        ):
+            continue
+        _set_keep_next(intro)
+        changed += 1
+    return changed
+
+
 def keep_leadins(root: ET.Element) -> int:
     """Keep headings and one short introduction with the following float."""
     changed = set()
@@ -169,9 +280,15 @@ def keep_fitting_tables(
     with ZipFile(path) as archive:
         members = {n: archive.read(n) for n in archive.namelist()}
     root = ET.fromstring(members["word/document.xml"])
+    unwrapped_tables, unwrapped_figures = unwrap_float_layouts(root)
     leads = keep_leadins(root)
+    intros = keep_section_intros(root)
     lead_info = {
-        "docx_float_leadins": f"{leads} heading/lead-in paragraphs kept with floats"
+        "docx_float_layouts": (
+            f"{unwrapped_tables} table and {unwrapped_figures} figure layout tables unwrapped"
+        ),
+        "docx_float_leadins": f"{leads} heading/lead-in paragraphs kept with floats",
+        "docx_section_intros": f"{intros} section introductions kept with the next heading",
     }
     available = shutil.which("soffice") and shutil.which("pdfinfo")
     if required and not available:

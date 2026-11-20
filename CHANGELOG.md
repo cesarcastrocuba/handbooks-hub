@@ -24,6 +24,10 @@ semantic versioning once the toolkit is published.
 - Cross-reference links: a handbook location ("Section 8.4", "Table 8.8") no longer starts a version
   list, so a later location in the same sentence is linked ("…, Section 2.12 sets …"). Software and
   standard version lists ("TLS 1.2 minimum, 1.3 preferred") stay plain (change `0075`).
+- Word: captioned tables and figures are no longer wrapped in Quarto's one-cell layout table. Desktop
+  Word did not carry a heading's keep-with-next into that wrapper, so a heading or a short
+  introduction stayed at the foot of a page while its table or figure moved to the next one. A short
+  introduction between two headings now also keeps with the next heading (change `0076`).
 
 ## [1.9.1] - 2026-11-19
 
