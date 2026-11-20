@@ -3,8 +3,121 @@
 from pathlib import Path
 import json, re, shutil, subprocess, tempfile, unittest
 import xml.etree.ElementTree as ET
-from handbook_toolkit.docx_tables import candidates, keep_rows, keep_leadins
+from handbook_toolkit.docx_tables import (
+    candidates,
+    keep_rows,
+    keep_leadins,
+    keep_section_intros,
+    unwrap_float_layouts,
+)
 from handbook_toolkit.docx_xml import W
+
+
+def _paragraph(parent, text="", style=None):
+    p = ET.SubElement(parent, W + "p")
+    if style:
+        ET.SubElement(ET.SubElement(p, W + "pPr"), W + "pStyle", {W + "val": style})
+    if text:
+        ET.SubElement(ET.SubElement(p, W + "r"), W + "t").text = text
+    return p
+
+
+def _layout(body, inner):
+    """A Quarto float layout table: one row, one cell, the float and its caption."""
+    layout = ET.SubElement(body, W + "tbl")
+    cell = ET.SubElement(ET.SubElement(layout, W + "tr"), W + "tc")
+    ET.SubElement(cell, W + "tcPr")
+    ET.SubElement(cell, W + "bookmarkStart", {W + "name": "float"})
+    inner(cell)
+    caption = _paragraph(cell, "Caption", "ImageCaption")
+    ET.SubElement(cell, W + "bookmarkEnd")
+    return layout, caption
+
+
+class FloatLayoutTests(unittest.TestCase):
+    def test_table_and_figure_layouts_are_unwrapped_in_place(self):
+        root = ET.Element(W + "document")
+        body = ET.SubElement(root, W + "body")
+        heading = _paragraph(body, "B.10 Control and Evidence Matrix", "Heading2")
+        holder = {}
+
+        def data(cell):
+            table = ET.SubElement(cell, W + "tbl")
+            props = ET.SubElement(table, W + "tblPr")
+            ET.SubElement(props, W + "tblStyle", {W + "val": "Table"})
+            ET.SubElement(props, W + "tblLook", {W + "firstRow": "1"})
+            for _ in range(2):
+                _paragraph(ET.SubElement(ET.SubElement(table, W + "tr"), W + "tc"), "x")
+            holder["table"] = table
+
+        def image(cell):
+            p = _paragraph(cell, style="Compact")
+            ET.SubElement(ET.SubElement(p, W + "r"), W + "drawing")
+            holder["image"] = p
+
+        _, table_caption = _layout(body, data)
+        _paragraph(body, "A sentence between the floats.", "BodyText")
+        _, figure_caption = _layout(body, image)
+        ET.SubElement(body, W + "sectPr")
+        self.assertEqual(unwrap_float_layouts(root), (1, 1))
+        tags = [child.tag.replace(W, "") for child in body]
+        self.assertEqual(
+            tags,
+            ["p", "bookmarkStart", "tbl", "p", "bookmarkEnd", "p",
+             "bookmarkStart", "p", "p", "bookmarkEnd", "sectPr"],
+        )
+        self.assertIs(body[2], holder["table"])
+        self.assertIs(body[3], table_caption)
+        self.assertIs(body[8], figure_caption)
+        self.assertIsNotNone(holder["image"].find(W + "pPr/" + W + "keepNext"))
+        self.assertIs(body[0], heading)
+        # The unwrapped data table is found with its caption after it, as Word needs.
+        self.assertEqual(
+            [(t, c, after) for t, c, after in candidates(root)],
+            [(holder["table"], table_caption, True)],
+        )
+        # The heading now reaches the table directly, and the sentence between the
+        # floats leads into the figure; the table's caption does not chain onward.
+        self.assertEqual(keep_leadins(root), 2)
+        self.assertIsNotNone(heading.find(W + "pPr/" + W + "keepNext"))
+        self.assertIsNone(table_caption.find(W + "pPr/" + W + "keepNext"))
+
+    def test_callouts_and_uncaptioned_one_cell_tables_stay_wrapped(self):
+        root = ET.Element(W + "document")
+        body = ET.SubElement(root, W + "body")
+        callout = ET.SubElement(body, W + "tbl")
+        cell = ET.SubElement(ET.SubElement(callout, W + "tr"), W + "tc")
+        _paragraph(cell, "Decision & Trade-off")
+        ET.SubElement(cell, W + "tbl")
+        _paragraph(cell)
+        self.assertEqual(unwrap_float_layouts(root), (0, 0))
+        self.assertIs(body[0], callout)
+
+    def test_section_introduction_keeps_with_the_next_heading(self):
+        root = ET.Element(W + "document")
+        body = ET.SubElement(root, W + "body")
+        _paragraph(body, "9.3 Responsibilities and Team Interactions", "Heading2")
+        intro = _paragraph(
+            body,
+            "A platform moves work from many teams to one. The architecture must state "
+            "which work moved, which did not, and how the teams interact around the boundary.",
+            "FirstParagraph",
+        )
+        ET.SubElement(body, W + "bookmarkEnd")
+        ET.SubElement(body, W + "bookmarkStart")
+        _paragraph(body, "9.3.1 The Platform Responsibility Model", "Heading3")
+        body_text = _paragraph(body, "Definition. A long paragraph.", "FirstParagraph")
+        _paragraph(body, "9.3.2 Next", "Heading3")
+        long_intro_heading = _paragraph(body, "9.4 Long", "Heading2")
+        long_intro = _paragraph(body, "word " * 81, "FirstParagraph")
+        _paragraph(body, "9.4.1 Next", "Heading3")
+        self.assertEqual(keep_section_intros(root), 2)
+        self.assertEqual(intro.find(W + "pPr/" + W + "keepNext").get(W + "val"), "1")
+        # A unit's first paragraph between two headings counts too: it is that heading's
+        # only text and moves with the next heading rather than stand alone.
+        self.assertIsNotNone(body_text.find(W + "pPr/" + W + "keepNext"))
+        self.assertIsNone(long_intro.find(W + "pPr/" + W + "keepNext"))
+        self.assertIsNotNone(long_intro_heading)
 
 
 class TableFitTests(unittest.TestCase):

@@ -309,13 +309,18 @@ class TemplateTests(unittest.TestCase):
                                  design.docx_values()['callout_review_tint'].lstrip('#'))
                 self.assertTrue(any(field.instruction == "TOC \\h \\z \\f F" for field in fields(document)))
                 self.assertTrue(any(name.endswith(".svg") for name in archive.namelist()))
-                figures = [table for table in document.iter(W+"tbl") if table.find(".//"+W+"drawing") is not None]
-                self.assertEqual(len(figures),1)
-                self.assertFalse(figures[0].findall(".//"+W+"tblHeader"))
-                self.assertFalse(figures[0].findall(".//"+W+"tcPr/"+W+"shd"))
-                captions = [p for p in figures[0].iter(W+"p") if p.find(W+"pPr/"+W+"pStyle") is not None and p.find(W+"pPr/"+W+"pStyle").get(W+"val") == "ImageCaption"]
-                self.assertTrue(captions)
-                self.assertFalse(captions[0].findall(".//"+W+"b"))
+                # Change 0076: the figure is no longer inside Quarto's layout table; the
+                # image paragraph and its caption are body blocks, so nothing styles them
+                # as a data table and Word keeps the image with its caption.
+                self.assertFalse([table for table in document.iter(W+"tbl") if table.find(".//"+W+"drawing") is not None])
+                blocks = [node for node in document.find(W+"body") if node.tag == W+"p"]
+                images = [i for i, p in enumerate(blocks) if p.find(".//"+W+"drawing") is not None]
+                self.assertEqual(len(images), 1)
+                image = blocks[images[0]]
+                caption = blocks[images[0] + 1]
+                self.assertEqual(caption.find(W+"pPr/"+W+"pStyle").get(W+"val"), "ImageCaption")
+                self.assertIsNotNone(image.find(W+"pPr/"+W+"keepNext"))
+                self.assertFalse(caption.findall(".//"+W+"b"))
 
 
             if PDFTOTEXT is not None:
