@@ -11,6 +11,9 @@ semantic versioning once the toolkit is published.
   when they are reached through a symlink, as macOS does with `/var`; `stage_figures` accepts a
   workspace reached through a symlink. The `clean-clone` workflow installs Playwright and Chromium so
   that its no-skip gate passes with the browser tests running (change `0079`, issue 113).
+- `book-html.zip` is byte-reproducible for the same commit: the build removes the render-time
+  `lastmod` that Quarto writes into `sitemap.xml`, as the portal already did; both now share
+  `artifacts.omit_sitemap_times` (change `0080`, issue 98).
 
 ## [1.9.2] - 2026-11-20
 

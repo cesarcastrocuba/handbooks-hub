@@ -8,7 +8,7 @@ from zipfile import ZipFile, ZipInfo
 import yaml
 
 import support  # noqa: F401
-from handbook_toolkit.artifacts import archive_tree, inspect_payload
+from handbook_toolkit.artifacts import archive_tree, inspect_payload, omit_sitemap_times
 
 
 class ArtifactTests(unittest.TestCase):
@@ -43,6 +43,30 @@ class ArtifactTests(unittest.TestCase):
         archive_tree(source, two, 1793993016)
         self.assertEqual(one.read_bytes(), two.read_bytes())
         self.assertFalse(inspect_payload(one, "html"))
+
+    def test_sitemap_render_times_are_omitted(self):
+        # Quarto writes render times as lastmod; they made book-html.zip differ per build (#98).
+        with tempfile.TemporaryDirectory() as tmp:
+            site = Path(tmp)
+            omit_sitemap_times(site)  # a site without a sitemap is left alone
+            self.assertEqual(list(site.iterdir()), [])
+            (site / "sitemap.xml").write_text(
+                '<?xml version="1.0" encoding="UTF-8"?>\n'
+                '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                '<url><loc>https://example.org/a.html</loc>'
+                '<lastmod>2026-11-21T14:23:43.106Z</lastmod></url>'
+                '<url><loc>https://example.org/b.html</loc></url></urlset>',
+                encoding="utf-8",
+            )
+            omit_sitemap_times(site)
+            text = (site / "sitemap.xml").read_text(encoding="utf-8")
+            self.assertNotIn("lastmod", text)
+            self.assertIn("<loc>https://example.org/a.html</loc>", text)
+            self.assertIn("<loc>https://example.org/b.html</loc>", text)
+            self.assertIn('xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"', text)
+            (site / "sitemap.xml").write_text("<urlset", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "cannot parse Quarto sitemap"):
+                omit_sitemap_times(site)
 
     def test_html_missing_fragment_crossfile_and_asset_fail(self):
         for link in ("#absent", "chapter.html", "missing.js", "../escape.html"):

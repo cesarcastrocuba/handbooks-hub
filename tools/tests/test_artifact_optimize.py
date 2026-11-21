@@ -30,7 +30,7 @@ from handbook_toolkit.artifact_optimize import (
 from handbook_toolkit.artifacts import archive_tree
 from handbook_toolkit.build import build_book
 from handbook_toolkit.build_types import BuildError
-from test_build import BUILD_AVAILABLE, PROFILE, make_book
+from test_build import BUILD_AVAILABLE, PROFILE, commit_all, make_book
 
 
 def _make_test_png(width: int = 16, height: int = 16, compress_level: int = 1) -> bytes:
@@ -185,10 +185,24 @@ class ArtifactOptimizeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             repo, commit = make_book(root)
+            # A GitHub repository gives the reading site a site-url, so Quarto writes a sitemap,
+            # whose render-time lastmod made book-html.zip differ per build (hub issue 98).
+            descriptor = repo / "book.yaml"
+            descriptor.write_text(
+                descriptor.read_text(encoding="utf-8").replace(
+                    "  url: null\n", "  url: https://github.com/example/build-fixture\n"
+                ),
+                encoding="utf-8",
+            )
+            commit = commit_all(repo, "a GitHub repository for the reading site")
             out1 = root / "dist1"
             out2 = root / "dist2"
             build_book(repo, commit, out1, profile=PROFILE, mode="section-pilot")
             build_book(repo, commit, out2, profile=PROFILE, mode="section-pilot")
+            with zipfile.ZipFile(out1 / "book-html.zip") as archive:
+                sitemap = archive.read("sitemap.xml").decode("utf-8")
+            self.assertIn("<loc>https://example.github.io/build-fixture/", sitemap)
+            self.assertNotIn("lastmod", sitemap)
 
             files1 = sorted([p.name for p in out1.iterdir()])
             files2 = sorted([p.name for p in out2.iterdir()])
