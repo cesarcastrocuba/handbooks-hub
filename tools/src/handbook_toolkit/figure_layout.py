@@ -108,7 +108,7 @@ def stage_figures(workspace: Path, entries: list[str], config: dict) -> list[dic
                         "source": entry,
                         "id": identity[1] if identity else None,
                         "path": (
-                            match[1] if remote else str(image.relative_to(workspace))
+                            match[1] if remote else str(image.relative_to(workspace.resolve()))
                         ),
                         "size": asdict(size) if size else None,
                         "width_percent": result,

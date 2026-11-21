@@ -5,6 +5,13 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+### Fixed
+
+- The Markdown leak check also catches the given spelling of a build's repository and output paths
+  when they are reached through a symlink, as macOS does with `/var`; `stage_figures` accepts a
+  workspace reached through a symlink. The `clean-clone` workflow installs Playwright and Chromium so
+  that its no-skip gate passes with the browser tests running (change `0079`, issue 113).
+
 ## [1.9.2] - 2026-11-20
 
 Template release prepared by change `0078`. Template `1.9.2` pins toolkit `0.14.2` at

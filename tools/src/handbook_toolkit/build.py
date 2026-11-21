@@ -94,7 +94,10 @@ def build_book(
     and identity-verified directory is atomically renamed into place.
     """
 
-    repo = Path(repo).resolve()
+    # The given spellings are kept for the leak check: a symlinked temporary directory, such as
+    # macOS /var -> /private/var, resolves to a different string than the one a book may contain.
+    given_repo = Path(repo).absolute()
+    repo = given_repo.resolve()
     raw_output = Path(output)
     profile_path = Path(profile).resolve() if profile is not None else None
     if mode not in {"chapter", "section-pilot"}:
@@ -375,7 +378,8 @@ def build_book(
         )
         _reject_local_paths(
             markdown_text,
-            [repo, workspace, staging, output, Path.home()],
+            [repo, given_repo, workspace, staging, output, Path.home(), Path.home().resolve(),
+             raw_output.absolute(), raw_output.absolute().parent / staging.name],
         )
         markdown_path = dist / PAYLOADS["markdown"]
         markdown_path.write_text(markdown_text, encoding="utf-8")

@@ -29,7 +29,8 @@ The hub leg uses `HUB_COMMIT`, which is the pull-request head for a workflow-cha
 2. **Hub: clone the commit under test.** Clone the hub, fetch `HUB_COMMIT`, check it out detached,
    print `HEAD` and require a clean working tree.
 3. **Hub: create a clean environment.** Create `.venv` in the clone, upgrade pip and install
-   `requirements-dev.txt`.
+   `requirements-dev.txt`, then Playwright from `tools/scripts/requirements-edition-preview.txt`
+   and its Chromium browser, so that the browser tests run instead of skipping.
 4. **Hub: run the checks.** Run `make check` and `make full`, teeing each log. Then scan both logs:
    print the test summary and fail the leg if any test reports `skipped`.
 5. **Book: remove the hub clone.** Delete the hub directory before the book leg, with

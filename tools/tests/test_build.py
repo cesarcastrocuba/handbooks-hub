@@ -706,10 +706,15 @@ class BuildTests(unittest.TestCase):
             base = Path(temp)
             # The escaped case proves the guard under a real Quarto render: the gfm writer
             # escapes the underscore, so a raw comparison alone would miss the leak.
-            for name, escaped in (("plain", False), ("under_score", True)):
+            # "symlinked" reaches its directory through a symlink, as macOS does with /var ->
+            # /private/var: the given spelling must be caught as well as the resolved one.
+            (base / "real").mkdir()
+            (base / "symlinked").symlink_to(base / "real", target_is_directory=True)
+            for name, escaped in (("plain", False), ("under_score", True), ("symlinked", False)):
                 with self.subTest(directory=name):
                     root = base / name
-                    root.mkdir()
+                    if not root.is_symlink():
+                        root.mkdir()
                     repo, commit = make_book(root)
                     self.assertEqual("_" in root.name, escaped)
                     if escaped:
