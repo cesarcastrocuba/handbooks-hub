@@ -90,6 +90,17 @@ jobs:
           . .venv/bin/activate
           python3 -m pip install --upgrade pip
           python3 -m pip install -r requirements-dev.txt
+      # The browser tests skip without Playwright; installing it keeps the no-skip gate strict.
+      - name: "Hub: install the screenshot browser"
+        working-directory: ${{ env.HUB_DIR }}
+        run: |
+          . .venv/bin/activate
+          python3 -m pip install -r tools/scripts/requirements-edition-preview.txt
+          if [ "$RUNNER_OS" = Linux ]; then
+            python3 -m playwright install --with-deps chromium
+          else
+            python3 -m playwright install chromium
+          fi
       - name: "Hub: make check"
         working-directory: ${{ env.HUB_DIR }}
         run: |

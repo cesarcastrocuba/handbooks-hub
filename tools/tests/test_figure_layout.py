@@ -60,6 +60,19 @@ class FigureLayoutTests(unittest.TestCase):
             self.assertEqual(png_size(w / "figure.png"), RasterSize(904, 893, 199.9996))
             self.assertIsNone(png_size(w / "plain.png"))
 
+    def test_workspace_reached_through_a_symlink_is_staged(self):
+        # macOS resolves its temporary directory from /var to /private/var (hub issue 113).
+        with tempfile.TemporaryDirectory() as tmp:
+            real = Path(tmp) / "real"
+            real.mkdir()
+            link = Path(tmp) / "link"
+            link.symlink_to(real, target_is_directory=True)
+            (real / "figure.png").write_bytes(png())
+            (real / "chapter.qmd").write_text('![A](figure.png){#fig-a width="100%"}\n')
+            records = stage_figures(link, ["chapter.qmd"], {})
+            self.assertEqual([record["path"] for record in records], ["figure.png"])
+            self.assertIn('width="69%"', (real / "chapter.qmd").read_text())
+
     def test_remote_raster_receives_blend_class_without_fetching(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
