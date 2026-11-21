@@ -1,7 +1,7 @@
 # Change 0080 — Reproducible `book-html.zip`: no render times in the sitemap
 
 Fixes hub issue 98. Implementer Claude; reviewer and merger a different agent. Branch
-`fix/html-sitemap-lastmod` from main `57e7350`. No version bump or tag: the toolkit fix ships with
+`fix/html-sitemap-lastmod`, rebased on main `579d3f0` (the merge of change `0079`). No version bump or tag: the toolkit fix ships with
 the next toolkit release, which needs its own Owner approval.
 
 ## Defect
