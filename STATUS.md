@@ -85,6 +85,16 @@ swap. The book renumbers with its own positional tool, `scripts/renumber.py` (bo
 No hub change is needed. After the Owner's desktop Word check of the `edition-preview` DOCX of PR 127
 and approval, the book's `v5.0.0` is published, listed (PR 128) and served (2026-11-20).
 
+A second Owner review (2026-11-21), backed by a dependency analysis of the whole book, prepares
+edition `6.0.0` (book DEC-025, merged and not released). Architecture Frameworks, Methods and Standards
+moves to Chapter 8 and closes the practice chapters; Platform Architecture moves to Chapter 17, after
+the security, operation and testing chapters it builds on; Evolution and Economics (18) and AI (19)
+close the book. The Conclusions are expanded, and an editorial audit corrects six sections, including
+a burn-rate value. The changes landed in book PRs 31 (structure), 33 (content), 32 (edition) and 34
+(corrections), and need no hub change. The `edition-preview` DOCX of this pull request is the
+candidate for the Owner's desktop Word check, before the tag `v6.0.0` is approved; the catalog still
+lists `v5.0.0`.
+
 Open follow-ups, none blocking:
 
 1. Optional: a hash cache for the print-figure transparency step (change `0066`, about 186 s for
