@@ -63,6 +63,9 @@ def _plain_callout_tables(table: ET.Element, word: str) -> None:
             style.set(f"{word}val", "TablePlain")
 
 
+CALLOUT_STYLE = "CalloutBox"  # the one-cell table style that boxes each callout
+
+
 def _wrap_callout_box(
     root: ET.Element,
     body: ET.Element,
@@ -77,7 +80,7 @@ def _wrap_callout_box(
     table = ET.Element(f"{word}tbl")
     properties = ET.SubElement(table, f"{word}tblPr")
     table_style = ET.SubElement(properties, f"{word}tblStyle")
-    table_style.set(f"{word}val", "CalloutBox")
+    table_style.set(f"{word}val", CALLOUT_STYLE)
     table_width = ET.SubElement(properties, f"{word}tblW")
     table_width.set(f"{word}w", str(width))
     table_width.set(f"{word}type", "dxa")

@@ -37,7 +37,7 @@ import xml.etree.ElementTree as ET
 from zipfile import ZipFile
 
 from .build_types import BuildError
-from .docx_post import _write_package
+from .docx_post import CALLOUT_STYLE, _write_package
 from .docx_xml import NS, W, order_properties, register_namespaces
 
 WP = "{" + NS["wp"] + "}"
@@ -56,7 +56,6 @@ PASSES = 4
 SPACING = 3  # pages between two actions of one pass
 PREFER_SHRINK = False  # deferral keeps the figure at its size; scaling is the fallback
 CAPTION_STYLES = {"ImageCaption", "TableCaption", "Caption"}
-CALLOUT_STYLE = "CalloutBox"  # the one-cell table docx_post wraps each callout in
 OFF = {"0", "false", "off"}
 
 
@@ -264,6 +263,13 @@ def _barrier(element: ET.Element, kind: str, breaking: frozenset[str] = frozense
     )
 
 
+def _stops(element: ET.Element, kind: str, breaking: frozenset[str] = frozenset()) -> bool:
+    """Whether the lookahead would end at ``element`` (bookmarks are carried, not stops)."""
+    if element.tag in {W + "bookmarkStart", W + "bookmarkEnd"}:
+        return False
+    return element.tag not in {W + "p", W + "tbl"} or _barrier(element, kind, breaking)
+
+
 def figure_units(body: ET.Element, breaking: frozenset[str] = frozenset()) -> list[Unit]:
     """Find body-level figures and kept-whole data tables followed by their caption."""
     children = list(body)
@@ -332,7 +338,9 @@ def figure_units(body: ET.Element, breaking: frozenset[str] = frozenset()) -> li
                 barrier = True
                 break
             k += 1
-        truncated = not barrier and k < len(children)
+        # A lookahead cut by its length is complete when the next child would have
+        # stopped it anyway.
+        truncated = not barrier and k < len(children) and not _stops(children[k], kind, breaking)
         units.append(
             Unit(
                 children[start : end + 1], child, caption, chain, lead, blocks, stop, kind,
@@ -450,13 +458,15 @@ def decide(
     ``page_end`` is where the text of the float's page ends; it measures the last
     block on that page when the block cannot break across pages (``whole``).
     ``runs`` marks the blocks joined to the next one in a run of callouts (they
-    are also ``bound``): when the first callout of a run fits the gap, the float
+    count as ``bound`` even if the caller left them out): when the first callout of a run fits the gap, the float
     moves after the whole run and the rest of the run starts the next page.
     """
     body = bottom - top
     splits = splits if splits is not None else [False] * len(bound)
     whole = whole if whole is not None else [False] * len(bound)
     runs = runs if runs is not None else [False] * len(bound)
+    # A block inside a run is kept with the next one whatever the caller passed.
+    bound = [b or (k < len(runs) and runs[k]) for k, b in enumerate(bound)]
     page = group[0]
     if page < 2 or caption[0] != page or image[0] != page:
         return None
@@ -529,6 +539,8 @@ def decide(
             and run_end is not None
             and last < len(runs)  # the run ends inside the lookahead
             and not bound[last]  # and its last callout is not kept with what follows
+            # Same accounting as the main loop, which counts the part of the group
+            # above the image: the run rule is never bolder than a plain deferral.
             and chain + end_top - blocks[0][1] <= room - SAFETY
             and run_end - end_top + caption_end - group[1] <= body - SAFETY
             and end_top - blocks[0][1] > filled

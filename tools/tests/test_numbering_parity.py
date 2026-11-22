@@ -349,7 +349,9 @@ class NumberingParityUnitTests(unittest.TestCase):
             first_body = re.search(r"(?m)^\s*Table\s+1\.1\s*:", pdf_text)
             self.assertIsNotNone(first_body)
             assert first_body is not None
-            listing_text = pdf_text[:first_body.start()]
+            # The lists end on the page before the first body caption. Slicing at the
+            # caption itself would count a figure floated to the top of that page.
+            listing_text = pdf_text[:pdf_text.rfind("\f", 0, first_body.start()) + 1]
 
             # List of Tables: at least 3 tables, exactly 1 label per list line
             table_lines = [l for l in listing_text.splitlines() if re.search(r"\bTable\s+1\.\d+\b", l)]

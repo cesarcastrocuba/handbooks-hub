@@ -163,6 +163,12 @@ class UnitTests(unittest.TestCase):
         self.assertFalse(figure_units(body)[0].complete)
         body.remove(list(body)[-1])
         self.assertTrue(figure_units(body)[0].complete)
+        # A full lookahead followed by a heading saw everything the figure can pass.
+        paragraph(body, f"Text {LOOKAHEAD}.", "BodyText")
+        self.assertFalse(figure_units(body)[0].complete)
+        body.remove(list(body)[-1])
+        paragraph(body, "1.2 Next", "Heading2", keep=True)
+        self.assertTrue(figure_units(body)[0].complete)
 
     def test_figure_whose_bookmark_closes_late_is_left_alone(self):
         body, n = figure_section()
@@ -342,6 +348,9 @@ class DecisionTests(unittest.TestCase):
         free = dict(natural=None, blocks=blocks, whole=[False, True, True])
         self.assertEqual(self.decide(bound=[False, False, False], **free), Defer(2))
         self.assertEqual(self.decide(bound=[False, True, False], **free), Defer(1))
+        # A caller that marks the run but not ``bound`` gets the same answer.
+        self.assertEqual(self.decide(bound=[False, False, False], runs=[False, True, False], **free),
+                         Defer(1))
 
     def test_a_float_goes_after_a_callout_run_whose_first_callout_fits(self):
         # Same page: the pitfall fits the gap, the decision does not. The figure
@@ -531,6 +540,45 @@ class LibreOfficeTests(unittest.TestCase):
             first = pages[0]
             self.assertIn("FOLLOW0", first)  # the text after the figure moved up
             self.assertNotIn("Figure 1.1: Caption", first)
+
+    def test_a_figure_moves_after_a_pitfall_and_its_decision(self):
+        # The pitfall fits the gap a too-tall figure leaves; the decision, whose
+        # options table keeps its rows with keepNext, and the figure share the next
+        # page. The figure lands after the decision, never between the two.
+        sentence = "Body text that fills the page and keeps the reader moving. " * 9
+        body = ET.Element(W + "body")
+        paragraph(body, "1.1 Heading", "Heading2", keep=True)
+        for _ in range(5):
+            paragraph(body, sentence)
+        paragraph(body, "Figure 1.1 shows the flow.", keep=True)
+        ET.SubElement(body, W + "bookmarkStart", {W + "id": "7", W + "name": "B_fig_1_1"})
+        image(body, cx=5400000, cy=4320000)  # 15 x 12 cm: does not fit the rest of page 1
+        paragraph(body, "Figure 1.1: Caption", "ImageCaption")
+        ET.SubElement(body, W + "bookmarkEnd", {W + "id": "7"})
+        paragraph(body)
+        callout(body, "PITFALL " + "A warning about a common mistake and its cost. " * 10)
+        paragraph(body)
+        paragraph(body, keep=True)
+        decision = callout(body, "DECISION Which option to choose? " + "Each option has a cost and a consequence. " * 14)
+        table(decision.find(W + "tr").find(W + "tc"), keep_last=True)
+        paragraph(body)
+        paragraph(body, "1.2 Next", "Heading2", keep=True)
+        paragraph(body, "Closing text.")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "book.docx"
+            _package(path, body)
+            report = place_figures(path, FONTS, required=True)
+            self.assertIn("1 floats deferred", report["docx_figure_placement"])
+            with ZipFile(path) as package:
+                placed = ET.fromstring(package.read("word/document.xml")).find(W + "body")
+            order = []
+            for node in placed:
+                text = "".join(t.text or "" for t in node.iter(W + "t"))
+                if node.find(".//" + W + "drawing") is not None:
+                    order.append("figure")
+                elif text.startswith(("PITFALL", "DECISION")):
+                    order.append(text.split()[0].lower())
+            self.assertEqual(order, ["pitfall", "decision", "figure"])
 
 
 if __name__ == "__main__":

@@ -13,8 +13,10 @@ semantic versioning once the toolkit is published.
   tables. In the Word edition a new LibreOffice-measured pass moves the blocks that follow a figure
   or a kept-whole table in its section in front of it, or scales a figure that nearly fits the gap,
   never below 75% of its natural size; floats keep their order and
-  `build.tool_versions.docx_figure_placement` records what it did. A figure never lands between two
-  callouts that follow each other (a pitfall and its decision) in either edition.
+  `build.tool_versions.docx_figure_placement` records what it did. In Word a figure never lands between two
+  callouts that follow each other (a pitfall and its decision); in the PDF the figure of the section
+  is flushed before them and floats to the top, which leaves one Typst case where a top float of the
+  next section rises above a decision that starts a page.
 
 ### Fixed
 
