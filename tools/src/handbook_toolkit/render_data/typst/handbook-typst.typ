@@ -270,6 +270,12 @@
 #import "handbook-render/typst/table-fit.typ": handbook-fit-table, handbook-fit-float, handbook-float-group
 #show table: it => handbook-fit-table(it, hb-card-radius)
 
+// Figures -------------------------------------------------------------------
+// A figure floats to the top or bottom of the page, or of the next page when it
+// does not fit, and the text that follows it fills the page.
+#show figure.where(kind: "quarto-float-fig"): set figure(placement: auto)
+#show figure.where(kind: image): set figure(placement: auto)
+
 // Captions -------------------------------------------------------------------
 #show figure.caption: it => align(center)[
   #text(style: "italic", font: hb-font, size: 9pt, fill: hb-muted)[#it.supplement #it.counter.display(it.numbering): #it.body]

@@ -248,7 +248,7 @@ class TableFitTests(unittest.TestCase):
             source = Path(tmp) / "lead.md"
             source.write_text(
                 '### Heading Two\n\nA short introduction.\n\n'
-                '![Caption](img.png){#fig-x width="60%"}\n'
+                '| A | B |\n|---|---|\n| 1 | 2 |\n\n: Caption {#tbl-x}\n'
             )
             result = subprocess.run(
                 [
@@ -269,6 +269,56 @@ class TableFitTests(unittest.TestCase):
             self.assertTrue(result.stdout.startswith("#handbook-float-group("))
             self.assertNotIn("#block[", result.stdout)
             self.assertIn("#figure(", result.stdout)
+
+    @unittest.skipUnless(shutil.which("quarto"), "Quarto pandoc required")
+    def test_figures_are_not_grouped_because_they_float(self):
+        # A grouped figure moved to the next page with its lead-in and left the
+        # page part empty; a floating figure lets the following text fill it.
+        leadins = (
+            Path(__file__).resolve().parents[1]
+            / "src/handbook_toolkit/render_data/filters/float-leadins.lua"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "lead.md"
+            source.write_text(
+                '### Heading Two\n\nFigure 1 shows it.\n\n'
+                '![Caption](img.png){#fig-x width="60%"}\n'
+            )
+            result = subprocess.run(
+                ["quarto", "pandoc", "-f", "markdown", "-t", "typst",
+                 "--lua-filter", str(leadins), str(source)],
+                capture_output=True, text=True, check=True,
+            )
+            self.assertNotIn("#handbook-float-group(", result.stdout)
+            self.assertIn("#figure(", result.stdout)
+
+    @unittest.skipUnless(shutil.which("quarto") and shutil.which("pdftotext"),
+                         "native pagination tools required")
+    def test_template_floats_figures_and_lets_text_fill_the_page(self):
+        template = (
+            Path(__file__).resolve().parents[1]
+            / "src/handbook_toolkit/render_data/typst/handbook-typst.typ"
+        ).read_text()
+        rules = [line for line in template.splitlines() if "set figure(placement: auto)" in line]
+        self.assertEqual(len(rules), 2)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "float.typ"
+            source.write_text(
+                '#set page(paper:"a4",margin:(x:2.2cm,y:2.4cm))\n'
+                + "\n".join(rules)
+                + "\n#v(15cm)\nLEADTEXT\n\n"
+                + '#figure(rect(width:10cm,height:12cm), kind:"quarto-float-fig", supplement:[Figure], caption:[CAPTIONTEXT])\n\n'
+                + "AFTERTEXT\n"
+            )
+            subprocess.run(["quarto", "typst", "compile", str(source)], check=True,
+                           capture_output=True)
+            pages = subprocess.check_output(
+                ["pdftotext", str(root / "float.pdf"), "-"], text=True
+            ).split("\f")
+            self.assertIn("LEADTEXT", pages[0])
+            self.assertIn("AFTERTEXT", pages[0])  # the text after the figure fills page 1
+            self.assertIn("CAPTIONTEXT", pages[1])
 
     @unittest.skipUnless(
         shutil.which("quarto") and shutil.which("pdfimages"),
