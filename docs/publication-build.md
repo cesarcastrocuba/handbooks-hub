@@ -169,7 +169,9 @@ A figure that does not fit the rest of a page must not leave that page part empt
   their lead-in group. A figure never floats between the callouts of a run (a pitfall and its
   decision): the filter puts `#place.flush()` in front of the run, so a figure still pending there
   is placed first, and a figure whose section ends in a run floats to the top of a page
-  (`placement: top`), so it cannot sit at the foot of the page below the first callout.
+  (`placement: top`), so it cannot sit at the foot of the page below the first callout. Typst can
+  still raise a top float of the next section above a decision that starts a page (one case in the
+  Solutions Architecture Handbook PDF).
 - **Word.** Word cannot float an inline figure or a table kept on one page, so
   `docx_figure_place.place_figures` runs after the table measurement and before the page-number
   probe. It paginates the document in LibreOffice with the staged fonts and finds each float group

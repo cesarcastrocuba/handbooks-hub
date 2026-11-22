@@ -150,7 +150,14 @@ the previous page has room (pages 53, 64 and 67).
   figure still pending there is placed before the run, and scopes `placement: top` to a figure
   whose section ends in a run. With the flush alone one pair stayed split (page 60: Figure 2.5
   floated to the foot of the page below the pitfall and the decision started page 61; 524 pages,
-  gap total 27.8). Measured first, and rejected:
+  gap total 27.8). Adding `placement: top` for the section's figure fixed page 60 and left one
+  other split: page 103, where Figure 4.4 (of the next section, whose section also ends in a run)
+  floats to the top of the page above the 4.3 decision that starts it (524 pages, gap total 27.8).
+  Tried and reverted: choosing each figure's placement in `context` from markers of broken runs.
+  It handled all three cases in a unit test, but wrapping the figures in `context` broke their
+  numbering in the book (captions in chapter 4 read "Figure 19.3" and "19.0"). Typst cannot keep a
+  top float from rising above earlier text on its page, so this last case stays open. Measured
+  first, and rejected:
   `#block(sticky: true)` on the first callout of a run. It also removed the split pairs (5 → 0), but
   it moved a pitfall to the next page whenever its decision could not start on the same page:
   520 → 529 pages, gap total 24.8 → 36.3, 27 gap pages followed by a page that starts with a
