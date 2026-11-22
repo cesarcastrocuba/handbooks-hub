@@ -90,3 +90,17 @@ Checks: see the pull request for `make check`, `make full` and the edition-previ
   687 for the 6.0.0 preview). The Owner's desktop Word check is the acceptance test.
 - Four more LibreOffice exports of the whole book per Word build.
 - A PDF figure may appear after the next heading or on the following page, as in typeset books.
+
+## Review follow-up (after merge of PR 133)
+
+The reviewer (OpenCode 2) approved PR 133 at `3f54598` with two Minor and two Optional findings, fixed
+on `fix/float-placement-followups`:
+
+- Minor: the Figure placement section in `docs/publication-build.md` split the preceding section; it
+  now follows it.
+- Minor: `_barrier` stopped at `Heading*` styles and explicit breaks but not at a paragraph that
+  starts a page through `pageBreakBefore` (direct or inherited from its style through `basedOn`).
+  `page_break_styles` reads `word/styles.xml`, and such a paragraph is now a barrier; two unit tests.
+- Optional: the missing-tools test asserts `BuildError`; a new test makes the measurement fail and
+  proves the document is byte-identical (`required=False`) and that a required build raises.
+- Optional: the docs state that only blocks starting on the float's page are moved, as the code does.
