@@ -148,6 +148,30 @@ libreoffice-writer and pass --require-page-numbers; missing or failed probes the
 Caption lists are omitted when there are no entries. The Typst front matter also
 emits conditional table/figure/listing outlines from the shared registry.
 
+## Figure placement (change 0081)
+
+A figure that does not fit the rest of a page must not leave that page part empty.
+
+- **PDF.** Figures float (`placement: auto` for Quarto figure floats and plain image figures): Typst
+  places each one at the top or bottom of the page, or of the next page when it does not fit, and the
+  text after it fills the page. A figure can therefore appear after the next heading, as in a typeset
+  book. The float-leadins filter no longer groups a figure with its heading and lead-in; tables keep
+  their lead-in group.
+- **Word.** Word cannot float an inline figure or a table kept on one page, so
+  `docx_figure_place.place_figures` runs after the table measurement and before the page-number
+  probe. It paginates the document in LibreOffice with the staged fonts and finds each float group
+  (a figure or a kept-whole data table, its caption and the heading or lead-in kept with it) that
+  starts a page below a gap of at least 15% of the text block. It then moves the blocks that follow
+  the float in its section and fit the gap in front of it; a plain paragraph that crosses the foot
+  of the page also moves, because it breaks across the pages. When nothing can move, a figure is
+  scaled down just enough to fit the gap, never below 75% of its natural raster size; tables are
+  never scaled. A float never passes a heading, a section or page break or another float, so
+  captions keep their numeric order, and a block kept with the next one is never separated from
+  it. Each action shifts the later page breaks, so actions of one pass are at least three pages
+  apart and the document is measured again, up to four passes.
+  `build.tool_versions.docx_figure_placement` records the counts. Desktop Word paginates slightly
+  differently from LibreOffice; the Owner's Word check remains the acceptance test.
+
 The first canonical page is rendered as index.qmd. A native Pandoc image filter rebases its local
 image references against that page's original directory before the HTML, PDF and DOCX writers run.
 The canonical sources and their image paths are unchanged.

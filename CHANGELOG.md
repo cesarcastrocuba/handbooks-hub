@@ -5,6 +5,16 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+### Changed
+
+- Figure placement fills the pages that a figure used to leave part empty (change `0081`, from the
+  Owner's Word check of the Solutions Architecture Handbook 6.0.0 preview). PDF figures float to the
+  top or bottom of a page and the text after them fills the page; the lead-in filter groups only
+  tables. In the Word edition a new LibreOffice-measured pass moves the blocks that follow a figure
+  or a kept-whole table in its section in front of it, or scales a figure that nearly fits the gap,
+  never below 75% of its natural size; floats keep their order and
+  `build.tool_versions.docx_figure_placement` records what it did.
+
 ### Fixed
 
 - The Markdown leak check also catches the given spelling of a build's repository and output paths

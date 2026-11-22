@@ -368,6 +368,10 @@ def build_book(
         tool_versions.update(keep_fitting_tables(
             payloads["docx"], workspace / RENDER_DIRECTORY / "fonts",
             required=require_page_numbers, compresslevel=compresslevel))
+        from .docx_figure_place import place_figures
+        tool_versions.update(place_figures(
+            payloads["docx"], workspace / RENDER_DIRECTORY / "fonts",
+            required=require_page_numbers, compresslevel=compresslevel))
         from .docx_pages import cache_page_numbers
         tool_versions.update(cache_page_numbers(
             payloads["docx"], workspace / RENDER_DIRECTORY / "fonts", required=require_page_numbers,
