@@ -166,9 +166,9 @@ A figure that does not fit the rest of a page must not leave that page part empt
   places each one at the top or bottom of the page, or of the next page when it does not fit, and the
   text after it fills the page. A figure can therefore appear after the next heading, as in a typeset
   book. The float-leadins filter no longer groups a figure with its heading and lead-in; tables keep
-  their lead-in group. A callout followed by another callout is wrapped in `#block(sticky: true)`,
-  so the pair (a pitfall and its decision) starts on one page and a figure floats before or after
-  it, never between the two.
+  their lead-in group. The filter puts `#place.flush()` in front of a run of callouts (a pitfall
+  and its decision): a figure still pending there is placed first, so it never floats to the top of
+  a page between the two callouts.
 - **Word.** Word cannot float an inline figure or a table kept on one page, so
   `docx_figure_place.place_figures` runs after the table measurement and before the page-number
   probe. It paginates the document in LibreOffice with the staged fonts and finds each float group

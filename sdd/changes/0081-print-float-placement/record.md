@@ -146,9 +146,12 @@ the previous page has room (pages 53, 64 and 67).
   rest of the run fits the next page with the float, the float moves after the whole run: the
   pitfall fills the gap and the decision starts the next page. `_bound` reads only the paragraphs of
   the last row's cells, so a nested table does not hold its callout.
-- Fix (PDF): the float-leadins filter wraps a callout followed by another callout in
-  `#block(sticky: true)`; Typst then starts the pair on one page and places a float before or after
-  it.
+- Fix (PDF): the float-leadins filter puts `#place.flush()` in front of a run of callouts, so a
+  figure still pending there is placed before the run. Measured first, and rejected:
+  `#block(sticky: true)` on the first callout of a run. It also removed the split pairs (5 → 0), but
+  it moved a pitfall to the next page whenever its decision could not start on the same page:
+  520 → 529 pages, gap total 24.8 → 36.3, 27 gap pages followed by a page that starts with a
+  pitfall (the Owner's second complaint).
 
 Word measurement (LibreOffice with the toolkit fonts, CI pre-placement DOCX of book `a32a840`):
 

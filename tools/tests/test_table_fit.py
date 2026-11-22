@@ -293,7 +293,7 @@ class TableFitTests(unittest.TestCase):
             self.assertIn("#figure(", result.stdout)
 
     @unittest.skipUnless(shutil.which("quarto"), "Quarto pandoc required")
-    def test_a_callout_followed_by_a_callout_sticks_to_it(self):
+    def test_pending_floats_are_placed_before_a_run_of_callouts(self):
         leadins = (
             Path(__file__).resolve().parents[1]
             / "src/handbook_toolkit/render_data/filters/float-leadins.lua"
@@ -311,16 +311,14 @@ class TableFitTests(unittest.TestCase):
                  "--lua-filter", str(leadins), str(source)],
                 capture_output=True, text=True, check=True,
             ).stdout
-            self.assertEqual(result.count("#block(sticky: true)["), 1)
-            self.assertLess(result.index("#block(sticky: true)["), result.index("PITFALL"))
-            self.assertLess(result.index("PITFALL"), result.index("]", result.index("PITFALL")))
-            self.assertLess(result.index("]", result.index("PITFALL")), result.index("DECISION"))
+            self.assertEqual(result.count("#place.flush()"), 1)  # not before the lone callout
+            self.assertLess(result.index("#place.flush()"), result.index("PITFALL"))
 
     @unittest.skipUnless(shutil.which("quarto") and shutil.which("pdftotext"),
                          "native pagination tools required")
-    def test_a_floating_figure_never_lands_between_sticky_callouts(self):
-        # Without sticky, the pitfall ends page 1 and the figure that floats to the
-        # top of page 2 sits between it and the decision.
+    def test_a_floating_figure_never_lands_between_flushed_callouts(self):
+        # Without the flush, the pitfall ends page 1 and the figure that floats to
+        # the top of page 2 sits between it and the decision.
         def pages_for(pitfall):
             with tempfile.TemporaryDirectory() as tmp:
                 source = Path(tmp) / "run.typ"
@@ -342,7 +340,7 @@ class TableFitTests(unittest.TestCase):
         loose = pages_for("#box[PITFALL #lorem(25)]")
         self.assertLess(loose["PITFALL"], loose["CAPTIONTEXT"])  # the defect
         self.assertEqual(loose["CAPTIONTEXT"], loose["DECISION"])
-        held = pages_for("#block(sticky: true)[#box[PITFALL #lorem(25)]]")
+        held = pages_for("#place.flush()\n#box[PITFALL #lorem(25)]")
         self.assertEqual(held["PITFALL"], held["DECISION"])
         self.assertLessEqual(held["CAPTIONTEXT"], held["PITFALL"])
 
