@@ -276,28 +276,6 @@
 #show figure.where(kind: "quarto-float-fig"): set figure(placement: auto)
 #show figure.where(kind: image): set figure(placement: auto)
 
-// A figure never floats between the callouts of a run (a pitfall and its decision).
-// float-leadins.lua marks where each run starts and, before each further callout,
-// the page of that start; it wraps each figure in handbook-placed-figure.
-#let handbook-run-start = [#metadata(none) <hb-run-start>]
-#let handbook-run-continue = context {
-  let start = query(selector(<hb-run-start>).before(here())).last()
-  [#metadata(start.location().page()) <hb-run-cont>]
-}
-// Whether a run that started on an earlier page continues on this page, before here.
-#let handbook-broken-run-here() = query(selector(<hb-run-cont>).before(here())).any(
-  mark => mark.location().page() == here().page() and mark.value < here().page()
-)
-// At the top of such a page the figure would sit above the run's continuation; at
-// the bottom of the page in front of its own run, below the run's first callout.
-#let handbook-placed-figure(before-run: false, body) = context {
-  let broken = handbook-broken-run-here()
-  let placement = if broken and before-run { none } else if broken { bottom } else if before-run { top } else { auto }
-  show figure.where(kind: "quarto-float-fig"): set figure(placement: placement)
-  show figure.where(kind: image): set figure(placement: placement)
-  body
-}
-
 // Captions -------------------------------------------------------------------
 #show figure.caption: it => align(center)[
   #text(style: "italic", font: hb-font, size: 9pt, fill: hb-muted)[#it.supplement #it.counter.display(it.numbering): #it.body]

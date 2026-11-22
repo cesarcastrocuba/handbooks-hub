@@ -146,17 +146,11 @@ the previous page has room (pages 53, 64 and 67).
   rest of the run fits the next page with the float, the float moves after the whole run: the
   pitfall fills the gap and the decision starts the next page. `_bound` reads only the paragraphs of
   the last row's cells, so a nested table does not hold its callout.
-- Fix (PDF): the float-leadins filter puts `#place.flush()` in front of a run of callouts (a figure
-  still pending there is placed first) and markers where the run starts and continues; each figure
-  is wrapped in `handbook-placed-figure`, which reads the markers in context: bottom on a page where
-  a broken run continues, top when the figure's section ends in a run, in the flow when both apply,
-  `auto` otherwise. Steps measured on the CI preview: the flush alone left one split pair (page 60:
-  Figure 2.5 floated to the foot of the page below the pitfall, the decision started page 61);
-  adding `placement: top` for the section's figure fixed it and split another (page 103: Figure
-  4.4, of the next section, floated to the top of the page above the 4.3 decision that started it;
-  524 pages, gap total 27.8 in both). The context rule covers the three cases;
-  `test_a_floating_figure_never_lands_between_the_callouts_of_a_run` reproduces each one. Measured
-  first, and rejected:
+- Fix (PDF): the float-leadins filter puts `#place.flush()` in front of a run of callouts, so a
+  figure still pending there is placed before the run, and scopes `placement: top` to a figure
+  whose section ends in a run. With the flush alone one pair stayed split (page 60: Figure 2.5
+  floated to the foot of the page below the pitfall and the decision started page 61; 524 pages,
+  gap total 27.8). Measured first, and rejected:
   `#block(sticky: true)` on the first callout of a run. It also removed the split pairs (5 → 0), but
   it moved a pitfall to the next page whenever its decision could not start on the same page:
   520 → 529 pages, gap total 24.8 → 36.3, 27 gap pages followed by a page that starts with a

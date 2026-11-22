@@ -167,12 +167,9 @@ A figure that does not fit the rest of a page must not leave that page part empt
   text after it fills the page. A figure can therefore appear after the next heading, as in a typeset
   book. The float-leadins filter no longer groups a figure with its heading and lead-in; tables keep
   their lead-in group. A figure never floats between the callouts of a run (a pitfall and its
-  decision). The filter puts `#place.flush()` in front of each run, so a figure still pending there
-  is placed first, and marks where the run starts and continues. Each figure then chooses its
-  placement in context (`handbook-placed-figure`): on a page where a run that started on an
-  earlier page continues, it floats to the bottom, never above the continuation; a figure whose
-  section ends in a run floats to the top, never to the foot of the page below the first callout;
-  when both apply it stays in the text flow; otherwise `auto`.
+  decision): the filter puts `#place.flush()` in front of the run, so a figure still pending there
+  is placed first, and a figure whose section ends in a run floats to the top of a page
+  (`placement: top`), so it cannot sit at the foot of the page below the first callout.
 - **Word.** Word cannot float an inline figure or a table kept on one page, so
   `docx_figure_place.place_figures` runs after the table measurement and before the page-number
   probe. It paginates the document in LibreOffice with the staged fonts and finds each float group

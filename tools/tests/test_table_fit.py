@@ -312,14 +312,10 @@ class TableFitTests(unittest.TestCase):
                 capture_output=True, text=True, check=True,
             ).stdout
             self.assertEqual(result.count("#place.flush()"), 1)  # not before the lone callout
-            self.assertLess(result.index("#place.flush()"), result.index("#handbook-run-start"))
-            self.assertLess(result.index("#handbook-run-start"), result.index("PITFALL"))
-            self.assertEqual(result.count("#handbook-run-continue"), 1)
-            self.assertLess(result.index("PITFALL"), result.index("#handbook-run-continue"))
-            self.assertLess(result.index("#handbook-run-continue"), result.index("DECISION"))
+            self.assertLess(result.index("#place.flush()"), result.index("PITFALL"))
 
     @unittest.skipUnless(shutil.which("quarto"), "Quarto pandoc required")
-    def test_each_figure_is_placed_knowing_whether_its_section_ends_in_callouts(self):
+    def test_a_figure_of_a_section_ending_in_callouts_floats_to_the_top(self):
         leadins = (
             Path(__file__).resolve().parents[1]
             / "src/handbook_toolkit/render_data/filters/float-leadins.lua"
@@ -337,63 +333,41 @@ class TableFitTests(unittest.TestCase):
                  "--lua-filter", str(leadins), str(source)],
                 capture_output=True, text=True, check=True,
             ).stdout
-            first = result.index("#handbook-placed-figure(before-run: true)[")
-            second = result.index("#handbook-placed-figure(before-run: false)[")
-            self.assertLess(first, result.index("FIRSTFIG"))
-            self.assertLess(result.index("FIRSTFIG"), second)
-            self.assertLess(second, result.index("SECONDFIG"))
+            self.assertEqual(result.count("set figure(placement: top)"), 2)  # one scope, two kinds
+            self.assertLess(result.index("placement: top"), result.index("FIRSTFIG"))
+            self.assertGreater(result.index("SECONDFIG"), result.rindex("placement: top"))
+            scope_end = result.index("]", result.index("FIRSTFIG"))
+            self.assertLess(scope_end, result.index("Text."))
 
     @unittest.skipUnless(shutil.which("quarto") and shutil.which("pdftotext"),
                          "native pagination tools required")
-    def test_a_floating_figure_never_lands_between_the_callouts_of_a_run(self):
-        template = (
-            Path(__file__).resolve().parents[1]
-            / "src/handbook_toolkit/render_data/typst/handbook-typst.typ"
-        ).read_text()
-        start = template.index("// A figure never floats between the callouts of a run")
-        helpers = template[start:template.index("\n}\n", template.index("#let handbook-placed-figure")) + 3]
-        rules = "\n".join(line for line in template.splitlines() if "set figure(placement: auto)" in line)
-
-        def positions(body):
+    def test_a_floating_figure_never_lands_between_flushed_callouts(self):
+        # Without the flush, the pitfall ends page 1 and the figure that floats to
+        # the top of page 2 sits between it and the decision.
+        def pages_for(pitfall):
             with tempfile.TemporaryDirectory() as tmp:
                 source = Path(tmp) / "run.typ"
                 source.write_text(
-                    "#set page(height: 400pt, width: 300pt, margin: 20pt)\n#set text(size: 9pt)\n"
-                    + rules + "\n" + helpers + "\n"
-                    "#let box(body) = block(breakable: false, fill: luma(230), width: 100%, inset: 6pt, body)\n"
-                    "#let fig(before, label) = handbook-placed-figure(before-run: before)["
-                    "#figure(rect(height: 100pt, width: 80%), kind: \"quarto-float-fig\", "
-                    "supplement: [Figure], caption: label)]\n" + body
+                    "#set page(height: 300pt, width: 300pt, margin: 20pt)\n#set text(size: 9pt)\n"
+                    "#let box(body) = block(breakable: true, fill: luma(230), width: 100%, inset: 6pt, body)\n"
+                    "#lorem(100)\n"
+                    "#figure(rect(height: 150pt, width: 80%), caption: [CAPTIONTEXT], placement: auto)\n"
+                    "#lorem(30)\n" + pitfall + "\n#box[DECISION #lorem(40)]\n"
                 )
                 subprocess.run(["quarto", "typst", "compile", str(source)], check=True,
                                capture_output=True)
                 text = subprocess.check_output(
-                    ["pdftotext", "-bbox", str(Path(tmp) / "run.pdf"), "-"], text=True
-                )
-            found = {}
-            for number, page in enumerate(text.split("<page ")[1:], 1):
-                for top, word in re.findall(r'yMin="([\d.]+)"[^>]*>([A-Z]{4,})<', page):
-                    found.setdefault(word, (number, float(top)))
-            return found
+                    ["pdftotext", str(Path(tmp) / "run.pdf"), "-"], text=True
+                ).split("\f")
+            return {key: next(i for i, page in enumerate(text) if key in page)
+                    for key in ("PITFALL", "CAPTIONTEXT", "DECISION")}
 
-        run = ("#place.flush()\n#handbook-run-start\n#box[PITFALL #lorem(20)]\n"
-               "#handbook-run-continue\n#box[DECISION #lorem(50)]\n")
-        cases = {
-            # the section's figure would float to the foot of the page under the pitfall
-            "own figure": "#lorem(110)\n#fig(true, [OWNFIG])\n#lorem(10)\n" + run + "= Next\n#lorem(20)\n",
-            # the next section's figure (its section also ends in a run) would float to
-            # the top of the page, above the decision that starts it
-            "next figure": "#lorem(230)\n" + run + "= Next\n#lorem(20)\n#fig(true, [NEXTFIG])\n"
-                           "#lorem(60)\n" + run.replace("PITFALL", "LATERP").replace("DECISION", "LATERD"),
-            # a figure still pending when the run starts
-            "pending": "#lorem(100)\n#fig(true, [PENDFIG])\n#lorem(30)\n" + run,
-        }
-        for name, body in cases.items():
-            with self.subTest(name):
-                found = positions(body)
-                pitfall, decision = found["PITFALL"], found["DECISION"]
-                figure = next(value for key, value in found.items() if key.endswith("FIG"))
-                self.assertFalse(pitfall < figure < decision, found)
+        loose = pages_for("#box[PITFALL #lorem(25)]")
+        self.assertLess(loose["PITFALL"], loose["CAPTIONTEXT"])  # the defect
+        self.assertEqual(loose["CAPTIONTEXT"], loose["DECISION"])
+        held = pages_for("#place.flush()\n#box[PITFALL #lorem(25)]")
+        self.assertEqual(held["PITFALL"], held["DECISION"])
+        self.assertLessEqual(held["CAPTIONTEXT"], held["PITFALL"])
 
     @unittest.skipUnless(shutil.which("quarto") and shutil.which("pdftotext"),
                          "native pagination tools required")

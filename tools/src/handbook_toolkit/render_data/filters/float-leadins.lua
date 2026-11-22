@@ -2,7 +2,8 @@
 -- Figures are not grouped: they float (handbook-typst.typ), so the text after a
 -- figure fills the page instead of the figure and its lead-in leaving a gap.
 -- A floating figure never lands between the callouts of a run (a pitfall and
--- its decision); see place_around_callout_runs.
+-- its decision): pending floats are placed before the run, and a figure of a
+-- section that ends in a run floats to the top of a page, not the bottom.
 -- Native AST nodes remain intact for Quarto's numbering, links and other writers.
 local utf8 = require("utf8")
 
@@ -43,36 +44,37 @@ local function callout(block)
   return false
 end
 
--- Runs of callouts and the figures around them (Typst only):
--- * before a run, pending floats are placed (#place.flush()) and a marker records
---   where the run starts; before each further callout a marker records the page
---   of that start, so a figure can tell that a run broke across the page;
--- * every figure gets its placement in context (handbook-float-placement in
---   handbook-typst.typ): top when its section ends in a run, bottom on a page
---   where a broken run continues, in the flow when both apply, auto otherwise.
-local function in_run(blocks, i)
-  return callout(blocks[i]) and (
-    (blocks[i + 1] ~= nil and callout(blocks[i + 1])) or (i > 1 and callout(blocks[i - 1])))
-end
-
-local function place_around_callout_runs(blocks)
+-- Typst places the floats still pending before a run of callouts starts, so a
+-- figure cannot float to the top of a page between two callouts of the run.
+local function flush_before_callout_runs(blocks)
   local result = pandoc.List()
   for i, block in ipairs(blocks) do
-    if in_run(blocks, i) then
-      if i > 1 and callout(blocks[i - 1]) then
-        result:insert(pandoc.RawBlock("typst", "#handbook-run-continue"))
-      else
-        result:insert(pandoc.RawBlock("typst", "#place.flush()\n#handbook-run-start"))
-      end
-      result:insert(block)
-    elseif figure(block) then
-      local before_run = false
+    local starts_run = callout(block) and blocks[i + 1] ~= nil and callout(blocks[i + 1])
+      and not (i > 1 and callout(blocks[i - 1]))
+    if starts_run then result:insert(pandoc.RawBlock("typst", "#place.flush()")) end
+    result:insert(block)
+  end
+  return result
+end
+
+-- A figure whose section ends in a run of callouts floats to the top of a page:
+-- at the bottom of the page it could sit below the first callout of the run
+-- while the next callout starts the following page.
+local TOP = '#[#show figure.where(kind: "quarto-float-fig"): set figure(placement: top)\n'
+  .. '#show figure.where(kind: image): set figure(placement: top)'
+
+local function top_before_callout_runs(blocks)
+  local result = pandoc.List()
+  for i, block in ipairs(blocks) do
+    local before_run = false
+    if figure(block) then
       for j = i + 1, #blocks - 1 do
         if blocks[j].t == "Header" then break end
         if callout(blocks[j]) and callout(blocks[j + 1]) then before_run = true; break end
       end
-      result:insert(pandoc.RawBlock("typst", "#handbook-placed-figure(before-run: "
-        .. tostring(before_run) .. ")["))
+    end
+    if before_run then
+      result:insert(pandoc.RawBlock("typst", TOP))
       result:insert(block)
       result:insert(pandoc.RawBlock("typst", "]"))
     else result:insert(block) end
@@ -82,7 +84,7 @@ end
 
 function Blocks(blocks)
   if FORMAT ~= "typst" then return nil end
-  blocks = place_around_callout_runs(blocks)
+  blocks = top_before_callout_runs(flush_before_callout_runs(blocks))
   local result = pandoc.List()
   for _, block in ipairs(blocks) do
     if float(block) and not figure(block) then
