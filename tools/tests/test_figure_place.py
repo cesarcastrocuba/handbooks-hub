@@ -18,8 +18,10 @@ from handbook_toolkit.docx_figure_place import (
     decide,
     destination_positions,
     figure_units,
+    page_break_styles,
     place_figures,
 )
+from handbook_toolkit.build_types import BuildError
 from handbook_toolkit.docx_xml import NS, W
 from test_figure_layout import png
 
@@ -113,6 +115,29 @@ class UnitTests(unittest.TestCase):
         unit = figure_units(body)[0]
         self.assertEqual(unit.blocks, [[n["first"]]])
         self.assertIs(unit.stop, second_picture)
+
+    def test_a_paragraph_that_starts_a_page_stops_the_lookahead(self):
+        body, n = figure_section()
+        ET.SubElement(n["second"].find(W + "pPr"), W + "pageBreakBefore")
+        unit = figure_units(body)[0]
+        self.assertEqual(unit.blocks, [[n["first"]]])
+        self.assertIs(unit.stop, n["second"])
+
+    def test_a_style_that_starts_a_page_stops_the_lookahead(self):
+        styles = ET.tostring(ET.fromstring(
+            f'<w:styles xmlns:w="{NS["w"]}">'
+            '<w:style w:type="paragraph" w:styleId="PartTitle"><w:pPr><w:pageBreakBefore/></w:pPr></w:style>'
+            '<w:style w:type="paragraph" w:styleId="ChapterTitle"><w:basedOn w:val="PartTitle"/></w:style>'
+            '<w:style w:type="paragraph" w:styleId="Plain"><w:basedOn w:val="ChapterTitle"/>'
+            '<w:pPr><w:pageBreakBefore w:val="0"/></w:pPr></w:style>'
+            "</w:styles>"
+        ))
+        breaking = page_break_styles(styles)
+        self.assertEqual(breaking, {"PartTitle", "ChapterTitle"})
+        body, n = figure_section()
+        n["second"].find(W + "pPr/" + W + "pStyle").set(W + "val", "ChapterTitle")
+        self.assertEqual(figure_units(body, breaking)[0].blocks, [[n["first"]]])
+        self.assertEqual(len(figure_units(body)[0].blocks), 3)  # without styles it is a plain block
 
 
 class TableUnitTests(unittest.TestCase):
@@ -274,9 +299,24 @@ class MeasurementTests(unittest.TestCase):
             with patch("handbook_toolkit.docx_figure_place.shutil.which", return_value=None):
                 report = place_figures(path, FONTS, required=False)
                 self.assertIn("not measured", report["docx_figure_placement"])
-                with self.assertRaises(Exception):
+                with self.assertRaises(BuildError):
                     place_figures(path, FONTS, required=True)
             self.assertEqual(path.read_bytes(), b"untouched")
+
+    def test_a_failed_measurement_leaves_the_document_unchanged(self):
+        body, _ = figure_section()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "book.docx"
+            _package(path, body)
+            before = path.read_bytes()
+            with patch("handbook_toolkit.docx_figure_place.shutil.which", return_value="/usr/bin/x"), \
+                    patch("handbook_toolkit.docx_pages._run", side_effect=BuildError("probe timed out")):
+                report = place_figures(path, FONTS, required=False)
+                self.assertIn("not applied", report["docx_figure_placement"])
+                self.assertEqual(path.read_bytes(), before)
+                with self.assertRaises(BuildError):
+                    place_figures(path, FONTS, required=True)
+            self.assertEqual(path.read_bytes(), before)
 
 
 def _package(path: Path, body: ET.Element) -> None:

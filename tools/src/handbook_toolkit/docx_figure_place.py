@@ -139,11 +139,47 @@ def _splits(block: list[ET.Element]) -> bool:
     )
 
 
-def _barrier(element: ET.Element, kind: str) -> bool:
+def page_break_styles(styles: bytes | None) -> frozenset[str]:
+    """Paragraph style ids that start a page, directly or through ``basedOn``."""
+    if not styles:
+        return frozenset()
+    root = ET.fromstring(styles)
+    parents: dict[str, str] = {}
+    own: dict[str, bool] = {}
+    for style in root.iter(W + "style"):
+        if style.get(W + "type") != "paragraph":
+            continue
+        identifier = style.get(W + "styleId", "")
+        based = style.find(W + "basedOn")
+        if based is not None:
+            parents[identifier] = based.get(W + "val", "")
+        flag = style.find(W + "pPr/" + W + "pageBreakBefore")
+        if flag is not None:
+            own[identifier] = flag.get(W + "val", "1").lower() not in OFF
+
+    def breaks(identifier: str, seen: frozenset[str] = frozenset()) -> bool:
+        if identifier in own:
+            return own[identifier]
+        parent = parents.get(identifier)
+        return bool(parent) and parent not in seen and breaks(parent, seen | {identifier})
+
+    return frozenset(identifier for identifier in parents.keys() | own.keys() if breaks(identifier))
+
+
+def _starts_page(paragraph: ET.Element, breaking: frozenset[str]) -> bool:
+    flag = paragraph.find(W + "pPr/" + W + "pageBreakBefore")
+    if flag is not None:
+        return flag.get(W + "val", "1").lower() not in OFF
+    return _style(paragraph) in breaking
+
+
+def _barrier(element: ET.Element, kind: str, breaking: frozenset[str] = frozenset()) -> bool:
     """Where a deferred float must stop: a heading, a break or another float.
 
     Floats keep their relative order, so captions stay in numeric order and no
-    float is separated from a lead-in that another float carries.
+    float is separated from a lead-in that another float carries. A paragraph
+    that starts a page (``pageBreakBefore``, directly or through its style) is a
+    break even when its style is not a ``Heading``.
     """
     if element.tag == W + "tbl":
         return element.find(".//" + W + "drawing") is not None or _is_data_table(element)
@@ -151,13 +187,14 @@ def _barrier(element: ET.Element, kind: str) -> bool:
         return True
     return (
         _style(element).startswith("Heading")
+        or _starts_page(element, breaking)
         or element.find(".//" + W + "sectPr") is not None
         or element.find(".//" + W + "drawing") is not None
         or any(br.get(W + "type") == "page" for br in element.iter(W + "br"))
     )
 
 
-def figure_units(body: ET.Element) -> list[Unit]:
+def figure_units(body: ET.Element, breaking: frozenset[str] = frozenset()) -> list[Unit]:
     """Find body-level figures and kept-whole data tables followed by their caption."""
     children = list(body)
     units = []
@@ -216,7 +253,7 @@ def figure_units(body: ET.Element) -> list[Unit]:
                     blocks[-1].append(node)
                 else:
                     pending.append(node)
-            elif node.tag in {W + "p", W + "tbl"} and not _barrier(node, kind):
+            elif node.tag in {W + "p", W + "tbl"} and not _barrier(node, kind, breaking):
                 blocks.append([*pending, node])
                 pending = []
             else:
@@ -241,7 +278,7 @@ def _mark(paragraph: ET.Element, name: str, identifier: int) -> None:
     ET.SubElement(paragraph, W + "bookmarkEnd", {W + "id": str(identifier)})
 
 
-def mark_probe(root: ET.Element) -> list[dict[str, str]]:
+def mark_probe(root: ET.Element, breaking: frozenset[str] = frozenset()) -> list[dict[str, str]]:
     """Add measurement bookmarks to a probe copy; return the names per unit."""
     body = root.find(W + "body")
     assert body is not None
@@ -250,7 +287,7 @@ def mark_probe(root: ET.Element) -> list[dict[str, str]]:
         default=0,
     )
     names = []
-    for i, unit in enumerate(figure_units(body)):
+    for i, unit in enumerate(figure_units(body, breaking)):
         marks = {"group": f"FigPlaceG{i}", "image": f"FigPlaceI{i}", "caption": f"FigPlaceC{i}"}
         for key, paragraph in (
             ("group", unit.chain),
@@ -472,6 +509,7 @@ def _place(
     from .docx_pages import export_pdf, font_environment
 
     page_height, top, bottom = _geometry(root)
+    breaking = page_break_styles(members.get("word/styles.xml"))
     shrunk = deferred = measured = tables = 0
     with tempfile.TemporaryDirectory(prefix="figure-place-", dir=path.parent) as tmp:
         directory = Path(tmp)
@@ -479,11 +517,11 @@ def _place(
         for number in range(passes):
             body = root.find(W + "body")
             assert body is not None
-            units = figure_units(body)
+            units = figure_units(body, breaking)
             if not units:
                 break
             probe = deepcopy(root)
-            names = mark_probe(probe)
+            names = mark_probe(probe, breaking)
             probe_members = dict(members)
             order_properties(probe)
             probe_members["word/document.xml"] = ET.tostring(probe, encoding="utf-8", xml_declaration=True)
