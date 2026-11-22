@@ -360,6 +360,15 @@ class DecisionTests(unittest.TestCase):
                         previous_bottom=620.0, **run),
             Defer(1),
         )
+        # The decision (210 pt) and a 490 pt figure group exceed the 696 pt left on
+        # the next page: the figure stays in front of the run.
+        tall = dict(caption=(5, 548.0), caption_end=560.0)
+        self.assertEqual(self.decide(bound=[False, True, False], runs=[False, True, False],
+                                     **tall, **{**run, "page_end": 770.0}),
+                         Defer(1))
+        self.assertEqual(self.decide(bound=[False, True, False], runs=[False, True, False],
+                                     **{**run, "page_end": 700.0}, **tall),
+                         Defer(3))  # a 140 pt decision fits with it
         # The run continues past the lookahead.
         self.assertEqual(self.decide(bound=[False, True, True], runs=[False, True, True], **run),
                          Defer(1))

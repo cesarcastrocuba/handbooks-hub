@@ -125,3 +125,41 @@ Remaining cases need an Owner decision, not a rule: Figures 1.2, 1.3 and 2.15 pr
 size (0.45, 0.53 and 0.58 of the text block) and fit the gap in front of them only below 75% of it
 (Figure 2.15: 0.69, text 7.6 pt); the alternative, leaving the heading and its lead-in at the foot of
 the previous page, is what the Owner rejected.
+
+## Third follow-up (Owner's Word check of the PR 135 preview)
+
+The Owner found a figure between a Common Pitfall and its Decision & Trade-off (chapter 2, pages
+79, 81, 84, 87, 89 and 93; chapter 3 too), and Common Pitfall callouts that start a page although
+the previous page has room (pages 53, 64 and 67).
+
+- Cause of the split pairs: the deferral moved the figure past the pitfall and stopped in front of
+  the decision. It treated the decision as kept with the next block because `_bound` read the
+  `keepNext` rows of the options table nested in the callout. Counted on the CI-built DOCX of
+  PR 135: 19 sections with a figure between the two callouts (chapters 2, 3, 8, 9, 10, 19); the
+  Typst PDF had 5 (a float at the top of the page after the pitfall).
+- Pitfalls at the top of a page (LibreOffice rendering of the same DOCX): in most cases the box
+  does not fit the space left on the previous page; the closest misses are 3 to 5 pt (pages 53 and
+  90 of the new rendering). Page 76 had a 43% gap after the pair fix alone, because the figure could
+  no longer pass the pitfall.
+- Fix (Word): `callout_runs` marks a run of callouts (a callout followed by another, only empty
+  spacers between); a float never lands inside it. When the run's first callout fits the gap and the
+  rest of the run fits the next page with the float, the float moves after the whole run: the
+  pitfall fills the gap and the decision starts the next page. `_bound` reads only the paragraphs of
+  the last row's cells, so a nested table does not hold its callout.
+- Fix (PDF): the float-leadins filter wraps a callout followed by another callout in
+  `#block(sticky: true)`; Typst then starts the pair on one page and places a float before or after
+  it.
+
+Word measurement (LibreOffice with the toolkit fonts, CI pre-placement DOCX of book `a32a840`):
+
+| Run | Pages | Gap total (pages) | Lonely headings | Pitfall/decision split by a float |
+| --- | ---: | ---: | ---: | ---: |
+| PR 135 | 655 | 33.6 | 18 | 19 |
+| Runs never split | 655 | 33.7 | 18 | 0 |
+| + float after the run, no fit check | 655 | 35.4 | 19 | 0 |
+| + fit check (this change) | 655 | 33.5 | 18 | 0 |
+
+Without the fit check the float moved after the decision even when both no longer fit the next
+page, which left that page part empty (page 124: 66%). With it, 3 sections move the float after the
+run (2.1, 2.2, 2.9) and no page gets worse.
+

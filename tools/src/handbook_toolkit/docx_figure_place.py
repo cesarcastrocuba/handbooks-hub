@@ -514,11 +514,23 @@ def decide(
         last = start
         while last < len(runs) and runs[last]:
             last += 1
+        # The rest of the run and the float must share the next page, or the float
+        # leaves that page part empty instead.
+        run_end = None
+        if last < len(runs) and last < len(blocks) and blocks[last][0] == page:
+            following = last + 1
+            run_end = (
+                blocks[following][1]
+                if following < len(blocks) and blocks[following][0] == page
+                else page_end
+            )
         if (
             end_top is not None
+            and run_end is not None
             and last < len(runs)  # the run ends inside the lookahead
             and not bound[last]  # and its last callout is not kept with what follows
             and chain + end_top - blocks[0][1] <= room - SAFETY
+            and run_end - end_top + caption_end - group[1] <= body - SAFETY
             and end_top - blocks[0][1] > filled
         ):
             best, filled = last + 1, end_top - blocks[0][1]

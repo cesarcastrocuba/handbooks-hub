@@ -183,7 +183,10 @@ A figure that does not fit the rest of a page must not leave that page part empt
   from its style) or another float, so captions keep their numeric order, and a block kept with the
   next one is never separated from it. A run of callouts (a callout followed by another, with only
   empty spacers between them) counts as kept together: a float moves in front of the run or after
-  all of it, never into it; Word may still break the page inside the run. Each action shifts the later page breaks, so actions of one
+  all of it, never into it. When the first callout of the run fits the gap, the float moves after
+  the whole run if the rest of the run and the float share the next page; the run then breaks
+  across the pages with nothing between its callouts. A table nested in a callout does not keep
+  the callout with the next block. Each action shifts the later page breaks, so actions of one
   pass are at least three pages apart and the document is measured again, up to four passes.
   `build.tool_versions.docx_figure_placement` records the counts. Desktop Word paginates slightly
   differently from LibreOffice; the Owner's Word check remains the acceptance test.
