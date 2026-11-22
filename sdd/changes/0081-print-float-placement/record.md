@@ -104,3 +104,24 @@ on `fix/float-placement-followups`:
 - Optional: the missing-tools test asserts `BuildError`; a new test makes the measurement fail and
   proves the document is byte-identical (`required=False`) and that a required build raises.
 - Optional: the docs state that only blocks starting on the float's page are moved, as the code does.
+
+The reviewer measured the guard on the 6.0.0 preview DOCX: `page_break_styles` returns `Heading1`
+and `TOCHeading`, `figure_units` finds 407 units with and without it, and no unit changes its blocks
+or stop. It protects other books and templates; it does not change the current edition.
+
+## Second follow-up (after merge of PR 134)
+
+- The Owner's Figure 2.15 case: a Common Pitfall callout follows the figure and is the last block on
+  its page. The deferral measured a block only up to the next block on the same page, so a callout
+  that ends the page was never a candidate. A block that cannot break across pages (a one-row callout
+  with `cantSplit`, a kept-whole table, a `keepLines` paragraph) is now measured to the end of the
+  page's text. Applied to the CI-built DOCX of PR 134 (book `a32a840`): 655 → 654 pages, gap total
+  33.5 → 32.4.
+- Review follow-up of PR 134: the docs bullet is re-worded and re-flowed; the `basedOn` walk is
+  iterative (no recursion limit, cycles stop); tests for cycles, a 3,000-link chain, missing
+  `styles.xml` and a direct `pageBreakBefore w:val="0"` that overrides a page-starting style.
+
+Remaining cases need an Owner decision, not a rule: Figures 1.2, 1.3 and 2.15 print at their natural
+size (0.45, 0.53 and 0.58 of the text block) and fit the gap in front of them only below 75% of it
+(Figure 2.15: 0.69, text 7.6 pt); the alternative, leaving the heading and its lead-in at the foot of
+the previous page, is what the Owner rejected.
