@@ -458,8 +458,9 @@ def decide(
     ``page_end`` is where the text of the float's page ends; it measures the last
     block on that page when the block cannot break across pages (``whole``).
     ``runs`` marks the blocks joined to the next one in a run of callouts (they
-    count as ``bound`` even if the caller left them out): when the first callout of a run fits the gap, the float
-    moves after the whole run and the rest of the run starts the next page.
+    count as ``bound`` even if the caller left them out): when the first callout of
+    a run fits the gap, the float moves after the whole run and the rest of the run
+    starts the next page.
     """
     body = bottom - top
     splits = splits if splits is not None else [False] * len(bound)

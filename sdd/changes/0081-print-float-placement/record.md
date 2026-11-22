@@ -135,8 +135,8 @@ the previous page has room (pages 53, 64 and 67).
 - Cause of the split pairs: the deferral moved the figure past the pitfall and stopped in front of
   the decision. It treated the decision as kept with the next block because `_bound` read the
   `keepNext` rows of the options table nested in the callout. Counted by re-running the PR 135
-  placement on the CI pre-placement DOCX of book `a32a840` with the toolkit fonts: 19 sections with a figure between the two callouts (chapters 2, 3, 8, 9, 10, 19); the
-  Typst PDF had 5 (a float at the top of the page after the pitfall). The published preview DOCX
+  placement on the CI pre-placement DOCX of book `a32a840` with the toolkit fonts: 19 sections
+  with a figure between the two callouts (chapters 2, 3, 8, 9, 10, 19); the Typst PDF had 5 (a float at the top of the page after the pitfall). The published preview DOCX
   of PR 135 shows 3 by the same body-order detector (2.1, 2.2, 2.9; reviewer's count). The two
   counts come from different DOCX files and the difference is not explained yet; both are 0 after
   this change.
@@ -179,3 +179,9 @@ Without the fit check the float moved after the decision even when both no longe
 page, which left that page part empty (page 124: 66%). With it, 3 sections move the float after the
 run (2.1, 2.2, 2.9) and no page gets worse.
 
+- Review follow-up of PR 136 (`4fb6887`): `test_numbering_parity` ends the listing slice at the
+  page before the first body caption, so `make check` is green with Quarto (632 tests); a
+  LibreOffice test fails when `_place` stops passing the callout runs; `decide()` folds the runs
+  into `bound`; a full lookahead followed by a barrier counts as complete; `CALLOUT_STYLE` lives in
+  `docx_post`; the changelog scopes the guarantee to Word. CI coverage of the Quarto tests is
+  issue 137. Re-review at `f6bb5c7`: clean.
