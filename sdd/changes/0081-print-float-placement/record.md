@@ -185,3 +185,31 @@ run (2.1, 2.2, 2.9) and no page gets worse.
   into `bound`; a full lookahead followed by a barrier counts as complete; `CALLOUT_STYLE` lives in
   `docx_post`; the changelog scopes the guarantee to Word. CI coverage of the Quarto tests is
   issue 137. Re-review at `f6bb5c7`: clean.
+
+## Fourth follow-up (Owner's Word check of the PR 136 preview)
+
+The Owner found figures and tables far from the paragraph that cites them. In chapter 3, from
+Figure 3.4 on, the figure no longer follows its description. Measured on the preview DOCX against
+a build without placement (LibreOffice with the toolkit fonts):
+
+- 59 of 131 figures and 53 of 278 tables were moved after the text that followed them;
+- figures not right after the paragraph that cites them went from 3 to 52.
+
+The manuscript order was intact. The Word deferral pass alone caused the movement.
+
+- Owner decision (2026-11-22): in Word nothing moves. A figure away from its description is a
+  defect; a part-empty page is not. Tall diagrams that leave a gap are redrawn in the book.
+- Change: `docx_figure_place` keeps only the bounded scaling. A figure group that starts a page
+  below a gap of at least 15% of the text block is scaled to fit the gap when the result keeps at
+  least 75% of its natural raster size. Tables are never scaled. Removed: the deferral, the
+  callout-run rule, the lookahead blocks and table units.
+- The build report reads `N figures scaled to fit page gaps; no figure or table moved (P
+  LibreOffice passes)`.
+- Tests:
+  - two LibreOffice tests check that a figure that does not fit leaves the body order unchanged,
+    and that a figure that nearly fits is scaled in place;
+  - the unit tests cover the scale bound, the gap threshold and the caption measurement.
+- The PDF keeps its floats (Typst places a figure at the top or bottom of the page). The Owner has
+  not asked for the Word rule there.
+- Gaps and lonely headings in Word return towards the pre-0081 numbers. The CI preview of this
+  commit is the measurement; the Owner's Word check remains the acceptance test.

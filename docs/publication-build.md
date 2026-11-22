@@ -160,7 +160,8 @@ for the validator boundary.
 
 ## Figure placement (change 0081)
 
-A figure that does not fit the rest of a page must not leave that page part empty.
+A figure stays with the text that introduces it. Within that rule the build reduces the pages
+that a figure leaves part empty.
 
 - **PDF.** Figures float (`placement: auto` for Quarto figure floats and plain image figures): Typst
   places each one at the top or bottom of the page, or of the next page when it does not fit, and the
@@ -172,27 +173,19 @@ A figure that does not fit the rest of a page must not leave that page part empt
   (`placement: top`), so it cannot sit at the foot of the page below the first callout. Typst can
   still raise a top float of the next section above a decision that starts a page (one case in the
   Solutions Architecture Handbook PDF).
-- **Word.** Word cannot float an inline figure or a table kept on one page, so
+- **Word.** Nothing moves: every figure and every table stays right after the text that
+  introduces it, in the author's order (Owner decision of 2026-11-22: a figure away from its
+  description is a defect, a part-empty page is not). Word cannot float an inline figure, so a
+  figure that does not fit the rest of a page starts the next one with its heading or lead-in.
   `docx_figure_place.place_figures` runs after the table measurement and before the page-number
-  probe. It paginates the document in LibreOffice with the staged fonts and finds each float group
-  (a figure or a kept-whole data table, its caption and the heading or lead-in kept with it) that
-  starts a page below a gap of at least 15% of the text block. It then moves in front of the float
-  the blocks that follow it in its section, start on its page and fit the gap. The last block on the
-  page counts when it cannot break across pages (a callout or a kept-whole table); it is measured to
-  the end of the page's text. A plain paragraph that crosses the foot of the page also moves,
-  because it breaks across the pages. When nothing can move, a figure is scaled down just enough to
-  fit the gap, never below 75% of its natural raster size; tables are never scaled. A float never
-  passes a heading, a section or page break (including a paragraph whose `pageBreakBefore` comes
-  from its style) or another float, so captions keep their numeric order, and a block kept with the
-  next one is never separated from it. A run of callouts (a callout followed by another, with only
-  empty spacers between them) counts as kept together: a float moves in front of the run or after
-  all of it, never into it. When the first callout of the run fits the gap, the float moves after
-  the whole run if the rest of the run and the float share the next page; the run then breaks
-  across the pages with nothing between its callouts. A table nested in a callout does not keep
-  the callout with the next block. Each action shifts the later page breaks, so actions of one
-  pass are at least three pages apart and the document is measured again, up to four passes.
-  `build.tool_versions.docx_figure_placement` records the counts. Desktop Word paginates slightly
-  differently from LibreOffice; the Owner's Word check remains the acceptance test.
+  probe. It paginates the document in LibreOffice with the staged fonts, finds each figure group
+  (the figure, its caption and the heading or lead-in kept with it) that starts a page below a gap
+  of at least 15% of the text block, and scales the figure down just enough to fit the gap, never
+  below 75% of its natural raster size. Tables are never scaled. A scaled figure shifts the later
+  page breaks, so the scaled figures of one pass are at least three pages apart and the document is
+  measured again, up to four passes. `build.tool_versions.docx_figure_placement` records the count.
+  The remaining gaps are closed in the book by redrawing tall diagrams. Desktop Word paginates
+  slightly differently from LibreOffice; the Owner's Word check remains the acceptance test.
 
 ## Native HTML staging
 
