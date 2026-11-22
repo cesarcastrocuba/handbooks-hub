@@ -147,7 +147,10 @@ the previous page has room (pages 53, 64 and 67).
   pitfall fills the gap and the decision starts the next page. `_bound` reads only the paragraphs of
   the last row's cells, so a nested table does not hold its callout.
 - Fix (PDF): the float-leadins filter puts `#place.flush()` in front of a run of callouts, so a
-  figure still pending there is placed before the run. Measured first, and rejected:
+  figure still pending there is placed before the run, and scopes `placement: top` to a figure
+  whose section ends in a run. With the flush alone one pair stayed split (page 60: Figure 2.5
+  floated to the foot of the page below the pitfall and the decision started page 61; 524 pages,
+  gap total 27.8). Measured first, and rejected:
   `#block(sticky: true)` on the first callout of a run. It also removed the split pairs (5 → 0), but
   it moved a pitfall to the next page whenever its decision could not start on the same page:
   520 → 529 pages, gap total 24.8 → 36.3, 27 gap pages followed by a page that starts with a

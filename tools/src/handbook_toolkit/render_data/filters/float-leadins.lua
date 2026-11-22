@@ -1,8 +1,9 @@
 -- Keep a heading and one short introduction with the next table.
 -- Figures are not grouped: they float (handbook-typst.typ), so the text after a
 -- figure fills the page instead of the figure and its lead-in leaving a gap.
--- Pending floats are placed before a run of callouts (a pitfall and its
--- decision), so a floating figure never lands between them.
+-- A floating figure never lands between the callouts of a run (a pitfall and
+-- its decision): pending floats are placed before the run, and a figure of a
+-- section that ends in a run floats to the top of a page, not the bottom.
 -- Native AST nodes remain intact for Quarto's numbering, links and other writers.
 local utf8 = require("utf8")
 
@@ -56,9 +57,34 @@ local function flush_before_callout_runs(blocks)
   return result
 end
 
+-- A figure whose section ends in a run of callouts floats to the top of a page:
+-- at the bottom of the page it could sit below the first callout of the run
+-- while the next callout starts the following page.
+local TOP = '#[#show figure.where(kind: "quarto-float-fig"): set figure(placement: top)\n'
+  .. '#show figure.where(kind: image): set figure(placement: top)'
+
+local function top_before_callout_runs(blocks)
+  local result = pandoc.List()
+  for i, block in ipairs(blocks) do
+    local before_run = false
+    if figure(block) then
+      for j = i + 1, #blocks - 1 do
+        if blocks[j].t == "Header" then break end
+        if callout(blocks[j]) and callout(blocks[j + 1]) then before_run = true; break end
+      end
+    end
+    if before_run then
+      result:insert(pandoc.RawBlock("typst", TOP))
+      result:insert(block)
+      result:insert(pandoc.RawBlock("typst", "]"))
+    else result:insert(block) end
+  end
+  return result
+end
+
 function Blocks(blocks)
   if FORMAT ~= "typst" then return nil end
-  blocks = flush_before_callout_runs(blocks)
+  blocks = top_before_callout_runs(flush_before_callout_runs(blocks))
   local result = pandoc.List()
   for _, block in ipairs(blocks) do
     if float(block) and not figure(block) then

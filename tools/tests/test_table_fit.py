@@ -314,6 +314,31 @@ class TableFitTests(unittest.TestCase):
             self.assertEqual(result.count("#place.flush()"), 1)  # not before the lone callout
             self.assertLess(result.index("#place.flush()"), result.index("PITFALL"))
 
+    @unittest.skipUnless(shutil.which("quarto"), "Quarto pandoc required")
+    def test_a_figure_of_a_section_ending_in_callouts_floats_to_the_top(self):
+        leadins = (
+            Path(__file__).resolve().parents[1]
+            / "src/handbook_toolkit/render_data/filters/float-leadins.lua"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "top.md"
+            source.write_text(
+                "## One\n\n![FIRSTFIG](a.png){#fig-a}\n\nText.\n\n"
+                "::: {.callout-warning}\nP\n:::\n\n::: {.callout-important}\nD\n:::\n\n"
+                "## Two\n\n![SECONDFIG](b.png){#fig-b}\n\nText.\n\n"
+                "::: {.callout-tip}\nLONE\n:::\n"
+            )
+            result = subprocess.run(
+                ["quarto", "pandoc", "-f", "markdown", "-t", "typst",
+                 "--lua-filter", str(leadins), str(source)],
+                capture_output=True, text=True, check=True,
+            ).stdout
+            self.assertEqual(result.count("set figure(placement: top)"), 2)  # one scope, two kinds
+            self.assertLess(result.index("placement: top"), result.index("FIRSTFIG"))
+            self.assertGreater(result.index("SECONDFIG"), result.rindex("placement: top"))
+            scope_end = result.index("]", result.index("FIRSTFIG"))
+            self.assertLess(scope_end, result.index("Text."))
+
     @unittest.skipUnless(shutil.which("quarto") and shutil.which("pdftotext"),
                          "native pagination tools required")
     def test_a_floating_figure_never_lands_between_flushed_callouts(self):
