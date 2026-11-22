@@ -166,7 +166,9 @@ A figure that does not fit the rest of a page must not leave that page part empt
   places each one at the top or bottom of the page, or of the next page when it does not fit, and the
   text after it fills the page. A figure can therefore appear after the next heading, as in a typeset
   book. The float-leadins filter no longer groups a figure with its heading and lead-in; tables keep
-  their lead-in group.
+  their lead-in group. A callout followed by another callout is wrapped in `#block(sticky: true)`,
+  so the pair (a pitfall and its decision) starts on one page and a figure floats before or after
+  it, never between the two.
 - **Word.** Word cannot float an inline figure or a table kept on one page, so
   `docx_figure_place.place_figures` runs after the table measurement and before the page-number
   probe. It paginates the document in LibreOffice with the staged fonts and finds each float group
@@ -179,7 +181,9 @@ A figure that does not fit the rest of a page must not leave that page part empt
   fit the gap, never below 75% of its natural raster size; tables are never scaled. A float never
   passes a heading, a section or page break (including a paragraph whose `pageBreakBefore` comes
   from its style) or another float, so captions keep their numeric order, and a block kept with the
-  next one is never separated from it. Each action shifts the later page breaks, so actions of one
+  next one is never separated from it. A run of callouts (a callout followed by another, with only
+  empty spacers between them) counts as kept together: a float moves in front of the run or after
+  all of it, never into it; Word may still break the page inside the run. Each action shifts the later page breaks, so actions of one
   pass are at least three pages apart and the document is measured again, up to four passes.
   `build.tool_versions.docx_figure_placement` records the counts. Desktop Word paginates slightly
   differently from LibreOffice; the Owner's Word check remains the acceptance test.

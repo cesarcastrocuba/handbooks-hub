@@ -1,6 +1,8 @@
 -- Keep a heading and one short introduction with the next table.
 -- Figures are not grouped: they float (handbook-typst.typ), so the text after a
 -- figure fills the page instead of the figure and its lead-in leaving a gap.
+-- A callout followed by another callout sticks to it, so a floating figure lands
+-- before or after the run (a pitfall and its decision), never between them.
 -- Native AST nodes remain intact for Quarto's numbering, links and other writers.
 local utf8 = require("utf8")
 
@@ -33,8 +35,30 @@ local function figure(block)
   return not table
 end
 
+local function callout(block)
+  if block.t ~= "Div" then return false end
+  for _, class in ipairs(block.classes) do
+    if class:match("^callout%-") or class == "callout" then return true end
+  end
+  return false
+end
+
+-- Typst keeps the end of a sticky block on the page where the next block starts.
+local function stick_callout_runs(blocks)
+  local result = pandoc.List()
+  for i, block in ipairs(blocks) do
+    if callout(block) and blocks[i + 1] ~= nil and callout(blocks[i + 1]) then
+      result:insert(pandoc.RawBlock("typst", "#block(sticky: true)["))
+      result:insert(block)
+      result:insert(pandoc.RawBlock("typst", "]"))
+    else result:insert(block) end
+  end
+  return result
+end
+
 function Blocks(blocks)
   if FORMAT ~= "typst" then return nil end
+  blocks = stick_callout_runs(blocks)
   local result = pandoc.List()
   for _, block in ipairs(blocks) do
     if float(block) and not figure(block) then

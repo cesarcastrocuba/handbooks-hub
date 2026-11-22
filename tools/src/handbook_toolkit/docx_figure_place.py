@@ -16,6 +16,7 @@ of the text block, and then either
 
 A float never passes a heading, a section or page break or another float, so
 captions keep their order, and a block kept with the next one never leaves it.
+A run of callouts counts as kept together, so a float never lands inside it.
 An action moves the later page breaks, so the actions of one pass are
 ``SPACING`` pages apart and each pass measures the document again. Desktop Word
 paginates slightly differently from LibreOffice, so the Word edition is still
@@ -55,6 +56,7 @@ PASSES = 4
 SPACING = 3  # pages between two actions of one pass
 PREFER_SHRINK = False  # deferral keeps the figure at its size; scaling is the fallback
 CAPTION_STYLES = {"ImageCaption", "TableCaption", "Caption"}
+CALLOUT_STYLE = "CalloutBox"  # the one-cell table docx_post wraps each callout in
 OFF = {"0", "false", "off"}
 
 
@@ -70,6 +72,7 @@ class Unit:
     blocks: list[list[ET.Element]]
     stop: ET.Element | None
     kind: str = "figure"
+    complete: bool = True  # False when the lookahead ended before a barrier
 
 
 @dataclass(frozen=True)
@@ -93,12 +96,62 @@ def _keeps(paragraph: ET.Element) -> bool:
 
 
 def _bound(block: list[ET.Element]) -> bool:
-    """Whether the block is kept with the block that follows it."""
+    """Whether the block is kept with the block that follows it.
+
+    A table is kept with the next block by the paragraphs of its last row; a table
+    nested in that row (the options table of a decision callout) keeps its own rows
+    together and does not hold the outer table to what follows.
+    """
     element = next(node for node in block if node.tag in {W + "p", W + "tbl"})
     if element.tag == W + "p":
         return _keeps(element)
     rows = element.findall(W + "tr")
-    return bool(rows) and any(_keeps(p) for p in rows[-1].iter(W + "p"))
+    return bool(rows) and any(
+        _keeps(p) for cell in rows[-1].findall(W + "tc") for p in cell.findall(W + "p")
+    )
+
+
+def _callout(block: list[ET.Element]) -> bool:
+    element = next(node for node in block if node.tag in {W + "p", W + "tbl"})
+    style = element.find(W + "tblPr/" + W + "tblStyle")
+    return element.tag == W + "tbl" and style is not None and style.get(W + "val") == CALLOUT_STYLE
+
+
+def _spacer(block: list[ET.Element]) -> bool:
+    element = next(node for node in block if node.tag in {W + "p", W + "tbl"})
+    return (
+        element.tag == W + "p"
+        and not "".join(element.itertext()).strip()
+        and element.find(".//" + W + "drawing") is None
+    )
+
+
+def callout_runs(blocks: list[list[ET.Element]], complete: bool = True) -> list[bool]:
+    """Whether each block is joined to the next one inside a run of callouts.
+
+    A callout followed by another callout, with only empty spacers between them,
+    starts or continues a run: a pitfall and its decision read as one unit, so a
+    float goes in front of the run or after all of it. Word may still break the
+    page inside the run. When the lookahead ends inside a run (``complete``
+    false), the run is joined to its last examined block.
+    """
+    runs = [False] * len(blocks)
+    for i, block in enumerate(blocks):
+        if not _callout(block):
+            continue
+        j = i + 1
+        while j < len(blocks) and _spacer(blocks[j]):
+            j += 1
+        if (j < len(blocks) and _callout(blocks[j])) or (j == len(blocks) and not complete):
+            for k in range(i, j):
+                runs[k] = True
+    return runs
+
+
+def kept_with_next(blocks: list[list[ET.Element]], complete: bool = True) -> list[bool]:
+    """Whether a deferred float may not land right after each block (``keepNext`` or a run)."""
+    runs = callout_runs(blocks, complete)
+    return [_bound(block) or joined for block, joined in zip(blocks, runs)]
 
 
 def _is_data_table(element: ET.Element) -> bool:
@@ -260,6 +313,7 @@ def figure_units(body: ET.Element, breaking: frozenset[str] = frozenset()) -> li
         blocks: list[list[ET.Element]] = []
         pending: list[ET.Element] = []
         stop = None
+        barrier = False
         k = end + 1
         while k < len(children) and len(blocks) < LOOKAHEAD:
             node = children[k]
@@ -275,10 +329,15 @@ def figure_units(body: ET.Element, breaking: frozenset[str] = frozenset()) -> li
                 pending = []
             else:
                 stop = node if node.tag in {W + "p", W + "tbl"} else None
+                barrier = True
                 break
             k += 1
+        truncated = not barrier and k < len(children)
         units.append(
-            Unit(children[start : end + 1], child, caption, chain, lead, blocks, stop, kind)
+            Unit(
+                children[start : end + 1], child, caption, chain, lead, blocks, stop, kind,
+                complete=not truncated,
+            )
         )
     return units
 
@@ -384,15 +443,20 @@ def decide(
     splits: list[bool] | None = None,
     whole: list[bool] | None = None,
     page_end: float | None = None,
+    runs: list[bool] | None = None,
 ) -> Shrink | Defer | None:
     """Choose an action from measured positions (points from the page top).
 
     ``page_end`` is where the text of the float's page ends; it measures the last
     block on that page when the block cannot break across pages (``whole``).
+    ``runs`` marks the blocks joined to the next one in a run of callouts (they
+    are also ``bound``): when the first callout of a run fits the gap, the float
+    moves after the whole run and the rest of the run starts the next page.
     """
     body = bottom - top
     splits = splits if splits is not None else [False] * len(bound)
     whole = whole if whole is not None else [False] * len(bound)
+    runs = runs if runs is not None else [False] * len(bound)
     page = group[0]
     if page < 2 or caption[0] != page or image[0] != page:
         return None
@@ -438,7 +502,27 @@ def decide(
         if not bound[k - 1]:
             best = k
     moved_end = blocks[best][1] if best < len(blocks) and blocks[best][0] == page else page_end
-    if best and moved_end is not None and moved_end - blocks[0][1] >= MIN_MOVE * body:
+    filled = moved_end - blocks[0][1] if best and moved_end is not None else 0.0
+    # A run of callouts that starts on the page: its first callout fills the gap
+    # and the float goes after the whole run instead of in front of it.
+    start = next((k for k in range(best, min(len(runs), len(blocks))) if runs[k]), None)
+    if start is not None and blocks[start][0] == page and whole[start]:
+        after = start + 1  # the spacer or callout that follows the first callout
+        end_top = None
+        if after < len(blocks):
+            end_top = blocks[after][1] if blocks[after][0] == page else page_end
+        last = start
+        while last < len(runs) and runs[last]:
+            last += 1
+        if (
+            end_top is not None
+            and last < len(runs)  # the run ends inside the lookahead
+            and not bound[last]  # and its last callout is not kept with what follows
+            and chain + end_top - blocks[0][1] <= room - SAFETY
+            and end_top - blocks[0][1] > filled
+        ):
+            best, filled = last + 1, end_top - blocks[0][1]
+    if best and filled >= MIN_MOVE * body:
         return Defer(best)
     return shrink
 
@@ -612,7 +696,8 @@ def _place(
                     figure_height=height,
                     natural=natural,
                     blocks=tops,
-                    bound=[_bound(block) for block in unit.blocks],
+                    bound=kept_with_next(unit.blocks, unit.complete),
+                    runs=callout_runs(unit.blocks, unit.complete),
                     splits=[_splits(block) for block in unit.blocks],
                     whole=[_whole(block) for block in unit.blocks],
                     page_end=max(

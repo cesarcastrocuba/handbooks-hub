@@ -10,14 +10,17 @@ import xml.etree.ElementTree as ET
 from zipfile import ZipFile
 
 from handbook_toolkit.docx_figure_place import (
+    LOOKAHEAD,
     Defer,
     Shrink,
     apply_defer,
     apply_shrink,
+    callout_runs,
     caption_bottom,
     decide,
     destination_positions,
     figure_units,
+    kept_with_next,
     page_break_styles,
     place_figures,
 )
@@ -67,6 +70,15 @@ def table(parent, keep_last=False):
     return t
 
 
+def callout(parent, text):
+    t = ET.SubElement(parent, W + "tbl")
+    ET.SubElement(ET.SubElement(t, W + "tblPr"), W + "tblStyle", {W + "val": "CalloutBox"})
+    row = ET.SubElement(t, W + "tr")
+    ET.SubElement(ET.SubElement(row, W + "trPr"), W + "cantSplit")
+    paragraph(ET.SubElement(row, W + "tc"), text)
+    return t
+
+
 def figure_section():
     """Heading, lead-in, bookmarked figure, three blocks, next heading."""
     body = ET.Element(W + "body")
@@ -101,6 +113,56 @@ class UnitTests(unittest.TestCase):
             [[n["first"]], [n["second"]], [n["tbl_start"], n["data"], n["tbl_end"]]],
         )
         self.assertIs(unit.stop, n["following"])
+
+    def test_a_float_never_lands_inside_a_run_of_callouts(self):
+        # Figure, example, pitfall and decision: the figure may stop after the example
+        # or after the decision, never between the pitfall and the decision.
+        body = ET.Element(W + "body")
+        paragraph(body, "1.1 Heading", "Heading2", keep=True)
+        image(body)
+        paragraph(body, "Figure 1.1: Caption", "ImageCaption")
+        example = paragraph(body, "Example.", "BodyText")
+        lone = paragraph(body)  # docx_post puts an empty spacer around each callout
+        pitfall = callout(body, "Common Pitfall")
+        spacers = [paragraph(body), paragraph(body, keep=True)]
+        decision = callout(body, "Decision & Trade-off")
+        after = paragraph(body, "Closing text.", "BodyText")
+        paragraph(body, "1.2 Next", "Heading2", keep=True)
+        (unit,) = figure_units(body)
+        self.assertTrue(unit.complete)
+        self.assertEqual(
+            [block[0] for block in unit.blocks], [example, lone, pitfall, *spacers, decision, after]
+        )
+        self.assertEqual(
+            kept_with_next(unit.blocks), [False, False, True, True, True, False, False]
+        )
+        self.assertEqual(callout_runs(unit.blocks), [False, False, True, True, True, False, False])
+        # A callout followed by text, and a lone callout at the end, hold nothing.
+        self.assertEqual(kept_with_next(unit.blocks[:3]), [False, False, False])
+        # A lookahead that ends inside a run holds the run to its end.
+        self.assertEqual(kept_with_next(unit.blocks[:4], complete=False), [False, False, True, True])
+
+    def test_a_table_nested_in_a_callout_does_not_hold_the_callout(self):
+        # The options table of a decision keeps its rows together with keepNext;
+        # that does not keep the callout with the block after it.
+        body = ET.Element(W + "body")
+        decision = callout(body, "Decision & Trade-off")
+        cell = decision.find(W + "tr/" + W + "tc")
+        table(cell, keep_last=True)
+        paragraph(cell)
+        self.assertEqual(kept_with_next([[decision]]), [False])
+        paragraph(cell, keep=True)
+        self.assertEqual(kept_with_next([[decision]]), [True])
+
+    def test_a_lookahead_cut_by_its_length_is_not_complete(self):
+        body = ET.Element(W + "body")
+        image(body)
+        paragraph(body, "Figure 1.1: Caption", "ImageCaption")
+        for i in range(LOOKAHEAD + 1):
+            paragraph(body, f"Text {i}.", "BodyText")
+        self.assertFalse(figure_units(body)[0].complete)
+        body.remove(list(body)[-1])
+        self.assertTrue(figure_units(body)[0].complete)
 
     def test_figure_whose_bookmark_closes_late_is_left_alone(self):
         body, n = figure_section()
@@ -271,6 +333,36 @@ class DecisionTests(unittest.TestCase):
         self.assertIsNone(self.decide(page_end=720.0, **fits))  # 30 + 290 > 290
         self.assertIsNone(self.decide(page_end=650.0, **{**fits, "whole": [False]}))
         self.assertIsNone(self.decide(page_end=650.0, **{**fits, "bound": [True]}))
+
+    def test_a_float_stops_in_front_of_a_callout_run_it_cannot_pass(self):
+        # Example (60 pt), pitfall (70 pt), decision (300 pt) after a 30 pt chain:
+        # the example and the pitfall fit the 290 pt, the decision does not. Held
+        # together, the figure stops after the example, not between the callouts.
+        blocks = [(5, 430.0), (5, 490.0), (5, 560.0), (6, 70.0)]
+        free = dict(natural=None, blocks=blocks, whole=[False, True, True])
+        self.assertEqual(self.decide(bound=[False, False, False], **free), Defer(2))
+        self.assertEqual(self.decide(bound=[False, True, False], **free), Defer(1))
+
+    def test_a_float_goes_after_a_callout_run_whose_first_callout_fits(self):
+        # Same page: the pitfall fits the gap, the decision does not. The figure
+        # moves after the decision, which starts the next page; the pitfall fills
+        # the gap and stays next to its decision.
+        blocks = [(5, 430.0), (5, 490.0), (5, 560.0), (6, 70.0)]
+        run = dict(natural=None, blocks=blocks, whole=[False, True, True], page_end=700.0)
+        self.assertEqual(self.decide(bound=[False, True, False], runs=[False, True, False], **run),
+                         Defer(3))
+        # The decision is kept with what follows: the figure stays in front of the run.
+        self.assertEqual(self.decide(bound=[False, True, True], runs=[False, True, False], **run),
+                         Defer(1))
+        # The pitfall does not fit the gap either.
+        self.assertEqual(
+            self.decide(bound=[False, True, False], runs=[False, True, False],
+                        previous_bottom=620.0, **run),
+            Defer(1),
+        )
+        # The run continues past the lookahead.
+        self.assertEqual(self.decide(bound=[False, True, True], runs=[False, True, True], **run),
+                         Defer(1))
 
     def test_small_gaps_and_groups_not_at_the_top_are_left_alone(self):
         self.assertIsNone(self.decide(previous_bottom=700.0))

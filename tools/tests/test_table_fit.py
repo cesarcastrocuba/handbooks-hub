@@ -292,6 +292,60 @@ class TableFitTests(unittest.TestCase):
             self.assertNotIn("#handbook-float-group(", result.stdout)
             self.assertIn("#figure(", result.stdout)
 
+    @unittest.skipUnless(shutil.which("quarto"), "Quarto pandoc required")
+    def test_a_callout_followed_by_a_callout_sticks_to_it(self):
+        leadins = (
+            Path(__file__).resolve().parents[1]
+            / "src/handbook_toolkit/render_data/filters/float-leadins.lua"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "callouts.md"
+            source.write_text(
+                "::: {.callout-warning title=\"Common Pitfall\"}\nPITFALL\n:::\n\n"
+                "::: {.callout-important title=\"Decision\"}\nDECISION\n:::\n\n"
+                "Closing text.\n\n"
+                "::: {.callout-tip title=\"Key Takeaway\"}\nLONE\n:::\n"
+            )
+            result = subprocess.run(
+                ["quarto", "pandoc", "-f", "markdown", "-t", "typst",
+                 "--lua-filter", str(leadins), str(source)],
+                capture_output=True, text=True, check=True,
+            ).stdout
+            self.assertEqual(result.count("#block(sticky: true)["), 1)
+            self.assertLess(result.index("#block(sticky: true)["), result.index("PITFALL"))
+            self.assertLess(result.index("PITFALL"), result.index("]", result.index("PITFALL")))
+            self.assertLess(result.index("]", result.index("PITFALL")), result.index("DECISION"))
+
+    @unittest.skipUnless(shutil.which("quarto") and shutil.which("pdftotext"),
+                         "native pagination tools required")
+    def test_a_floating_figure_never_lands_between_sticky_callouts(self):
+        # Without sticky, the pitfall ends page 1 and the figure that floats to the
+        # top of page 2 sits between it and the decision.
+        def pages_for(pitfall):
+            with tempfile.TemporaryDirectory() as tmp:
+                source = Path(tmp) / "run.typ"
+                source.write_text(
+                    "#set page(height: 300pt, width: 300pt, margin: 20pt)\n#set text(size: 9pt)\n"
+                    "#let box(body) = block(breakable: true, fill: luma(230), width: 100%, inset: 6pt, body)\n"
+                    "#lorem(100)\n"
+                    "#figure(rect(height: 150pt, width: 80%), caption: [CAPTIONTEXT], placement: auto)\n"
+                    "#lorem(30)\n" + pitfall + "\n#box[DECISION #lorem(40)]\n"
+                )
+                subprocess.run(["quarto", "typst", "compile", str(source)], check=True,
+                               capture_output=True)
+                text = subprocess.check_output(
+                    ["pdftotext", str(Path(tmp) / "run.pdf"), "-"], text=True
+                ).split("\f")
+            return {key: next(i for i, page in enumerate(text) if key in page)
+                    for key in ("PITFALL", "CAPTIONTEXT", "DECISION")}
+
+        loose = pages_for("#box[PITFALL #lorem(25)]")
+        self.assertLess(loose["PITFALL"], loose["CAPTIONTEXT"])  # the defect
+        self.assertEqual(loose["CAPTIONTEXT"], loose["DECISION"])
+        held = pages_for("#block(sticky: true)[#box[PITFALL #lorem(25)]]")
+        self.assertEqual(held["PITFALL"], held["DECISION"])
+        self.assertLessEqual(held["CAPTIONTEXT"], held["PITFALL"])
+
     @unittest.skipUnless(shutil.which("quarto") and shutil.which("pdftotext"),
                          "native pagination tools required")
     def test_template_floats_figures_and_lets_text_fill_the_page(self):
