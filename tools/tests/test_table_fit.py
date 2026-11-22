@@ -270,6 +270,7 @@ class TableFitTests(unittest.TestCase):
             self.assertNotIn("#block[", result.stdout)
             self.assertIn("#figure(", result.stdout)
 
+    @unittest.skipUnless(shutil.which("quarto"), "Quarto pandoc required")
     def test_figures_are_not_grouped_because_they_float(self):
         # A grouped figure moved to the next page with its lead-in and left the
         # page part empty; a floating figure lets the following text fill it.
