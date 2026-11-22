@@ -128,6 +128,20 @@ def _float_kind(element: ET.Element) -> str | None:
     return None
 
 
+def _whole(block: list[ET.Element]) -> bool:
+    """A block that Word keeps on one page: a table whose rows do not split, or a kept paragraph."""
+    element = next(node for node in block if node.tag in {W + "p", W + "tbl"})
+    if element.tag == W + "p":
+        keep = element.find(W + "pPr/" + W + "keepLines")
+        return keep is not None and keep.get(W + "val", "1").lower() not in OFF
+    rows = element.findall(W + "tr")
+    return bool(rows) and all(
+        (flag := row.find(W + "trPr/" + W + "cantSplit")) is not None
+        and flag.get(W + "val", "1").lower() not in OFF
+        for row in rows
+    ) and (len(rows) == 1 or _kept_whole(element))
+
+
 def _splits(block: list[ET.Element]) -> bool:
     """A plain paragraph that Word may break across pages."""
     element = next(node for node in block if node.tag in {W + "p", W + "tbl"})
@@ -157,11 +171,14 @@ def page_break_styles(styles: bytes | None) -> frozenset[str]:
         if flag is not None:
             own[identifier] = flag.get(W + "val", "1").lower() not in OFF
 
-    def breaks(identifier: str, seen: frozenset[str] = frozenset()) -> bool:
-        if identifier in own:
-            return own[identifier]
-        parent = parents.get(identifier)
-        return bool(parent) and parent not in seen and breaks(parent, seen | {identifier})
+    def breaks(identifier: str) -> bool:
+        seen = set()
+        while identifier not in own:
+            if identifier in seen or identifier not in parents:
+                return False  # a cycle or the root of the chain without a flag
+            seen.add(identifier)
+            identifier = parents[identifier]
+        return own[identifier]
 
     return frozenset(identifier for identifier in parents.keys() | own.keys() if breaks(identifier))
 
@@ -365,10 +382,17 @@ def decide(
     blocks: list[tuple[int, float]],
     bound: list[bool],
     splits: list[bool] | None = None,
+    whole: list[bool] | None = None,
+    page_end: float | None = None,
 ) -> Shrink | Defer | None:
-    """Choose an action from measured positions (points from the page top)."""
+    """Choose an action from measured positions (points from the page top).
+
+    ``page_end`` is where the text of the float's page ends; it measures the last
+    block on that page when the block cannot break across pages (``whole``).
+    """
     body = bottom - top
     splits = splits if splits is not None else [False] * len(bound)
+    whole = whole if whole is not None else [False] * len(bound)
     page = group[0]
     if page < 2 or caption[0] != page or image[0] != page:
         return None
@@ -391,8 +415,18 @@ def decide(
         return shrink
     chain = image[1] - group[1]
     best = 0
-    for k in range(1, len(blocks)):
-        if blocks[k][0] != page:
+    for k in range(1, len(blocks) + 1):
+        if k == len(blocks) or blocks[k][0] != page:
+            # The last block on the page ends where the page's text ends, when it
+            # cannot continue on the next page.
+            if (
+                k <= len(bound)
+                and page_end is not None
+                and whole[k - 1]
+                and not bound[k - 1]
+                and chain + page_end - blocks[0][1] <= room - SAFETY
+            ):
+                best = k
             break
         moved = chain + blocks[k][1] - blocks[0][1]
         if moved > room - SAFETY:
@@ -403,7 +437,8 @@ def decide(
             break
         if not bound[k - 1]:
             best = k
-    if best and blocks[best][1] - blocks[0][1] >= MIN_MOVE * body:
+    moved_end = blocks[best][1] if best < len(blocks) and blocks[best][0] == page else page_end
+    if best and moved_end is not None and moved_end - blocks[0][1] >= MIN_MOVE * body:
         return Defer(best)
     return shrink
 
@@ -579,6 +614,10 @@ def _place(
                     blocks=tops,
                     bound=[_bound(block) for block in unit.blocks],
                     splits=[_splits(block) for block in unit.blocks],
+                    whole=[_whole(block) for block in unit.blocks],
+                    page_end=max(
+                        (b for a, b in words(page) if a >= top - 1 and b <= bottom + 1), default=None
+                    ),
                 )
                 if action is not None:
                     actions.append((unit, action, extents, page))

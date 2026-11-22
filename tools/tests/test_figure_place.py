@@ -139,6 +139,33 @@ class UnitTests(unittest.TestCase):
         self.assertEqual(figure_units(body, breaking)[0].blocks, [[n["first"]]])
         self.assertEqual(len(figure_units(body)[0].blocks), 3)  # without styles it is a plain block
 
+    def test_a_direct_no_break_overrides_a_page_starting_style(self):
+        body, n = figure_section()
+        properties = n["second"].find(W + "pPr")
+        properties.find(W + "pStyle").set(W + "val", "ChapterTitle")
+        ET.SubElement(properties, W + "pageBreakBefore", {W + "val": "0"})
+        self.assertEqual(len(figure_units(body, frozenset({"ChapterTitle"}))[0].blocks), 3)
+
+    def test_page_break_styles_survive_cycles_long_chains_and_missing_styles(self):
+        self.assertEqual(page_break_styles(None), frozenset())
+        w = f'xmlns:w="{NS["w"]}"'
+        cycle = (
+            f'<w:styles {w}>'
+            '<w:style w:type="paragraph" w:styleId="A"><w:basedOn w:val="B"/></w:style>'
+            '<w:style w:type="paragraph" w:styleId="B"><w:basedOn w:val="A"/></w:style>'
+            '<w:style w:type="paragraph" w:styleId="C"><w:basedOn w:val="C"/></w:style>'
+            '<w:style w:type="paragraph" w:styleId="D"><w:basedOn w:val="Missing"/></w:style>'
+            "</w:styles>"
+        )
+        self.assertEqual(page_break_styles(cycle.encode()), frozenset())
+        chain = "".join(
+            f'<w:style w:type="paragraph" w:styleId="S{i}"><w:basedOn w:val="S{i + 1}"/></w:style>'
+            for i in range(3000)
+        )
+        flagged = '<w:style w:type="paragraph" w:styleId="S3000"><w:pPr><w:pageBreakBefore/></w:pPr></w:style>'
+        styles = f"<w:styles {w}>{chain}{flagged}</w:styles>".encode()
+        self.assertEqual(len(page_break_styles(styles)), 3001)
+
 
 class TableUnitTests(unittest.TestCase):
     def data_table(self, parent, kept=True):
@@ -234,6 +261,16 @@ class DecisionTests(unittest.TestCase):
         self.assertIsNone(
             self.decide(natural=None, blocks=blocks, bound=[False, False], splits=[False, False])
         )
+
+    def test_the_last_block_on_the_page_is_measured_to_the_end_of_the_text(self):
+        # A callout ends the figure's page; the next block starts page 6. It never
+        # breaks across pages, so it ends where the page's text ends.
+        blocks = [(5, 430.0), (6, 70.0)]
+        fits = dict(natural=None, blocks=blocks, bound=[False], whole=[True])
+        self.assertEqual(self.decide(page_end=650.0, **fits), Defer(1))  # 30 + 220 <= 290
+        self.assertIsNone(self.decide(page_end=720.0, **fits))  # 30 + 290 > 290
+        self.assertIsNone(self.decide(page_end=650.0, **{**fits, "whole": [False]}))
+        self.assertIsNone(self.decide(page_end=650.0, **{**fits, "bound": [True]}))
 
     def test_small_gaps_and_groups_not_at_the_top_are_left_alone(self):
         self.assertIsNone(self.decide(previous_bottom=700.0))

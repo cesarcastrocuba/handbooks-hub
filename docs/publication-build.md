@@ -171,15 +171,16 @@ A figure that does not fit the rest of a page must not leave that page part empt
   `docx_figure_place.place_figures` runs after the table measurement and before the page-number
   probe. It paginates the document in LibreOffice with the staged fonts and finds each float group
   (a figure or a kept-whole data table, its caption and the heading or lead-in kept with it) that
-  starts a page below a gap of at least 15% of the text block. It then moves the blocks that follow
-  the float in its section, start on the float's page and fit the gap in front of it; a plain
-  paragraph that crosses the foot of the page also moves, because it breaks across the pages. When nothing can move, a figure is
-  scaled down just enough to fit the gap, never below 75% of its natural raster size; tables are
-  never scaled. A float never passes a heading, a section or page break (including a paragraph whose
-  `pageBreakBefore` comes from its style) or another float, so
-  captions keep their numeric order, and a block kept with the next one is never separated from
-  it. Each action shifts the later page breaks, so actions of one pass are at least three pages
-  apart and the document is measured again, up to four passes.
+  starts a page below a gap of at least 15% of the text block. It then moves in front of the float
+  the blocks that follow it in its section, start on its page and fit the gap. The last block on the
+  page counts when it cannot break across pages (a callout or a kept-whole table); it is measured to
+  the end of the page's text. A plain paragraph that crosses the foot of the page also moves,
+  because it breaks across the pages. When nothing can move, a figure is scaled down just enough to
+  fit the gap, never below 75% of its natural raster size; tables are never scaled. A float never
+  passes a heading, a section or page break (including a paragraph whose `pageBreakBefore` comes
+  from its style) or another float, so captions keep their numeric order, and a block kept with the
+  next one is never separated from it. Each action shifts the later page breaks, so actions of one
+  pass are at least three pages apart and the document is measured again, up to four passes.
   `build.tool_versions.docx_figure_placement` records the counts. Desktop Word paginates slightly
   differently from LibreOffice; the Owner's Word check remains the acceptance test.
 
