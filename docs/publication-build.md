@@ -189,9 +189,11 @@ lets a callout continue on the next page.
   first data row.
   - In Typst the callout block is `breakable: true`, its title is a `sticky` block, and
     `handbook-in-callout` lets `handbook-fit-table` break the table.
-  - In Word the callout row has no `cantSplit` and its title has `keepNext`.
-    `docx_tables.keep_callout_tables` marks the inner rows, and the table measurement and the
-    lead-in chain skip callout tables.
+  - In Word the callout box is a one-column table with one row per block (title, paragraph,
+    list, table), with no `cantSplit`, so it breaks between blocks; the title has `keepNext`. A
+    single breakable row was dragged whole to the next page by LibreOffice whenever a keep chain
+    (heading, lead-in, figure) followed it. `docx_tables.keep_callout_tables` marks the inner
+    table rows, and the table measurement and the lead-in chain skip callout tables.
 - **Remaining gaps.** Tall diagrams that leave a gap are redrawn in the book (a later edition).
   Desktop Word paginates slightly differently from LibreOffice; the Owner's Word check remains the
   acceptance test.

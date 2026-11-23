@@ -279,3 +279,24 @@ Tests:
 - `test_reading_site.py`: the pixel is sampled with the reveal frozen at half.
 - Mutations fail the new tests: `cantSplit` back on the box row, the callout state removed, the
   floor at 0.1, the CSS rule removed. The five tests of the removed float rules are deleted.
+
+### Measured on the CI preview of `600fb9e` (book `1dee3a4`)
+
+- **PDF:** 549 pages. Figures away from their citing text: 40 → 4 (8.2, 15.3, 18.3, 19.3).
+  All four follow the manuscript order: 8.2, 18.3 and 19.3 come before the sentence that cites
+  them, and in 15.3 a table sits between the citation and the figure. None was moved by placement. Pitfalls and decisions opening a page after a gap: 0.
+- **Word (LibreOffice render):** decisions opening a page after a gap rose from 39 to 54. With a
+  single breakable row, LibreOffice moved the whole decision to the next page whenever a keep
+  chain followed it, for example the 1.2 heading, its lead-in and Figure 1.2 after the 1.1.5
+  decision. On a slice of the real DOCX that starts at the 1.1.5 pitfall:
+  - `cantSplit` keeps the decision on the pitfall's page;
+  - a breakable single row moves it;
+  - removing the chain after it keeps it;
+  - removing the spacer `keepNext`, every `keepNext` inside the box, or the inner `cantSplit`
+    and `tblHeader` does not help.
+
+  A synthetic document did not reproduce the drag, so no LibreOffice test pins it.
+- **Fix:** one row per block. Applied to the whole preview DOCX and re-rendered: 0 pitfalls and
+  0 decisions open a page after a gap of 60 pt or more (was 9 and 39 in the `e3c9e9e` preview),
+  no callout title is alone at a page foot, 0 figures are away from their citing text, and the
+  page count falls from 699 to 690.

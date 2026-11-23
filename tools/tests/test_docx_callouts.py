@@ -41,6 +41,7 @@ class CalloutBoxTests(unittest.TestCase):
         title = paragraph(body, "Common Pitfall", "CalloutWarningTitle")
         text = paragraph(body, "A warning.")
         _, box = boxed(body, title, text)
+        self.assertEqual(len(box.findall(W + "tr")), 2)  # one row per block
         self.assertIsNone(box.find(W + "tr/" + W + "trPr/" + W + "cantSplit"))
         self.assertIsNotNone(title.find(W + "pPr/" + W + "keepNext"))
         self.assertIsNone(text.find(W + "pPr/" + W + "keepNext"))
@@ -49,7 +50,9 @@ class CalloutBoxTests(unittest.TestCase):
         body = ET.Element(W + "body")
         title = paragraph(body, "Decision & Trade-off", "CalloutImportantTitle")
         inner = styled_table(body, rows=4)
-        document, _ = boxed(body, title, inner)
+        document, box = boxed(body, title, inner)
+        last_cell = box.findall(W + "tr")[-1].find(W + "tc")
+        self.assertEqual(list(last_cell)[-1].tag, W + "p")  # a cell ends with a paragraph
         self.assertEqual(candidates(document), [])  # never measured and kept whole
         self.assertEqual(keep_callout_tables(document), 1)
         rows = inner.findall(W + "tr")
