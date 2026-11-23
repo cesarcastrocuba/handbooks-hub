@@ -213,3 +213,69 @@ The manuscript order was intact. The Word deferral pass alone caused the movemen
   not asked for the Word rule there.
 - Gaps and lonely headings in Word return towards the pre-0081 numbers. The CI preview of this
   commit is the measurement; the Owner's Word check remains the acceptance test.
+
+## Fifth follow-up (Owner check of the `e3c9e9e` preview, 2026-11-23)
+
+The Owner found three problems:
+- **Word.** A Common Pitfall or a Decision & Trade-off starts a new page and leaves a large gap on
+  the page before (1.1.5, 1.2.13, 1.3.2, 2.1, 2.6, 2.13, 2.14, 6.2.3, 7.3.4, 8.1, 8.2.6). It
+  had shown up in several editions.
+- **PDF.** Figures are away from their description: Figure 1.4 is not right after 1.4, and the
+  same goes for Figures 2.1, 2.2 and others.
+- **HTML light theme (Chrome, Edge).** A figure shows white and then cream as it scrolls in.
+
+Causes, measured on the preview:
+- **Word.** Every callout was a one-row table marked `cantSplit`, and the table inside a
+  decision got `keepNext` on every row from the table measurement. A callout that did not fit
+  whole moved to the next page. On the LibreOffice render of the DOCX (audit script
+  `/home/ubuntu/ch7-recovery/audit/layout_audit.py`), 9 pitfalls and 39 decisions open a page
+  after a gap of at least 60 pt (25 of those gaps are at least 120 pt).
+- **PDF.** `placement: auto` floats. Measured: 40 of 131 figures sit away from the text that
+  cites them, either above it or more than 14 lines after it. In Word the count is 0. The PDF
+  callout was unbreakable too; only the floats around it hid its gaps.
+- **HTML.** The scroll reveal animates `opacity` on `main figure`. A translucent figure isolates
+  its raster, so the `mix-blend-mode: multiply` met a transparent backdrop instead of the canvas.
+  Reproduced in Playwright Chromium 148: the pixel is (254, 254, 253) mid-reveal against the
+  canvas (246, 241, 231).
+
+Owner decisions (2026-11-23):
+- Callouts may be split, so that at least the pitfall fills the page before.
+- The PDF uses the Word rule.
+- Redrawing the tall diagrams moves to a later edition.
+
+Change:
+- **Word.**
+  - The callout row is breakable, and its title has `keepNext`.
+  - `keep_callout_tables` keeps each inner row whole and the header row with the first data row.
+  - The table measurement and the lead-in chain skip callout tables.
+  - `decide()` no longer returns the 0.01 pt no-op `Shrink(1.0)` (review Minor 1); new cases
+    cover the `need >= figure_height` and image-page bounds (Minor 2).
+  - The report reads `figures scaled to fit page gaps: N`.
+- **PDF.**
+  - `placement: auto` is removed, along with the `place.flush` and `placement: top` filter rules.
+  - Every figure goes through `handbook-figure-group` with its heading and lead-in.
+  - The group measures the room after the text before it, from a zero-height marker block that
+    records its own position in a state. A bare metadata tag travels to the next page with the
+    group. A `query` for a labelled marker kept the table measurement of
+    `test_tables_figures_build` from converging ("a measured element did not stabilize"); the
+    state does not. It then applies the Word
+    rule: a gap of at least 15% of the body, and at least 75% of the natural size, read from the
+    PNG's pixel density through an image opener passed from the document.
+  - The callout block is breakable, its title is `sticky`, and a table inside it breaks between
+    rows (`handbook-in-callout`).
+- **HTML.** In the light theme, a figure holding a raster gets the canvas background, so the
+  multiply blends with the cream even while the figure is translucent. A figure inside a callout
+  keeps the tint.
+
+Tests:
+- `test_docx_callouts.py`: the box row breaks and the title keeps with the next line; inner rows
+  break only between rows; text before a callout is not chained to it; a LibreOffice case where
+  a pitfall starts in the gap in front of it.
+- `test_table_fit.py`:
+  - the filter groups every figure;
+  - four Typst cases: a figure that nearly fits is scaled and stays; a gap too small, or a
+    figure already at 0.78 of its natural size, moves unscaled; a figure that fits is untouched;
+  - a table inside a callout breaks between rows.
+- `test_reading_site.py`: the pixel is sampled with the reveal frozen at half.
+- Mutations fail the new tests: `cantSplit` back on the box row, the callout state removed, the
+  floor at 0.1, the CSS rule removed. The five tests of the removed float rules are deleted.

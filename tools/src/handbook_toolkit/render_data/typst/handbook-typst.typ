@@ -267,14 +267,13 @@
 #show table.cell: set block(breakable: false)
 #show table.cell: set text(hyphenate: false)
 #show table.cell: set par(justify: false)
-#import "handbook-render/typst/table-fit.typ": handbook-fit-table, handbook-fit-float, handbook-float-group
+#import "handbook-render/typst/table-fit.typ": handbook-fit-table, handbook-fit-float, handbook-float-group, handbook-figure-group, handbook-in-callout
 #show table: it => handbook-fit-table(it, hb-card-radius)
 
 // Figures -------------------------------------------------------------------
-// A figure floats to the top or bottom of the page, or of the next page when it
-// does not fit, and the text that follows it fills the page.
-#show figure.where(kind: "quarto-float-fig"): set figure(placement: auto)
-#show figure.where(kind: image): set figure(placement: auto)
+// A figure stays right after the text that introduces it (Owner decision
+// 2026-11-23, as in the Word edition); handbook-figure-group only scales one that
+// nearly fits the gap in front of it.
 
 // Captions -------------------------------------------------------------------
 #show figure.caption: it => align(center)[
@@ -307,9 +306,11 @@
   } else {
     (hb-callout-note-accent, hb-callout-note-tint)
   }
+  // A callout may continue on the next page so that it fills the page in front
+  // of it (Owner decision 2026-11-23); its title stays with the first line.
   block(
     width: 100%,
-    breakable: false,
+    breakable: true,
     fill: tint,
     stroke: (
       left: 4pt + accent,
@@ -322,11 +323,13 @@
     below: 10pt,
   )[
     #if "Note" not in label [
-      #text(weight: "bold", fill: accent)[#title]
+      #block(sticky: true)[#text(weight: "bold", fill: accent)[#title]]
       #v(3pt)
     ]
     // Data tables keep the shared surface inside callouts.
     #set table(fill: (_, y) => if y == 0 { hb-accent-solid } else { hb-surface })
+    #handbook-in-callout.update(true)
     #body
+    #handbook-in-callout.update(false)
   ]
 }

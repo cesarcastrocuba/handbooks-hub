@@ -150,12 +150,15 @@ class DecisionTests(unittest.TestCase):
     def test_a_figure_that_fits_or_cannot_shrink_enough_is_left_alone(self):
         self.assertIsNone(self.decide(caption_end=300.0))  # already fits the gap
         self.assertIsNone(self.decide(previous_bottom=700.0, figure_height=60.0))
+        self.assertIsNone(self.decide(figure_height=40.0))  # needs 52 pt of a 40 pt figure
+        self.assertIsNone(self.decide(caption_end=360.0001))  # 0.0001 pt short: scale rounds to 1
 
     def test_small_gaps_and_groups_not_at_the_top_are_left_alone(self):
         self.assertIsNone(self.decide(previous_bottom=700.0))
         self.assertIsNone(self.decide(group=(5, 200.0)))
         self.assertIsNone(self.decide(group=(1, 70.0)))
         self.assertIsNone(self.decide(caption=(6, 70.0)))
+        self.assertIsNone(self.decide(image=(6, 100.0)))
         self.assertIsNone(self.decide(previous_bottom=None))
 
     def test_caption_bottom_stops_at_the_paragraph_gap(self):
@@ -288,7 +291,7 @@ class LibreOfficeTests(unittest.TestCase):
             _package(path, self.section(5400000, 5400000))
             before = body_order(path)
             report = place_figures(path, FONTS, required=True)
-            self.assertIn("0 figures scaled", report["docx_figure_placement"])
+            self.assertIn("figures scaled to fit page gaps: 0", report["docx_figure_placement"])
             self.assertIn("no figure or table moved", report["docx_figure_placement"])
             self.assertEqual(body_order(path), before)
 
@@ -298,7 +301,7 @@ class LibreOfficeTests(unittest.TestCase):
             _package(path, self.section(NEAR_CX, NEAR_CY, fill=NEAR_FILL))
             before = body_order(path)
             report = place_figures(path, FONTS, required=True)
-            self.assertIn("1 figures scaled", report["docx_figure_placement"])
+            self.assertIn("figures scaled to fit page gaps: 1", report["docx_figure_placement"])
             self.assertEqual(body_order(path), before)
             with ZipFile(path) as package:
                 extent = ET.fromstring(package.read("word/document.xml")).find(".//" + WP + "extent")

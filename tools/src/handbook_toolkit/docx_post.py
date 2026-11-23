@@ -110,8 +110,16 @@ def _wrap_callout_box(
     column = ET.SubElement(grid, f"{word}gridCol")
     column.set(f"{word}w", str(width))
     row = ET.SubElement(table, f"{word}tr")
-    row_properties = ET.SubElement(row, f"{word}trPr")
-    ET.SubElement(row_properties, f"{word}cantSplit")
+    # The row may break across pages, so a pitfall or decision fills the page
+    # in front of it instead of moving whole (Owner decision 2026-11-23); the
+    # title keeps with the first body line.
+    if group and group[0].tag == f"{word}p":
+        title = group[0].find(f"./{word}pPr")
+        if title is None:
+            title = ET.Element(f"{word}pPr")
+            group[0].insert(0, title)
+        if title.find(f"./{word}keepNext") is None:
+            ET.SubElement(title, f"{word}keepNext")
     cell = ET.SubElement(row, f"{word}tc")
     cell_properties = ET.SubElement(cell, f"{word}tcPr")
     cell_width = ET.SubElement(cell_properties, f"{word}tcW")
@@ -136,8 +144,9 @@ def _style_docx_callouts(root: ET.Element, word: str) -> None:
 
     Paragraph borders cannot align across body paragraphs and list items: Word
     draws them at each paragraph's indent, so the left rule and the box edges
-    drift. A one-cell table owns the edge, keeps the group together with
-    ``cantSplit`` and lets the cell shading carry the palette tint.
+    drift. A one-cell table owns the edge and lets the cell shading carry the
+    palette tint. Its row may break across pages: the title keeps with the
+    next line, and a table inside breaks only between rows.
     """
 
     values = design.docx_values()

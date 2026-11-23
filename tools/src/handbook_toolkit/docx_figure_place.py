@@ -208,10 +208,11 @@ def decide(
     need = (caption_end - group[1]) - room + SAFETY
     if need <= 0 or natural is None or need >= figure_height:
         return None
-    scale = (figure_height - need) / figure_height
-    if natural * scale < MIN_NATURAL:
+    scale = round((figure_height - need) / figure_height, 4)
+    # A shortfall below rounding would be a no-op that still uses up a pass's spacing.
+    if scale >= 1 or natural * scale < MIN_NATURAL:
         return None
-    return Shrink(round(scale, 4))
+    return Shrink(scale)
 
 
 def _natural_ratio(image: ET.Element, members: dict[str, bytes], targets: dict[str, str]) -> tuple[float | None, list[ET.Element]]:
@@ -369,7 +370,7 @@ def _place(
                     last_page = page
     return {
         "docx_figure_placement": (
-            f"{shrunk} figures scaled to fit page gaps; no figure or table moved "
+            f"figures scaled to fit page gaps: {shrunk}; no figure or table moved "
             f"({measured} LibreOffice passes)"
         )
     }

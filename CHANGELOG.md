@@ -7,16 +7,14 @@ semantic versioning once the toolkit is published.
 
 ### Changed
 
-- Figure placement fills the pages that a figure used to leave part empty (change `0081`, from the
-  Owner's Word check of the Solutions Architecture Handbook 6.0.0 preview). PDF figures float to the
-  top or bottom of a page and the text after them fills the page; the lead-in filter groups only
-  tables. In the Word edition nothing moves: figures and tables stay right after the text that
-  introduces them, and a LibreOffice-measured pass only scales a figure that nearly fits the gap
-  in front of it, never below 75% of its natural size;
-  `build.tool_versions.docx_figure_placement` records what it did. In the PDF the figure of a
-  section is flushed before a run of callouts (a pitfall and its decision) and floats to the top,
-  which leaves one Typst case where a top float of the next section rises above a decision that
-  starts a page.
+- Figures stay right after the text that introduces them in the PDF and Word editions, and
+  callouts may continue on the next page (change `0081`, from the Owner's checks of the Solutions
+  Architecture Handbook 6.0.0 preview). PDF figures no longer float. In both editions a figure is
+  scaled only when it nearly fits the gap in front of it, never below 75% of its natural size.
+  `build.tool_versions.docx_figure_placement` records the Word count and `<handbook-figure-fit>`
+  records the PDF decisions. A pitfall or a decision fills the page in front of it instead of
+  moving whole: its title keeps with the first line, and its table breaks only between rows. In the
+  HTML light theme a raster figure no longer shows white while the scroll reveal fades it in.
 
 ### Fixed
 

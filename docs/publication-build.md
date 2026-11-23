@@ -158,34 +158,43 @@ passes the DOCX through the structural artifact gate. Desktop Word must still be
 Owner acceptance; it was not opened by an agent. See [artifact inspection](artifact-inspection.md)
 for the validator boundary.
 
-## Figure placement (change 0081)
+## Figure and callout placement (change 0081)
 
-A figure stays with the text that introduces it. Within that rule the build reduces the pages
-that a figure leaves part empty.
+A figure stays right after the text that introduces it, in the PDF and in Word (Owner decisions of
+2026-11-22 and 2026-11-23: a figure away from its description is a defect, a part-empty page is
+not). Within that rule the build only scales a figure that nearly fits the gap in front of it, and
+lets a callout continue on the next page.
 
-- **PDF.** Figures float (`placement: auto` for Quarto figure floats and plain image figures): Typst
-  places each one at the top or bottom of the page, or of the next page when it does not fit, and the
-  text after it fills the page. A figure can therefore appear after the next heading, as in a typeset
-  book. The float-leadins filter no longer groups a figure with its heading and lead-in; tables keep
-  their lead-in group. A figure never floats between the callouts of a run (a pitfall and its
-  decision): the filter puts `#place.flush()` in front of the run, so a figure still pending there
-  is placed first, and a figure whose section ends in a run floats to the top of a page
-  (`placement: top`), so it cannot sit at the foot of the page below the first callout. Typst can
-  still raise a top float of the next section above a decision that starts a page (one case in the
-  Solutions Architecture Handbook PDF).
-- **Word.** Nothing moves: every figure and every table stays right after the text that
-  introduces it, in the author's order (Owner decision of 2026-11-22: a figure away from its
-  description is a defect, a part-empty page is not). Word cannot float an inline figure, so a
-  figure that does not fit the rest of a page starts the next one with its heading or lead-in.
-  `docx_figure_place.place_figures` runs after the table measurement and before the page-number
-  probe. It paginates the document in LibreOffice with the staged fonts, finds each figure group
-  (the figure, its caption and the heading or lead-in kept with it) that starts a page below a gap
-  of at least 15% of the text block, and scales the figure down just enough to fit the gap, never
-  below 75% of its natural raster size. Tables are never scaled. A scaled figure shifts the later
-  page breaks, so the scaled figures of one pass are at least three pages apart and the document is
-  measured again, up to four passes. `build.tool_versions.docx_figure_placement` records the count.
-  The remaining gaps are closed in the book by redrawing tall diagrams. Desktop Word paginates
-  slightly differently from LibreOffice; the Owner's Word check remains the acceptance test.
+- **Scaling rule, shared by both editions.** A figure group (the figure, its caption and the
+  heading or short lead-in kept with it) that would start the next page below a gap of at least 15%
+  of the text block is scaled down just enough to fit the gap, never below 75% of its natural
+  raster size (the PNG's pixel density). Tables are never scaled. The constants live in
+  `docx_figure_place.py` and `table-fit.typ` and change together.
+- **PDF.** Figures do not float. The float-leadins filter wraps every figure in
+  `handbook-figure-group` (`table-fit.typ`) with its heading and short lead-in. The group measures
+  the room left after the text before it from a zero-height marker block that records its position
+  in a state (a `query` for it kept the table measurement from converging), applies the scaling rule
+  and records each decision as `<handbook-figure-fit>` metadata. The filter passes
+  `open: p => image(p, alt: "handbook-natural")` from the document, so that an image path resolves
+  from the document when the group measures the natural size. Tables keep `handbook-float-group`.
+- **Word.** Nothing moves. `docx_figure_place.place_figures` runs after the table measurement and
+  before the page-number probe. It paginates the document in LibreOffice with the staged fonts and
+  applies the scaling rule. A scaled figure shifts the later page breaks, so the scaled figures of
+  one pass are at least three pages apart and the document is measured again, up to four passes.
+  `build.tool_versions.docx_figure_placement` records the count. Word cannot float an inline
+  figure, so a figure that does not fit starts the next page with its heading or lead-in.
+- **Callouts.** A callout (a pitfall, a decision, a takeaway) may continue on the next page, so it
+  fills the page in front of it instead of moving whole and leaving a gap. Its title keeps with the
+  first line. A table inside a callout breaks only between rows, and its header row keeps with the
+  first data row.
+  - In Typst the callout block is `breakable: true`, its title is a `sticky` block, and
+    `handbook-in-callout` lets `handbook-fit-table` break the table.
+  - In Word the callout row has no `cantSplit` and its title has `keepNext`.
+    `docx_tables.keep_callout_tables` marks the inner rows, and the table measurement and the
+    lead-in chain skip callout tables.
+- **Remaining gaps.** Tall diagrams that leave a gap are redrawn in the book (a later edition).
+  Desktop Word paginates slightly differently from LibreOffice; the Owner's Word check remains the
+  acceptance test.
 
 ## Native HTML staging
 
