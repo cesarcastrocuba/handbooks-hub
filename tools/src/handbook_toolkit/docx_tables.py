@@ -15,54 +15,6 @@ from .docx_post import _write_package
 
 
 CAPTION_STYLES = {"TableCaption", "ImageCaption"}
-CALLOUT_STYLE = "CalloutBox"
-
-
-def _is_callout(table: ET.Element) -> bool:
-    style = table.find(W + "tblPr/" + W + "tblStyle")
-    return style is not None and style.get(W + "val") == CALLOUT_STYLE
-
-
-def _inside_callout(table: ET.Element, parents: dict[ET.Element, ET.Element]) -> bool:
-    node = parents.get(table)
-    while node is not None:
-        if node.tag == W + "tbl" and _is_callout(node):
-            return True
-        node = parents.get(node)
-    return False
-
-
-def keep_callout_tables(root: ET.Element) -> int:
-    """Let a table inside a callout break between rows, never inside one.
-
-    A callout may continue on the next page (Owner decision 2026-11-23). Its
-    table keeps each row whole and its header row with the first data row; it
-    is not kept whole, so a decision fills the page in front of it.
-    """
-    parents = {child: parent for parent in root.iter() for child in parent}
-    count = 0
-    for table in root.iter(W + "tbl"):
-        if not _inside_callout(table, parents):
-            continue
-        count += 1
-        for index, row in enumerate(table.findall(W + "tr")):
-            rp = row.find(W + "trPr")
-            if rp is None:
-                rp = ET.Element(W + "trPr")
-                row.insert(0, rp)
-            if rp.find(W + "cantSplit") is None:
-                ET.SubElement(rp, W + "cantSplit")
-            for p in row.iter(W + "p"):
-                pp = p.find(W + "pPr")
-                keep = pp.find(W + "keepNext") if pp is not None else None
-                if index == 0 and keep is None:
-                    if pp is None:
-                        pp = ET.Element(W + "pPr")
-                        p.insert(0, pp)
-                    ET.SubElement(pp, W + "keepNext")
-                elif index > 0 and keep is not None:
-                    pp.remove(keep)
-    return count
 
 
 def candidates(root: ET.Element) -> list[tuple[ET.Element, ET.Element | None, bool]]:
@@ -76,8 +28,6 @@ def candidates(root: ET.Element) -> list[tuple[ET.Element, ET.Element | None, bo
         look = table.find(W + "tblPr/" + W + "tblLook")
         if look is None or look.get(W + "firstRow") not in {"1", "true", "on"}:
             continue
-        if _inside_callout(table, parents):
-            continue  # a callout table breaks between rows; see keep_callout_tables
         children = list(parents[table])
         i = children.index(table)
         style = table.find(W + "tblPr/" + W + "tblStyle")
@@ -272,8 +222,6 @@ def keep_leadins(root: ET.Element) -> int:
             continue
         children = list(container)
         for i, item in enumerate(children):
-            if item.tag == W + "tbl" and _is_callout(item):
-                continue  # a callout box is text, not a float to keep a lead-in with
             is_float = item.find(".//" + W + "drawing") is not None
             if item.tag == W + "tbl":
                 is_float = is_float or any(
@@ -335,14 +283,12 @@ def keep_fitting_tables(
     unwrapped_tables, unwrapped_figures = unwrap_float_layouts(root)
     leads = keep_leadins(root)
     intros = keep_section_intros(root)
-    callout_tables = keep_callout_tables(root)
     lead_info = {
         "docx_float_layouts": (
             f"{unwrapped_tables} table and {unwrapped_figures} figure layout tables unwrapped"
         ),
         "docx_float_leadins": f"{leads} heading/lead-in paragraphs kept with floats",
         "docx_section_intros": f"{intros} section introductions kept with the next heading",
-        "docx_callout_tables": f"{callout_tables} callout tables break between rows",
     }
     available = shutil.which("soffice") and shutil.which("pdfinfo")
     if required and not available:

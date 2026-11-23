@@ -38,6 +38,7 @@ A = "{" + NS["a"] + "}"
 R = "{" + NS["r"] + "}"
 PACKAGE_RELATIONSHIP = "{" + NS["pr"] + "}Relationship"
 
+PRINT_SCALE = 0.85  # every raster figure prints at this fraction of its stated size
 MIN_GAP = 0.15  # act only when the previous page is at least this fraction empty
 MIN_NATURAL = 0.75  # never print a raster below this fraction of its natural size
 TOP_SLACK = 40.0  # points: the group must start within this distance of the top margin
@@ -257,6 +258,26 @@ def _geometry(root: ET.Element) -> tuple[float, float, float]:
     return height, int(margin.get(W + "top")) / 20, height - int(margin.get(W + "bottom")) / 20
 
 
+def print_scale(body: ET.Element, members: dict[str, bytes], targets: dict[str, str]) -> int:
+    """Print every raster figure at PRINT_SCALE of its stated size, never below MIN_NATURAL.
+
+    Owner request of 2026-11-23: the figures looked large. The natural-size floor
+    keeps diagram text at 8 pt or more, so a figure already printed near that
+    floor shrinks less or not at all. The PDF applies the same rule
+    (``handbook-scale-images`` in ``table-fit.typ``).
+    """
+    count = 0
+    for unit in figure_units(body):
+        natural, extents = _natural_ratio(unit.image, members, targets)
+        if not natural or not extents:
+            continue
+        factor = max(PRINT_SCALE, min(1.0, MIN_NATURAL / natural))
+        if factor < 1:
+            apply_shrink(extents, round(factor, 4))
+            count += 1
+    return count
+
+
 def place_figures(
     path: Path,
     fonts: Path,
@@ -302,6 +323,8 @@ def _place(
     from .docx_pages import export_pdf, font_environment
 
     page_height, top, bottom = _geometry(root)
+    body = root.find(W + "body")
+    printed = print_scale(body, members, targets) if body is not None else 0
     shrunk = measured = 0
     with tempfile.TemporaryDirectory(prefix="figure-place-", dir=path.parent) as tmp:
         directory = Path(tmp)
@@ -370,6 +393,7 @@ def _place(
                     last_page = page
     return {
         "docx_figure_placement": (
+            f"figures at print scale: {printed}; "
             f"figures scaled to fit page gaps: {shrunk}; no figure or table moved "
             f"({measured} LibreOffice passes)"
         )

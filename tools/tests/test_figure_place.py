@@ -10,6 +10,7 @@ import xml.etree.ElementTree as ET
 from zipfile import ZipFile
 
 from handbook_toolkit.docx_figure_place import (
+    PRINT_SCALE,
     Shrink,
     apply_shrink,
     caption_bottom,
@@ -17,6 +18,7 @@ from handbook_toolkit.docx_figure_place import (
     destination_positions,
     figure_units,
     place_figures,
+    print_scale,
 )
 from handbook_toolkit.build_types import BuildError
 from handbook_toolkit.docx_xml import NS, W
@@ -176,6 +178,31 @@ class ApplyTests(unittest.TestCase):
         self.assertEqual([(e.get("cx"), e.get("cy")) for e in extents], [("2000000", "1500000")] * 2)
 
 
+class PrintScaleTests(unittest.TestCase):
+    def scaled(self, cx, natural_px):
+        """A figure printed `cx` EMU wide from a PNG `natural_px` wide at `ppi`."""
+        body = ET.Element(W + "body")
+        picture = image(body, cx, cx // 2)
+        paragraph(body, "Figure 1.1: Caption", "ImageCaption")
+        members = {"word/media/a.png": png(natural_px, natural_px // 2)}
+        count = print_scale(body, members, {"rId9": "media/a.png"})
+        extent = picture.find(".//" + WP + "extent")
+        return count, int(extent.get("cx")) / cx
+
+    def test_every_figure_prints_at_the_print_scale(self):
+        natural = 4 * 914400  # 800 px at 200 ppi is 4 in
+        count, factor = self.scaled(natural, 800)
+        self.assertEqual(count, 1)
+        self.assertAlmostEqual(factor, PRINT_SCALE, places=3)
+
+    def test_the_natural_floor_limits_the_print_scale(self):
+        natural = 4 * 914400
+        _, factor = self.scaled(int(natural * 0.8), 800)  # already at 0.8 of natural size
+        self.assertAlmostEqual(factor, 0.75 / 0.8, places=3)
+        count, factor = self.scaled(int(natural * 0.7), 800)  # below the floor: untouched
+        self.assertEqual((count, factor), (0, 1.0))
+
+
 class MeasurementTests(unittest.TestCase):
     def test_destinations_carry_page_and_height(self):
         listing = (
@@ -300,7 +327,9 @@ class LibreOfficeTests(unittest.TestCase):
             path = Path(tmp) / "book.docx"
             _package(path, self.section(NEAR_CX, NEAR_CY, fill=NEAR_FILL))
             before = body_order(path)
-            report = place_figures(path, FONTS, required=True)
+            # The gap rule on its own: the print scale is tested separately.
+            with patch("handbook_toolkit.docx_figure_place.PRINT_SCALE", 1.0):
+                report = place_figures(path, FONTS, required=True)
             self.assertIn("figures scaled to fit page gaps: 1", report["docx_figure_placement"])
             self.assertEqual(body_order(path), before)
             with ZipFile(path) as package:

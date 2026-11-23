@@ -337,55 +337,30 @@ AFTERTEXT
                          for k in ("LEADTEXT", "INTRO", "CAPTIONTEXT", "AFTERTEXT")}
                 return where, ppi
 
-            unscaled = 500 / (0.6 * (21.0 - 2 * 2.2) / 2.54)
-            where, ppi = layout("16cm", "small.png")  # 42 pt short of a 232 pt gap
+            body = (21.0 - 2 * 2.2) / 2.54  # inches
+            unscaled = 500 / (0.6 * body)
+            big = 1000 / (0.6 * body)
+            where, ppi = layout("2cm", "small.png")  # fits: printed at the print scale
             self.assertEqual(where["CAPTIONTEXT"], 0)
-            self.assertGreater(ppi, unscaled * 1.1)
-            where, ppi = layout("19cm", "small.png")  # would need more than 0.75 of natural size
+            self.assertAlmostEqual(ppi, unscaled / 0.85, delta=2)
+            where, ppi = layout("17cm", "small.png")  # nearly fits: scaled further and stays
+            self.assertEqual(where["CAPTIONTEXT"], 0)
+            self.assertGreater(ppi, unscaled / 0.85 + 5)
+            where, ppi = layout("19cm", "small.png")  # would cross the natural floor: moves
             self.assertEqual((where["LEADTEXT"], where["INTRO"], where["CAPTIONTEXT"]), (0, 1, 1))
-            self.assertAlmostEqual(ppi, unscaled, delta=2)
-            where, ppi = layout("16cm", "big.png")  # already at 0.78 of its natural size
-            self.assertEqual(where["CAPTIONTEXT"], 1)
-            self.assertAlmostEqual(ppi, 1000 / (0.6 * (21.0 - 2 * 2.2) / 2.54), delta=2)
-            where, _ = layout("2cm", "small.png")
-            self.assertEqual(where["AFTERTEXT"], 0)
-            self.assertLess(where["CAPTIONTEXT"], where["AFTERTEXT"] + 1)
+            self.assertAlmostEqual(ppi, unscaled / 0.85, delta=2)
+            where, ppi = layout("2cm", "big.png")  # at 0.78 of natural size: only to the floor
+            self.assertAlmostEqual(ppi, big / (0.75 / 0.78), delta=3)
 
     @unittest.skipUnless(shutil.which("quarto") and shutil.which("pdftotext"),
                          "native pagination tools required")
-    def test_a_table_inside_a_callout_breaks_between_rows(self):
+    def test_a_callout_is_never_split(self):
         template = (
             Path(__file__).resolve().parents[1]
             / "src/handbook_toolkit/render_data/typst/handbook-typst.typ"
         ).read_text()
         callout = template[template.index("#let callout("):]
-        self.assertIn("breakable: true", callout[: callout.index("fill: tint")])
-        self.assertIn("block(sticky: true)", callout)
-        helper = (
-            Path(__file__).resolve().parents[1]
-            / "src/handbook_toolkit/render_data/typst/table-fit.typ"
-        )
-        with tempfile.TemporaryDirectory() as tmp:
-            source = Path(tmp) / "callout.typ"
-            source.write_text(
-                f'''#set page(paper:"a4",margin:(x:2.2cm,y:2.4cm))
-#import "{helper}": handbook-fit-table, handbook-in-callout
-#show table: it => handbook-fit-table(it, 2pt)
-#show table.cell: set block(breakable: false)
-#v(20cm)
-#block(breakable: true)[#block(sticky: true)[DECISIONTITLE]
-#handbook-in-callout.update(true)
-#table(columns: 2, table.header[Aspect][Choice], ..range(12).map(i => ([ROW#i], [value])).flatten())
-#handbook-in-callout.update(false)]
-'''
-            )
-            subprocess.run(["quarto", "typst", "compile", str(source), "--root", "/"],
-                           check=True, capture_output=True)
-            pages = subprocess.check_output(
-                ["pdftotext", str(Path(tmp) / "callout.pdf"), "-"], text=True).split("\f")
-        self.assertIn("DECISIONTITLE", pages[0])
-        self.assertIn("ROW0", pages[0])
-        self.assertIn("ROW11", pages[1])
+        self.assertIn("breakable: false", callout[: callout.index("fill: tint")])
 
     @unittest.skipUnless(
         shutil.which("quarto") and shutil.which("pdfimages"),

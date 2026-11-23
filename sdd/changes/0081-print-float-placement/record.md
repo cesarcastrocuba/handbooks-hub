@@ -300,3 +300,31 @@ Tests:
   0 decisions open a page after a gap of 60 pt or more (was 9 and 39 in the `e3c9e9e` preview),
   no callout title is alone at a page foot, 0 figures are away from their citing text, and the
   page count falls from 699 to 690.
+
+## Sixth follow-up (Owner Word check of the `6c5d0ec` preview, 2026-11-23)
+
+The Owner rejected split callouts. Decision & Trade-off boxes split in 1.1.5, 1.2.13, 2.1, 2.3,
+2.8, 2.10, 2.11, 2.13, 3.1, 3.2, 4.1.2, 4.9, 5.3.5, 6.2.3, 7.2.2, 7.3.4, 7.5.4, 8.1, 8.2.6, 8.3.5,
+10.3.2, 11.2.2, 11.3.5, 11.6.5, 12.2.3 and 12.3.4. Pitfalls split in 5.1.3 (two boxes split),
+7.6 and 11.6.6. Review checklists split in 2.16, 6.4, 7.7 and 8.5.
+
+Owner decision: every box stays whole. A pitfall and its decision need not share a page, so the
+pitfall can end the page before. Figures may also be printed a little smaller.
+
+Change:
+- Word and Typst callouts are back to one unbreakable box (`cantSplit` row,
+  `breakable: false`); the code is as in `e3c9e9e`. `keep_callout_tables` and
+  `handbook-in-callout` are removed.
+- **New print scale of 85%.**
+  - Word `print_scale` runs before the measured gap passes; PDF `handbook-scale-images` does the
+    same.
+  - The 75% natural floor applies, so on the book 104 of 131 figures take the full 85%, and the
+    other 27 stop at the floor.
+  - A gap fit that would cross the floor is not applied in either edition.
+- Tests:
+  - boxes are one `cantSplit` row;
+  - in LibreOffice a box that does not fit moves whole, and a pitfall that fits stays when its
+    decision moves;
+  - `print_scale`: the full factor and the floor;
+  - four Typst cases with the print scale;
+  - the Typst callout is not breakable.

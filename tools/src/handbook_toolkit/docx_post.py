@@ -63,7 +63,7 @@ def _plain_callout_tables(table: ET.Element, word: str) -> None:
             style.set(f"{word}val", "TablePlain")
 
 
-CALLOUT_STYLE = "CalloutBox"  # the one-column table style that boxes each callout
+CALLOUT_STYLE = "CalloutBox"  # the one-cell table style that boxes each callout
 
 
 def _wrap_callout_box(
@@ -109,40 +109,21 @@ def _wrap_callout_box(
     grid = ET.SubElement(table, f"{word}tblGrid")
     column = ET.SubElement(grid, f"{word}gridCol")
     column.set(f"{word}w", str(width))
-    # One row per block: the box breaks between its title, paragraphs and table,
-    # so a pitfall or decision fills the page in front of it instead of moving
-    # whole (Owner decision 2026-11-23). A single breakable row was dragged to
-    # the next page by LibreOffice whenever a keep chain (heading, lead-in,
-    # figure) followed it. The title keeps with the next row.
-    if group and group[0].tag == f"{word}p":
-        title = group[0].find(f"./{word}pPr")
-        if title is None:
-            title = ET.Element(f"{word}pPr")
-            group[0].insert(0, title)
-        if title.find(f"./{word}keepNext") is None:
-            ET.SubElement(title, f"{word}keepNext")
-    for index, block in enumerate(group):
-        row = ET.SubElement(table, f"{word}tr")
-        cell = ET.SubElement(row, f"{word}tc")
-        cell_properties = ET.SubElement(cell, f"{word}tcPr")
-        cell_width = ET.SubElement(cell_properties, f"{word}tcW")
-        cell_width.set(f"{word}w", str(width))
-        cell_width.set(f"{word}type", "dxa")
-        shade = ET.SubElement(cell_properties, f"{word}shd")
-        shade.set(f"{word}val", "clear")
-        shade.set(f"{word}color", "auto")
-        shade.set(f"{word}fill", tint)
-        # The box padding sits above the first row and below the last one only.
-        cell_margins = ET.SubElement(cell_properties, f"{word}tcMar")
-        for side, value in (("top", 80 if index == 0 else 0),
-                            ("bottom", 80 if index == len(group) - 1 else 0)):
-            margin = ET.SubElement(cell_margins, f"{word}{side}")
-            margin.set(f"{word}w", str(value))
-            margin.set(f"{word}type", "dxa")
+    row = ET.SubElement(table, f"{word}tr")
+    row_properties = ET.SubElement(row, f"{word}trPr")
+    ET.SubElement(row_properties, f"{word}cantSplit")
+    cell = ET.SubElement(row, f"{word}tc")
+    cell_properties = ET.SubElement(cell, f"{word}tcPr")
+    cell_width = ET.SubElement(cell_properties, f"{word}tcW")
+    cell_width.set(f"{word}w", str(width))
+    cell_width.set(f"{word}type", "dxa")
+    shade = ET.SubElement(cell_properties, f"{word}shd")
+    shade.set(f"{word}val", "clear")
+    shade.set(f"{word}color", "auto")
+    shade.set(f"{word}fill", tint)
+    for block in group:
         body.remove(block)
         cell.append(block)
-        if block.tag == f"{word}tbl":
-            cell.append(_spacer(word))  # a cell must end with a paragraph
     body.insert(position, table)
     body.insert(position, _spacer(word))
     body.insert(position + 2, _spacer(word))
@@ -151,14 +132,12 @@ def _wrap_callout_box(
 
 
 def _style_docx_callouts(root: ET.Element, word: str) -> None:
-    """Wrap each callout in a one-column table, one row per block.
+    """Wrap each callout in a single-cell table.
 
     Paragraph borders cannot align across body paragraphs and list items: Word
     draws them at each paragraph's indent, so the left rule and the box edges
-    drift. A one-column table owns the edge and lets the cell shading carry the
-    palette tint. Each block is a row, so the box breaks across pages between
-    blocks: the title keeps with the next row, and a table inside breaks only
-    between its rows.
+    drift. A one-cell table owns the edge, keeps the group together with
+    ``cantSplit`` and lets the cell shading carry the palette tint.
     """
 
     values = design.docx_values()

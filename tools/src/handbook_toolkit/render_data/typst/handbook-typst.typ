@@ -267,7 +267,7 @@
 #show table.cell: set block(breakable: false)
 #show table.cell: set text(hyphenate: false)
 #show table.cell: set par(justify: false)
-#import "handbook-render/typst/table-fit.typ": handbook-fit-table, handbook-fit-float, handbook-float-group, handbook-figure-group, handbook-in-callout
+#import "handbook-render/typst/table-fit.typ": handbook-fit-table, handbook-fit-float, handbook-float-group, handbook-figure-group
 #show table: it => handbook-fit-table(it, hb-card-radius)
 
 // Figures -------------------------------------------------------------------
@@ -306,11 +306,11 @@
   } else {
     (hb-callout-note-accent, hb-callout-note-tint)
   }
-  // A callout may continue on the next page so that it fills the page in front
-  // of it (Owner decision 2026-11-23); its title stays with the first line.
+  // A callout is never split across pages (Owner decision 2026-11-23); a
+  // pitfall and its decision are separate boxes, so a pitfall can end a page.
   block(
     width: 100%,
-    breakable: true,
+    breakable: false,
     fill: tint,
     stroke: (
       left: 4pt + accent,
@@ -323,13 +323,11 @@
     below: 10pt,
   )[
     #if "Note" not in label [
-      #block(sticky: true)[#text(weight: "bold", fill: accent)[#title]]
+      #text(weight: "bold", fill: accent)[#title]
       #v(3pt)
     ]
     // Data tables keep the shared surface inside callouts.
     #set table(fill: (_, y) => if y == 0 { hb-accent-solid } else { hb-surface })
-    #handbook-in-callout.update(true)
     #body
-    #handbook-in-callout.update(false)
   ]
 }

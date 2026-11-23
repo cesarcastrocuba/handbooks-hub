@@ -1,4 +1,4 @@
-"""Word callouts may break across pages; their title and table rows stay whole."""
+"""Word callouts are never split across pages; a pitfall and its decision are separate boxes."""
 
 from pathlib import Path
 import shutil
@@ -9,20 +9,8 @@ import xml.etree.ElementTree as ET
 
 from handbook_toolkit.docx_pages import export_pdf, font_environment
 from handbook_toolkit.docx_post import _wrap_callout_box
-from handbook_toolkit.docx_tables import candidates, keep_callout_tables, keep_leadins
 from handbook_toolkit.docx_xml import W
 from test_figure_place import FONTS, _package, paragraph
-
-
-def styled_table(parent, rows=3, keep=True):
-    table = ET.SubElement(parent, W + "tbl")
-    properties = ET.SubElement(table, W + "tblPr")
-    ET.SubElement(properties, W + "tblStyle", {W + "val": "TablePlain"})
-    ET.SubElement(properties, W + "tblLook", {W + "firstRow": "1"})
-    for i in range(rows):
-        cell = ET.SubElement(ET.SubElement(table, W + "tr"), W + "tc")
-        paragraph(cell, f"row {i}", keep=keep)
-    return table
 
 
 def boxed(body, title, *content):
@@ -32,42 +20,19 @@ def boxed(body, title, *content):
     group = [title, *content]
     children = list(body)
     _wrap_callout_box(document, body, children, children.index(title), group, W, "000000", "FFFFFF")
-    return document, next(t for t in body.findall(W + "tbl"))
+    boxes = [t for t in body.findall(W + "tbl")]
+    return document, boxes[-1]
 
 
 class CalloutBoxTests(unittest.TestCase):
-    def test_the_box_row_may_break_and_its_title_keeps_with_the_next_line(self):
+    def test_a_box_is_one_row_that_never_splits(self):
         body = ET.Element(W + "body")
         title = paragraph(body, "Common Pitfall", "CalloutWarningTitle")
         text = paragraph(body, "A warning.")
         _, box = boxed(body, title, text)
-        self.assertEqual(len(box.findall(W + "tr")), 2)  # one row per block
-        self.assertIsNone(box.find(W + "tr/" + W + "trPr/" + W + "cantSplit"))
-        self.assertIsNotNone(title.find(W + "pPr/" + W + "keepNext"))
-        self.assertIsNone(text.find(W + "pPr/" + W + "keepNext"))
-
-    def test_a_table_in_a_callout_breaks_only_between_rows(self):
-        body = ET.Element(W + "body")
-        title = paragraph(body, "Decision & Trade-off", "CalloutImportantTitle")
-        inner = styled_table(body, rows=4)
-        document, box = boxed(body, title, inner)
-        last_cell = box.findall(W + "tr")[-1].find(W + "tc")
-        self.assertEqual(list(last_cell)[-1].tag, W + "p")  # a cell ends with a paragraph
-        self.assertEqual(candidates(document), [])  # never measured and kept whole
-        self.assertEqual(keep_callout_tables(document), 1)
-        rows = inner.findall(W + "tr")
-        self.assertTrue(all(r.find(W + "trPr/" + W + "cantSplit") is not None for r in rows))
-        kept = [any(p.find(W + "pPr/" + W + "keepNext") is not None for p in r.iter(W + "p")) for r in rows]
-        self.assertEqual(kept, [True, False, False, False])
-
-    def test_text_before_a_callout_is_not_chained_to_it(self):
-        body = ET.Element(W + "body")
-        before = paragraph(body, "End of the example.")
-        title = paragraph(body, "Decision & Trade-off", "CalloutImportantTitle")
-        inner = styled_table(body, keep=False)
-        document, _ = boxed(body, title, inner)
-        keep_leadins(document)
-        self.assertIsNone(before.find(W + "pPr/" + W + "keepNext"))
+        rows = box.findall(W + "tr")
+        self.assertEqual(len(rows), 1)
+        self.assertIsNotNone(rows[0].find(W + "trPr/" + W + "cantSplit"))
 
 
 @unittest.skipUnless(
@@ -77,7 +42,15 @@ class CalloutBoxTests(unittest.TestCase):
 class LibreOfficeTests(unittest.TestCase):
     SENTENCE = "Body text that fills the page and keeps the reader moving. " * 9
 
-    def test_a_pitfall_starts_in_the_gap_in_front_of_it(self):
+    def pages(self, body):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "book.docx"
+            _package(path, body)
+            pdf = export_pdf(path, Path(tmp) / "pdf", env=font_environment(FONTS, Path(tmp)))
+            return subprocess.run(["pdftotext", str(pdf), "-"], check=True, capture_output=True,
+                                  text=True).stdout.split("\f")
+
+    def test_a_box_that_does_not_fit_moves_whole(self):
         body = ET.Element(W + "body")
         for _ in range(7):  # leaves about 11 lines for a 30-line pitfall
             paragraph(body, self.SENTENCE)
@@ -85,16 +58,25 @@ class LibreOfficeTests(unittest.TestCase):
         lines = [paragraph(body, f"LINE{i} " + "A warning about a common mistake and its cost. " * 3)
                  for i in range(10)]
         boxed(body, title, *lines)
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "book.docx"
-            _package(path, body)
-            pdf = export_pdf(path, Path(tmp) / "pdf", env=font_environment(FONTS, Path(tmp)))
-            pages = subprocess.run(["pdftotext", str(pdf), "-"], check=True, capture_output=True,
-                                   text=True).stdout.split("\f")
-        self.assertGreater(len([p for p in pages if p.strip()]), 1)  # the box continues
-        self.assertIn("PITFALLTITLE", pages[0])
-        self.assertIn("LINE0", pages[0])  # the title is not left alone
+        pages = self.pages(body)
+        self.assertNotIn("PITFALLTITLE", pages[0])
+        self.assertIn("LINE0", pages[1])
         self.assertIn("LINE9", pages[1])
+
+    def test_a_pitfall_that_fits_stays_when_its_decision_moves(self):
+        body = ET.Element(W + "body")
+        for _ in range(6):
+            paragraph(body, self.SENTENCE)
+        title = paragraph(body, "PITFALLTITLE", "CalloutWarningTitle")
+        boxed(body, title, paragraph(body, "A short warning. " * 6))
+        decision = paragraph(body, "DECISIONTITLE", "CalloutImportantTitle")
+        lines = [paragraph(body, f"OPTION{i} " + "Each option has a cost and a consequence. " * 3)
+                 for i in range(8)]
+        boxed(body, decision, *lines)
+        pages = self.pages(body)
+        self.assertIn("PITFALLTITLE", pages[0])
+        self.assertNotIn("DECISIONTITLE", pages[0])
+        self.assertIn("OPTION7", pages[1])
 
 
 if __name__ == "__main__":
