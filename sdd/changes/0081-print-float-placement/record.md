@@ -355,3 +355,27 @@ with the decision.
 Verification limit: no LibreOffice measurement can show this. The evidence is structural: no
 paragraph inside a box keeps with next, and that is checked on the built DOCX. Desktop Word is
 the acceptance test.
+
+## Eighth follow-up (Owner Word and PDF check of the `735bce2` preview, 2026-11-25)
+
+The Owner reports the Word edition is "much better", with two remaining details.
+
+- **Word: an empty, clipped line at the top of a page above a callout.** Examples: after
+  Table 1.5 and after Figure 2.1.
+  - Cause: a decision box holds a table with a header row. `keep_leadins` took the box for a
+    float and chained the 6 pt spacers in front of it, and a short paragraph when no pitfall
+    precedes it, so they moved to the next page with the box.
+  - Fix: `keep_leadins` skips `CalloutBox` tables. A spacer now stays at the foot of the
+    previous page.
+- **PDF: "Architecture Review Checklist — Decisions" (3.6) had the decision colour.**
+  - Cause: the Typst callout tested "Decision" before "Review Checklist".
+  - Fix: the order is swapped.
+  - Word and HTML classify by callout type, not title, so they were not affected.
+
+PR 136 review follow-up (`735bce2`, comment 7168168232):
+- Minor 1: `test_the_build_step_releases_the_keeps` covers the `keep_fitting_tables` call site.
+- Optional 3: the report is built in one place (`_released`).
+
+New tests fail without their fixes, both verified by stashing the code change:
+- `test_nothing_before_a_box_is_kept_with_it`;
+- `test_a_checklist_on_decisions_keeps_the_checklist_colour`.

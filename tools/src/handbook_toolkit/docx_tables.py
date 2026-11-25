@@ -47,6 +47,11 @@ def release_callout_keeps(root: ET.Element) -> int:
     return count
 
 
+def _released(root: ET.Element) -> dict[str, str]:
+    """Release the callout keeps last, after keep_rows, and report the count."""
+    return {"docx_callout_keeps": f"callout boxes released from keep-with-next: {release_callout_keeps(root)}"}
+
+
 def candidates(root: ET.Element) -> list[tuple[ET.Element, ET.Element | None, bool]]:
     body = root.find(W + "body")
     if body is None:
@@ -252,6 +257,11 @@ def keep_leadins(root: ET.Element) -> int:
             continue
         children = list(container)
         for i, item in enumerate(children):
+            box = item.find(W + "tblPr/" + W + "tblStyle") if item.tag == W + "tbl" else None
+            if box is not None and box.get(W + "val") == CALLOUT_STYLE:
+                # A callout box is text, not a float: a decision holds a table, but
+                # neither the spacer nor the paragraph before it moves with the box.
+                continue
             is_float = item.find(".//" + W + "drawing") is not None
             if item.tag == W + "tbl":
                 is_float = is_float or any(
@@ -324,9 +334,8 @@ def keep_fitting_tables(
     if required and not available:
         raise BuildError("Word table measurement requires LibreOffice and pdfinfo")
     tables = candidates(root)
-    lead_info["docx_callout_keeps"] = "callout boxes released from keep-with-next: {}"
     if not tables or not available:
-        lead_info["docx_callout_keeps"] = lead_info["docx_callout_keeps"].format(release_callout_keeps(root))
+        lead_info.update(_released(root))
         order_properties(root)
         members["word/document.xml"] = ET.tostring(
             root, encoding="utf-8", xml_declaration=True
@@ -472,7 +481,7 @@ def keep_fitting_tables(
                     wrapper = row
             keep_rows(table, caption, after, wrapper)
             kept += 1
-    lead_info["docx_callout_keeps"] = lead_info["docx_callout_keeps"].format(release_callout_keeps(root))
+    lead_info.update(_released(root))
     order_properties(root)
     members["word/document.xml"] = ET.tostring(
         root, encoding="utf-8", xml_declaration=True

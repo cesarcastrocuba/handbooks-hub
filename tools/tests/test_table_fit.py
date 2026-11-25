@@ -354,6 +354,15 @@ AFTERTEXT
 
     @unittest.skipUnless(shutil.which("quarto") and shutil.which("pdftotext"),
                          "native pagination tools required")
+    def test_a_checklist_on_decisions_keeps_the_checklist_colour(self):
+        template = (
+            Path(__file__).resolve().parents[1]
+            / "src/handbook_toolkit/render_data/typst/handbook-typst.typ"
+        ).read_text()
+        callout = template[template.index("#let callout("):]
+        # "Architecture Review Checklist — Decisions" contains both words.
+        self.assertLess(callout.index('"Review Checklist" in label'), callout.index('"Decision" in label'))
+
     def test_a_callout_is_never_split(self):
         template = (
             Path(__file__).resolve().parents[1]

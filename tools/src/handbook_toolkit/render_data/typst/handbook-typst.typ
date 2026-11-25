@@ -293,14 +293,16 @@
   body_background_color: white,
 ) = {
   let label = repr(title)
+  // "Review Checklist" is tested before "Decision": a checklist title such as
+  // "Architecture Review Checklist — Decisions" contains both.
   let (accent, tint) = if "Common Pitfall" in label {
     (hb-callout-warning-accent, hb-callout-warning-tint)
+  } else if "Review Checklist" in label {
+    (hb-callout-review-accent, hb-callout-review-tint)
   } else if "Decision" in label {
     (hb-callout-important-accent, hb-callout-important-tint)
   } else if "Key Takeaway" in label {
     (hb-callout-tip-accent, hb-callout-tip-tint)
-  } else if "Review Checklist" in label {
-    (hb-callout-review-accent, hb-callout-review-tint)
   } else if "When to Use" in label {
     (hb-callout-note-accent, hb-callout-note-tint)
   } else {
