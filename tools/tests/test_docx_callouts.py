@@ -9,6 +9,7 @@ import xml.etree.ElementTree as ET
 
 from handbook_toolkit.docx_pages import export_pdf, font_environment
 from handbook_toolkit.docx_post import _wrap_callout_box
+from handbook_toolkit.docx_tables import release_callout_keeps
 from handbook_toolkit.docx_xml import W
 from test_figure_place import FONTS, _package, paragraph
 
@@ -33,6 +34,23 @@ class CalloutBoxTests(unittest.TestCase):
         rows = box.findall(W + "tr")
         self.assertEqual(len(rows), 1)
         self.assertIsNotNone(rows[0].find(W + "trPr/" + W + "cantSplit"))
+
+
+    def test_no_paragraph_in_a_box_keeps_with_what_follows(self):
+        # Desktop Word keeps a row with the next paragraph when a paragraph in the
+        # row keeps with next; the callout title styles carry keepNext, so a pitfall
+        # was dragged to the next page with its decision (Owner check 2026-11-25).
+        body = ET.Element(W + "body")
+        title = paragraph(body, "Common Pitfall", "CalloutWarningTitle")
+        text = paragraph(body, "A warning.")
+        ET.SubElement(text.find(W + "pPr") if text.find(W + "pPr") is not None
+                      else ET.SubElement(text, W + "pPr"), W + "keepNext")
+        document, box = boxed(body, title, text)
+        self.assertEqual(release_callout_keeps(document), 1)
+        for p in box.iter(W + "p"):
+            keep = p.find(W + "pPr/" + W + "keepNext")
+            self.assertIsNotNone(keep, "an explicit off value is needed to override the style")
+            self.assertEqual(keep.get(W + "val"), "0")
 
 
 @unittest.skipUnless(

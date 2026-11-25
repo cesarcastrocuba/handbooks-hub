@@ -201,6 +201,10 @@ Owner decisions of 2026-11-22 and 2026-11-23 apply to the PDF and to Word:
   - A box that does not fit the rest of a page starts the next one.
   - A pitfall and its decision are separate boxes, so a pitfall that fits stays on the page
     before its decision.
+  - In Word no paragraph inside a box keeps with next. `release_callout_keeps` sets
+    `w:keepNext w:val="0"` because the title styles carry `keepNext`. Desktop Word keeps a row
+    with what follows when one of its paragraphs keeps with next, which chained each pitfall to
+    its decision. LibreOffice ignores those keeps inside a table.
   - A breakable box was tried and rejected by the Owner: split pitfalls, decisions and review
     checklists read badly.
 - **Remaining gaps.** Tall diagrams that leave a gap are redrawn in the book (a later edition).

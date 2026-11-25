@@ -328,3 +328,30 @@ Change:
   - `print_scale`: the full factor and the floor;
   - four Typst cases with the print scale;
   - the Typst callout is not breakable.
+
+## Seventh follow-up (Owner Word check of the `2129405` preview, 2026-11-25)
+
+Boxes are now whole, but in desktop Word the pitfall still moves to the next page with its
+decision and leaves a large gap. The Owner's examples are 1.1.5 (pages 55–56), 1.2.13 (pages
+67–68) and 1.3.2 (page 69).
+
+Cause, found in the DOCX:
+- The callout title styles (`CalloutWarningTitle`, `CalloutImportantTitle` and the others) carry
+  `keepNext`.
+- Desktop Word keeps a table row with what follows when a paragraph in the row keeps with next.
+- The two spacer paragraphs between a pitfall and its decision also keep with next (121 of 123
+  pitfalls).
+- So every pitfall was chained to its decision, and moved with it whenever the decision did not
+  fit.
+- LibreOffice ignores paragraph keeps inside a table, so its render, which all earlier evidence
+  used, never showed the chain. This explains why the defect came back in every edition.
+
+Fix: `docx_tables.release_callout_keeps` sets an explicit `w:keepNext w:val="0"` on every
+paragraph inside a `CalloutBox`. It is the last step of `keep_fitting_tables`, after `keep_rows`,
+and the explicit value overrides the style. The box is one unsplittable row, so its title can
+still never be left alone. The spacers before the decision keep their keep-with-next and move
+with the decision.
+
+Verification limit: no LibreOffice measurement can show this. The evidence is structural: no
+paragraph inside a box keeps with next, and that is checked on the built DOCX. Desktop Word is
+the acceptance test.
