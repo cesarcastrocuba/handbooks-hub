@@ -16,7 +16,7 @@ clone gate and make `book-html.zip` reproducible. The Owner checked the CI-built
 ### Changed
 
 - Figures stay right after the text that introduces them in the PDF and Word editions, and print
-  at 85% of their stated size (change `0081`, from the Owner's checks of the Solutions
+  at 85% of their stated size (in Word, PNG figures only: an SVG keeps its size there) (change `0081`, from the Owner's checks of the Solutions
   Architecture Handbook 6.0.0 preview). PDF figures no longer float. In both editions a figure
   that nearly fits the gap in front of it is scaled further. Neither step goes below 75% of the
   natural size. `build.tool_versions.docx_figure_placement` records the Word counts and
