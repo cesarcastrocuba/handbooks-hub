@@ -28,8 +28,8 @@ copying this template does not copy hub source code into the book.
 
 ## Fonts in published editions
 
-The toolkit renders PDF editions with the bundled Source Sans 3, Source Serif 4 and JetBrains Mono fonts,
-distributed under the SIL Open Font License 1.1 and embedded as subsets. The font license does not
+The toolkit renders the editions with the bundled Inter and JetBrains Mono fonts, distributed under
+the SIL Open Font License 1.1. The PDF embeds them as subsets and the Word edition embeds them whole. The font license does not
 extend to the document that uses them. If a book distributes the font files themselves, it must
 include the license files shipped with the toolkit.
 

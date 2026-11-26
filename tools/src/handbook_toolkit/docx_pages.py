@@ -40,11 +40,7 @@ def font_environment(fonts: Path, directory: Path) -> dict[str, str]:
     root = ET.Element('fontconfig')
     ET.SubElement(root, 'dir').text = str(fonts.resolve())
     ET.SubElement(root, 'cachedir').text = str(directory / 'font-cache')
-    # The DOCX uses original family names; packaged Sans/Serif TTFs have OFL-safe names.
-    for original, packaged in [('Source Sans 3', 'Handbook Sans'), ('Source Serif 4', 'Handbook Serif')]:
-        alias = ET.SubElement(root, 'alias')
-        ET.SubElement(alias, 'family').text = original
-        ET.SubElement(ET.SubElement(alias, 'prefer'), 'family').text = packaged
+    # The DOCX names the packaged families (Inter, JetBrains Mono) directly, so no alias is needed.
     config = directory / 'fonts.conf'
     ET.ElementTree(root).write(config, encoding='utf-8', xml_declaration=True)
     return dict(os.environ, FONTCONFIG_FILE=str(config), FONTCONFIG_PATH=str(directory), TZ='UTC')

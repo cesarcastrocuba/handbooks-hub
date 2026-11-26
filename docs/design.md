@@ -106,20 +106,21 @@ lost that separation.
 
 | Role | Web family | Print family | Web size | Print size | Line height | Measure |
 | --- | --- | --- | --- | --- | --- | --- |
-| `body` | Handbook Sans (Source Sans 3) | Handbook Sans | 15 px | 10 pt | 1.55 | 68 characters |
-| `display` | Handbook Serif (Source Serif 4) | Handbook Serif | 34 px | 21 pt | 1.15 | none |
+| `body` | Inter | Inter | 15 px | 10 pt | 1.55 | 68 characters |
+| `display` | Inter | Inter | 34 px | 21 pt | 1.15 | none |
 | `code` | Handbook Mono (JetBrains Mono) | JetBrains Mono | 13 px | 9 pt | 1.5 | none |
 
 Spacing uses a 4 px unit with 56 px section rhythm. Controls use a 6 px radius and cards 8 px.
 
-The brand pairing is **Source Sans 3** for text and **Source Serif 4** for display headings, both
-SIL OFL 1.1. The portal and the book self-host subsetted WOFF2 files under the CSS names `Handbook
-Sans` and `Handbook Serif`; the PDF embeds the renamed TTFs; the DOCX names the upstream families
-**Source Sans 3** and **Source Serif 4**, so a reader with those fonts installed gets the intended
-rendering without distributing a modified binary through Word. JetBrains Mono remains the code
-family in every medium. The files ship in the toolkit and are listed in `NOTICE.md`; no font is
-fetched from a third-party host. The web subsets carry renamed internal names, keep the OFL text and
-URL in their name table, and are published together with their `OFL.txt` files.
+The brand typeface is **Inter** (4.1, SIL OFL 1.1) for text and headings in every medium, and
+**JetBrains Mono** for code (`HUB-DEC-045`). The portal and the book self-host subsetted WOFF2 files:
+Inter keeps its family name, the JetBrains Mono subset is named `Handbook Mono`. The PDF embeds
+subsets of the upstream static TTFs. The DOCX names Inter and JetBrains Mono and embeds the
+upstream TTFs unmodified as obfuscated font parts, so Word shows the typeface without an install.
+Neither family declares a Reserved Font Name and both allow installable embedding. The files ship
+in the toolkit and are listed in `NOTICE.md`; no font is fetched from a third-party host. The web
+subsets keep the OFL text and URL in their name table and are published together with their
+`OFL.txt` files.
 
 The web designs target a 60 to 75 character measure. Quarto renders the book content column and the
 tools page applies `--measure`; the portal keeps its responsive card grid.
@@ -131,7 +132,7 @@ tools page applies `--measure`; the portal keeps its responsive card grid.
 | Portal | Generated `:root` variables in the single HTML page plus the ten same-origin WOFF2 files |
 | Book HTML | Generated `design-tokens.css` loaded before the layout stylesheet; dark values on `body.quarto-dark` and on the OS media query |
 | PDF | Generated `design-tokens.typ` constants read by the Typst theme and print layout |
-| DOCX | `generate_reference_docx.py` reads the tokens at generation time; Source Sans 3 for body text, Source Serif 4 for headings and JetBrains Mono for code |
+| DOCX | `generate_reference_docx.py` reads the tokens at generation time; Inter for body text and headings and JetBrains Mono for code |
 
 The Typst theme, the print layout and the DOCX reference no longer carry private palette constants.
 The callout accent and tint values are defined in the token document under `callout`, with a light,
@@ -161,10 +162,12 @@ update-on-open requests. Optional builds without a working probe contain linked 
 tabs or PAGEREF fields. F9 repaginates each index in Word. Cached numbers reflect LibreOffice,
 not a claim of identical Word pagination. Empty lists are omitted.
 
-Word font declarations include single-name alternate-font chains: Source Sans 3 → Segoe UI →
-Calibri → Arial, Source Serif 4 → Georgia → Cambria, and JetBrains Mono → Consolas → Courier New.
-An altName represents one alternate name, not a CSS fallback list; actual substitution remains
-the viewer's choice. No font binary is embedded in the DOCX.
+Word font declarations include single-name alternate-font chains: Inter → Segoe UI → Calibri →
+Arial, and JetBrains Mono → Consolas → Courier New. An altName represents one alternate name, not a
+CSS fallback list. The DOCX embeds Inter Regular, Bold, Italic and Bold Italic and JetBrains Mono
+Regular, Bold and Italic as obfuscated TrueType parts (ISO/IEC 29500-1, 17.8.1), with a font key
+derived from each file's hash so the same build gives the same bytes; the chains apply only when a
+viewer ignores embedded fonts.
 
 ## Changing the contract
 

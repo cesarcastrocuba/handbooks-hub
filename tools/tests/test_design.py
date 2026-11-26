@@ -201,7 +201,7 @@ class DesignTokenTests(unittest.TestCase):
         css = design.font_face_css("fonts/")
         self.assertIn("@font-face", css)
         self.assertNotIn("http", css)
-        self.assertIn("fonts/source-sans3/HandbookSans-Regular.woff2", css)
+        self.assertIn("fonts/inter/Inter-Regular.woff2", css)
 
     def test_book_theme_covers_quarto_dark_and_media(self) -> None:
         css = design.book_theme_css()
@@ -214,21 +214,21 @@ class DesignTokenTests(unittest.TestCase):
 
     def test_portal_theme_uses_brand_font_and_both_schemes(self) -> None:
         css = design.portal_theme_css()
-        self.assertIn('font-family:"Handbook Sans"', css)
-        self.assertIn('font-family:"Handbook Serif"', css)
+        self.assertIn('font-family:"Inter"', css)
+        self.assertNotIn("Handbook Serif", css)
         self.assertIn("--paper: var(--canvas);", css)
         self.assertIn("prefers-color-scheme:dark", css)
 
     def test_typst_preamble_uses_brand_fonts(self) -> None:
         typst = design.typst_preamble()
-        self.assertIn('#let hb-font = ("Handbook Sans",)', typst)
-        self.assertIn('#let hb-display-font = ("Handbook Serif",)', typst)
+        self.assertIn('#let hb-font = ("Inter",)', typst)
+        self.assertIn('#let hb-display-font = ("Inter",)', typst)
         self.assertIn('#let hb-code-font = ("JetBrains Mono",)', typst)
 
     def test_docx_values_name_the_compatible_family(self) -> None:
         values = design.docx_values()
-        self.assertEqual(values["body_font"], "Source Sans 3")
-        self.assertEqual(values["display_font"], "Source Serif 4")
+        self.assertEqual(values["body_font"], "Inter")
+        self.assertEqual(values["display_font"], "Inter")
         self.assertEqual(values["code_font"], "JetBrains Mono")
         self.assertEqual(values["ink"], self.tokens["color"]["text"]["print"])
 
@@ -242,11 +242,9 @@ class DesignTokenTests(unittest.TestCase):
                 name = font["name"]
                 family = name.getDebugName(1) or ""
                 postscript = name.getDebugName(6) or ""
-                self.assertIn(family, ("Handbook Sans", "Handbook Serif", "Handbook Mono"))
-                self.assertTrue(
-                    postscript.startswith(("HandbookSans-", "HandbookSerif-", "HandbookMono-")), postscript
-                )
-                self.assertNotIn("SourceSans", postscript)
+                self.assertIn(family, ("Inter", "Handbook Mono"))
+                self.assertTrue(postscript.startswith(("Inter-", "HandbookMono-")), postscript)
+                self.assertNotIn("JetBrains", postscript)
                 self.assertIn("SIL Open Font License", name.getDebugName(13) or "")
                 self.assertIn("openfontlicense.org", name.getDebugName(14) or "")
 

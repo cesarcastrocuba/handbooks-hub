@@ -337,7 +337,9 @@ class LibreOfficeTests(unittest.TestCase):
             self.assertLess(int(extent.get("cy")), NEAR_CY)
 
 
-NEAR_CX, NEAR_CY, NEAR_FILL = 5486400, 2900000, 5  # natural width; 228 pt tall, scaled to about 0.8
+# Natural width, 299 pt tall. With the packaged Inter metrics the gap rule scaled this figure in
+# a probe of heights 3650000-4100000 EMU (3900000 was the one exception, where it was left alone).
+NEAR_CX, NEAR_CY, NEAR_FILL = 5486400, 3800000, 5
 
 
 if __name__ == "__main__":

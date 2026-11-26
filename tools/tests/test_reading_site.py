@@ -316,7 +316,7 @@ class NativeMotionBrowserTests(unittest.TestCase):
             from playwright.sync_api import sync_playwright
         except ImportError:
             self.skipTest('Playwright is installed by the edition-preview job')
-        font=base64.b64encode(design.font_assets()['source-sans3/HandbookSans-Regular.woff2']).decode()
+        font=base64.b64encode(design.font_assets()['inter/Inter-Regular.woff2']).decode()
         layout='''html,body{max-width:100%;overflow-x:hidden}
           @font-face{font-family:Fixture;src:url(data:font/woff2;base64,FONT)}
           body{font:15px/1.55 Fixture;background:var(--canvas);color:var(--text)}

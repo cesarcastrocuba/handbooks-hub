@@ -264,8 +264,7 @@ class TemplateTests(unittest.TestCase):
 
             with zipfile.ZipFile(output / "book-html.zip") as archive:
                 names = set(archive.namelist())
-            self.assertIn("handbook-render/fonts/source-sans3/OFL.txt", names)
-            self.assertIn("handbook-render/fonts/source-serif4/OFL.txt", names)
+            self.assertIn("handbook-render/fonts/inter/OFL.txt", names)
 
             manifest = json.loads((output / "publication-manifest.json").read_text())
             self.assertEqual(manifest["book"]["commit"], _git(book, "rev-parse", "HEAD"))

@@ -576,8 +576,7 @@ def _render_config(
     typst_format["mainfont"] = design.load_tokens()["type"]["brand"]["text_family"]
     typst_format["monofont"] = "JetBrains Mono"
     typst_format["font-paths"] = [
-        resources["fonts/source-sans3/HandbookSans-Regular.ttf"].parent.relative_to(workspace).as_posix(),
-        resources["fonts/source-serif4/HandbookSerif-Regular.ttf"].parent.relative_to(workspace).as_posix(),
+        resources["fonts/inter/Inter-Regular.ttf"].parent.relative_to(workspace).as_posix(),
         resources["fonts/jetbrains-mono/JetBrainsMono-Regular.ttf"].parent.relative_to(workspace).as_posix(),
     ]
     # Design constants are generated from the packaged tokens; the hand-written

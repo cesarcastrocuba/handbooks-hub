@@ -179,13 +179,10 @@ def _motion_highlight_issues(tokens: dict[str, Any]) -> list[Issue]:
 # Web font assets, relative to ``render_data/fonts``. Each tuple is
 # (CSS family, relative path, weight, style).
 WEB_FONTS: tuple[tuple[str, str, int, str], ...] = (
-    ("Handbook Sans", "source-sans3/HandbookSans-Regular.woff2", 400, "normal"),
-    ("Handbook Sans", "source-sans3/HandbookSans-Bold.woff2", 700, "normal"),
-    ("Handbook Sans", "source-sans3/HandbookSans-Italic.woff2", 400, "italic"),
-    ("Handbook Sans", "source-sans3/HandbookSans-BoldItalic.woff2", 700, "italic"),
-    ("Handbook Serif", "source-serif4/HandbookSerif-Regular.woff2", 400, "normal"),
-    ("Handbook Serif", "source-serif4/HandbookSerif-Semibold.woff2", 600, "normal"),
-    ("Handbook Serif", "source-serif4/HandbookSerif-Bold.woff2", 700, "normal"),
+    ("Inter", "inter/Inter-Regular.woff2", 400, "normal"),
+    ("Inter", "inter/Inter-Bold.woff2", 700, "normal"),
+    ("Inter", "inter/Inter-Italic.woff2", 400, "italic"),
+    ("Inter", "inter/Inter-BoldItalic.woff2", 700, "italic"),
     ("Handbook Mono", "jetbrains-mono/HandbookMono-Regular.woff2", 400, "normal"),
     ("Handbook Mono", "jetbrains-mono/HandbookMono-Bold.woff2", 700, "normal"),
     ("Handbook Mono", "jetbrains-mono/HandbookMono-Italic.woff2", 400, "italic"),
@@ -231,8 +228,7 @@ def font_licenses() -> dict[str, bytes]:
 
     package = resource_files("handbook_toolkit").joinpath("render_data", "fonts")
     return {
-        "source-sans3/OFL.txt": package.joinpath("source-sans3", "OFL.txt").read_bytes(),
-        "source-serif4/OFL.txt": package.joinpath("source-serif4", "OFL.txt").read_bytes(),
+        "inter/OFL.txt": package.joinpath("inter", "OFL.txt").read_bytes(),
         "jetbrains-mono/OFL.txt": package.joinpath("jetbrains-mono", "OFL.txt").read_bytes(),
     }
 
@@ -241,9 +237,8 @@ def font_face_css(prefix: str) -> str:
     """Return ``@font-face`` rules whose URLs are relative to *prefix* (same origin only)."""
 
     comment = (
-        "/* Web fonts: Handbook Sans (Source Sans 3 subset, SIL OFL 1.1, "
-        f"{prefix}source-sans3/OFL.txt); Handbook Serif (Source Serif 4 subset, SIL OFL 1.1, "
-        f"{prefix}source-serif4/OFL.txt); Handbook Mono (JetBrains Mono subset, SIL OFL 1.1, "
+        "/* Web fonts: Inter (Inter 4.1 subset, SIL OFL 1.1, "
+        f"{prefix}inter/OFL.txt); Handbook Mono (JetBrains Mono subset, SIL OFL 1.1, "
         f"{prefix}jetbrains-mono/OFL.txt). */"
     )
     rules = []
@@ -460,9 +455,9 @@ def book_scss(scheme: str) -> str:
                  "link-color": colors["accent"], "navbar-bg": colors["canvas"],
                  "navbar-fg": colors["text"], "sidebar-bg": colors["canvas"],
                  "sidebar-fg": colors["text"], "headings-color": colors["heading"],
-                 "font-family-sans-serif": '"Handbook Sans"',
+                 "font-family-sans-serif": '"Inter"',
                  "font-family-monospace": '"Handbook Mono"',
-                 "headings-font-family": '"Handbook Serif"'}
+                 "headings-font-family": '"Inter"'}
     for kind, roles in tokens["callout"].items():
         if kind != "review":
             variables["callout-color-" + kind] = roles["accent"][scheme]
