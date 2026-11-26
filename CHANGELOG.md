@@ -5,15 +5,26 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+## [0.15.0] - Unreleased
+
+Toolkit minor release prepared by change `0082`. It carries the changes merged after
+`toolkit-v0.14.2`: change `0081` (print figure and callout placement, PRs 133–136) changes how
+the Word and PDF editions lay out figures and callouts; changes `0079` and `0080` fix the clean-
+clone gate and make `book-html.zip` reproducible. The Owner checked the CI-built 6.0.0 DOCX of PR
+136 in desktop Word. The tag needs the Owner's approval.
+
 ### Changed
 
 - Figures stay right after the text that introduces them in the PDF and Word editions, and print
-  at 85% of their stated size (change `0081`, from the Owner's checks of the Solutions
+  at 85% of their stated size (in Word, PNG figures only: an SVG keeps its size there) (change `0081`, from the Owner's checks of the Solutions
   Architecture Handbook 6.0.0 preview). PDF figures no longer float. In both editions a figure
   that nearly fits the gap in front of it is scaled further. Neither step goes below 75% of the
   natural size. `build.tool_versions.docx_figure_placement` records the Word counts and
   `<handbook-figure-fit>` records the PDF decisions. Callout boxes stay whole; a pitfall and its
-  decision are separate boxes. In the HTML light theme a raster figure no longer shows white
+  decision are separate boxes; in Word no paragraph inside a box, and no spacer or paragraph before
+  it, keeps with next, so a pitfall that fits stays on the page before its decision and a box that
+  starts a page has no empty line above it. A PDF review checklist whose title names decisions
+  keeps the checklist colour. In the HTML light theme a raster figure no longer shows white
   while the scroll reveal fades it in.
 
 ### Fixed
