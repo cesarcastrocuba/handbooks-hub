@@ -84,7 +84,8 @@ def rename(font: TTFont, family: str, style: str) -> None:
 
 
 def build(source: Path, destination: Path, family: str, style: str) -> None:
-    font = TTFont(source)
+    # Keep the source's head.modified so the same TTF always gives the same WOFF2 bytes.
+    font = TTFont(source, recalcTimestamp=False)
     options = subset.Options()
     options.flavor = "woff2"
     options.layout_features = ["*"]

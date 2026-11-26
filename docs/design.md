@@ -130,7 +130,7 @@ tools page applies `--measure`; the portal keeps its responsive card grid.
 
 | Surface | How it consumes the contract |
 | --- | --- |
-| Portal | Generated `:root` variables in the single HTML page plus the ten same-origin WOFF2 files |
+| Portal | Generated `:root` variables in the single HTML page plus the seven same-origin WOFF2 files |
 | Book HTML | Generated `design-tokens.css` loaded before the layout stylesheet; dark values on `body.quarto-dark` and on the OS media query |
 | PDF | Generated `design-tokens.typ` constants read by the Typst theme and print layout |
 | DOCX | `generate_reference_docx.py` reads the tokens at generation time; Inter for body text and headings and JetBrains Mono for code |
