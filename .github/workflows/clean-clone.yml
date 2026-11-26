@@ -50,14 +50,19 @@ jobs:
       - uses: quarto-dev/quarto-actions/setup@8a96df13519ee81fd526f2dfca5962811136661b # v2.2.0
         with:
           version: ${{ env.QUARTO_VERSION }}
-      - name: Install pdfinfo and pdftotext (Linux)
+      - name: Install system dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends poppler-utils
-      - name: Install pdfinfo and pdftotext (macOS)
+          sudo apt-get install -y --no-install-recommends poppler-utils qpdf libreoffice-writer
+      - name: Install system dependencies (macOS)
         if: runner.os == 'macOS'
-        run: brew install poppler
+        run: |
+          brew install poppler qpdf
+          brew install --cask libreoffice
+          echo "/Applications/LibreOffice.app/Contents/MacOS" >> "$GITHUB_PATH"
+      - name: Verify the qpdf version
+        run: test "$(qpdf --version | head -1 | cut -d' ' -f3 | cut -d. -f1)" -ge 11
       - name: Record the environment
         run: |
           mkdir -p "$LOG_DIR"
@@ -67,7 +72,7 @@ jobs:
           make --version | head -n 1
           test "$(quarto --version)" = "$QUARTO_VERSION"
           quarto --version
-          command -v pdfinfo pdftotext
+          command -v pdfinfo pdftotext qpdf soffice
           pdfinfo -v 2>&1 | head -n 1 || true
 
       - name: "Hub: clone the commit under test"
@@ -85,6 +90,17 @@ jobs:
           . .venv/bin/activate
           python3 -m pip install --upgrade pip
           python3 -m pip install -r requirements-dev.txt
+      # The browser tests skip without Playwright; installing it keeps the no-skip gate strict.
+      - name: "Hub: install the screenshot browser"
+        working-directory: ${{ env.HUB_DIR }}
+        run: |
+          . .venv/bin/activate
+          python3 -m pip install -r tools/scripts/requirements-edition-preview.txt
+          if [ "$RUNNER_OS" = Linux ]; then
+            python3 -m playwright install --with-deps chromium
+          else
+            python3 -m playwright install chromium
+          fi
       - name: "Hub: make check"
         working-directory: ${{ env.HUB_DIR }}
         run: |

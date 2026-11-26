@@ -2,6 +2,7 @@
 
 import copy
 import hashlib
+import io
 import json
 from pathlib import Path
 import tempfile
@@ -142,6 +143,141 @@ class CatalogVerificationTests(unittest.TestCase):
         self.release["assets"].pop()
         self.assertFalse(self.run_gate().ok)
 
+    def configure_authors(self, authors, metadata_author="Example Author"):
+        """State catalog authors and write the matching metadata into the release source zip."""
+
+        self.document["schema_version"] = "1.2"
+        self.document["books"][0]["authors"] = authors
+        assets = Path(self.temp.name) / "assets"
+        source = assets / "source.zip"
+        with ZipFile(source, "w") as archive:
+            if metadata_author is not None:
+                archive.writestr(
+                    "publishing/metadata.yaml",
+                    "author: " + json.dumps(metadata_author) + "\n",
+                )
+        manifest_path = assets / "publication-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        data = source.read_bytes()
+        for entry in manifest["artifacts"]:
+            if entry["role"] == "source":
+                entry["sha256"] = hashlib.sha256(data).hexdigest()
+                entry["bytes"] = len(data)
+        encoded = (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode("utf-8")
+        manifest_path.write_bytes(encoded)
+        digests = {entry["path"]: entry["sha256"] for entry in manifest["artifacts"]}
+        digests["publication-manifest.json"] = hashlib.sha256(encoded).hexdigest()
+        (assets / "SHA256SUMS.txt").write_text(
+            "".join(f"{digests[name]}  {name}\n" for name in sorted(digests)), encoding="utf-8"
+        )
+        for name in ("source.zip", "publication-manifest.json", "SHA256SUMS.txt"):
+            self.bytes[self.prefix + name] = (assets / name).read_bytes()
+
+    def test_catalog_authors_match_the_release_metadata(self):
+        self.configure_authors(["Example Author"])
+        self.assertTrue(self.run_gate().ok)
+
+    def test_catalog_authors_accept_a_metadata_list(self):
+        self.configure_authors(["Example Author", "Second Author"],
+                               metadata_author=["Example Author", "Second Author"])
+        self.assertTrue(self.run_gate().ok)
+
+    def test_catalog_authors_mismatch_fails(self):
+        self.configure_authors(["Someone Else"])
+        result = self.run_gate()
+        self.assertIn("catalog authors differ", str(result.issues[0]))
+
+    def test_a_release_without_metadata_cannot_verify_catalog_authors(self):
+        self.configure_authors(["Example Author"], metadata_author=None)
+        result = self.run_gate()
+        self.assertIn("publishing/metadata.yaml", str(result.issues[0]))
+
+    def add_extras(self, *, sums=None, zip_bytes=None):
+        if zip_bytes is None:
+            buffer = io.BytesIO()
+            with ZipFile(buffer, "w") as archive:
+                archive.writestr("exports/checklist.csv", "id,status\n1,pass\n")
+            zip_bytes = buffer.getvalue()
+        digest = hashlib.sha256(zip_bytes).hexdigest()
+        sums_bytes = (
+            sums if sums is not None else f"{digest}  book-extras.zip\n"
+        ).encode("utf-8")
+        self.bytes[self.prefix + "book-extras.zip"] = zip_bytes
+        self.bytes[self.prefix + "EXTRAS-SHA256SUMS.txt"] = sums_bytes
+        self.release["assets"].extend(
+            [
+                {
+                    "name": "book-extras.zip",
+                    "state": "uploaded",
+                    "browser_download_url": self.prefix + "book-extras.zip",
+                    "size": len(zip_bytes),
+                },
+                {
+                    "name": "EXTRAS-SHA256SUMS.txt",
+                    "state": "uploaded",
+                    "browser_download_url": self.prefix + "EXTRAS-SHA256SUMS.txt",
+                    "size": len(sums_bytes),
+                },
+            ]
+        )
+
+    def test_optional_extras_pair_passes(self):
+        self.add_extras()
+        self.assertTrue(self.run_gate().ok)
+
+    def test_release_must_carry_both_extras(self):
+        self.add_extras()
+        self.release["assets"] = [
+            asset for asset in self.release["assets"] if asset["name"] != "EXTRAS-SHA256SUMS.txt"
+        ]
+        result = self.run_gate()
+        self.assertIn("must carry both", str(result.issues[0]))
+        self.add_extras()
+        self.release["assets"] = [
+            asset for asset in self.release["assets"] if asset["name"] != "book-extras.zip"
+        ]
+        result = self.run_gate()
+        self.assertIn("must carry both", str(result.issues[0]))
+
+    def test_an_unknown_tenth_asset_fails(self):
+        self.add_extras()
+        self.release["assets"].append(
+            {"name": "notes.txt", "state": "uploaded",
+             "browser_download_url": self.prefix + "notes.txt"}
+        )
+        result = self.run_gate()
+        self.assertIn("exactly", str(result.issues[0]))
+
+    def test_extras_checksum_mismatch_fails(self):
+        self.add_extras(sums="0" * 64 + "  book-extras.zip\n")
+        result = self.run_gate()
+        self.assertIn("checksum does not match", str(result.issues[0]))
+
+    def test_malformed_extras_sums_fails(self):
+        for sums in (
+            "not a checksum\n",
+            f"{'0' * 64}  other.zip\n",
+            f"{'0' * 64}  book-extras.zip\n{'1' * 64}  book-extras.zip\n",
+        ):
+            with self.subTest(sums=sums):
+                self.setUp()
+                self.add_extras(sums=sums)
+                result = self.run_gate()
+                self.assertIn("EXTRAS-SHA256SUMS.txt", str(result.issues[0]))
+
+    def test_extras_zip_with_unsafe_member_fails(self):
+        buffer = io.BytesIO()
+        with ZipFile(buffer, "w") as archive:
+            archive.writestr("../escape.txt", "x")
+        self.add_extras(zip_bytes=buffer.getvalue())
+        result = self.run_gate()
+        self.assertIn("unsafe member path", str(result.issues[0]))
+
+    def test_extras_zip_must_be_a_valid_archive(self):
+        self.add_extras(zip_bytes=b"not a zip")
+        result = self.run_gate()
+        self.assertIn("not a valid ZIP", str(result.issues[0]))
+
     def test_direct_download_links_must_match_the_release_manifest(self):
         self.rewrite_as_legacy()
         self.document["schema_version"] = "1.1"
@@ -269,6 +405,64 @@ class CatalogVerificationTests(unittest.TestCase):
             response.getheader.side_effect = {}.get
             with self.assertRaisesRegex(ValueError, r"HTTP 403 from api\.github\.com$"):
                 _download("https://api.github.com/repos/o/r", destination, 100)
+        self.assertFalse(destination.exists())
+
+    def transient(self, status, retry_after=None):
+        response = MagicMock()
+        response.status = status
+        headers = {"Retry-After": retry_after} if retry_after is not None else {}
+        response.getheader.side_effect = headers.get
+        return response
+
+    def test_a_transient_server_error_is_retried(self):
+        destination = Path(self.temp.name) / "retried"
+        with patch("handbook_toolkit.catalog_verification._public_addresses", return_value=["93.184.216.34"]), patch(
+            "handbook_toolkit.catalog_verification._PinnedHTTPSConnection"
+        ) as connection, patch("handbook_toolkit.catalog_verification._sleep") as sleep:
+            success = MagicMock()
+            success.status = 200
+            success.read.side_effect = [b"bytes", b""]
+            connection.return_value.getresponse.side_effect = [self.transient(503), success]
+            _download("https://public.example/asset", destination, 100)
+        self.assertEqual(destination.read_bytes(), b"bytes")
+        self.assertEqual(connection.call_count, 2)
+        sleep.assert_called_once_with(2.0)
+
+    def test_transient_retry_honours_a_numeric_retry_after(self):
+        destination = Path(self.temp.name) / "retry-after"
+        with patch("handbook_toolkit.catalog_verification._public_addresses", return_value=["93.184.216.34"]), patch(
+            "handbook_toolkit.catalog_verification._PinnedHTTPSConnection"
+        ) as connection, patch("handbook_toolkit.catalog_verification._sleep") as sleep:
+            success = MagicMock()
+            success.status = 200
+            success.read.side_effect = [b"bytes", b""]
+            connection.return_value.getresponse.side_effect = [
+                self.transient(503, retry_after="7"), success
+            ]
+            _download("https://public.example/asset", destination, 100)
+        sleep.assert_called_once_with(7.0)
+
+    def test_four_transient_errors_fail_with_the_existing_message(self):
+        destination = Path(self.temp.name) / "never-written"
+        with patch("handbook_toolkit.catalog_verification._public_addresses", return_value=["93.184.216.34"]), patch(
+            "handbook_toolkit.catalog_verification._PinnedHTTPSConnection"
+        ) as connection, patch("handbook_toolkit.catalog_verification._sleep") as sleep:
+            connection.return_value.getresponse.side_effect = [self.transient(503) for _ in range(4)]
+            with self.assertRaisesRegex(ValueError, r"remote asset returned HTTP 503 from public\.example$"):
+                _download("https://public.example/asset", destination, 100)
+        self.assertEqual(sleep.call_count, 3)
+        self.assertFalse(destination.exists())
+
+    def test_a_not_found_response_is_not_retried(self):
+        destination = Path(self.temp.name) / "not-found"
+        with patch("handbook_toolkit.catalog_verification._public_addresses", return_value=["93.184.216.34"]), patch(
+            "handbook_toolkit.catalog_verification._PinnedHTTPSConnection"
+        ) as connection, patch("handbook_toolkit.catalog_verification._sleep") as sleep:
+            connection.return_value.getresponse.return_value = self.transient(404)
+            with self.assertRaisesRegex(ValueError, r"HTTP 404 from public\.example$"):
+                _download("https://public.example/asset", destination, 100)
+        self.assertEqual(connection.call_count, 1)
+        sleep.assert_not_called()
         self.assertFalse(destination.exists())
 
     def test_pinned_connection_preserves_tls_hostname_without_resolving_again(self):

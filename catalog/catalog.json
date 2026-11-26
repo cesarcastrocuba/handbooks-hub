@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "books": [
     {
       "id": "handbook-authoring-and-publishing",
@@ -26,7 +26,39 @@
           "markdown": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.5.2/book.md",
           "source": "https://github.com/cesarcastrocuba/handbook-sample-01/releases/download/v0.5.2/book-source.zip"
         }
-      }
+      },
+      "authors": [
+        "Franz César Castro Cuba"
+      ]
+    },
+    {
+      "id": "solutions-architecture-handbook",
+      "slug": "solutions-architecture-handbook",
+      "title": "Solutions Architecture Handbook",
+      "summary": "A vendor-neutral, practical handbook for designing, evaluating, documenting and governing software and solution architectures.",
+      "reading_url": "https://cesarcastrocuba.github.io/handbook-solutions-architecture/",
+      "categories": [
+        "architecture"
+      ],
+      "status": "published",
+      "latest_release": {
+        "version": "5.0.0",
+        "tag": "v5.0.0",
+        "url": "https://github.com/cesarcastrocuba/handbook-solutions-architecture/releases/tag/v5.0.0",
+        "published_at": "2026-11-20",
+        "manifest_url": "https://github.com/cesarcastrocuba/handbook-solutions-architecture/releases/download/v5.0.0/publication-manifest.json",
+        "checksums_url": "https://github.com/cesarcastrocuba/handbook-solutions-architecture/releases/download/v5.0.0/SHA256SUMS.txt",
+        "assets": {
+          "pdf": "https://github.com/cesarcastrocuba/handbook-solutions-architecture/releases/download/v5.0.0/book.pdf",
+          "html": "https://github.com/cesarcastrocuba/handbook-solutions-architecture/releases/download/v5.0.0/book-html.zip",
+          "docx": "https://github.com/cesarcastrocuba/handbook-solutions-architecture/releases/download/v5.0.0/book.docx",
+          "markdown": "https://github.com/cesarcastrocuba/handbook-solutions-architecture/releases/download/v5.0.0/book.md",
+          "source": "https://github.com/cesarcastrocuba/handbook-solutions-architecture/releases/download/v5.0.0/book-source.zip"
+        }
+      },
+      "authors": [
+        "Franz César Castro Cuba"
+      ]
     }
   ]
 }

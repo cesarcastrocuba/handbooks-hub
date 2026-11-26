@@ -199,7 +199,8 @@ def plan_update(
         return UpdatePlan(updated, False, f"no-op: {slug} already lists {tag}")
 
     book["latest_release"] = entry
-    if "assets" in entry:
+    # Moving a book never rewrites its metadata: a 1.2 catalog keeps its authors and stays 1.2.
+    if "assets" in entry and updated["schema_version"] == "1.0":
         updated["schema_version"] = "1.1"
     _check_catalog(updated, "updated")
     return UpdatePlan(updated, True, f"updated: {slug} {current['tag']} -> {tag} (published {published_at})")

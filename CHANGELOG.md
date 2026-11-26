@@ -5,8 +5,151 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+## [0.15.0] - Unreleased
+
+Toolkit minor release prepared by change `0082`. It carries the changes merged after
+`toolkit-v0.14.2`: change `0081` (print figure and callout placement, PRs 133–136) changes how
+the Word and PDF editions lay out figures and callouts; changes `0079` and `0080` fix the clean-
+clone gate and make `book-html.zip` reproducible. The Owner checked the CI-built 6.0.0 DOCX of PR
+136 in desktop Word. The tag needs the Owner's approval.
+
+### Changed
+
+- Figures stay right after the text that introduces them in the PDF and Word editions, and print
+  at 85% of their stated size (in Word, PNG figures only: an SVG keeps its size there) (change `0081`, from the Owner's checks of the Solutions
+  Architecture Handbook 6.0.0 preview). PDF figures no longer float. In both editions a figure
+  that nearly fits the gap in front of it is scaled further. Neither step goes below 75% of the
+  natural size. `build.tool_versions.docx_figure_placement` records the Word counts and
+  `<handbook-figure-fit>` records the PDF decisions. Callout boxes stay whole; a pitfall and its
+  decision are separate boxes; in Word no paragraph inside a box, and no spacer or paragraph before
+  it, keeps with next, so a pitfall that fits stays on the page before its decision and a box that
+  starts a page has no empty line above it. A PDF review checklist whose title names decisions
+  keeps the checklist colour. In the HTML light theme a raster figure no longer shows white
+  while the scroll reveal fades it in.
+
+### Fixed
+
+- The Markdown leak check also catches the given spelling of a build's repository and output paths
+  when they are reached through a symlink, as macOS does with `/var`; `stage_figures` accepts a
+  workspace reached through a symlink. The `clean-clone` workflow installs Playwright and Chromium so
+  that its no-skip gate passes with the browser tests running (change `0079`, issue 113).
+- `book-html.zip` is byte-reproducible for the same commit: the build removes the render-time
+  `lastmod` that Quarto writes into `sitemap.xml`, as the portal already did; both now share
+  `artifacts.omit_sitemap_times` (change `0080`, issue 98).
+
+## [1.9.2] - 2026-11-20
+
+Template release prepared by change `0078`. Template `1.9.2` pins toolkit `0.14.2` at
+`47c37e23819abb801b1c8635401d6b64e7e14fad` (tag `toolkit-v0.14.2`) and
+keeps standard profile `1.1.0` and the workflows of `1.9.0`. The coordinator publishes the template
+mirror and tag after the merge and the Owner's approval.
+
+### Changed
+
+- `book.yaml` and `requirements.txt` pin toolkit `0.14.2`; the Word edition gains the float and
+  section-introduction fixes of change `0076`, and every edition the links of change `0075`.
+
+## [0.14.2] - 2026-11-20
+
+Toolkit patch release prepared by change `0077`. It carries the changes merged after
+`toolkit-v0.14.1`: changes `0075` (cross-reference links) and `0076` (Word floats and section
+introductions) change the toolkit that books install, from the Owner's review of the Solutions
+Architecture Handbook 4.0.0 preview; change `0072` changes the catalog verification and the portal,
+which run from the hub. The PDF and HTML builders are unchanged apart from the added links. The Owner
+checked the CI-built 4.0.0 DOCX of change `0076` in desktop Word. The tag needs the Owner's approval.
+
 ### Added
 
+- Catalog schema `1.2` records each book's `authors` (change `0072`): the catalog lists the author of
+  both books, `catalog_verification` compares the field with `publishing/metadata.yaml` in the
+  release's `book-source.zip`, and the catalog automation keeps the field and the schema version when
+  it moves a book to a newer release. Schema `1.1` catalogs without `authors` stay valid, and the
+  listing request asks for the author names.
+
+### Changed
+
+- The portal shows the authors on each card (`By …`) and on the generated cover, adds an Author
+  select beside the topic chips, the search and the sort, matches author names in the search, and
+  names the publisher in the footer (change `0072`).
+
+### Fixed
+
+- Cross-reference links: a handbook location ("Section 8.4", "Table 8.8") no longer starts a version
+  list, so a later location in the same sentence is linked ("…, Section 2.12 sets …"). Software and
+  standard version lists ("TLS 1.2 minimum, 1.3 preferred") stay plain (change `0075`).
+- Word: captioned tables and figures are no longer wrapped in Quarto's one-cell layout table. Desktop
+  Word did not carry a heading's keep-with-next into that wrapper, so a heading or a short
+  introduction stayed at the foot of a page while its table or figure moved to the next one. A short
+  introduction between two headings now also keeps with the next heading (change `0076`).
+
+## [1.9.1] - 2026-11-19
+
+Template release prepared by change `0074`. Template `1.9.1` pins toolkit `0.14.1` at
+`9c4355e5174c41dbbaaae7fe6304c247768b69d2` (tag `toolkit-v0.14.1`) and keeps standard
+profile `1.1.0` and the workflows of `1.9.0`. The coordinator publishes the template mirror and tag
+after the merge and the Owner's approval.
+
+### Changed
+
+- `book.yaml` and `requirements.txt` pin toolkit `0.14.1`; the reading site gains the figure and
+  theme fixes of change `0071`.
+
+## [0.14.1] - 2026-11-19
+
+Toolkit patch release prepared by change `0073`. It carries the fixes merged after `toolkit-v0.14.0`:
+changes `0068` and `0071` change the toolkit that books install; changes `0069` and `0070` change the
+hub's catalog verification and workflows, which run from the hub and are listed here for
+completeness. The PDF and DOCX builders are unchanged. The tag needs the Owner's approval.
+
+### Fixed
+
+- Web reading site: raster figures blend with the light canvas even inside revealed sections, and
+  invert to light lines on the dark canvas (change `0071`); the theme toggle no longer changes the
+  navbar height because both schemes share one navbar padding, and a scheme-parity test keeps every
+  non-colour SCSS variable identical.
+- qpdf 11 or later is installed and version-checked in every hub workflow that runs the toolkit tests
+  or builds a book (change `0070`). `portal-pages.yml` and `catalog-update.yml` now install
+  `poppler-utils qpdf libreoffice-writer`, `ci.yml` installs qpdf for its check jobs and verifies the
+  version in `publication-build`, and `clean-clone.yml` installs qpdf and LibreOffice on Linux and
+  macOS. A test fails if a workflow that runs `make check`/`make full`, `build-book` or the build
+  tests does not install and verify qpdf. The release verifier also retries transient HTTP
+  429/5xx responses up to three times (2/4/8 s, or a numeric `Retry-After` up to 30 s) without
+  writing partial files.
+- Catalog release verification accepts the optional `book-extras.zip` and `EXTRAS-SHA256SUMS.txt`
+  pair alongside the seven declared assets (change `0069`). One of the pair alone, or any other
+  name, still fails; the verifier checks the sums line, the ZIP checksum and archive integrity, and
+  rejects unsafe member paths. Extras are not catalog asset roles.
+- Preview builds validate a book-owned Document Control `Version` row against the release version
+  they preview (change `0068`): the `-preview` suffix is removed only for that check, so a final
+  `3.1.0` book that states `3.1` previews, while release builds stay strict and exact. The suffix is
+  defined once in the toolkit and reused by `tools/scripts/edition_preview.py`.
+
+## [1.9.0] - 2026-11-18
+
+Template release prepared by change `0065` and repinned by change `0067`. Template `1.9.0` pins toolkit `0.14.0` at
+`9dedd3c70bb7ad345eb2e3dbcb54773de9bc4ea2` (tag `toolkit-v0.14.0`) and keeps standard
+profile `1.1.0`. It also carries everything prepared for templates `1.7.0` and `1.8.0`, which are
+superseded and never tagged (Owner decision, 2026-11-17): `template-v1.9.0` is the first template tag
+after `template-v1.6.0`. The template mirror and tag are published by the coordinator after the merge
+and the Owner's approval.
+
+### Changed
+
+- Template `release.yml` and `ci.yml` install qpdf 11 or later, and a release whose manifest shows no
+  compacted PDF fails (change `0062`).
+
+## [0.14.0] - 2026-11-18
+
+Toolkit release prepared by change `0064`: changes `0060`, `0061`, `0062` and `0063`, the fixes from
+the Owner's review of the toolkit 0.13.0 previews, and change `0066` (repinned by change `0067`),
+the fix from the Owner's Word and PDF check of the 0.14.0 previews. It also carries everything prepared for `0.12.0`
+and `0.13.0`, which are superseded and never tagged (Owner decision, 2026-11-17): `toolkit-v0.14.0`
+is the first toolkit tag after `toolkit-v0.11.0`. The tag needs the Owner's approval and desktop Word
+check, because the DOCX gains appendix labels, keep-with-next tables and natural-size figures.
+
+### Added
+
+- Page-sized tables stay with their captions and with the heading or lead-in that precedes them in PDF and Word; raster figures keep their natural physical size and the tall-page cap in every edition, with light-only raster background blending in HTML (change `0061`).
 - Lossless PDF compaction with qpdf (change `0062`), on by default: `build-book` runs qpdf 11 or
   later with `--deterministic-id --object-streams=generate --compress-streams=y
   --stream-data=compress --recompress-flate --compression-level=9`, verifies the result with
@@ -18,6 +161,10 @@ semantic versioning once the toolkit is published.
 
 ### Fixed
 
+- Print editions no longer show a white box around raster figures (change `0066`). Typst and Word
+  embed a staged colour-to-alpha copy of a white-backed PNG, while HTML keeps the original image and
+  its light-only CSS blending. Figure ids, widths, captions, anchors and the Markdown edition are
+  unchanged; the source PNGs in the book repository are never modified.
 - PDF bookmarks keep their section numbers (change `0063`, issue #99). The heading numbering
   function is no longer `context`: Typst cannot resolve a contextual function while it assembles the
   PDF outline, so numbered headings lost their number and kept only the separating space in the
@@ -33,7 +180,9 @@ semantic versioning once the toolkit is published.
   - A book-owned Document Control `| Field | Value |` table is validated against the edition version instead of receiving a duplicate table.
 
 
-## [1.8.0] - Unreleased
+## [1.8.0] - Superseded, never tagged
+
+Superseded by `1.9.0` (Owner decision, 2026-11-17); its changes ship in `template-v1.9.0`.
 
 Template release prepared by change `0059`. Template `1.8.0` pins toolkit `0.13.0` at
 `4b9e3114d0a6c638eb7715784e7f0bb622f88322` (`toolkit-v0.13.0` once the Owner approves the tag) and keeps standard
@@ -44,7 +193,9 @@ The template mirror and tag are published by the coordinator after the merge and
 
 - Book-owned extra release assets (change `0057`, gap G6): template `release.yml` optionally runs `make release-assets RELEASE_ASSETS_DIR="$RUNNER_TEMP/extra-assets"` when defined in the book's `Makefile`, verifies that the working tree remains clean, validates regular file constraints (names matching `^[A-Za-z0-9][A-Za-z0-9._-]*$`, caps of max 100 files, 10 MB per file, 50 MB total, and no collisions with publication payloads), packages them deterministically into `book-extras.zip`, and writes `EXTRAS-SHA256SUMS.txt`. Books without the target publish only the standard seven files.
 
-## [0.13.0] - Unreleased
+## [0.13.0] - Superseded, never tagged
+
+Superseded by `0.14.0` (Owner decision, 2026-11-17); its changes ship in `toolkit-v0.14.0`.
 
 Toolkit release prepared by change `0058`: changes `0052`, `0053` and `0055`. The tag
 `toolkit-v0.13.0` needs the Owner's approval and desktop Word check, because the DOCX gains links,
@@ -56,7 +207,9 @@ the Index and recompressed images.
 - Opt-in glossary definition pointers and a final analytic Index (change `0053`, G9/G4), with declared glossary/vocabulary inputs, cross-edition internal links and protected print rows; prose term auto-linking remains off.
 - Lossless artifact size optimization (change `0055`), on by default: staged PNG diagrams are losslessly recompressed (filter 0, zlib level 9) with exact pixel-identity verification before Quarto rendering, and ZIP distributions (Word `.docx` package and HTML site archive `book-html.zip`) are compressed at zlib level 9. The `--no-optimize` build flag opts out of both PNG recompression and ZIP level 9 compression.
 
-## [1.7.0] - Unreleased
+## [1.7.0] - Superseded, never tagged
+
+Superseded by `1.9.0` (Owner decision, 2026-11-17); its changes ship in `template-v1.9.0`.
 
 Template release prepared by change `0056`. Template `1.7.0` pins toolkit `0.12.0` at
 `0824ddfaebd28f170f157fcb38641c7dc65d6c20` (`toolkit-v0.12.0` once the Owner approves the tag) and
@@ -70,7 +223,9 @@ Handbook.
 - Template `initialize_book.py` writes a clean, tailored book README with book title, summary, contributor pointers, and verification commands (Gap G11).
 - Align author guide and template quickstart documentation to specify the exact required branch protection status check `Fast checks` (Gap G10).
 
-## [0.12.0] - Unreleased
+## [0.12.0] - Superseded, never tagged
+
+Superseded by `0.14.0` (Owner decision, 2026-11-17); its changes ship in `toolkit-v0.14.0`.
 
 Toolkit release prepared by change `0054`: changes `0050` and `0051`. The tag `toolkit-v0.12.0`
 needs the Owner's approval and the Owner's desktop Word check of a DOCX built with it, because the
@@ -107,7 +262,7 @@ transition, and the example chapter's neutral Review Checklist role. The release
 the deployed reading site's assets with `site_check` in a read-only job after Pages deployment.
 The template mirror and tag are published by the coordinator after this change is merged.
 
-## [0.11.0] - Unreleased
+## [0.11.0] - 2026-11-15
 
 ### Changed
 

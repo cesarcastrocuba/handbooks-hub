@@ -3,31 +3,77 @@
 Books pin exact toolkit and profile versions. Upgrades are deliberate changes reviewed like any
 other contribution; nothing upgrades automatically.
 
-## Example: toolkit 0.12.0 to 0.13.0
+## Example: toolkit 0.14.1 to 0.14.2
+
+1. Set `toolkit: "0.14.2"` in `book.yaml` and pin `47c37e23819abb801b1c8635401d6b64e7e14fad`
+   (`toolkit-v0.14.2`) in `requirements.txt`. The profile stays `1.1.0`, and the release workflow of
+   template 1.9.0 needs no change.
+2. The Word edition changes: captioned tables and figures are no longer inside Quarto's one-cell
+   layout table, so desktop Word keeps a heading and a short introduction with the table or figure
+   after them, and a short introduction between two headings keeps with the next heading. Page
+   numbers in the DOCX can move; the Contents and the indexes are rebuilt by the build.
+3. Cross-reference links: a location after another location in the same sentence ("…, Section 2.12
+   sets …") becomes a link in every edition. Version lists stay plain.
+4. Rebuild once and open the DOCX in desktop Word before the next tag.
+
+## Example: toolkit 0.14.0 to 0.14.1
+
+1. Set `toolkit: "0.14.1"` in `book.yaml` and pin `9c4355e5174c41dbbaaae7fe6304c247768b69d2`
+   (`toolkit-v0.14.1`) in `requirements.txt`. The profile stays `1.1.0`, and the release workflow of
+   template 1.9.0 needs no change.
+2. The reading site changes only: raster figures blend with the cream page in the light theme and
+   read as light lines on the dark page in the dark theme, and switching themes no longer moves the
+   page. The PDF and DOCX builders are unchanged.
+3. A preview build of a final `X.Y.0` book whose Document Control states `X.Y` now passes.
+4. A patch edition `X.Y.Z` with `Z` > 0 must state its exact version in a book-owned Document Control
+   `Version` row. Rebuild once and open the DOCX in desktop Word before the next tag.
+
+## Example: toolkit 0.13.0 to 0.14.0
+
+Toolkit `0.12.0` and `0.13.0` were never tagged (superseded by `0.14.0`, Owner decision 2026-11-17).
+A book on `0.11.0` or `0.12.0` pins `0.14.0` directly and also applies the steps of the examples below
+that it has not applied yet.
+
+1. Set `toolkit: "0.14.0"` in `book.yaml` and pin `9dedd3c70bb7ad345eb2e3dbcb54773de9bc4ea2`
+   (`toolkit-v0.14.0`) in `requirements.txt`. The profile stays `1.1.0`.
+2. Lossless PDF compaction with qpdf is on by default. Install qpdf 11 or later in the book's release
+   workflow next to `poppler-utils` and LibreOffice Writer, as template 1.9.0 does: a release build
+   fails without it, a `--preview` build records `skipped` in `build.optimization.pdf`, and
+   `--no-optimize` turns the compaction off.
+3. Appendix headings read "Appendix A — Title" in every edition, with no standalone "Appendices" page
+   in the PDF; in the reading site References and the Index sit after the Appendices part. No source
+   change is needed.
+4. A book whose `# Document Control` section has its own `| Field | Value |` table keeps only that
+   table; its `Version` row must contain the edition version (or `major.minor` for a final `x.y.0`),
+   otherwise the build fails. Books without such a table keep the generated one.
+5. Tables that fit a page stay together with their caption and the heading before them, and raster
+   figures with a pHYs density print at their natural size (capped by the text width and the
+   tall-page rule) in every edition. Page counts change; rebuild and review the PDF.
+6. Rebuild once and open the DOCX in desktop Word before the next tag.
+
+## Example: toolkit 0.12.0 to 0.13.0 (never tagged)
 
 1. Set `toolkit: "0.13.0"` in `book.yaml` and pin `4b9e3114d0a6c638eb7715784e7f0bb622f88322`
-   (`toolkit-v0.13.0`) in `requirements.txt`. The profile stays `1.1.0`.
+   (the 0.13.0 merge commit) in `requirements.txt`. The profile stays `1.1.0`.
 2. Lossless size optimization is on by default: staged PNG figures are recompressed with a pixel
    check, and the DOCX and HTML zip use zlib level 9. Only those two files change; build with
    `--no-optimize` to reproduce 0.12.0's bytes.
-3. Lossless PDF compaction with qpdf is on by default. Install qpdf 11 or later in the book's release
-   workflow next to `poppler-utils` and LibreOffice Writer: a release build fails without it, a
-   `--preview` build records `skipped` in `build.optimization.pdf`, and `--no-optimize` turns the
-   compaction off.
-4. Optional features, off unless the book opts in: `publication.cross_reference_links: true` links
+3. Optional features, off unless the book opts in: `publication.cross_reference_links: true` links
    prose references such as "Section 6.2" or "Table 4.1"; `manuscript.glossary` (a reading-order file)
    adds stable glossary anchors and definition pointers; with it, `publication.index_vocabulary` (a
    YAML file validated against the packaged schema) adds the analytic Index as the last page. See
    `docs/publication-build.md`.
-5. Update the book's release workflow from template 1.8.0. A book may add a `release-assets`
+4. Update the book's release workflow from template 1.8.0. A book may add a `release-assets`
    Makefile target that writes its own deliverables to `$(RELEASE_ASSETS_DIR)`; the release then
    adds `book-extras.zip` and `EXTRAS-SHA256SUMS.txt`. Books without the target are unchanged.
-6. Rebuild once and open the DOCX in desktop Word before the next tag.
+   Catalog verification accepts that optional pair alongside the seven files and checks its checksum
+   and ZIP contents.
+5. Rebuild once and open the DOCX in desktop Word before the next tag.
 
-## Example: toolkit 0.11.0 to 0.12.0 and profile 1.0.0 to 1.1.0
+## Example: toolkit 0.11.0 to 0.12.0 (never tagged) and profile 1.0.0 to 1.1.0
 
 1. Set `toolkit: "0.12.0"` and the profile `version: "1.1.0"` in `book.yaml`, and pin
-   `0824ddfaebd28f170f157fcb38641c7dc65d6c20` (`toolkit-v0.12.0`) in `requirements.txt`. Profile `1.0.0`
+   `0824ddfaebd28f170f157fcb38641c7dc65d6c20` (the 0.12.0 merge commit) in `requirements.txt`. Profile `1.0.0`
    stays resolvable; `1.1.0` only relaxes rules (qualified callout titles, the appendix rule and the
    unit relaxations of `HUB-DEC-044`), so no manuscript text has to change.
 2. Update the book's release workflow from template 1.7.0: the version input accepts `X.Y.Z` or
@@ -45,7 +91,8 @@ other contribution; nothing upgrades automatically.
    deliverables (e.g. checklist exports, spreadsheets, data templates), define a `release-assets`
    target in `Makefile`. The release workflow validates deliverables, requires a clean working tree,
    packages them deterministically into `book-extras.zip`, and writes `EXTRAS-SHA256SUMS.txt`. Books
-   without this target publish only the standard seven files.
+   without this target publish only the standard seven files. Catalog verification accepts the pair
+   alongside the seven files and checks the extras checksum and ZIP.
 
 ## Example: toolkit 0.10.3 to 0.11.0
 

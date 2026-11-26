@@ -282,7 +282,7 @@ class NumberingParityUnitTests(unittest.TestCase):
             content = ch_file.read_text(encoding="utf-8")
             content += "\n![Figure 9.9 — Wrong label](../images/fixture.png){.wide #fig-section-structure}\n"
             ch_file.write_text(content, encoding="utf-8")
-            subprocess.run(["git", "-C", str(repo), "commit", "-am", "mismatch"], check=True, capture_output=True)
+            subprocess.run(["git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "-C", str(repo), "commit", "-am", "mismatch"], check=True, capture_output=True)
             new_commit = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"]).decode().strip()
             with self.assertRaises(BuildError) as ctx:
                 build_book(repo, new_commit, root / "dist", profile=PROFILE, mode="chapter")
@@ -310,7 +310,7 @@ class NumberingParityUnitTests(unittest.TestCase):
                 encoding="utf-8",
             )
             subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True, capture_output=True)
-            subprocess.run(["git", "-C", str(repo), "commit", "-m", "add appendix"], check=True, capture_output=True)
+            subprocess.run(["git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "-C", str(repo), "commit", "-m", "add appendix"], check=True, capture_output=True)
             new_commit = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"]).decode().strip()
             output = root / "dist"
             build_book(repo, new_commit, output, profile=PROFILE, mode="chapter")
@@ -338,7 +338,7 @@ class NumberingParityUnitTests(unittest.TestCase):
                 "![Third Figure](../images/fixture.png){#fig-1-3}\n\n"
             )
             ch_file.write_text(CHAPTER.replace("**Example.** A labeled example.", floats), encoding="utf-8")
-            subprocess.run(["git", "-C", str(repo), "commit", "-am", "multi entries"], check=True, capture_output=True)
+            subprocess.run(["git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "-C", str(repo), "commit", "-am", "multi entries"], check=True, capture_output=True)
             new_commit = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"]).decode().strip()
             output = root / "dist"
             build_book(repo, new_commit, output, profile=PROFILE, mode="chapter")
@@ -349,7 +349,9 @@ class NumberingParityUnitTests(unittest.TestCase):
             first_body = re.search(r"(?m)^\s*Table\s+1\.1\s*:", pdf_text)
             self.assertIsNotNone(first_body)
             assert first_body is not None
-            listing_text = pdf_text[:first_body.start()]
+            # The lists end on the page before the first body caption. Slicing at the
+            # caption itself would count a figure floated to the top of that page.
+            listing_text = pdf_text[:pdf_text.rfind("\f", 0, first_body.start()) + 1]
 
             # List of Tables: at least 3 tables, exactly 1 label per list line
             table_lines = [l for l in listing_text.splitlines() if re.search(r"\bTable\s+1\.\d+\b", l)]

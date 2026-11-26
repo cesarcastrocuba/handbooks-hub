@@ -58,6 +58,31 @@ def archive_tree(source: Path, output: Path, epoch: int, compresslevel: int | No
             archive.writestr(info, path.read_bytes(), **zip_kwargs)
 
 
+SITEMAP_NAMESPACE = "http://www.sitemaps.org/schemas/sitemap/0.9"
+
+
+def omit_sitemap_times(site: Path) -> None:
+    """Remove every ``lastmod`` from a Quarto ``sitemap.xml``, if the site has one.
+
+    Quarto writes each page's render time there and ignores ``SOURCE_DATE_EPOCH``, so the same
+    commit would archive a different sitemap on every build. ``lastmod`` is optional in the
+    sitemap protocol and a render time is not a page's modification date, so it is omitted.
+    """
+
+    path = site / "sitemap.xml"
+    if not path.exists():
+        return
+    try:
+        tree = ElementTree.parse(path)
+    except ElementTree.ParseError as exc:
+        raise ValueError(f"cannot parse Quarto sitemap: {exc}") from exc
+    for url in tree.getroot().findall(f"{{{SITEMAP_NAMESPACE}}}url"):
+        for timestamp in url.findall(f"{{{SITEMAP_NAMESPACE}}}lastmod"):
+            url.remove(timestamp)
+    ElementTree.register_namespace("", SITEMAP_NAMESPACE)
+    tree.write(path, encoding="utf-8", xml_declaration=True)
+
+
 class _Page(HTMLParser):
     def __init__(self, text: str):
         super().__init__(convert_charrefs=True)

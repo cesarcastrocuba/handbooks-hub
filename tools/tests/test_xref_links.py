@@ -98,6 +98,28 @@ class CrossReferenceTests(unittest.TestCase):
             ".handbook-xref", link_references("An unexplained 1.2.", registry)
         )
 
+    def test_a_location_after_another_location_is_linked(self):
+        # A handbook location does not start a version list (Owner review of 4.0.0).
+        registry = targets("sec_8_4", "sec_2_12", "sec_4_10", "sec_8_1_2")
+        text = (
+            "Section 8.4 introduces platform engineering as a shared capability, "
+            "Section 2.12 sets the principle of standardization and reuse, and "
+            "Section 4.10 describes the team types."
+        )
+        linked = link_references(text, registry)
+        for number in ("8.4", "2.12", "4.10"):
+            self.assertIn(f"[Section {number}](#", linked)
+        linked = link_references(
+            "Table 1.1 gives a selection path based on the criteria of Section 8.1.2, "
+            "and Figure 2.1 applies the criteria of 8.1.2 in order.",
+            registry,
+        )
+        self.assertIn("[Section 8.1.2](#sec_8_1_2)", linked)
+        self.assertIn("[8.1.2](#sec_8_1_2)", linked)
+        # A real version list still stays plain after a location.
+        text = "Section 8.4 requires TLS 1.2 minimum, 1.3 preferred."
+        self.assertNotIn("[1.3]", link_references(text, targets("sec_8_4", "sec_1_3")))
+
     def test_values_versions_dates_and_standard_clauses_stay_plain(self):
         registry = targets(
             "sec_1_2", "sec_1_3", "sec_2_2", "sec_2_3", "sec_4_5", "sec_9_9"

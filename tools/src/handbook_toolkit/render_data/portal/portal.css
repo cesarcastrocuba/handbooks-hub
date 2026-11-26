@@ -7,11 +7,13 @@
 .cover-title { font-family: var(--font-display); font-size: {{cover-title}}; font-weight: 700; line-height: 1.25; }
 .cover-kicker { font-size: var(--web-tag-px); text-transform: uppercase; letter-spacing: {{tracking}}; }
 .cover-foot { font-size: var(--web-tag-px); font-family: var(--font-mono); }
+.cover-author { font-size: var(--web-tag-px); line-height: var(--body-line); }
 #quarto-document-content .book h2 { font-size: var(--web-card-title-px); margin: {{title-top}} 0 {{chip-gap}}; padding: 0; border: 0; }
 .details { min-width: 0; }
 .summary, .version, .results, .planned { color: var(--muted); }
 .book .summary { font-size: var(--web-button-px); margin: 0 0 {{rhythm}}; }
 .version, .assets { font-size: var(--web-format-px); }
+.authors { color: var(--muted); font-size: var(--web-small-px); margin: 0 0 {{chip-gap}}; }
 .tags, .links, .formats, .assets, .filters, .tools, .toolbar { display: flex; flex-wrap: wrap; }
 .tags, .formats, .filters { gap: {{chip-gap}}; }
 .links, .assets { gap: {{link-gap}}; }
