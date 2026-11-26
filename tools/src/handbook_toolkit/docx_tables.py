@@ -11,10 +11,45 @@ from zipfile import ZipFile
 from .build_types import BuildError
 from .docx_xml import W, register_namespaces, order_properties
 from .docx_fields import _ensure_bookmark
-from .docx_post import _write_package
+from .docx_post import CALLOUT_STYLE, _write_package
 
 
 CAPTION_STYLES = {"TableCaption", "ImageCaption"}
+
+
+def release_callout_keeps(root: ET.Element) -> int:
+    """Turn off keep-with-next on every paragraph inside a callout box.
+
+    A callout box is one unsplittable row, so a keep inside it has nothing to
+    hold together. Desktop Word, however, keeps a table row with what follows
+    when a paragraph in the row keeps with next. The callout title styles carry
+    keepNext, so every pitfall was chained through the spacers to its decision,
+    and both moved to the next page when the decision did not fit (Owner Word
+    check of 2026-11-25: 1.1.5, 1.2.13, 1.3.2). LibreOffice ignores keeps inside
+    a table, so its render never showed it. An explicit ``w:val="0"`` overrides
+    the style.
+    """
+    count = 0
+    for table in root.iter(W + "tbl"):
+        style = table.find(W + "tblPr/" + W + "tblStyle")
+        if style is None or style.get(W + "val") != CALLOUT_STYLE:
+            continue
+        count += 1
+        for p in table.iter(W + "p"):
+            pp = p.find(W + "pPr")
+            if pp is None:
+                pp = ET.Element(W + "pPr")
+                p.insert(0, pp)
+            keep = pp.find(W + "keepNext")
+            if keep is None:
+                keep = ET.SubElement(pp, W + "keepNext")
+            keep.set(W + "val", "0")
+    return count
+
+
+def _released(root: ET.Element) -> dict[str, str]:
+    """Release the callout keeps last, after keep_rows, and report the count."""
+    return {"docx_callout_keeps": f"callout boxes released from keep-with-next: {release_callout_keeps(root)}"}
 
 
 def candidates(root: ET.Element) -> list[tuple[ET.Element, ET.Element | None, bool]]:
@@ -222,6 +257,11 @@ def keep_leadins(root: ET.Element) -> int:
             continue
         children = list(container)
         for i, item in enumerate(children):
+            box = item.find(W + "tblPr/" + W + "tblStyle") if item.tag == W + "tbl" else None
+            if box is not None and box.get(W + "val") == CALLOUT_STYLE:
+                # A callout box is text, not a float: a decision holds a table, but
+                # neither the spacer nor the paragraph before it moves with the box.
+                continue
             is_float = item.find(".//" + W + "drawing") is not None
             if item.tag == W + "tbl":
                 is_float = is_float or any(
@@ -295,6 +335,7 @@ def keep_fitting_tables(
         raise BuildError("Word table measurement requires LibreOffice and pdfinfo")
     tables = candidates(root)
     if not tables or not available:
+        lead_info.update(_released(root))
         order_properties(root)
         members["word/document.xml"] = ET.tostring(
             root, encoding="utf-8", xml_declaration=True
@@ -440,6 +481,7 @@ def keep_fitting_tables(
                     wrapper = row
             keep_rows(table, caption, after, wrapper)
             kept += 1
+    lead_info.update(_released(root))
     order_properties(root)
     members["word/document.xml"] = ET.tostring(
         root, encoding="utf-8", xml_declaration=True

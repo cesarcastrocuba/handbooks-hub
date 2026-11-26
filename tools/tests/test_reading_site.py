@@ -434,6 +434,29 @@ class NativeMotionBrowserTests(unittest.TestCase):
                 )
                 loaded[scheme] = chrome(page)
                 page.close()
+            # Mid-reveal the figure is translucent and isolates its raster: the white
+            # backing must still blend with the canvas, not flash white first.
+            page = browser.new_page(viewport={'width': 800, 'height': 600})
+            page.set_content(stylesheet + markup)
+            # Frozen from the start, so a loaded machine cannot finish the reveal first.
+            page.add_style_tag(content='main figure{animation-play-state:paused!important}')
+            page.locator('body').evaluate('e=>e.classList.add("quarto-light")')
+            page.wait_for_function(
+                "document.getAnimations().some(a=>a.effect&&a.effect.target&&a.effect.target.tagName==='FIGURE')"
+            )
+            paused = page.evaluate(
+                """(ms)=>{const running=document.getAnimations().filter(a=>a.effect&&a.effect.target
+                  &&a.effect.target.tagName==='FIGURE');
+                  running.forEach(a=>{a.pause();a.currentTime=ms/2});return running.length}""",
+                motion['reveal_ms'],
+            )
+            self.assertGreater(paused, 0)
+            self.assertLess(float(page.locator('figure').evaluate('e=>getComputedStyle(e).opacity')), 1)
+            box = page.locator('img.handbook-raster').bounding_box()
+            got = pixel(page, box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
+            expected = colour(tokens['color']['canvas']['light'])
+            self.assertLessEqual(max(abs(a - b) for a, b in zip(got, expected)), 1, (got, expected))
+            page.close()
             self.assertAlmostEqual(loaded['light'][0], loaded['dark'][0], delta=0.5)
             self.assertAlmostEqual(loaded['light'][1], loaded['dark'][1], delta=0.5)
 

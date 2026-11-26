@@ -271,9 +271,7 @@ class TableFitTests(unittest.TestCase):
             self.assertIn("#figure(", result.stdout)
 
     @unittest.skipUnless(shutil.which("quarto"), "Quarto pandoc required")
-    def test_figures_are_not_grouped_because_they_float(self):
-        # A grouped figure moved to the next page with its lead-in and left the
-        # page part empty; a floating figure lets the following text fill it.
+    def test_a_figure_is_grouped_with_its_lead_in_and_opens_images_from_the_document(self):
         leadins = (
             Path(__file__).resolve().parents[1]
             / "src/handbook_toolkit/render_data/filters/float-leadins.lua"
@@ -282,43 +280,96 @@ class TableFitTests(unittest.TestCase):
             source = Path(tmp) / "lead.md"
             source.write_text(
                 '### Heading Two\n\nFigure 1 shows it.\n\n'
-                '![Caption](img.png){#fig-x width="60%"}\n'
+                '![Caption](img.png){#fig-x width="60%"}\n\n'
+                '::: {.callout-warning}\nPITFALL\n:::\n\n::: {.callout-important}\nDECISION\n:::\n'
             )
             result = subprocess.run(
                 ["quarto", "pandoc", "-f", "markdown", "-t", "typst",
                  "--lua-filter", str(leadins), str(source)],
                 capture_output=True, text=True, check=True,
-            )
-            self.assertNotIn("#handbook-float-group(", result.stdout)
-            self.assertIn("#figure(", result.stdout)
+            ).stdout
+            self.assertTrue(result.startswith(
+                '#handbook-figure-group(open: p => image(p, alt: "handbook-natural"), lead: ['))
+            self.assertLess(result.index("Figure 1 shows it."), result.index("#figure("))
+            self.assertNotIn("place.flush", result)
+            self.assertNotIn("placement", result)
 
-    @unittest.skipUnless(shutil.which("quarto") and shutil.which("pdftotext"),
+    @unittest.skipUnless(shutil.which("quarto") and shutil.which("pdftotext") and shutil.which("pdfimages"),
                          "native pagination tools required")
-    def test_template_floats_figures_and_lets_text_fill_the_page(self):
+    def test_a_figure_stays_in_place_and_is_scaled_only_when_it_nearly_fits(self):
+        from test_figure_layout import png as fixture
+
         template = (
             Path(__file__).resolve().parents[1]
             / "src/handbook_toolkit/render_data/typst/handbook-typst.typ"
         ).read_text()
-        rules = [line for line in template.splitlines() if "set figure(placement: auto)" in line]
-        self.assertEqual(len(rules), 2)
+        self.assertNotIn("placement: auto", template)
+        helper = (
+            Path(__file__).resolve().parents[1]
+            / "src/handbook_toolkit/render_data/typst/table-fit.typ"
+        )
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            source = root / "float.typ"
-            source.write_text(
-                '#set page(paper:"a4",margin:(x:2.2cm,y:2.4cm))\n'
-                + "\n".join(rules)
-                + "\n#v(15cm)\nLEADTEXT\n\n"
-                + '#figure(rect(width:10cm,height:12cm), kind:"quarto-float-fig", supplement:[Figure], caption:[CAPTIONTEXT])\n\n'
-                + "AFTERTEXT\n"
-            )
-            subprocess.run(["quarto", "typst", "compile", str(source)], check=True,
-                           capture_output=True)
-            pages = subprocess.check_output(
-                ["pdftotext", str(root / "float.pdf"), "-"], text=True
-            ).split("\f")
-            self.assertIn("LEADTEXT", pages[0])
-            self.assertIn("AFTERTEXT", pages[0])  # the text after the figure fills page 1
-            self.assertIn("CAPTIONTEXT", pages[1])
+            # 500 x 400 px at 200 ppi is 180 pt wide: at 60% of the text block it prints
+            # at 1.57 of its natural size; 1000 x 800 px prints at 0.78 and cannot shrink.
+            (root / "small.png").write_bytes(fixture(500, 400))
+            (root / "big.png").write_bytes(fixture(1000, 800))
+
+            def layout(space, picture):
+                source = root / "figure.typ"
+                source.write_text(
+                    f'''#set page(paper:"a4",margin:(x:2.2cm,y:2.4cm))
+#import "{helper}": handbook-figure-group
+#v({space})
+LEADTEXT
+#handbook-figure-group(open: p => image(p, alt: "handbook-natural"), lead:[INTRO shows it.], body:[#figure(image("{picture}", width: 60%), caption: [CAPTIONTEXT])])
+AFTERTEXT
+'''
+                )
+                subprocess.run(["quarto", "typst", "compile", str(source), "--root", "/"],
+                               check=True, capture_output=True)
+                pages = subprocess.check_output(
+                    ["pdftotext", str(root / "figure.pdf"), "-"], text=True).split("\f")
+                listing = subprocess.check_output(
+                    ["pdfimages", "-list", str(root / "figure.pdf")], text=True).splitlines()
+                ppi = float(listing[2].split()[-4])
+                where = {k: next(i for i, page in enumerate(pages) if k in page)
+                         for k in ("LEADTEXT", "INTRO", "CAPTIONTEXT", "AFTERTEXT")}
+                return where, ppi
+
+            body = (21.0 - 2 * 2.2) / 2.54  # inches
+            unscaled = 500 / (0.6 * body)
+            big = 1000 / (0.6 * body)
+            where, ppi = layout("2cm", "small.png")  # fits: printed at the print scale
+            self.assertEqual(where["CAPTIONTEXT"], 0)
+            self.assertAlmostEqual(ppi, unscaled / 0.85, delta=2)
+            where, ppi = layout("17cm", "small.png")  # nearly fits: scaled further and stays
+            self.assertEqual(where["CAPTIONTEXT"], 0)
+            self.assertGreater(ppi, unscaled / 0.85 + 5)
+            where, ppi = layout("19cm", "small.png")  # would cross the natural floor: moves
+            self.assertEqual((where["LEADTEXT"], where["INTRO"], where["CAPTIONTEXT"]), (0, 1, 1))
+            self.assertAlmostEqual(ppi, unscaled / 0.85, delta=2)
+            where, ppi = layout("2cm", "big.png")  # at 0.78 of natural size: only to the floor
+            self.assertAlmostEqual(ppi, big / (0.75 / 0.78), delta=3)
+
+    @unittest.skipUnless(shutil.which("quarto") and shutil.which("pdftotext"),
+                         "native pagination tools required")
+    def test_a_checklist_on_decisions_keeps_the_checklist_colour(self):
+        template = (
+            Path(__file__).resolve().parents[1]
+            / "src/handbook_toolkit/render_data/typst/handbook-typst.typ"
+        ).read_text()
+        callout = template[template.index("#let callout("):]
+        # "Architecture Review Checklist — Decisions" contains both words.
+        self.assertLess(callout.index('"Review Checklist" in label'), callout.index('"Decision" in label'))
+
+    def test_a_callout_is_never_split(self):
+        template = (
+            Path(__file__).resolve().parents[1]
+            / "src/handbook_toolkit/render_data/typst/handbook-typst.typ"
+        ).read_text()
+        callout = template[template.index("#let callout("):]
+        self.assertIn("breakable: false", callout[: callout.index("fill: tint")])
 
     @unittest.skipUnless(
         shutil.which("quarto") and shutil.which("pdfimages"),

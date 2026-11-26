@@ -1,6 +1,8 @@
--- Keep a heading and one short introduction with the next table.
--- Figures are not grouped: they float (handbook-typst.typ), so the text after a
--- figure fills the page instead of the figure and its lead-in leaving a gap.
+-- Keep a heading and one short introduction with the next table or figure.
+-- A figure stays right after the text that introduces it, as in the Word edition
+-- (Owner decision 2026-11-23): handbook-figure-group keeps it with its lead-in and
+-- only scales it when it nearly fits the gap in front of it. Tables keep the
+-- measured handbook-float-group.
 -- Native AST nodes remain intact for Quarto's numbering, links and other writers.
 local utf8 = require("utf8")
 
@@ -37,7 +39,7 @@ function Blocks(blocks)
   if FORMAT ~= "typst" then return nil end
   local result = pandoc.List()
   for _, block in ipairs(blocks) do
-    if float(block) and not figure(block) then
+    if float(block) then
       local lead = pandoc.List()
       if #result > 0 and short(result[#result]) then
         lead:insert(1, result:remove(#result))
@@ -45,10 +47,13 @@ function Blocks(blocks)
       while #result > 0 and result[#result].t == "Header" and result[#result].level > 1 do
         lead:insert(1, result:remove(#result))
       end
-      if #lead > 0 then
+      local group = figure(block) and "handbook-figure-group" or "handbook-float-group"
+      if #lead > 0 or figure(block) then
         -- Flat raw blocks, not a Div: a Div renders as a breakable #block[ and
         -- Typst shrinks an image to that block's remaining space.
-        result:insert(pandoc.RawBlock("typst", "#handbook-float-group(lead: ["))
+        -- A figure group opens its images from the document, where their paths resolve.
+        local open = figure(block) and 'open: p => image(p, alt: "handbook-natural"), ' or ""
+        result:insert(pandoc.RawBlock("typst", "#" .. group .. "(" .. open .. "lead: ["))
         result:extend(lead)
         result:insert(pandoc.RawBlock("typst", "], body: ["))
         result:insert(block)

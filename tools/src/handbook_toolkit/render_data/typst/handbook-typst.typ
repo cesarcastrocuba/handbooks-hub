@@ -267,14 +267,13 @@
 #show table.cell: set block(breakable: false)
 #show table.cell: set text(hyphenate: false)
 #show table.cell: set par(justify: false)
-#import "handbook-render/typst/table-fit.typ": handbook-fit-table, handbook-fit-float, handbook-float-group
+#import "handbook-render/typst/table-fit.typ": handbook-fit-table, handbook-fit-float, handbook-float-group, handbook-figure-group
 #show table: it => handbook-fit-table(it, hb-card-radius)
 
 // Figures -------------------------------------------------------------------
-// A figure floats to the top or bottom of the page, or of the next page when it
-// does not fit, and the text that follows it fills the page.
-#show figure.where(kind: "quarto-float-fig"): set figure(placement: auto)
-#show figure.where(kind: image): set figure(placement: auto)
+// A figure stays right after the text that introduces it (Owner decision
+// 2026-11-23, as in the Word edition); handbook-figure-group only scales one that
+// nearly fits the gap in front of it.
 
 // Captions -------------------------------------------------------------------
 #show figure.caption: it => align(center)[
@@ -294,19 +293,23 @@
   body_background_color: white,
 ) = {
   let label = repr(title)
+  // "Review Checklist" is tested before "Decision": a checklist title such as
+  // "Architecture Review Checklist — Decisions" contains both.
   let (accent, tint) = if "Common Pitfall" in label {
     (hb-callout-warning-accent, hb-callout-warning-tint)
+  } else if "Review Checklist" in label {
+    (hb-callout-review-accent, hb-callout-review-tint)
   } else if "Decision" in label {
     (hb-callout-important-accent, hb-callout-important-tint)
   } else if "Key Takeaway" in label {
     (hb-callout-tip-accent, hb-callout-tip-tint)
-  } else if "Review Checklist" in label {
-    (hb-callout-review-accent, hb-callout-review-tint)
   } else if "When to Use" in label {
     (hb-callout-note-accent, hb-callout-note-tint)
   } else {
     (hb-callout-note-accent, hb-callout-note-tint)
   }
+  // A callout is never split across pages (Owner decision 2026-11-23); a
+  // pitfall and its decision are separate boxes, so a pitfall can end a page.
   block(
     width: 100%,
     breakable: false,

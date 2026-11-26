@@ -1,25 +1,19 @@
-"""Fill the pages that Word would leave part empty in front of a float.
+"""Scale a figure that nearly fits the page Word would leave part empty in front of it.
 
-Word cannot float an inline figure or a table kept on one page. When such a
-float and the lead-in kept with it do not fit the rest of a page, they move on
-and the page stays part empty. This pass paginates the document in LibreOffice,
-finds each float group that starts a page below a gap of at least ``MIN_GAP``
-of the text block, and then either
+Word cannot float an inline figure. When a figure, its caption and the heading or
+lead-in kept with it do not fit the rest of a page, they move on and the page stays
+part empty. This pass paginates the document in LibreOffice, finds each figure group
+that starts a page below a gap of at least ``MIN_GAP`` of the text block, and scales
+the figure down just enough to fit the gap when that keeps it at ``MIN_NATURAL`` or
+more of its natural raster size.
 
-* defers it: the blocks that follow the float in its section and fit the gap
-  move up in front of it, as a typesetter moves a float to the top of the next
-  page; a plain paragraph that crosses the foot of the page also moves, because
-  it breaks across pages; or
-* when nothing can move, scales a figure down just enough to fit the gap, when
-  that keeps it at ``MIN_NATURAL`` or more of its natural raster size. Tables
-  are never scaled.
-
-A float never passes a heading, a section or page break or another float, so
-captions keep their order, and a block kept with the next one never leaves it.
-An action moves the later page breaks, so the actions of one pass are
+Nothing moves: every figure and every table stays right after the text that
+introduces it, in the order the author wrote (Owner decision of 2026-11-22: a figure
+away from its description is a defect, a part-empty page is not). Tables are never
+scaled. A scaled figure moves the later page breaks, so the actions of one pass are
 ``SPACING`` pages apart and each pass measures the document again. Desktop Word
-paginates slightly differently from LibreOffice, so the Word edition is still
-checked in Word.
+paginates slightly differently from LibreOffice, so the Word edition is still checked
+in Word.
 """
 
 from __future__ import annotations
@@ -44,42 +38,30 @@ A = "{" + NS["a"] + "}"
 R = "{" + NS["r"] + "}"
 PACKAGE_RELATIONSHIP = "{" + NS["pr"] + "}Relationship"
 
+PRINT_SCALE = 0.85  # every raster figure prints at this fraction of its stated size
 MIN_GAP = 0.15  # act only when the previous page is at least this fraction empty
 MIN_NATURAL = 0.75  # never print a raster below this fraction of its natural size
-MIN_MOVE = 0.08  # a deferral must fill at least this fraction of the text block
 TOP_SLACK = 40.0  # points: the group must start within this distance of the top margin
 SAFETY = 10.0  # points kept free for box padding and rounding
 CAPTION_REACH = 40.0  # points: a caption has at most about three lines
-LOOKAHEAD = 24  # blocks examined after a figure
 PASSES = 4
 SPACING = 3  # pages between two actions of one pass
-PREFER_SHRINK = False  # deferral keeps the figure at its size; scaling is the fallback
 CAPTION_STYLES = {"ImageCaption", "TableCaption", "Caption"}
 OFF = {"0", "false", "off"}
 
 
 @dataclass
 class Unit:
-    """A body-level float: its own bookmarks, image paragraph or data table, and caption."""
+    """A body-level figure: its image paragraph, its caption and the start of its keep chain."""
 
-    nodes: list[ET.Element]
     image: ET.Element
     caption: ET.Element
     chain: ET.Element
-    before: ET.Element | None
-    blocks: list[list[ET.Element]]
-    stop: ET.Element | None
-    kind: str = "figure"
 
 
 @dataclass(frozen=True)
 class Shrink:
     scale: float
-
-
-@dataclass(frozen=True)
-class Defer:
-    blocks: int
 
 
 def _style(paragraph: ET.Element) -> str:
@@ -92,155 +74,21 @@ def _keeps(paragraph: ET.Element) -> bool:
     return keep is not None and keep.get(W + "val", "1").lower() not in OFF
 
 
-def _bound(block: list[ET.Element]) -> bool:
-    """Whether the block is kept with the block that follows it."""
-    element = next(node for node in block if node.tag in {W + "p", W + "tbl"})
-    if element.tag == W + "p":
-        return _keeps(element)
-    rows = element.findall(W + "tr")
-    return bool(rows) and any(_keeps(p) for p in rows[-1].iter(W + "p"))
-
-
-def _is_data_table(element: ET.Element) -> bool:
-    if element.tag != W + "tbl":
-        return False
-    style = element.find(W + "tblPr/" + W + "tblStyle")
-    look = element.find(W + "tblPr/" + W + "tblLook")
-    return (
-        style is not None
-        and style.get(W + "val") in {"Table", "TablePlain"}
-        and look is not None
-        and look.get(W + "firstRow") in {"1", "true", "on"}
-    )
-
-
-def _kept_whole(table: ET.Element) -> bool:
-    """A data table the table measurement keeps on one page (every row keeps with the next)."""
-    rows = table.findall(W + "tr")
-    return bool(rows) and all(any(_keeps(p) for p in row.iter(W + "p")) for row in rows[:-1])
-
-
-def _float_kind(element: ET.Element) -> str | None:
-    if element.tag == W + "p" and element.find(".//" + W + "drawing") is not None:
-        return "figure"
-    if _is_data_table(element) and element.find(".//" + W + "drawing") is None:
-        return "table"
-    return None
-
-
-def _whole(block: list[ET.Element]) -> bool:
-    """A block that Word keeps on one page: a table whose rows do not split, or a kept paragraph."""
-    element = next(node for node in block if node.tag in {W + "p", W + "tbl"})
-    if element.tag == W + "p":
-        keep = element.find(W + "pPr/" + W + "keepLines")
-        return keep is not None and keep.get(W + "val", "1").lower() not in OFF
-    rows = element.findall(W + "tr")
-    return bool(rows) and all(
-        (flag := row.find(W + "trPr/" + W + "cantSplit")) is not None
-        and flag.get(W + "val", "1").lower() not in OFF
-        for row in rows
-    ) and (len(rows) == 1 or _kept_whole(element))
-
-
-def _splits(block: list[ET.Element]) -> bool:
-    """A plain paragraph that Word may break across pages."""
-    element = next(node for node in block if node.tag in {W + "p", W + "tbl"})
-    return (
-        element.tag == W + "p"
-        and element.find(W + "pPr/" + W + "keepLines") is None
-        and not _keeps(element)
-        and len("".join(element.itertext()).split()) >= 30
-    )
-
-
-def page_break_styles(styles: bytes | None) -> frozenset[str]:
-    """Paragraph style ids that start a page, directly or through ``basedOn``."""
-    if not styles:
-        return frozenset()
-    root = ET.fromstring(styles)
-    parents: dict[str, str] = {}
-    own: dict[str, bool] = {}
-    for style in root.iter(W + "style"):
-        if style.get(W + "type") != "paragraph":
-            continue
-        identifier = style.get(W + "styleId", "")
-        based = style.find(W + "basedOn")
-        if based is not None:
-            parents[identifier] = based.get(W + "val", "")
-        flag = style.find(W + "pPr/" + W + "pageBreakBefore")
-        if flag is not None:
-            own[identifier] = flag.get(W + "val", "1").lower() not in OFF
-
-    def breaks(identifier: str) -> bool:
-        seen = set()
-        while identifier not in own:
-            if identifier in seen or identifier not in parents:
-                return False  # a cycle or the root of the chain without a flag
-            seen.add(identifier)
-            identifier = parents[identifier]
-        return own[identifier]
-
-    return frozenset(identifier for identifier in parents.keys() | own.keys() if breaks(identifier))
-
-
-def _starts_page(paragraph: ET.Element, breaking: frozenset[str]) -> bool:
-    flag = paragraph.find(W + "pPr/" + W + "pageBreakBefore")
-    if flag is not None:
-        return flag.get(W + "val", "1").lower() not in OFF
-    return _style(paragraph) in breaking
-
-
-def _barrier(element: ET.Element, kind: str, breaking: frozenset[str] = frozenset()) -> bool:
-    """Where a deferred float must stop: a heading, a break or another float.
-
-    Floats keep their relative order, so captions stay in numeric order and no
-    float is separated from a lead-in that another float carries. A paragraph
-    that starts a page (``pageBreakBefore``, directly or through its style) is a
-    break even when its style is not a ``Heading``.
-    """
-    if element.tag == W + "tbl":
-        return element.find(".//" + W + "drawing") is not None or _is_data_table(element)
-    if element.tag != W + "p":
-        return True
-    return (
-        _style(element).startswith("Heading")
-        or _starts_page(element, breaking)
-        or element.find(".//" + W + "sectPr") is not None
-        or element.find(".//" + W + "drawing") is not None
-        or any(br.get(W + "type") == "page" for br in element.iter(W + "br"))
-    )
-
-
-def figure_units(body: ET.Element, breaking: frozenset[str] = frozenset()) -> list[Unit]:
-    """Find body-level figures and kept-whole data tables followed by their caption."""
+def figure_units(body: ET.Element) -> list[Unit]:
+    """Find body-level figures followed by their caption, with the keep chain above them."""
     children = list(body)
     units = []
     for i, child in enumerate(children):
-        kind = _float_kind(child)
-        if kind is None or (kind == "table" and not _kept_whole(child)):
+        if child.tag != W + "p" or child.find(".//" + W + "drawing") is None:
             continue
         if i + 1 >= len(children) or children[i + 1].tag != W + "p":
             continue
         caption = children[i + 1]
         if _style(caption) not in CAPTION_STYLES:
             continue
-        start = i
-        while start > 0 and children[start - 1].tag == W + "bookmarkStart":
-            start -= 1
-        own = {node.get(W + "id") for node in children[start:i]}
-        end = i + 1
-        while (
-            end + 1 < len(children)
-            and children[end + 1].tag == W + "bookmarkEnd"
-            and children[end + 1].get(W + "id") in own
-        ):
-            end += 1
-        closed = {node.get(W + "id") for node in children[i + 2 : end + 1]}
-        if closed != own:
-            continue  # the figure's own bookmark does not close right after it
-        # The keep chain that moves with the figure: lead-in and headings.
+        # The keep chain that Word moves with the figure: lead-in and headings.
         chain = child
-        j = start - 1
+        j = i - 1
         while j >= 0:
             node = children[j]
             if node.tag in {W + "bookmarkStart", W + "bookmarkEnd"}:
@@ -251,35 +99,7 @@ def figure_units(body: ET.Element, breaking: frozenset[str] = frozenset()) -> li
                 j -= 1
                 continue
             break
-        lead = None
-        k = start - 1
-        while k >= 0 and children[k].tag in {W + "bookmarkStart", W + "bookmarkEnd"}:
-            k -= 1
-        if k >= 0 and children[k].tag == W + "p" and _keeps(children[k]):
-            lead = children[k]
-        blocks: list[list[ET.Element]] = []
-        pending: list[ET.Element] = []
-        stop = None
-        k = end + 1
-        while k < len(children) and len(blocks) < LOOKAHEAD:
-            node = children[k]
-            if node.tag == W + "bookmarkStart":
-                pending.append(node)
-            elif node.tag == W + "bookmarkEnd":
-                if blocks and not pending:
-                    blocks[-1].append(node)
-                else:
-                    pending.append(node)
-            elif node.tag in {W + "p", W + "tbl"} and not _barrier(node, kind, breaking):
-                blocks.append([*pending, node])
-                pending = []
-            else:
-                stop = node if node.tag in {W + "p", W + "tbl"} else None
-                break
-            k += 1
-        units.append(
-            Unit(children[start : end + 1], child, caption, chain, lead, blocks, stop, kind)
-        )
+        units.append(Unit(child, caption, chain))
     return units
 
 
@@ -295,7 +115,7 @@ def _mark(paragraph: ET.Element, name: str, identifier: int) -> None:
     ET.SubElement(paragraph, W + "bookmarkEnd", {W + "id": str(identifier)})
 
 
-def mark_probe(root: ET.Element, breaking: frozenset[str] = frozenset()) -> list[dict[str, str]]:
+def mark_probe(root: ET.Element) -> list[dict[str, str]]:
     """Add measurement bookmarks to a probe copy; return the names per unit."""
     body = root.find(W + "body")
     assert body is not None
@@ -304,7 +124,7 @@ def mark_probe(root: ET.Element, breaking: frozenset[str] = frozenset()) -> list
         default=0,
     )
     names = []
-    for i, unit in enumerate(figure_units(body, breaking)):
+    for i, unit in enumerate(figure_units(body)):
         marks = {"group": f"FigPlaceG{i}", "image": f"FigPlaceI{i}", "caption": f"FigPlaceC{i}"}
         for key, paragraph in (
             ("group", unit.chain),
@@ -312,14 +132,6 @@ def mark_probe(root: ET.Element, breaking: frozenset[str] = frozenset()) -> list
             ("caption", unit.caption),
         ):
             _mark(paragraph, marks[key], identifier)
-            identifier += 1
-        for k, block in enumerate([*unit.blocks, [unit.stop] if unit.stop is not None else []]):
-            element = next((n for n in block if n.tag in {W + "p", W + "tbl"}), None)
-            paragraph = _first_paragraph(element) if element is not None else None
-            if paragraph is None:
-                continue
-            marks[f"block{k}"] = f"FigPlaceN{i}_{k}"
-            _mark(paragraph, marks[f"block{k}"], identifier)
             identifier += 1
         names.append(marks)
     return names
@@ -379,20 +191,13 @@ def decide(
     previous_bottom: float | None,
     figure_height: float,
     natural: float | None,
-    blocks: list[tuple[int, float]],
-    bound: list[bool],
-    splits: list[bool] | None = None,
-    whole: list[bool] | None = None,
-    page_end: float | None = None,
-) -> Shrink | Defer | None:
-    """Choose an action from measured positions (points from the page top).
+) -> Shrink | None:
+    """Scale the figure when its group starts a page below a gap it nearly fits.
 
-    ``page_end`` is where the text of the float's page ends; it measures the last
-    block on that page when the block cannot break across pages (``whole``).
+    Positions are points from the page top. The figure is scaled just enough for
+    the group to fit the gap, and never below ``MIN_NATURAL`` of its natural size.
     """
     body = bottom - top
-    splits = splits if splits is not None else [False] * len(bound)
-    whole = whole if whole is not None else [False] * len(bound)
     page = group[0]
     if page < 2 or caption[0] != page or image[0] != page:
         return None
@@ -402,45 +207,13 @@ def decide(
     if room < MIN_GAP * body:
         return None
     need = (caption_end - group[1]) - room + SAFETY
-    if need <= 0:
+    if need <= 0 or natural is None or need >= figure_height:
         return None
-    shrink = None
-    if natural is not None and need < figure_height:
-        scale = (figure_height - need) / figure_height
-        if natural * scale >= MIN_NATURAL:
-            shrink = Shrink(round(scale, 4))
-    if PREFER_SHRINK and shrink is not None:
-        return shrink
-    if not blocks or blocks[0][0] != page:
-        return shrink
-    chain = image[1] - group[1]
-    best = 0
-    for k in range(1, len(blocks) + 1):
-        if k == len(blocks) or blocks[k][0] != page:
-            # The last block on the page ends where the page's text ends, when it
-            # cannot continue on the next page.
-            if (
-                k <= len(bound)
-                and page_end is not None
-                and whole[k - 1]
-                and not bound[k - 1]
-                and chain + page_end - blocks[0][1] <= room - SAFETY
-            ):
-                best = k
-            break
-        moved = chain + blocks[k][1] - blocks[0][1]
-        if moved > room - SAFETY:
-            # The block that crosses the foot of the page fills it when it can
-            # break across pages; the rest of it flows on before the figure.
-            if splits[k - 1] and not bound[k - 1]:
-                best = k
-            break
-        if not bound[k - 1]:
-            best = k
-    moved_end = blocks[best][1] if best < len(blocks) and blocks[best][0] == page else page_end
-    if best and moved_end is not None and moved_end - blocks[0][1] >= MIN_MOVE * body:
-        return Defer(best)
-    return shrink
+    scale = round((figure_height - need) / figure_height, 4)
+    # A shortfall below rounding would be a no-op that still uses up a pass's spacing.
+    if scale >= 1 or natural * scale < MIN_NATURAL:
+        return None
+    return Shrink(scale)
 
 
 def _natural_ratio(image: ET.Element, members: dict[str, bytes], targets: dict[str, str]) -> tuple[float | None, list[ET.Element]]:
@@ -475,20 +248,6 @@ def apply_shrink(extents: list[ET.Element], scale: float) -> None:
             extent.set(axis, str(int(int(extent.get(axis, "0")) * scale)))
 
 
-def apply_defer(body: ET.Element, unit: Unit, count: int) -> None:
-    """Move the figure after ``count`` following blocks; its lead-in stops keeping with it."""
-    last = unit.blocks[count - 1][-1]
-    for node in unit.nodes:
-        body.remove(node)
-    position = list(body).index(last) + 1
-    for offset, node in enumerate(unit.nodes):
-        body.insert(position + offset, node)
-    if unit.before is not None and not _style(unit.before).startswith("Heading"):
-        keep = unit.before.find(W + "pPr/" + W + "keepNext")
-        if keep is not None:
-            unit.before.find(W + "pPr").remove(keep)
-
-
 def _geometry(root: ET.Element) -> tuple[float, float, float]:
     section = root.find(W + "body/" + W + "sectPr")
     size = section.find(W + "pgSz") if section is not None else None
@@ -497,6 +256,26 @@ def _geometry(root: ET.Element) -> tuple[float, float, float]:
         raise BuildError("figure placement requires page geometry")
     height = int(size.get(W + "h")) / 20
     return height, int(margin.get(W + "top")) / 20, height - int(margin.get(W + "bottom")) / 20
+
+
+def print_scale(body: ET.Element, members: dict[str, bytes], targets: dict[str, str]) -> int:
+    """Print every raster figure at PRINT_SCALE of its stated size, never below MIN_NATURAL.
+
+    Owner request of 2026-11-23: the figures looked large. The natural-size floor
+    keeps diagram text at 8 pt or more, so a figure already printed near that
+    floor shrinks less or not at all. The PDF applies the same rule
+    (``handbook-scale-images`` in ``table-fit.typ``).
+    """
+    count = 0
+    for unit in figure_units(body):
+        natural, extents = _natural_ratio(unit.image, members, targets)
+        if not natural or not extents:
+            continue
+        factor = max(PRINT_SCALE, min(1.0, MIN_NATURAL / natural))
+        if factor < 1:
+            apply_shrink(extents, round(factor, 4))
+            count += 1
+    return count
 
 
 def place_figures(
@@ -544,19 +323,20 @@ def _place(
     from .docx_pages import export_pdf, font_environment
 
     page_height, top, bottom = _geometry(root)
-    breaking = page_break_styles(members.get("word/styles.xml"))
-    shrunk = deferred = measured = tables = 0
+    body = root.find(W + "body")
+    printed = print_scale(body, members, targets) if body is not None else 0
+    shrunk = measured = 0
     with tempfile.TemporaryDirectory(prefix="figure-place-", dir=path.parent) as tmp:
         directory = Path(tmp)
         env = font_environment(fonts, directory)
         for number in range(passes):
             body = root.find(W + "body")
             assert body is not None
-            units = figure_units(body, breaking)
+            units = figure_units(body)
             if not units:
                 break
             probe = deepcopy(root)
-            names = mark_probe(probe, breaking)
+            names = mark_probe(probe)
             probe_members = dict(members)
             order_properties(probe)
             probe_members["word/document.xml"] = ET.tostring(probe, encoding="utf-8", xml_declaration=True)
@@ -574,7 +354,7 @@ def _place(
                     cache[page] = page_words(pdf, page)[1]
                 return cache[page]
 
-            actions: list[tuple[Unit, Shrink | Defer, list[ET.Element], int]] = []
+            actions: list[tuple[Shrink, list[ET.Element], int]] = []
             for unit, marks in zip(units, names):
                 if not all(marks[key] in positions for key in ("group", "image", "caption")):
                     continue
@@ -583,24 +363,11 @@ def _place(
                 if page < 2:
                     continue
                 inside = [b for a, b in words(page - 1) if a >= top - 1 and b <= bottom + 1]
-                previous = max(inside) if inside else None
                 end = caption_bottom(words(caption[0]), caption[1])
-                if end is None:
+                extent = next((e for e in unit.image.iter(WP + "extent")), None)
+                if end is None or extent is None:
                     continue
-                tops = []
-                for k in range(len(unit.blocks) + 1):
-                    name = marks.get(f"block{k}")
-                    if name is None or name not in positions:
-                        break
-                    tops.append(positions[name])
-                if unit.kind == "figure":
-                    natural, extents = _natural_ratio(unit.image, members, targets)
-                    extent = next((e for e in unit.image.iter(WP + "extent")), None)
-                    if extent is None:
-                        continue
-                    height = int(extent.get("cy", "0")) / 12700
-                else:
-                    natural, extents, height = None, [], 0.0
+                natural, extents = _natural_ratio(unit.image, members, targets)
                 action = decide(
                     top=top,
                     bottom=bottom,
@@ -608,41 +375,26 @@ def _place(
                     image=image,
                     caption=caption,
                     caption_end=end,
-                    previous_bottom=previous,
-                    figure_height=height,
+                    previous_bottom=max(inside) if inside else None,
+                    figure_height=int(extent.get("cy", "0")) / 12700,
                     natural=natural,
-                    blocks=tops,
-                    bound=[_bound(block) for block in unit.blocks],
-                    splits=[_splits(block) for block in unit.blocks],
-                    whole=[_whole(block) for block in unit.blocks],
-                    page_end=max(
-                        (b for a, b in words(page) if a >= top - 1 and b <= bottom + 1), default=None
-                    ),
                 )
                 if action is not None:
-                    actions.append((unit, action, extents, page))
+                    actions.append((action, extents, page))
             if not actions:
                 break
-            # An action moves the later page breaks of its chapter; the pages right
-            # after it are measured again in the next pass before they are changed.
-            spaced = []
+            # A scaled figure moves the later page breaks of its chapter; the pages
+            # right after it are measured again in the next pass before they change.
             last_page = -10
-            for entry in actions:
-                if entry[3] - last_page >= SPACING:
-                    spaced.append(entry)
-                    last_page = entry[3]
-            actions = spaced
-            for unit, action, extents, _page in actions:
-                if isinstance(action, Shrink):
+            for action, extents, page in actions:
+                if page - last_page >= SPACING:
                     apply_shrink(extents, action.scale)
                     shrunk += 1
-                else:
-                    apply_defer(body, unit, action.blocks)
-                    deferred += 1
-                    tables += unit.kind == "table"
+                    last_page = page
     return {
         "docx_figure_placement": (
-            f"{shrunk} figures scaled and {deferred} floats deferred ({tables} tables) to fill page gaps "
+            f"figures at print scale: {printed}; "
+            f"figures scaled to fit page gaps: {shrunk}; no figure or table moved "
             f"({measured} LibreOffice passes)"
         )
     }
