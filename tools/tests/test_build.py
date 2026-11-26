@@ -330,8 +330,7 @@ class RenderConfigTests(unittest.TestCase):
                 "typst/typst-show.typ": workspace / "handbook-render/typst/typst-show.typ",
                 "docx/reference.docx": workspace / "handbook-render/docx/reference.docx",
                 "html/handbook.css": workspace / "handbook-render/html/handbook.css",
-                "fonts/source-sans3/HandbookSans-Regular.ttf": workspace / "handbook-render/fonts/source-sans3/HandbookSans-Regular.ttf",
-                "fonts/source-serif4/HandbookSerif-Regular.ttf": workspace / "handbook-render/fonts/source-serif4/HandbookSerif-Regular.ttf",
+                "fonts/inter/Inter-Regular.ttf": workspace / "handbook-render/fonts/inter/Inter-Regular.ttf",
                 "fonts/jetbrains-mono/JetBrainsMono-Regular.ttf": workspace / "handbook-render/fonts/jetbrains-mono/JetBrainsMono-Regular.ttf",
             }
             for path in resources.values():
@@ -355,7 +354,7 @@ class RenderConfigTests(unittest.TestCase):
             )
             self.assertEqual(
                 config["format"]["typst"]["mainfont"],
-                "Handbook Sans",
+                "Inter",
             )
             self.assertEqual(
                 config["format"]["typst"]["monofont"],
@@ -364,8 +363,7 @@ class RenderConfigTests(unittest.TestCase):
             self.assertEqual(
                 config["format"]["typst"]["font-paths"],
                 [
-                    "handbook-render/fonts/source-sans3",
-                    "handbook-render/fonts/source-serif4",
+                    "handbook-render/fonts/inter",
                     "handbook-render/fonts/jetbrains-mono",
                 ],
             )
@@ -658,7 +656,7 @@ class BuildTests(unittest.TestCase):
             from handbook_toolkit.docx_fields import cached_links
             from handbook_toolkit.render_resources import stage_render_resources
             resources = stage_render_resources(root / 'probe-resources')
-            environment = font_environment(resources['fonts/source-sans3/HandbookSans-Regular.ttf'].parent.parent, root)
+            environment = font_environment(resources['fonts/inter/Inter-Regular.ttf'].parent.parent, root)
             converted = root / "converted"
             fresh_pdf = export_pdf(output / 'book.docx', converted, env=environment)
             with zipfile.ZipFile(output / 'book.docx') as archive:

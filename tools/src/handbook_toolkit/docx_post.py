@@ -8,7 +8,7 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 from . import design
 from .docx_fields import add_indexes
-from .docx_fonts import font_table
+from .docx_fonts import embed_fonts, font_table
 from .docx_xml import order_properties, register_namespaces
 
 
@@ -439,6 +439,7 @@ def prepare_docx(path: Path, compresslevel: int | None = 9) -> None:
         members = {name: archive.read(name) for name in archive.namelist()}
     root = ET.fromstring(members["word/document.xml"])
     members["word/fontTable.xml"] = font_table(members.get("word/fontTable.xml"))
+    embed_fonts(members)
     _format_table_headers(root, word)
     _style_docx_callouts(root, word)
     _style_table_cells(root)

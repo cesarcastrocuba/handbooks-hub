@@ -1,28 +1,28 @@
 #!/usr/bin/env python3
 """Regenerate the self-hosted WOFF2 fonts from the committed TTF files.
 
-The toolkit ships three font families under ``render_data/fonts/``: Source Sans 3 (body text),
-Source Serif 4 (display) and JetBrains Mono (code), all under the SIL Open Font License 1.1. The OFL
-requires a modified font with a Reserved Font Name to be renamed, and its copyright and license to
-travel with every copy.
+The toolkit ships two font families under ``render_data/fonts/``: Inter (text and display) and
+JetBrains Mono (code), both under the SIL Open Font License 1.1. The OFL requires a modified font
+with a Reserved Font Name to be renamed, and its copyright and license to travel with every copy.
+Neither family declares a Reserved Font Name.
 
 The path from the upstream files to the shipped WOFF2 files is:
 
-1. The TTF files are committed in each family directory. The JetBrains Mono files keep their upstream
-   names. The Source Sans 3 and Source Serif 4 files are already renamed to ``Handbook Sans`` and
-   ``Handbook Serif`` when they enter the repository; obtaining and renaming them is manual and is
-   not scripted here.
+1. The TTF files are committed unmodified in each family directory, with their upstream names. The
+   Inter files are the static ``extras/ttf`` files of the Inter 4.1 release
+   (``Inter-4.1.zip``, sha256 ``9883fdd4a49d4fb66bd8177ba6625ef9a64aa45899767dde3d36aa425756b11e``);
+   its ``LICENSE.txt`` is committed as ``inter/OFL.txt``. The PDF and the DOCX use these files.
 2. ``FONTS`` pairs each committed TTF with the WOFF2 file this script writes.
 3. For each pair the script subsets the glyphs to ``UNICODES`` while keeping the layout features and
-   every name record, rewrites name IDs 1, 2, 3, 4, 6, 16 and 17 to the Handbook family and style,
+   every name record, rewrites name IDs 1, 2, 3, 4, 6, 16 and 17 to the web family and style,
    drops name IDs 18, 21 and 22, keeps the upstream copyright (name ID 0), and sets name IDs 13 and
-   14 to the OFL statement and URL. It saves the result as WOFF2.
+   14 to the OFL statement and URL. It saves the result as WOFF2. Inter keeps its own family name;
+   the JetBrains Mono subset is named ``Handbook Mono``.
 4. The committed ``OFL.txt`` in each family directory is what the build publishes beside the fonts.
 
 It is a maintenance tool, not a build step. It requires ``fonttools`` and ``brotli``; the generated
-WOFF2 files are committed. Rerunning it reproduces the WOFF2 files from the committed TTF files only;
-it cannot reproduce the renamed Adobe TTF files, and the upstream download and hash check are not
-recorded.
+WOFF2 files are committed. Rerunning it reproduces the WOFF2 files from the committed TTF files; the
+upstream download is manual, and the archive hash above is what it was checked against.
 """
 from __future__ import annotations
 
@@ -50,13 +50,10 @@ OFL_TEXT = (
 OFL_URL = "https://openfontlicense.org"
 
 FONTS = (
-    ("source-sans3/HandbookSans-Regular.ttf", "source-sans3/HandbookSans-Regular.woff2", "Handbook Sans", "Regular"),
-    ("source-sans3/HandbookSans-Bold.ttf", "source-sans3/HandbookSans-Bold.woff2", "Handbook Sans", "Bold"),
-    ("source-sans3/HandbookSans-Italic.ttf", "source-sans3/HandbookSans-Italic.woff2", "Handbook Sans", "Italic"),
-    ("source-sans3/HandbookSans-BoldItalic.ttf", "source-sans3/HandbookSans-BoldItalic.woff2", "Handbook Sans", "Bold Italic"),
-    ("source-serif4/HandbookSerif-Regular.ttf", "source-serif4/HandbookSerif-Regular.woff2", "Handbook Serif", "Regular"),
-    ("source-serif4/HandbookSerif-Semibold.ttf", "source-serif4/HandbookSerif-Semibold.woff2", "Handbook Serif", "Semibold"),
-    ("source-serif4/HandbookSerif-Bold.ttf", "source-serif4/HandbookSerif-Bold.woff2", "Handbook Serif", "Bold"),
+    ("inter/Inter-Regular.ttf", "inter/Inter-Regular.woff2", "Inter", "Regular"),
+    ("inter/Inter-Bold.ttf", "inter/Inter-Bold.woff2", "Inter", "Bold"),
+    ("inter/Inter-Italic.ttf", "inter/Inter-Italic.woff2", "Inter", "Italic"),
+    ("inter/Inter-BoldItalic.ttf", "inter/Inter-BoldItalic.woff2", "Inter", "Bold Italic"),
     ("jetbrains-mono/JetBrainsMono-Regular.ttf", "jetbrains-mono/HandbookMono-Regular.woff2", "Handbook Mono", "Regular"),
     ("jetbrains-mono/JetBrainsMono-Bold.ttf", "jetbrains-mono/HandbookMono-Bold.woff2", "Handbook Mono", "Bold"),
     ("jetbrains-mono/JetBrainsMono-Italic.ttf", "jetbrains-mono/HandbookMono-Italic.woff2", "Handbook Mono", "Italic"),
@@ -87,7 +84,8 @@ def rename(font: TTFont, family: str, style: str) -> None:
 
 
 def build(source: Path, destination: Path, family: str, style: str) -> None:
-    font = TTFont(source)
+    # Keep the source's head.modified so the same TTF always gives the same WOFF2 bytes.
+    font = TTFont(source, recalcTimestamp=False)
     options = subset.Options()
     options.flavor = "woff2"
     options.layout_features = ["*"]

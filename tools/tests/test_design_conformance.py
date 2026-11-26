@@ -41,8 +41,7 @@ class GeneratedSurfaceTests(unittest.TestCase):
             with self.subTest(role=role):
                 self.assertIn(values["light"], css)
                 self.assertIn(values["dark"], css)
-        self.assertIn('font-family:"Handbook Sans"', css)
-        self.assertIn('font-family:"Handbook Serif"', css)
+        self.assertIn('font-family:"Inter"', css)
         self.assertIn('font-family:"Handbook Mono"', css)
         self.assertNotIn("http", css)
 
@@ -50,7 +49,7 @@ class GeneratedSurfaceTests(unittest.TestCase):
         css = design.book_theme_css()
         self.assertIn("body.quarto-dark", css)
         self.assertIn("prefers-color-scheme:dark", css)
-        self.assertIn("../fonts/source-sans3/HandbookSans-Regular.woff2", css)
+        self.assertIn("../fonts/inter/Inter-Regular.woff2", css)
 
     def test_book_layout_has_no_private_palette(self) -> None:
         css = (RENDER / "html" / "handbook.css").read_text(encoding="utf-8")
@@ -87,8 +86,9 @@ class GeneratedSurfaceTests(unittest.TestCase):
         reference = RENDER / "docx" / "reference.docx"
         with zipfile.ZipFile(reference) as archive:
             styles = archive.read("word/styles.xml").decode("utf-8")
-        self.assertIn('w:ascii="Source Sans 3"', styles)
-        self.assertIn('w:ascii="Source Serif 4"', styles)
+        self.assertIn('w:ascii="Inter"', styles)
+        self.assertNotIn("Source Sans", styles)
+        self.assertNotIn("Source Serif", styles)
         self.assertIn('w:ascii="JetBrains Mono"', styles)
         self.assertIn('w:pageBreakBefore', styles)
         self.assertIn('w:tblStylePr w:type="firstRow"', styles)
@@ -100,7 +100,7 @@ class GeneratedSurfaceTests(unittest.TestCase):
 
     def test_packaged_web_fonts_exist_for_every_face(self) -> None:
         assets = design.font_assets()
-        self.assertEqual(len(assets), 10)
+        self.assertEqual(len(assets), 7)
         for relative, data in assets.items():
             with self.subTest(font=relative):
                 self.assertTrue(data.startswith(b"wOF2"))
@@ -109,7 +109,7 @@ class GeneratedSurfaceTests(unittest.TestCase):
         licenses = design.font_licenses()
         self.assertEqual(
             set(licenses),
-            {"source-sans3/OFL.txt", "source-serif4/OFL.txt", "jetbrains-mono/OFL.txt"},
+            {"inter/OFL.txt", "jetbrains-mono/OFL.txt"},
         )
         for relative, data in licenses.items():
             with self.subTest(license=relative):
@@ -117,8 +117,7 @@ class GeneratedSurfaceTests(unittest.TestCase):
 
     def test_font_face_output_names_the_license(self) -> None:
         css = design.font_face_css("fonts/")
-        self.assertIn("fonts/source-sans3/OFL.txt", css)
-        self.assertIn("fonts/source-serif4/OFL.txt", css)
+        self.assertIn("fonts/inter/OFL.txt", css)
         self.assertIn("fonts/jetbrains-mono/OFL.txt", css)
 
     def test_portal_filled_controls_use_the_solid_role(self) -> None:

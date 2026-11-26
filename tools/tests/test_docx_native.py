@@ -407,8 +407,7 @@ class NativeFieldTests(unittest.TestCase):
         fonts = ET.fromstring(font_table())
         mapping = {font.get(W + 'name'): font.find(W + 'altName').get(W + 'val')
                    for font in fonts if font.find(W + 'altName') is not None}
-        self.assertEqual(mapping['Source Sans 3'], 'Segoe UI')
+        self.assertEqual(mapping['Inter'], 'Segoe UI')
         self.assertEqual(mapping['Segoe UI'], 'Calibri')
         self.assertEqual(mapping['Calibri'], 'Arial')
-        self.assertEqual(mapping['Source Serif 4'], 'Georgia')
         self.assertEqual(mapping['JetBrains Mono'], 'Consolas')

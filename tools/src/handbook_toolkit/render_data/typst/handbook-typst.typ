@@ -4,7 +4,7 @@
 // gray-headed tables, and running headers/footers with document title and license.
 
 // Typography -----------------------------------------------------------------
-#set text(font: hb-font, size: 10pt, fill: hb-text, lang: "en")
+#set text(font: hb-font, size: 9.5pt, fill: hb-text, lang: "en")
 // Paragraphs are justified and never indented, as in the reference handbook.
 #set par(leading: 0.65em, spacing: 1.05em, first-line-indent: 0pt, justify: true)
 #show raw: set text(font: hb-code-font)

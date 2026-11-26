@@ -189,7 +189,7 @@ class PortalTests(unittest.TestCase):
 
     def test_fonts_and_notices_are_packaged_and_linked(self):
         page=self.build(support.catalog_document());links={n.attrs.get('href') for n in page.find('a')}
-        self.assertEqual(len(list((self.output/'fonts').rglob('*.woff2'))),10)
+        self.assertEqual(len(list((self.output/'fonts').rglob('*.woff2'))),7)
         for relative,data in design.font_licenses().items():
             self.assertEqual((self.output/'fonts'/relative).read_bytes(),data)
             self.assertIn('fonts/'+relative,links)

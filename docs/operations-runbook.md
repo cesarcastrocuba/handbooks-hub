@@ -124,7 +124,7 @@ release, the Owner downloads the artifact of the pull request that is about to m
    - Click each of Contents, List of Tables and List of Figures and press F9 (Update entire table).
      Each must regenerate correctly. The initial cached numbers use LibreOffice pagination with
      packaged fonts; F9 gives desktop Word's pagination. Verify both states before tagging.
-   - Text uses the brand fonts, or the declared fallback when they are not installed.
+   - Text and headings use Inter and code uses JetBrains Mono; both are embedded in the DOCX.
 2. **Other viewers.** `libreoffice/book-docx-as-libreoffice.pdf` shows "Contents" and the lists with
    entries, not empty headings.
 3. **PDF.** `edition/book.pdf` has the cover, contents, lists and running headers in place.
@@ -204,8 +204,7 @@ reviewed changes; nothing upgrades automatically.
 
 7. **Inspect rendered outputs [Implementer]**:
    Examine generated HTML, PDF, and DOCX files in the staging directory. Verify font rendering
-   (Handbook Sans and Handbook Serif in the HTML and PDF, Source Sans 3 and Source Serif 4 in Word,
-   JetBrains Mono for code in every edition), heading layout, table column widths, and page
+   (Inter for text and headings and JetBrains Mono for code in every edition), heading layout, table column widths, and page
    breaks.
 
 8. **Submit pull request [Implementer]**:

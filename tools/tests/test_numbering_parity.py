@@ -252,8 +252,7 @@ class NumberingParityUnitTests(unittest.TestCase):
                 "typst/typst-show.typ": workspace / "handbook-render/typst/typst-show.typ",
                 "docx/reference.docx": workspace / "handbook-render/docx/reference.docx",
                 "html/handbook.css": workspace / "handbook-render/html/handbook.css",
-                "fonts/source-sans3/HandbookSans-Regular.ttf": workspace / "handbook-render/fonts/source-sans3/HandbookSans-Regular.ttf",
-                "fonts/source-serif4/HandbookSerif-Regular.ttf": workspace / "handbook-render/fonts/source-serif4/HandbookSerif-Regular.ttf",
+                "fonts/inter/Inter-Regular.ttf": workspace / "handbook-render/fonts/inter/Inter-Regular.ttf",
                 "fonts/jetbrains-mono/JetBrainsMono-Regular.ttf": workspace / "handbook-render/fonts/jetbrains-mono/JetBrainsMono-Regular.ttf",
             }
             for path in resources.values():
