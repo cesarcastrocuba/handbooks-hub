@@ -8,9 +8,9 @@ import subprocess
 import tempfile
 from typing import Any
 import yaml
-import xml.etree.ElementTree as ET
 
 from . import design
+from .artifacts import omit_sitemap_times
 from .portal_catalog import read_catalog
 from .portal_design import design_page
 from .portal_markup import library_page, resource
@@ -85,23 +85,6 @@ def _run(command: list[str], workspace: Path, environment: dict[str,str]) -> str
     return result.stdout.strip()
 
 
-def _omit_sitemap_times(site: Path) -> None:
-    """Quarto uses staging mtimes despite SOURCE_DATE_EPOCH; omit optional, unknown lastmod."""
-    path=site/'sitemap.xml'
-    if not path.exists():
-        return
-    try:
-        tree=ET.parse(path)
-    except ET.ParseError as exc:
-        raise ValueError(f'cannot parse Quarto sitemap: {exc}') from exc
-    namespace='http://www.sitemaps.org/schemas/sitemap/0.9'
-    for url in tree.getroot().findall('{'+namespace+'}url'):
-        for timestamp in url.findall('{'+namespace+'}lastmod'):
-            url.remove(timestamp)
-    ET.register_namespace('',namespace)
-    tree.write(path,encoding='utf-8',xml_declaration=True)
-
-
 def build_quarto_portal(catalog: Path | None, output: Path, *, design_only: bool=False) -> Path:
     books=[] if catalog is None else read_catalog(catalog)
     output=Path(output).absolute()
@@ -120,7 +103,7 @@ def build_quarto_portal(catalog: Path | None, output: Path, *, design_only: bool
         site=staging/'_site'
         if not (site/'index.html').is_file():
             raise ValueError('Quarto did not produce the portal index')
-        _omit_sitemap_times(site)
+        omit_sitemap_times(site)
         if output.exists() or output.is_symlink():
             raise FileExistsError(output)
         site.rename(output)

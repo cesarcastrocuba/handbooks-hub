@@ -9,6 +9,7 @@ from urllib.parse import quote, urlsplit
 import yaml
 
 from .build_types import BuildError
+from .build_identity import validation_version
 from .print_layout import (
     document_control_table,
     has_document_control_table,
@@ -145,7 +146,7 @@ def prepare_reading_site(workspace: Path, config: dict[str, Any], book: dict[str
         for entry in front:
             content = (workspace / entry).read_text(encoding="utf-8")
             if has_document_control_table(content):
-                validate_document_control_version(content, version)
+                validate_document_control_version(content, validation_version(version, preview))
                 break
     # The native lists follow Document Control, ahead of other front matter.
     front[1:1] = lists

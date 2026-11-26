@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 from pathlib import Path
 import io
+import re
 import sys
 import tomllib
 import unittest
@@ -65,7 +66,10 @@ class DesignTokenTests(unittest.TestCase):
         self.assertNotIn("hb-table-stripe", typst)
         self.assertIn("else { hb-surface }", typst)
         self.assertIn("stroke: (x: none, y: 0.5pt + hb-border)", typst)
-        self.assertIn("radius: hb-card-radius, clip: true, breakable: true", typst)
+        self.assertIn("handbook-fit-table(it, hb-card-radius)", typst)
+        table_fit = files("handbook_toolkit").joinpath("render_data/typst/table-fit.typ").read_text()
+        self.assertIn("radius: radius, clip: true", table_fit)
+        self.assertIn("breakable: full > limit", table_fit)
         self.assertEqual(design.docx_values()["surface"], tokens["color"]["surface"]["print"])
 
     def test_print_rules_match_the_light_web_border(self) -> None:
@@ -98,6 +102,26 @@ class DesignTokenTests(unittest.TestCase):
                     design.contrast_ratio(foreground, background),
                     design.MINIMUM_TEXT_CONTRAST,
                 )
+
+    def test_book_scss_keeps_one_chrome_size_across_schemes(self) -> None:
+        def variables(theme: str) -> dict[str, str]:
+            return {
+                match[1]: match[2].strip()
+                for match in re.finditer(r"^\$([\w-]+):\s*(.+);$", theme, re.MULTILINE)
+            }
+
+        light = variables(design.book_scss("light"))
+        dark = variables(design.book_scss("dark"))
+        self.assertEqual(set(light), set(dark))
+        colour = {
+            "border-color", "body-bg", "body-color", "code-bg", "code-color", "code-block-bg",
+            "link-color", "navbar-bg", "navbar-fg", "sidebar-bg", "sidebar-fg", "headings-color",
+            *[f"callout-color-{name}" for name in self.tokens["callout"] if name != "review"],
+        }
+        differing = {name for name in light if light[name] != dark[name]}
+        self.assertLessEqual(differing, colour)
+        self.assertEqual(light["navbar-padding-y"], "0.5rem")
+        self.assertEqual(dark["navbar-padding-y"], "0.5rem")
 
     def test_contrast_pairs_reference_declared_roles(self) -> None:
         roles = set(self.tokens["color"])

@@ -62,23 +62,18 @@
 // reference handbook. Front matter, appendices and references arrive from
 // Quarto as unnumbered headings and keep their literal labels. The layout in
 // typst-show.typ passes this function to `article` as its section numbering.
-#let handbook-numbering(..nums) = context {
+//
+// The function stays plain: a `context` function cannot be resolved when Typst
+// assembles the PDF bookmarks, which then lose the number and keep only the
+// separating space (issue #99). Appendix headings are literal "Appendix A — …"
+// and "A.1 …" text staged as unnumbered headings (change 0060), so no state
+// lookup is needed here.
+#let handbook-numbering(..nums) = {
   let parts = nums.pos()
-  let ch = parts.first()
-  let app-start = handbook-appendix-state.get()
-  if app-start != none and ch >= app-start {
-    let app-idx = ch - app-start + 1
-    if parts.len() == 1 {
-      "Appendix " + numbering("A", app-idx) + " — "
-    } else {
-      numbering("A.1", app-idx, ..parts.slice(1))
-    }
+  if parts.len() == 1 {
+    numbering("1.", parts.first())
   } else {
-    if parts.len() == 1 {
-      numbering("1.", ch)
-    } else {
-      numbering("1.1", ..parts)
-    }
+    numbering("1.1", ..parts)
   }
 }
 #set heading(numbering: handbook-numbering)
@@ -272,7 +267,13 @@
 #show table.cell: set block(breakable: false)
 #show table.cell: set text(hyphenate: false)
 #show table.cell: set par(justify: false)
-#show table: it => align(center, block(radius: hb-card-radius, clip: true, breakable: true)[#it])
+#import "handbook-render/typst/table-fit.typ": handbook-fit-table, handbook-fit-float, handbook-float-group, handbook-figure-group
+#show table: it => handbook-fit-table(it, hb-card-radius)
+
+// Figures -------------------------------------------------------------------
+// A figure stays right after the text that introduces it (Owner decision
+// 2026-11-23, as in the Word edition); handbook-figure-group only scales one that
+// nearly fits the gap in front of it.
 
 // Captions -------------------------------------------------------------------
 #show figure.caption: it => align(center)[
@@ -280,6 +281,7 @@
 ]
 #show figure.where(kind: "quarto-float-tbl"): set figure.caption(position: bottom)
 #show figure.where(kind: "quarto-float-tbl"): set block(breakable: true)
+#show figure.where(kind: "quarto-float-tbl"): handbook-fit-float
 
 // Callouts / Themed Alert Boxes ---------------------------------------------
 #let callout(
@@ -291,19 +293,23 @@
   body_background_color: white,
 ) = {
   let label = repr(title)
+  // "Review Checklist" is tested before "Decision": a checklist title such as
+  // "Architecture Review Checklist — Decisions" contains both.
   let (accent, tint) = if "Common Pitfall" in label {
     (hb-callout-warning-accent, hb-callout-warning-tint)
+  } else if "Review Checklist" in label {
+    (hb-callout-review-accent, hb-callout-review-tint)
   } else if "Decision" in label {
     (hb-callout-important-accent, hb-callout-important-tint)
   } else if "Key Takeaway" in label {
     (hb-callout-tip-accent, hb-callout-tip-tint)
-  } else if "Review Checklist" in label {
-    (hb-callout-review-accent, hb-callout-review-tint)
   } else if "When to Use" in label {
     (hb-callout-note-accent, hb-callout-note-tint)
   } else {
     (hb-callout-note-accent, hb-callout-note-tint)
   }
+  // A callout is never split across pages (Owner decision 2026-11-23); a
+  // pitfall and its decision are separate boxes, so a pitfall can end a page.
   block(
     width: 100%,
     breakable: false,

@@ -63,6 +63,14 @@ class PlanUpdateTests(unittest.TestCase):
         }
         self.assertEqual(plan.document, expected)
 
+    def test_a_1_2_catalog_keeps_its_authors_and_schema_when_it_moves(self) -> None:
+        self.document["schema_version"] = "1.2"
+        self.document["books"][0]["authors"] = ["Example Author", "Second Author"]
+        plan = plan_update(self.document, SLUG, REPO, "v1.1.0", "2026-12-15", ("pdf", "source"))
+        self.assertTrue(plan.changed)
+        self.assertEqual(plan.document["schema_version"], "1.2")
+        self.assertEqual(plan.document["books"][0]["authors"], ["Example Author", "Second Author"])
+
     def test_new_release_lists_direct_downloads_for_the_given_roles(self) -> None:
         plan = plan_update(self.document, SLUG, REPO, "v1.1.0", "2026-12-15", ("markdown", "pdf"))
         base = "https://github.com/example/example-book/releases/download/v1.1.0/"

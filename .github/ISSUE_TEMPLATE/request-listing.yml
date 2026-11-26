@@ -22,6 +22,15 @@ body:
       required: true
 
   - type: input
+    id: authors
+    attributes:
+      label: Authors
+      description: Author names as stated in publishing/metadata.yaml, separated by commas.
+      placeholder: Franz César Castro Cuba
+    validations:
+      required: true
+
+  - type: input
     id: release-tag
     attributes:
       label: Release tag

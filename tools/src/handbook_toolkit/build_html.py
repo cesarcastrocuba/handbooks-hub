@@ -7,7 +7,7 @@ from . import design
 from .docx_post import (
     prepare_docx,
 )
-from .artifacts import archive_tree
+from .artifacts import archive_tree, omit_sitemap_times
 
 from .build_types import BuildError, PAYLOADS
 from .render_resources import RENDER_DIRECTORY
@@ -37,6 +37,11 @@ def _payload_paths(workspace: Path, dist: Path, epoch: int, compresslevel: int |
         target = site / RENDER_DIRECTORY / "fonts" / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
+    # Quarto stamps the sitemap with render times; without this the archive differs per build.
+    try:
+        omit_sitemap_times(site)
+    except ValueError as exc:
+        raise BuildError(str(exc)) from exc
     archive_tree(site, dist / PAYLOADS["html"], epoch, compresslevel=compresslevel)
     pdf = _one_file(output, ".pdf")
     docx = _one_file(output, ".docx")

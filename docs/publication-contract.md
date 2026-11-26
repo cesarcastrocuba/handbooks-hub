@@ -18,6 +18,8 @@ Each approved book release produces exactly these assets:
 | `publication-manifest.json` | Identity, provenance, artifact hashes and tool versions | Yes |
 | `SHA256SUMS.txt` | Human- and machine-checkable checksums | Yes |
 
+A release may also carry the optional book-owned pair `book-extras.zip` and `EXTRAS-SHA256SUMS.txt`; catalog verification accepts those two only alongside the required assets, checks the extras checksum and requires a valid ZIP. Extras are not catalog asset roles.
+
 Float caption labels and their cross-reference texts in `book.md` match the reading site, PDF
 and DOCX of the same build, including numbered chapters, unnumbered front matter and appendices.
 Quarto resolves those labels from the shared staged manuscript; the single-file Markdown edition

@@ -92,6 +92,7 @@ class RoundedTableTests(unittest.TestCase):
         from handbook_toolkit import design
         theme = (support.SRC / 'handbook_toolkit/render_data/typst/handbook-typst.typ').read_text()
         with tempfile.TemporaryDirectory() as folder:
+            stage_render_resources(Path(folder) / 'handbook-render')
             source = Path(folder) / 'long-table.typ'
             source.write_text(design.typst_preamble() + theme + '''
 #set page(width: 160mm, height: 120mm, margin: 10mm, header: none, footer: none)

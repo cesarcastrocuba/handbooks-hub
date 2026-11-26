@@ -82,8 +82,9 @@ Open the listing form:
 
 Give the repository URL, the release tag and URL, the reading site URL, the summary and the
 categories, and confirm the licensing, the third-party rights review and that the release was built
-by the pinned toolkit. The Owner reviews the request and merges a manual catalog pull request. After
-the merge, the portal rebuilds automatically from the catalog.
+by the pinned toolkit. State the author names exactly as `publishing/metadata.yaml` does; the catalog
+records them and the portal shows and filters by them. The Owner reviews the request and merges a
+manual catalog pull request. After the merge, the portal rebuilds automatically from the catalog.
 
 ## What a release contains
 

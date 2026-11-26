@@ -452,7 +452,7 @@ def book_scss(scheme: str) -> str:
     tokens = load_tokens()
     colors = {name: values[scheme] for name, values in tokens["color"].items()}
     variables = {"web-font-path": "false",
-                 "navbar-padding-y": "1rem" if scheme == "dark" else "0.5rem",
+                 "navbar-padding-y": "0.5rem",
                  "border-color": colors["chrome_rule"],
                  "body-bg": colors["canvas"], "body-color": colors["text"],
                  "code-bg": colors["code"], "code-color": colors["text"],

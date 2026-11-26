@@ -48,6 +48,7 @@ from .build_identity import (
     _require_prerelease_version,
     _epoch,
     _tool_versions,
+    validation_version,
 )
 from .build_staging import (
     _reading_groups,
@@ -93,7 +94,10 @@ def build_book(
     and identity-verified directory is atomically renamed into place.
     """
 
-    repo = Path(repo).resolve()
+    # The given spellings are kept for the leak check: a symlinked temporary directory, such as
+    # macOS /var -> /private/var, resolves to a different string than the one a book may contain.
+    given_repo = Path(repo).absolute()
+    repo = given_repo.resolve()
     raw_output = Path(output)
     profile_path = Path(profile).resolve() if profile is not None else None
     if mode not in {"chapter", "section-pilot"}:
@@ -221,6 +225,8 @@ def build_book(
             author=author,
             language=language,
         )
+        from .figure_layout import stage_figures
+        stage_figures(workspace, entries, config)
         control_table = document_control_table(fields)
         appendix_entries = list(groups.get("appendices", []))
         # The Markdown edition carries its own document-control header, so it is captured
@@ -240,7 +246,9 @@ def build_book(
         for entry in entries:
             entry_path = workspace / entry
             content = entry_path.read_text(encoding="utf-8")
-            injected = inject_document_control(content, control_table, version=book_version)
+            injected = inject_document_control(
+                content, control_table, version=validation_version(book_version, preview)
+            )
             if injected is not None:
                 entry_path.write_text(injected, encoding="utf-8")
                 break
@@ -249,6 +257,8 @@ def build_book(
         depth = toc_depth(entry_texts)
 
         rendered_entries = _prepare_render(workspace, entries, appendices=appendix_entries)
+        from .print_figures import stage_print_figures
+        print_figures = stage_print_figures(workspace, rendered_entries)
 
         title = str(book.get("title", ""))
         licenses = book.get("license", {})
@@ -316,6 +326,7 @@ def build_book(
             finally:
                 for path, text in originals.items():
                     path.write_text(text)
+        print_figures.restore(workspace)
 
         # Lists are native HTML chapters; print and Markdown keep their own indexes.
         html_config = yaml.safe_load((workspace / "_quarto.yml").read_text())
@@ -353,6 +364,14 @@ def build_book(
                 "after": pdf_bytes,
                 "saved": 0,
             }
+        from .docx_tables import keep_fitting_tables
+        tool_versions.update(keep_fitting_tables(
+            payloads["docx"], workspace / RENDER_DIRECTORY / "fonts",
+            required=require_page_numbers, compresslevel=compresslevel))
+        from .docx_figure_place import place_figures
+        tool_versions.update(place_figures(
+            payloads["docx"], workspace / RENDER_DIRECTORY / "fonts",
+            required=require_page_numbers, compresslevel=compresslevel))
         from .docx_pages import cache_page_numbers
         tool_versions.update(cache_page_numbers(
             payloads["docx"], workspace / RENDER_DIRECTORY / "fonts", required=require_page_numbers,
@@ -363,7 +382,8 @@ def build_book(
         )
         _reject_local_paths(
             markdown_text,
-            [repo, workspace, staging, output, Path.home()],
+            [repo, given_repo, workspace, staging, output, Path.home(), Path.home().resolve(),
+             raw_output.absolute(), raw_output.absolute().parent / staging.name],
         )
         markdown_path = dist / PAYLOADS["markdown"]
         markdown_path.write_text(markdown_text, encoding="utf-8")

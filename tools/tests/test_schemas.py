@@ -53,6 +53,39 @@ class SchemaTests(unittest.TestCase):
                 self.assertEqual(document["$schema"], "https://json-schema.org/draft/2020-12/schema")
 
 
+class CatalogSchemaTests(unittest.TestCase):
+    """Schema 1.1 stays valid without authors; 1.2 requires a clean author list."""
+
+    def setUp(self) -> None:
+        schema = json.loads(
+            (support.SCHEMAS / "catalog.schema.json").read_text(encoding="utf-8")
+        )
+        self.validator = Draft202012Validator(schema)
+
+    def document(self, version: str, authors=None) -> dict:
+        document = support.catalog_document()
+        document["schema_version"] = version
+        if authors is not None:
+            document["books"][0]["authors"] = authors
+        return document
+
+    def test_1_1_stays_valid_and_1_2_requires_authors(self) -> None:
+        self.assertTrue(self.validator.is_valid(self.document("1.1")))
+        self.assertFalse(self.validator.is_valid(self.document("1.2")))
+        self.assertTrue(self.validator.is_valid(self.document("1.2", ["Example Author"])))
+        self.assertTrue(self.validator.is_valid(self.document("1.1", ["Example Author"])))
+
+    def test_1_2_rejects_empty_duplicate_or_padded_authors(self) -> None:
+        for authors in ([], [" "], ["Example Author", "Example Author"],
+                        [" Example Author"], ["Example Author "], [""], ["Example Author"] * 11,
+                        ["Example Author", 3], ["Example | Author"]):
+            with self.subTest(authors=authors):
+                self.assertFalse(self.validator.is_valid(self.document("1.2", authors)))
+
+    def test_unknown_schema_version_is_invalid(self) -> None:
+        self.assertFalse(self.validator.is_valid(self.document("1.3", ["Example Author"])))
+
+
 class PublicationManifestSchemaTests(unittest.TestCase):
     """Schema 1.0 keeps four payloads valid; schema 1.1 requires the fifth."""
 

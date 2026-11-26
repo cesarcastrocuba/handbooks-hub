@@ -302,3 +302,23 @@ body:has(.list-of-tables) #title-block-header .title { margin-bottom: {{book-met
 
 #quarto-document-content h2 { font-size: var(--web-section-px); }
 #quarto-document-content h3 { font-size: var(--web-card-title-px); }
+
+/* Raster white blends with the light canvas; dark mode inverts it to light lines. */
+@media screen {
+  body.quarto-light .quarto-figure img.handbook-raster,
+  body.quarto-light figure img.handbook-raster,
+  body.quarto-light .quarto-figure.handbook-raster img { mix-blend-mode: multiply; }
+  /* The scroll reveal makes a figure translucent, which isolates its raster from
+     the page: give the figure the canvas so the multiply still meets cream and the
+     image never shows white first. A figure in a callout keeps the callout tint. */
+  body.quarto-light main figure:has(img.handbook-raster):not(.callout figure),
+  body.quarto-light main .quarto-figure.handbook-raster:not(.callout *) {
+    background-color: var(--canvas);
+  }
+  body.quarto-dark .quarto-figure img.handbook-raster,
+  body.quarto-dark figure img.handbook-raster,
+  body.quarto-dark .quarto-figure.handbook-raster img {
+    filter: invert(1) hue-rotate(180deg);
+    mix-blend-mode: screen;
+  }
+}

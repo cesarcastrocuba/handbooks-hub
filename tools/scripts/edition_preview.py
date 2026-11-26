@@ -33,10 +33,10 @@ sys.path.insert(0, str(SCRIPTS))
 import export_template  # noqa: E402
 
 from handbook_toolkit.build import PAYLOADS, BuildError, build_book  # noqa: E402
+from handbook_toolkit.build_identity import PREVIEW_SUFFIX  # noqa: E402
 from handbook_toolkit.docx_pages import export_pdf, font_environment  # noqa: E402
 from handbook_toolkit.render_resources import stage_render_resources  # noqa: E402
 
-PREVIEW_SUFFIX = "-preview"
 VIEWPORTS = {"desktop": (1440, 1800), "phone": (390, 1800)}
 COLOR_SCHEMES = ("light", "dark")
 SUMMARY = "PREVIEW.md"

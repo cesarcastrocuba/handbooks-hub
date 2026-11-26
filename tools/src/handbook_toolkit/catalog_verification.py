@@ -8,13 +8,16 @@ import http.client
 import ipaddress
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import socket
 import ssl
 import tempfile
+import time
 from urllib.parse import quote, urldefrag, urljoin, urlsplit
-from zipfile import ZipFile
+from zipfile import BadZipFile, ZipFile
+
+import yaml
 
 from .artifacts import inspect_payload
 from .catalog import validate_catalog
@@ -25,6 +28,15 @@ MAX_DOWNLOAD = 512 * 1024 * 1024
 API_HOST = "api.github.com"
 TOKEN_VARIABLE = "GITHUB_TOKEN"
 RATE_LIMITED = {403, 429}
+# Transient statuses from a non-API host. The API host retries every 5xx and 429.
+RETRYABLE_FILE = {429, 500, 502, 503, 504}
+RETRY_ATTEMPTS = 3
+RETRY_AFTER_LIMIT = 30
+_sleep = time.sleep
+EXTRAS_ZIP = "book-extras.zip"
+EXTRAS_SUMS = "EXTRAS-SHA256SUMS.txt"
+EXTRAS = {EXTRAS_ZIP, EXTRAS_SUMS}
+EXTRAS_SUMS_LIMIT = 64 * 1024
 
 
 def _public_addresses(host: str) -> list[str]:
@@ -77,8 +89,33 @@ def _failure(host: str, response: http.client.HTTPResponse) -> ValueError:
     return ValueError(message)
 
 
+def _retryable(host: str, response: http.client.HTTPResponse) -> bool:
+    if host == API_HOST:
+        return response.status == 429 or 500 <= response.status <= 599
+    return response.status in RETRYABLE_FILE
+
+
+def _retry_delay(response: http.client.HTTPResponse, attempt: int) -> float:
+    retry_after = response.getheader("Retry-After")
+    if retry_after is not None and re.fullmatch(r"\d+", retry_after.strip()):
+        return min(RETRY_AFTER_LIMIT, int(retry_after.strip()))
+    return float(2 ** (attempt + 1))
+
+
+def _connect(host: str, addresses: list[str]) -> _PinnedHTTPSConnection:
+    for address in addresses:
+        candidate = _PinnedHTTPSConnection(host, address)
+        try:
+            candidate.connect()
+            return candidate
+        except OSError:
+            candidate.close()
+    raise OSError("cannot connect to a verified public destination")
+
+
 def _download(url: str, destination: Path, limit: int) -> None:
-    for _ in range(6):
+    hops = 0
+    while True:
         parsed = urlsplit(url)
         if parsed.scheme != "https" or not parsed.hostname or parsed.port not in (None, 443):
             raise ValueError("downloads require HTTPS on the standard port")
@@ -86,42 +123,40 @@ def _download(url: str, destination: Path, limit: int) -> None:
             raise ValueError("download URLs must not contain credentials")
         host = parsed.hostname.encode("idna").decode("ascii")
         addresses = _public_addresses(host)
-        connection = None
-        for address in addresses:
-            candidate = _PinnedHTTPSConnection(host, address)
+        hops += 1
+        if hops > 6:
+            raise ValueError("download exceeded the redirect limit")
+        target = quote(parsed.path or "/", safe="/%:@-._~!$&'()*+,;=")
+        if parsed.query:
+            target += "?" + quote(parsed.query, safe="=&%:+,;/?@-._~")
+        attempts = 0
+        while True:
+            connection = _connect(host, addresses)
             try:
-                candidate.connect()
-                connection = candidate
-                break
-            except OSError:
-                candidate.close()
-        if connection is None:
-            raise OSError("cannot connect to a verified public destination")
-        try:
-            target = quote(parsed.path or "/", safe="/%:@-._~!$&'()*+,;=")
-            if parsed.query:
-                target += "?" + quote(parsed.query, safe="=&%:+,;/?@-._~")
-            connection.request("GET", target, headers=_request_headers(host))
-            response = connection.getresponse()
-            if response.status in {301, 302, 303, 307, 308}:
-                location = response.getheader("Location")
-                if not location:
-                    raise ValueError("redirect is missing its destination")
-                url = urljoin(url, location)
-                continue  # the next target is resolved, checked and pinned again
-            if response.status != 200:
+                connection.request("GET", target, headers=_request_headers(host))
+                response = connection.getresponse()
+                if response.status in {301, 302, 303, 307, 308}:
+                    location = response.getheader("Location")
+                    if not location:
+                        raise ValueError("redirect is missing its destination")
+                    url = urljoin(url, location)
+                    break  # the next target is resolved, checked and pinned again
+                if response.status == 200:
+                    with destination.open("xb") as stream:
+                        size = 0
+                        while chunk := response.read(64 * 1024):
+                            size += len(chunk)
+                            if size > limit:
+                                raise ValueError("remote asset exceeds its allowed byte limit")
+                            stream.write(chunk)
+                    return
+                if _retryable(host, response) and attempts < RETRY_ATTEMPTS:
+                    _sleep(_retry_delay(response, attempts))
+                    attempts += 1
+                    continue
                 raise _failure(host, response)
-            with destination.open("xb") as stream:
-                size = 0
-                while chunk := response.read(64 * 1024):
-                    size += len(chunk)
-                    if size > limit:
-                        raise ValueError("remote asset exceeds its allowed byte limit")
-                    stream.write(chunk)
-            return
-        finally:
-            connection.close()
-    raise ValueError("download exceeded the redirect limit")
+            finally:
+                connection.close()
 
 
 def _json(url: str) -> dict:
@@ -148,6 +183,53 @@ def _tag_commit(api: str, tag: str) -> str:
             break
         target = _json(f"{api}/git/tags/{sha}").get("object", {})
     raise ValueError("tag does not resolve to a commit within the supported tag depth")
+
+
+
+def _release_authors(source: Path) -> list[str]:
+    """Return the ``author`` names stated by ``publishing/metadata.yaml`` in a source archive."""
+
+    try:
+        with ZipFile(source) as archive:
+            try:
+                payload = archive.read("publishing/metadata.yaml")
+            except KeyError:
+                raise ValueError(
+                    "source archive has no publishing/metadata.yaml to check the catalog authors"
+                ) from None
+    except BadZipFile as exc:
+        raise ValueError("source archive is not a valid ZIP archive") from exc
+    try:
+        document = yaml.safe_load(payload.decode("utf-8"))
+    except (UnicodeError, yaml.YAMLError) as exc:
+        raise ValueError(f"publishing/metadata.yaml is not readable YAML: {exc}") from exc
+    if not isinstance(document, dict):
+        raise ValueError("publishing/metadata.yaml must be a mapping")
+    author = document.get("author")
+    if isinstance(author, str):
+        authors = [author]
+    elif isinstance(author, list) and author and all(isinstance(name, str) for name in author):
+        authors = list(author)
+    else:
+        raise ValueError("publishing/metadata.yaml must state an author name or a list of names")
+    return [name.strip() for name in authors]
+
+
+def _verify_authors(book: dict, entries: list[dict], root: Path) -> None:
+    """The catalog authors must be the release's own author names."""
+
+    expected = book.get("authors")
+    if expected is None:
+        return
+    source = next((entry for entry in entries if entry["role"] == "source"), None)
+    if source is None:
+        raise ValueError("catalog authors cannot be verified: the release has no source payload")
+    actual = _release_authors(root / source["path"])
+    if actual != expected:
+        raise ValueError(
+            "catalog authors differ from publishing/metadata.yaml in the release source: "
+            f"{expected!r} != {actual!r}"
+        )
 
 
 def _verify_book(book: dict) -> None:
@@ -190,11 +272,26 @@ def _verify_book(book: dict) -> None:
                 raise ValueError(f"catalog download link for {role} is not an artifact of the release manifest")
         expected = set(names) | {MANIFEST, CHECKSUMS}
         assets = published.get("assets", [])
-        if not isinstance(assets, list) or len(assets) != len(expected) or not all(isinstance(asset, dict) for asset in assets) or {asset.get("name") for asset in assets} != expected:
-            raise ValueError(f"release must contain exactly the {len(expected)} declared assets")
+        if not isinstance(assets, list) or not all(isinstance(asset, dict) for asset in assets):
+            raise ValueError("release assets are malformed")
+        asset_names = [asset.get("name") for asset in assets]
+        if not all(isinstance(name, str) for name in asset_names) or len(set(asset_names)) != len(asset_names):
+            raise ValueError("release assets have missing or duplicate names")
+        present = set(asset_names)
+        if present not in (expected, expected | EXTRAS):
+            if present & EXTRAS and EXTRAS - present:
+                raise ValueError(
+                    "release extras must carry both book-extras.zip and EXTRAS-SHA256SUMS.txt"
+                )
+            raise ValueError(
+                f"release must contain exactly the {len(expected)} declared assets, "
+                "optionally with book-extras.zip and EXTRAS-SHA256SUMS.txt"
+            )
         for asset in assets:
             if asset.get("state") != "uploaded" or asset.get("browser_download_url") != prefix + asset["name"]:
                 raise ValueError("release asset is incomplete or has a mixed-release URL")
+        if present != expected:
+            _verify_extras(prefix, {asset["name"]: asset for asset in assets}, root.parent / "extras")
         _download(release["checksums_url"], root / CHECKSUMS, 2 * 1024 * 1024)
         for entry in entries:
             if entry["bytes"] > MAX_DOWNLOAD:
@@ -203,6 +300,7 @@ def _verify_book(book: dict) -> None:
         integrity = verify_publication(root)
         if not integrity.ok:
             raise ValueError("remote integrity failure: " + "; ".join(map(str, integrity.issues)))
+        _verify_authors(book, entries, root)
         for entry in entries:
             issues = inspect_payload(
                 root / entry["path"], entry["role"], source_commit=commit, build_invariants=False
@@ -225,6 +323,41 @@ def _verify_book(book: dict) -> None:
                 _download(url, live, member.file_size)
                 if hashlib.sha256(live.read_bytes()).digest() != hashlib.sha256(archive.read(member)).digest():
                     raise ValueError(f"live reading asset differs from released HTML: {member.filename}")
+
+
+def _verify_extras(prefix: str, assets: dict[str, dict], directory: Path) -> None:
+    """Verify the optional book-extras pair, never part of the catalog asset roles."""
+    directory.mkdir(parents=True, exist_ok=True)
+    archive = assets[EXTRAS_ZIP]
+    size = archive.get("size")
+    if not isinstance(size, int) or isinstance(size, bool) or size <= 0:
+        raise ValueError("book-extras.zip asset has no usable size")
+    if size > MAX_DOWNLOAD:
+        raise ValueError("book-extras.zip exceeds the online verification size limit")
+    _download(prefix + EXTRAS_SUMS, directory / EXTRAS_SUMS, EXTRAS_SUMS_LIMIT)
+    try:
+        lines = (directory / EXTRAS_SUMS).read_text(encoding="utf-8").splitlines()
+    except UnicodeError as exc:
+        raise ValueError("EXTRAS-SHA256SUMS.txt is not UTF-8 text") from exc
+    if len(lines) != 1:
+        raise ValueError("EXTRAS-SHA256SUMS.txt must contain exactly one checksum line")
+    match = re.fullmatch(r"([0-9a-f]{64}) [ *]book-extras\.zip", lines[0])
+    if match is None:
+        raise ValueError("EXTRAS-SHA256SUMS.txt must name book-extras.zip with its SHA-256")
+    _download(prefix + EXTRAS_ZIP, directory / EXTRAS_ZIP, size)
+    if hashlib.sha256((directory / EXTRAS_ZIP).read_bytes()).hexdigest() != match.group(1):
+        raise ValueError("book-extras.zip checksum does not match EXTRAS-SHA256SUMS.txt")
+    try:
+        with ZipFile(directory / EXTRAS_ZIP) as bundle:
+            if bundle.testzip() is not None:
+                raise ValueError("book-extras.zip failed its archive integrity check")
+            for member in bundle.infolist():
+                name = member.filename
+                path = PurePosixPath(name)
+                if path.is_absolute() or re.match(r"^[A-Za-z]:", name) or ".." in path.parts:
+                    raise ValueError(f"book-extras.zip contains an unsafe member path: {name}")
+    except BadZipFile as exc:
+        raise ValueError("book-extras.zip is not a valid ZIP archive") from exc
 
 
 def verify_catalog_releases(catalog: Path) -> CheckResult:

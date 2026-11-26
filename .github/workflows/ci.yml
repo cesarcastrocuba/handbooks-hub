@@ -23,6 +23,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements-dev.txt
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends poppler-utils qpdf
+      - name: Verify the qpdf version
+        run: test "$(qpdf --version | head -1 | cut -d' ' -f3 | cut -d. -f1)" -ge 11
       - name: Fast checks
         run: make check
       - name: Full checks
@@ -43,6 +49,12 @@ jobs:
           . .venv/bin/activate
           python3 -m pip install --upgrade pip
           python3 -m pip install -r requirements-dev.txt
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends poppler-utils qpdf
+      - name: Verify the qpdf version
+        run: test "$(qpdf --version | head -1 | cut -d' ' -f3 | cut -d. -f1)" -ge 11
       - name: Run the documented make checks
         run: |
           . .venv/bin/activate
@@ -101,6 +113,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends poppler-utils qpdf libreoffice-writer
+      - name: Verify the qpdf version
+        run: test "$(qpdf --version | head -1 | cut -d' ' -f3 | cut -d. -f1)" -ge 11
       - name: Install the toolkit and test dependencies
         run: |
           python -m pip install --upgrade pip
@@ -109,6 +123,10 @@ jobs:
         run: python3 -m unittest discover -s tools/tests -p test_build.py -v
       - name: Run render-resource runtime tests
         run: python3 -m unittest discover -s tools/tests -p test_render_resources.py -v
+      - name: Run table and raster layout runtime tests
+        run: |
+          python3 -m unittest discover -s tools/tests -p test_table_fit.py -v
+          python3 -m unittest discover -s tools/tests -p test_tables_figures_build.py -v
       - name: Copy and build the template in a temporary repository
         run: python3 -m unittest discover -s tools/tests -p test_template.py -v
 
