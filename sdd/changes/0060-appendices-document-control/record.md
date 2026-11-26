@@ -171,4 +171,32 @@ the "Appendices" part itself.
 
 ### 5. CI edition-preview artifacts
 
-To be re-checked on the preview artifacts of the pushed head and pasted here before handoff.
+Run `44134889854` on head `ac880f9`: every job passed, including the three edition previews. The
+sample (`8ed1b70`) and Solutions Architecture (`d9eca79`) artifacts were downloaded and re-checked:
+
+```
+$ gh run download 44134889854 -n edition-preview-sample -D ci-sample
+$ gh run download 44134889854 -n edition-preview-solutions-architecture -D ci-sa
+== sample: 61 pages; standalone Appendices pages: []
+   sections: [('Front matter', 4), ('Chapters', 8), ('Appendices', 3)]
+   appendices items: ['Appendix A — Brief and Outline Templates',
+                      'Appendix B — Gate and Review Checklists',
+                      'Appendix C — Glossary']
+   references in appendices part: False
+   references breadcrumb: ['References']
+   double space: False
+== sa: 512 pages; standalone Appendices pages: []
+   sections: [('Front matter', 5), ('Chapters', 18), ('Appendices', 10)]
+   references in appendices part: False
+   references breadcrumb: ['References']
+   top level after appendices: ['Appendix J — Pattern Catalog', 'References', 'Index']
+   double space: False
+```
+
+- Sample PDF Contents: `Appendix A — … 52`, `Appendix B — … 55`, `Appendix C — … 58`; the outline
+  lists the three literal appendix titles (84 outline entries); no double space.
+- The sample sidebar sections are identical to the published `v0.5.2` HTML (section titles and
+  entries compared item by item).
+- The `0053` audit on the CI Solutions Architecture artifact returns the same numbers as the local
+  build: Index 529 rows and 3 497 location links, 466 glossary links, 493 glossary pointers, DOCX
+  0 missing bookmarks, and no broken HTML fragment, DOCX anchor or PDF annotation.
