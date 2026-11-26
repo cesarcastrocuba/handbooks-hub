@@ -191,7 +191,7 @@ jobs:
               assert config["project"]["type"] == "website"
               assert (site / "design.qmd").is_file()
               assert len(list(site.glob("*.qmd"))) == 7
-              assert len(list((site / "handbook-render/fonts").rglob("*.woff2"))) == 10
+              assert len(list((site / "handbook-render/fonts").rglob("*.woff2"))) == 7
           PY
       - name: Validate an independent book outside the checkout
         run: |
