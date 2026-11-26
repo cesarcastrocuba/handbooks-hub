@@ -192,7 +192,7 @@ status: draft
 profile:
   id: standard
   version: "1.1.0"
-toolkit: "0.15.0"
+toolkit: "0.16.0"
 license:
   content: CC-BY-SA-4.0
   code: MIT
@@ -841,7 +841,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.15.0"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.16.0"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             commit = commit_all(repo, "mismatched toolkit pin")
@@ -903,7 +903,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.15.0"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.16.0"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             commit = commit_all(repo, "preview toolkit pin")
@@ -1022,7 +1022,7 @@ class BuildTests(unittest.TestCase):
             repo, commit = make_book(root)
             book = repo / "book.yaml"
             book.write_text(
-                book.read_text(encoding="utf-8").replace('toolkit: "0.15.0"', 'toolkit: "0.1.0"'),
+                book.read_text(encoding="utf-8").replace('toolkit: "0.16.0"', 'toolkit: "0.1.0"'),
                 encoding="utf-8",
             )
             _git(repo, "update-index", "--assume-unchanged", "book.yaml")
