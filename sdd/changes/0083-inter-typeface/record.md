@@ -14,7 +14,9 @@ print page, and decided:
   leave it as it is but change the typeface in every format);
 - Inter for text and headings ("Quisiera inter para todo": Inter for everything), JetBrains Mono for
   code as before;
-- the Word edition embeds the fonts, so a reader without Inter installed still sees it.
+- the Word edition embeds the fonts, so a reader without Inter installed still sees it;
+- after the first CI preview (PDF 541 → 611 pages at 10 pt), the PDF body text is set at 9.5 pt;
+  Word and web sizes are unchanged.
 
 Recorded as `HUB-DEC-045`.
 
@@ -48,7 +50,8 @@ Mono WOFF2 files are not regenerated; the script's run changed their bytes, so t
   Word.
 - `design.py`: the web font list, the licence list, the `@font-face` comment and the Quarto font
   variables; `render_resources.py` and `build_staging.py` stage and point Typst at `fonts/inter`;
-  `typst-show.typ` names Inter.
+  `typst-show.typ` names Inter. The PDF body size is 9.5 pt in `typst-show.typ`,
+  `handbook-typst.typ` and the `type.body.print_size_pt` token.
 - `docx_fonts.py`: Inter's alternate chain is Segoe UI → Calibri → Arial; `embed_fonts` adds the
   packaged TTFs as obfuscated parts (`word/fonts/fontN.odttf`, ISO/IEC 29500-1, 17.8.1) with
   `embedRegular`/`embedBold`/`embedItalic`/`embedBoldItalic`, the font-table relationships, the

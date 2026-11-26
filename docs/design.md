@@ -106,14 +106,15 @@ lost that separation.
 
 | Role | Web family | Print family | Web size | Print size | Line height | Measure |
 | --- | --- | --- | --- | --- | --- | --- |
-| `body` | Inter | Inter | 15 px | 10 pt | 1.55 | 68 characters |
+| `body` | Inter | Inter | 15 px | 9.5 pt | 1.55 | 68 characters |
 | `display` | Inter | Inter | 34 px | 21 pt | 1.15 | none |
 | `code` | Handbook Mono (JetBrains Mono) | JetBrains Mono | 13 px | 9 pt | 1.5 | none |
 
 Spacing uses a 4 px unit with 56 px section rhythm. Controls use a 6 px radius and cards 8 px.
 
 The brand typeface is **Inter** (4.1, SIL OFL 1.1) for text and headings in every medium, and
-**JetBrains Mono** for code (`HUB-DEC-045`). The portal and the book self-host subsetted WOFF2 files:
+**JetBrains Mono** for code (`HUB-DEC-045`). The PDF sets body text at 9.5 pt, since Inter runs
+larger than Source Sans at the same size; the Word body size is unchanged. The portal and the book self-host subsetted WOFF2 files:
 Inter keeps its family name, the JetBrains Mono subset is named `Handbook Mono`. The PDF embeds
 subsets of the upstream static TTFs. The DOCX names Inter and JetBrains Mono and embeds the
 upstream TTFs unmodified as obfuscated font parts, so Word shows the typeface without an install.

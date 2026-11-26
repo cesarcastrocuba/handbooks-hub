@@ -11,7 +11,8 @@ semantic versioning once the toolkit is published.
   Source Serif 4; JetBrains Mono stays the code font (change `0083`, `HUB-DEC-045`). The Word
   edition now embeds Inter and JetBrains Mono, so desktop Word shows them without an install; the
   DOCX grows by the embedded fonts. The packaged Source Sans 3 and Source Serif 4 files are removed.
-  Page counts of the PDF and the DOCX change with the typeface.
+  The PDF body text is set at 9.5 pt instead of 10 pt, because Inter runs larger at the same size;
+  page counts of the PDF and the DOCX change with the typeface.
 
 ## [0.15.0] - Unreleased
 
