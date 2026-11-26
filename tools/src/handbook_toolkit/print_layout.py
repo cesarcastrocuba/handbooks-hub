@@ -33,7 +33,7 @@ LICENSE_LABELS = {
     "Apache-2.0": "Apache 2.0",
 }
 LANGUAGES = {"en": "English", "es": "Spanish", "pt": "Portuguese", "fr": "French", "de": "German"}
-# Contents entries that fit comfortably on two or three A4 pages at 10 pt.
+# Contents entries that fit comfortably on two or three A4 pages at the 9.5 pt body size.
 THREE_LEVEL_LIMIT = 90
 DEFAULT_RUNNING_HEADER = "Practitioner reference"
 

@@ -5,6 +5,12 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+## [0.16.0] - Unreleased
+
+Toolkit minor release prepared by change `0084`. It carries change `0083` (PR 140): one typeface,
+Inter, in every edition and the portal, with the fonts embedded in the Word edition. The Owner
+checked the CI-built 6.0.0 DOCX of PR 140 in desktop Word. The tag needs the Owner's approval.
+
 ### Changed
 
 - Every edition and the portal use Inter for text and headings in place of Source Sans 3 and
@@ -14,13 +20,13 @@ semantic versioning once the toolkit is published.
   The PDF body text is set at 9.5 pt instead of 10 pt, because Inter runs larger at the same size;
   page counts of the PDF and the DOCX change with the typeface.
 
-## [0.15.0] - Unreleased
+## [0.15.0] - 2026-11-26
 
 Toolkit minor release prepared by change `0082`. It carries the changes merged after
 `toolkit-v0.14.2`: change `0081` (print figure and callout placement, PRs 133–136) changes how
 the Word and PDF editions lay out figures and callouts; changes `0079` and `0080` fix the clean-
 clone gate and make `book-html.zip` reproducible. The Owner checked the CI-built 6.0.0 DOCX of PR
-136 in desktop Word. The tag needs the Owner's approval.
+136 in desktop Word and approved the tag.
 
 ### Changed
 
