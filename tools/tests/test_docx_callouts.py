@@ -8,7 +8,7 @@ import unittest
 import xml.etree.ElementTree as ET
 
 from handbook_toolkit.docx_pages import export_pdf, font_environment
-from handbook_toolkit.docx_post import _wrap_callout_box
+from handbook_toolkit.docx_post import CALLOUT_STYLE, _wrap_callout_box
 from handbook_toolkit.docx_tables import keep_fitting_tables, keep_leadins, release_callout_keeps
 from unittest.mock import patch
 import zipfile
@@ -25,6 +25,37 @@ def boxed(body, title, *content):
     _wrap_callout_box(document, body, children, children.index(title), group, W, "000000", "FFFFFF")
     boxes = [t for t in body.findall(W + "tbl")]
     return document, boxes[-1]
+
+
+def _keep(paragraph, value="1"):
+    properties = paragraph.find(W + "pPr")
+    if properties is None:
+        properties = ET.Element(W + "pPr")
+        paragraph.insert(0, properties)
+    ET.SubElement(properties, W + "keepNext", {W + "val": value})
+    return paragraph
+
+
+def data_table(parent, style="Table", keep_first=False):
+    table = ET.SubElement(parent, W + "tbl")
+    properties = ET.SubElement(table, W + "tblPr")
+    ET.SubElement(properties, W + "tblStyle", {W + "val": style})
+    ET.SubElement(properties, W + "tblLook", {W + "firstRow": "1"})
+    for i in range(2):
+        cell = ET.SubElement(ET.SubElement(table, W + "tr"), W + "tc")
+        paragraph_ = paragraph(cell, f"CELL{i}")
+        if i == 0 and keep_first:
+            _keep(paragraph_)
+    return table
+
+
+def callout_table(parent):
+    table = ET.SubElement(parent, W + "tbl")
+    properties = ET.SubElement(table, W + "tblPr")
+    ET.SubElement(properties, W + "tblStyle", {W + "val": CALLOUT_STYLE})
+    row = ET.SubElement(table, W + "tr")
+    ET.SubElement(ET.SubElement(row, W + "trPr"), W + "cantSplit")
+    return ET.SubElement(row, W + "tc")
 
 
 class CalloutBoxTests(unittest.TestCase):
@@ -72,6 +103,104 @@ class CalloutBoxTests(unittest.TestCase):
             self.assertIsNone(p.find(W + "pPr/" + W + "keepNext"),
                               "".join(t.text or "" for t in p.iter(W + "t")) or "spacer")
 
+
+    def test_the_box_lands_where_the_callout_was(self):
+        body = ET.Element(W + "body")
+        paragraph(body, "BEFORE")
+        title = paragraph(body, "TITLE", "CalloutWarningTitle")
+        text = paragraph(body, "CONTENT")
+        paragraph(body, "AFTER")
+        document = ET.Element(W + "document")
+        document.append(body)
+        children = list(body)
+        _wrap_callout_box(
+            document, body, children, children.index(title), [title, text],
+            W, "000000", "FFFFFF",
+        )
+        self.assertEqual(
+            [node.tag.replace(W, "") for node in body],
+            ["p", "p", "tbl", "p", "p"],
+        )
+        self.assertEqual(
+            ["".join(t.text or "" for t in node.iter(W + "t")) for node in body],
+            ["BEFORE", "", "TITLECONTENT", "", "AFTER"],
+        )
+        self.assertEqual(
+            "".join(t.text or "" for t in body.find(W + "tbl").iter(W + "t")),
+            "TITLECONTENT",
+        )
+
+    def test_a_data_table_inside_a_box_does_not_chain_the_box(self):
+        # keep_leadins treated the box's cell as an ordinary container, so a
+        # nested data table made it keep the box's title with the float. That
+        # keep was then cleared by release_callout_keeps, but it was counted as
+        # a float lead-in and could drag the box before the release ran.
+        body = ET.Element(W + "body")
+        cell = callout_table(body)
+        paragraph(cell, "Decision & Trade-off", "CalloutImportantTitle")
+        lead_in = paragraph(cell, "Each option has a cost.")
+        data_table(cell, "TablePlain")
+        document = ET.Element(W + "document")
+        document.append(body)
+        self.assertEqual(keep_leadins(document), 0)
+        self.assertIsNone(lead_in.find(W + "pPr/" + W + "keepNext"))
+
+    @unittest.skipUnless(
+        shutil.which("soffice") and shutil.which("pdfinfo"),
+        "LibreOffice and Poppler are required for the table measurement",
+    )
+    def test_the_measured_path_releases_the_box_including_a_nested_table(self):
+        styles = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+            '<w:style w:type="paragraph" w:styleId="CalloutWarningTitle">'
+            '<w:name w:val="Callout Warning Title"/><w:pPr><w:keepNext/></w:pPr>'
+            "</w:style></w:styles>"
+        )
+        body = ET.Element(W + "body")
+        data_table(body)  # a candidate, so the normal measured path runs
+        cell = callout_table(body)
+        title = paragraph(cell, "Common Pitfall", "CalloutWarningTitle")
+        body_text = paragraph(cell, "A warning.")
+        data_table(cell, "TablePlain", keep_first=True)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "book.docx"
+            _package(path, body, styles=styles)
+            report = keep_fitting_tables(path, FONTS, required=True)
+            root = ET.fromstring(zipfile.ZipFile(path).read("word/document.xml"))
+        self.assertEqual(
+            report["docx_callout_keeps"],
+            "callout boxes released from keep-with-next: 1",
+        )
+        self.assertEqual(
+            report["docx_float_leadins"],
+            "0 heading/lead-in paragraphs kept with floats",
+        )
+        self.assertIn("isolated LibreOffice measurement", report["docx_table_fit"])
+        box = next(
+            table
+            for table in root.iter(W + "tbl")
+            if (style := table.find(W + "tblPr/" + W + "tblStyle")) is not None
+            and style.get(W + "val") == CALLOUT_STYLE
+        )
+
+        def paragraph_with(text):
+            return next(
+                p
+                for p in root.iter(W + "p")
+                if text in "".join(t.text or "" for t in p.iter(W + "t"))
+            )
+
+        for text in ("Common Pitfall", "A warning."):
+            keep = paragraph_with(text).find(W + "pPr/" + W + "keepNext")
+            self.assertIsNotNone(keep)
+            self.assertEqual(keep.get(W + "val"), "0")
+        # A nested header row is still a paragraph of the outer box row; Word
+        # would chain the box through it, so it is released too.
+        inner = next(table for table in box.iter(W + "tbl") if table is not box)
+        keep = inner.find(W + "tr/" + W + "tc/" + W + "p/" + W + "pPr/" + W + "keepNext")
+        self.assertIsNotNone(keep)
+        self.assertEqual(keep.get(W + "val"), "0")
 
     def test_the_build_step_releases_the_keeps(self):
         # The pipeline, not only the function: both paths of keep_fitting_tables.

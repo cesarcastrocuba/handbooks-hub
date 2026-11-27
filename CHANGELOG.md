@@ -23,6 +23,17 @@ semantic versioning once the toolkit is published.
   page lists what the platform does (change `0085`).
 - The PDF body size comes from the `type.body.print_size_pt` token through the generated
   `hb-body-size` constant, and a conformance test checks the Quarto show partial (issue 142).
+- The Word and PDF gap rules share tested helpers for the 15% threshold and the 10 pt safety
+  margin, and the PDF tall-group guard measures the group's final height (change `0086`, issue
+  138). The non-PNG figure difference between Word and the PDF is recorded as a known gap.
+
+### Fixed
+
+- Word figure placement no longer counts a print-scale factor that rounds to 1.0 as a scaled
+  figure; the PDF applies the same rounded factor (change `0086`, issue 138).
+- `keep_leadins` no longer counts or chains keeps inside a Word callout box, so the
+  `docx_float_leadins` report reflects only keeps that survive `release_callout_keeps` (change
+  `0086`, issue 138).
 
 ## [0.16.0] - 2026-11-26
 

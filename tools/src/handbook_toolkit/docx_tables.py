@@ -27,7 +27,9 @@ def release_callout_keeps(root: ET.Element) -> int:
     and both moved to the next page when the decision did not fit (Owner Word
     check of 2026-11-25: 1.1.5, 1.2.13, 1.3.2). LibreOffice ignores keeps inside
     a table, so its render never showed it. An explicit ``w:val="0"`` overrides
-    the style.
+    the style. Every paragraph of the box is cleared, including the paragraphs of
+    a data table nested in it: a nested table's paragraph is still a paragraph of
+    the outer box row, and Word would chain the box through it.
     """
     count = 0
     for table in root.iter(W + "tbl"):
@@ -249,11 +251,31 @@ def keep_section_intros(root: ET.Element) -> int:
     return changed
 
 
+def _inside_callout(element: ET.Element, parents: dict[ET.Element, ET.Element]) -> bool:
+    """True when the element is inside a callout box, including its cells and tables."""
+    node: ET.Element | None = element
+    while node is not None:
+        if node.tag == W + "tbl":
+            style = node.find(W + "tblPr/" + W + "tblStyle")
+            if style is not None and style.get(W + "val") == CALLOUT_STYLE:
+                return True
+        node = parents.get(node)
+    return False
+
+
 def keep_leadins(root: ET.Element) -> int:
-    """Keep headings and one short introduction with the following float."""
+    """Keep headings and one short introduction with the following float.
+
+    A callout box is not a float. Its cell is skipped as a container too, so a
+    data table nested inside the box can never chain the box's title or spacers
+    to the float; ``release_callout_keeps`` then has nothing to undo there.
+    """
     changed = set()
+    parents = {child: parent for parent in root.iter() for child in parent}
     for container in root.iter():
         if container.tag not in {W + "body", W + "tc"}:
+            continue
+        if container.tag == W + "tc" and _inside_callout(container, parents):
             continue
         children = list(container)
         for i, item in enumerate(children):

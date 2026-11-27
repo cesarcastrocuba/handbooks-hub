@@ -57,6 +57,20 @@
   else { calc.min(natural, width) }
 }
 
+// The print scale of one image, bounded by the natural-size floor.
+// A gap fit that would cross the floor is not applied: the figure moves to the
+// next page at the print scale, as in docx_figure_place.decide. Round first: a
+// factor that rounds to 1.0 must not apply a sub-pixel scale or record itself
+// as scaled, matching docx_figure_place.print_scale.
+#let handbook-print-factor(natural, printed, fit) = {
+  let floor = calc.min(1, handbook-min-natural * natural / printed)
+  let wanted = handbook-print-scale * fit
+  calc.round(
+    if wanted >= floor { wanted } else { calc.max(handbook-print-scale, floor) },
+    digits: 4,
+  )
+}
+
 // Scale every image of `body` by `fit` times the print scale, never below the
 // natural-size floor. `open` is `p => image(p, alt: "handbook-natural")` written
 // in the document, so that an image path resolves from the document and not from
@@ -66,18 +80,29 @@
     let natural = if open == none or type(im.source) != str { 0pt } else { measure(open(im.source)).width }
     let printed = handbook-printed-width(im, natural, width)
     if natural == 0pt or printed == 0pt { return im }
-    let floor = calc.min(1, handbook-min-natural * natural / printed)
-    // A gap fit that would cross the floor is not applied: the figure moves to
-    // the next page at the print scale, as in docx_figure_place.decide.
-    let wanted = handbook-print-scale * fit
-    let factor = if wanted >= floor { wanted } else { calc.max(handbook-print-scale, floor) }
+    let factor = handbook-print-factor(natural, printed, fit)
     if factor >= 1 { return im }
-    [#metadata((event: "scaled", scale: calc.round(factor, digits: 4), fit: fit, page: here().page())) <handbook-figure-fit>]
+    [#metadata((event: "scaled", scale: factor, fit: fit, page: here().page())) <handbook-figure-fit>]
     // A relative width resolves against the text width inside the box, not
     // against the region that reflow has already scaled.
     scale(factor * 100%, reflow: true, box(width: width, align(center, im)))
   }
   body
+}
+
+// The gap gate and the gap fit are pure so that the 15% threshold and the 10 pt
+// safety margin can be tested without building a page.
+#let handbook-gap-admits(room, height, full) = {
+  full > room and room >= handbook-min-gap * height and full <= height
+}
+
+#let handbook-gap-fit(full, room, pictures) = {
+  let need = full - room + handbook-gap-safety
+  if pictures > 0pt and need < pictures {
+    calc.round((pictures - need) / pictures, digits: 4)
+  } else {
+    1.0
+  }
 }
 
 #let handbook-figure-group(open: none, lead: [], body: []) = {
@@ -96,15 +121,21 @@
     let printed = handbook-scale-images(body, open, width, 1.0)
     let full = measure([#block(sticky: true, lead)#probe#printed], width: width).height - 1pt
     let fit = 1.0
-    if full > room and room >= handbook-min-gap * height and full <= height {
+    if handbook-gap-admits(room, height, full) {
       let bare = measure([#block(sticky: true, lead)#probe#{ show image: none; body }], width: width).height - 1pt
       let pictures = full - bare
-      let need = full - room + handbook-gap-safety
-      if pictures > 0pt and need < pictures { fit = calc.round((pictures - need) / pictures, digits: 4) }
+      fit = handbook-gap-fit(full, room, pictures)
     }
-    [#metadata((event: "group", room: room.pt(), full: full.pt(), fit: fit, page: start.page)) <handbook-figure-fit>]
     let group = [#lead#handbook-scale-images(body, open, width, fit)]
-    if full <= height { block(breakable: false, above: 0pt, group) } else { group }
+    // Measure the height the group actually prints at. At the print scale `full`
+    // already is that height; a gap fit can only make it smaller.
+    let final = if fit < 1 {
+      measure([#block(sticky: true, lead)#probe#group], width: width).height - 1pt
+    } else {
+      full
+    }
+    [#metadata((event: "group", room: room.pt(), full: full.pt(), final: final.pt(), fit: fit, page: start.page)) <handbook-figure-fit>]
+    if final <= height { block(breakable: false, above: 0pt, group) } else { group }
   }
 }
 

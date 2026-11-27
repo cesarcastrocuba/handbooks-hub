@@ -1,6 +1,7 @@
 """Word figure placement: bounded scaling decided from measured pages; nothing moves."""
 
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
@@ -10,7 +11,10 @@ import xml.etree.ElementTree as ET
 from zipfile import ZipFile
 
 from handbook_toolkit.docx_figure_place import (
+    MIN_GAP,
+    MIN_NATURAL,
     PRINT_SCALE,
+    SAFETY,
     Shrink,
     apply_shrink,
     caption_bottom,
@@ -163,6 +167,19 @@ class DecisionTests(unittest.TestCase):
         self.assertIsNone(self.decide(image=(6, 100.0)))
         self.assertIsNone(self.decide(previous_bottom=None))
 
+    def test_the_gap_threshold_rejects_a_gap_the_floor_would_allow(self):
+        # 90 pt of room is below 15% of the 706 pt body, but the fit would be
+        # 0.75 of a 100 pt figure, exactly at the natural floor: only the gate
+        # rejects it. Setting MIN_GAP to 0 makes this case scale.
+        self.assertIsNone(
+            self.decide(previous_bottom=684.0, caption_end=175.0, figure_height=100.0)
+        )
+        # The same geometry with 110 pt of room (above the gate) scales.
+        self.assertIsInstance(
+            self.decide(previous_bottom=664.0, caption_end=175.0, figure_height=100.0),
+            Shrink,
+        )
+
     def test_caption_bottom_stops_at_the_paragraph_gap(self):
         words = [(400.0, 412.0), (413.0, 425.0), (440.0, 452.0)]
         self.assertEqual(caption_bottom(words, 400.0), 425.0)
@@ -201,6 +218,34 @@ class PrintScaleTests(unittest.TestCase):
         self.assertAlmostEqual(factor, 0.75 / 0.8, places=3)
         count, factor = self.scaled(int(natural * 0.7), 800)  # below the floor: untouched
         self.assertEqual((count, factor), (0, 1.0))
+
+    def test_a_factor_that_rounds_to_one_is_not_counted(self):
+        # 0.7500075 of the natural size gives 0.99999, which rounds to a 1.0
+        # no-op: the extent is unchanged, so neither the count nor the report
+        # may call it scaled.
+        natural = 4 * 914400
+        count, factor = self.scaled(int(natural * 0.7500075), 800)
+        self.assertEqual((count, factor), (0, 1.0))
+
+
+class ConstantParityTests(unittest.TestCase):
+    def test_word_and_typst_share_the_gap_constants(self):
+        # docs/publication-build.md says the two sets change together; a
+        # one-sided edit must fail here instead of drifting the editions.
+        typst = (
+            Path(__file__).resolve().parents[1]
+            / "src/handbook_toolkit/render_data/typst/table-fit.typ"
+        ).read_text()
+
+        def value(name):
+            match = re.search(rf"^#let {name} = ([\d.]+)", typst, re.MULTILINE)
+            self.assertIsNotNone(match, name)
+            return float(match[1])
+
+        self.assertEqual(value("handbook-print-scale"), PRINT_SCALE)
+        self.assertEqual(value("handbook-min-gap"), MIN_GAP)
+        self.assertEqual(value("handbook-min-natural"), MIN_NATURAL)
+        self.assertEqual(value("handbook-gap-safety"), SAFETY)
 
 
 class MeasurementTests(unittest.TestCase):
@@ -241,7 +286,7 @@ class MeasurementTests(unittest.TestCase):
             self.assertEqual(path.read_bytes(), before)
 
 
-def _package(path: Path, body: ET.Element) -> None:
+def _package(path: Path, body: ET.Element, styles: str | None = None) -> None:
     document = ET.Element(W + "document")
     document.append(body)
     section = ET.SubElement(body, W + "sectPr")
@@ -259,7 +304,12 @@ def _package(path: Path, body: ET.Element) -> None:
         '<Default Extension="xml" ContentType="application/xml"/>'
         '<Default Extension="png" ContentType="image/png"/>'
         '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
-        "</Types>"
+        + (
+            '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>'
+            if styles is not None
+            else ""
+        )
+        + "</Types>"
     )
     rels = (
         '<?xml version="1.0" encoding="UTF-8"?>'
@@ -279,6 +329,8 @@ def _package(path: Path, body: ET.Element) -> None:
         archive.writestr("word/_rels/document.xml.rels", document_rels)
         archive.writestr("word/media/figure.png", png(1200, 900))
         archive.writestr("word/document.xml", ET.tostring(document))
+        if styles is not None:
+            archive.writestr("word/styles.xml", styles)
 
 
 @unittest.skipUnless(
@@ -336,10 +388,35 @@ class LibreOfficeTests(unittest.TestCase):
                 extent = ET.fromstring(package.read("word/document.xml")).find(".//" + WP + "extent")
             self.assertLess(int(extent.get("cy")), NEAR_CY)
 
+    def test_the_print_scale_runs_before_the_gap_pass(self):
+        # At 85% this figure fits and the gap pass leaves it alone; at its full
+        # size it nearly fits and the gap pass scales it. If print_scale ran
+        # after the pass, this page would report a gap fit and the final extent
+        # would be the printed size of a shrunk figure.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "book.docx"
+            _package(path, self.section(ORDER_CX, ORDER_CY, fill=ORDER_FILL))
+            before = body_order(path)
+            report = place_figures(path, FONTS, required=True)
+            self.assertEqual(body_order(path), before)
+            with ZipFile(path) as package:
+                extent = ET.fromstring(package.read("word/document.xml")).find(
+                    ".//" + WP + "extent"
+                )
+            self.assertEqual(int(extent.get("cy")), int(ORDER_CY * PRINT_SCALE))
+        self.assertIn(
+            "figures at print scale: 1; figures scaled to fit page gaps: 0",
+            report["docx_figure_placement"],
+        )
+
 
 # Natural width, 299 pt tall. With the packaged Inter metrics the gap rule scaled this figure in
 # a probe of heights 3650000-4100000 EMU (3900000 was the one exception, where it was left alone).
 NEAR_CX, NEAR_CY, NEAR_FILL = 5486400, 3800000, 5
+
+# At the full size this figure nearly fits its page and the gap pass shrinks it; at the 85% print
+# scale it fits, so the unpatched pass reports no gap fit. Measured with the packaged Inter metrics.
+ORDER_CX, ORDER_CY, ORDER_FILL = 5486400, 3600000, 5
 
 
 if __name__ == "__main__":

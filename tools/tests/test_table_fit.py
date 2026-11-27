@@ -3,6 +3,7 @@
 from pathlib import Path
 import json, re, shutil, subprocess, tempfile, unittest
 import xml.etree.ElementTree as ET
+from handbook_toolkit import design
 from handbook_toolkit.docx_tables import (
     candidates,
     keep_rows,
@@ -11,6 +12,7 @@ from handbook_toolkit.docx_tables import (
     unwrap_float_layouts,
 )
 from handbook_toolkit.docx_xml import W
+from test_figure_layout import png
 
 
 def _paragraph(parent, text="", style=None):
@@ -352,9 +354,8 @@ AFTERTEXT
             where, ppi = layout("2cm", "big.png")  # at 0.78 of natural size: only to the floor
             self.assertAlmostEqual(ppi, big / (0.75 / 0.78), delta=3)
 
-    @unittest.skipUnless(shutil.which("quarto") and shutil.which("pdftotext"),
-                         "native pagination tools required")
     def test_a_checklist_on_decisions_keeps_the_checklist_colour(self):
+        # This only reads the template: it needs neither Quarto nor Poppler.
         template = (
             Path(__file__).resolve().parents[1]
             / "src/handbook_toolkit/render_data/typst/handbook-typst.typ"
@@ -364,12 +365,188 @@ AFTERTEXT
         self.assertLess(callout.index('"Review Checklist" in label'), callout.index('"Decision" in label'))
 
     def test_a_callout_is_never_split(self):
+        # Source assertion only: it needs neither Quarto nor Poppler.
         template = (
             Path(__file__).resolve().parents[1]
             / "src/handbook_toolkit/render_data/typst/handbook-typst.typ"
         ).read_text()
         callout = template[template.index("#let callout("):]
         self.assertIn("breakable: false", callout[: callout.index("fill: tint")])
+
+    @unittest.skipUnless(shutil.which("quarto") and shutil.which("pdftocairo"),
+                         "native pagination tools required")
+    def test_a_checklist_on_decisions_prints_the_checklist_tint(self):
+        # A real compile, not only the source order: the checklist title also
+        # contains "Decision", so the wrong branch paints the important tint.
+        package = Path(__file__).resolve().parents[1] / "src/handbook_toolkit/render_data"
+        fonts = package / "fonts"
+        tokens = design.load_tokens()["callout"]
+
+        def tint(name):
+            value = tokens[name]["tint"]["print"].lstrip("#")
+            return tuple(int(value[i:i + 2], 16) for i in (0, 2, 4))
+
+        def near(colour, expected):
+            return max(abs(a - b) for a, b in zip(colour, expected)) <= 1
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "handbook-render/typst").mkdir(parents=True)
+            (root / "handbook-render/typst/table-fit.typ").write_bytes(
+                (package / "typst/table-fit.typ").read_bytes()
+            )
+            source = root / "checklist.typ"
+            source.write_text(
+                design.typst_preamble()
+                + "\n"
+                + (package / "typst/handbook-typst.typ").read_text()
+                + '\n#callout(title: "Architecture Review Checklist — Decisions", body: [BODYTEXT])\n'
+            )
+            subprocess.run(
+                [
+                    "quarto", "typst", "compile", str(source), "--root", str(root),
+                    "--font-path", str(fonts / "inter"),
+                    "--font-path", str(fonts / "jetbrains-mono"),
+                ],
+                check=True,
+                capture_output=True,
+            )
+            svg = root / "checklist.svg"
+            subprocess.run(
+                ["pdftocairo", "-svg", str(root / "checklist.pdf"), str(svg)],
+                check=True, capture_output=True,
+            )
+            markup = svg.read_text()
+        rendered = [
+            tuple(round(float(value) / 100 * 255) for value in match.groups())
+            for match in re.finditer(
+                r"rgb\(([\d.]+)%, ([\d.]+)%, ([\d.]+)%\)", markup
+            )
+        ]
+        self.assertTrue(
+            any(near(colour, tint("review")) for colour in rendered), rendered
+        )
+        self.assertFalse(
+            any(near(colour, tint("important")) for colour in rendered), rendered
+        )
+
+    @unittest.skipUnless(shutil.which("quarto"), "Quarto Typst required")
+    def test_the_gap_gate_and_safety_margin_are_pinned(self):
+        helper = (
+            Path(__file__).resolve().parents[1]
+            / "src/handbook_toolkit/render_data/typst/table-fit.typ"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "gaps.typ"
+            path.write_text(
+                f'#import "{helper}": handbook-gap-admits, handbook-gap-fit\n'
+                "#assert(handbook-gap-admits(110.0pt, 706.0pt, 200.0pt))\n"
+                # 90 pt is below 15% of a 706 pt body: only the gate rejects it.
+                "#assert(not handbook-gap-admits(90.0pt, 706.0pt, 105.0pt))\n"
+                # (105 - 95 + 10) pt of a 100 pt figure: fit = 0.8 exactly,
+                # which is the 10 pt safety margin in the formula.
+                "#assert(calc.abs(handbook-gap-fit(105.0pt, 95.0pt, 100.0pt) - 0.8) < 0.00001)\n"
+            )
+            subprocess.run(
+                ["quarto", "typst", "compile", str(path), "--root", "/"],
+                check=True,
+                capture_output=True,
+            )
+
+    @unittest.skipUnless(shutil.which("quarto"), "Quarto Typst required")
+    def test_the_print_scale_rounds_to_one_before_scaling(self):
+        helper = (
+            Path(__file__).resolve().parents[1]
+            / "src/handbook_toolkit/render_data/typst/table-fit.typ"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scale.typ"
+            path.write_text(
+                f'#import "{helper}": handbook-print-factor\n'
+                "#assert(calc.abs(handbook-print-factor(1.2pt, 1pt, 1.0) - 0.9) < 0.000001)\n"
+                # 0.75 x 1.33332 is 0.99999, which must round to a 1.0 no-op.
+                "#assert(handbook-print-factor(1.33332pt, 1pt, 1.0) == 1.0)\n"
+            )
+            subprocess.run(
+                ["quarto", "typst", "compile", str(path), "--root", "/"],
+                check=True,
+                capture_output=True,
+            )
+
+    @unittest.skipUnless(shutil.which("quarto") and shutil.which("pdftotext"),
+                         "native pagination tools required")
+    def test_a_group_taller_than_a_page_is_not_wrapped(self):
+        helper = (
+            Path(__file__).resolve().parents[1]
+            / "src/handbook_toolkit/render_data/typst/table-fit.typ"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "tall.png").write_bytes(png(1000, 3000))
+            source = root / "tall.typ"
+            source.write_text(
+                f'''#set page(paper:"a4",margin:(x:2.2cm,y:2.4cm))
+#import "{helper}": handbook-figure-group
+#v(2cm)
+LEADTEXT
+#handbook-figure-group(open: p => image(p, alt: "handbook-natural"), lead:[INTRO shows it.], body:[#figure(image("tall.png", width: 60%), caption: [CAPTIONTEXT])])
+'''
+            )
+            compiled = subprocess.run(
+                ["quarto", "typst", "compile", str(source), "--root", "/"],
+                check=True,
+                capture_output=True,
+            )
+            # An unbreakable group taller than the page would drag the lead-in
+            # to the caption's page (or overflow).
+            self.assertNotIn(b"overflow", compiled.stdout + compiled.stderr)
+            pages = subprocess.check_output(
+                ["pdftotext", str(root / "tall.pdf"), "-"], text=True
+            ).split("\f")
+            containing = lambda token: [
+                i for i, page in enumerate(pages) if token in page
+            ]
+            self.assertEqual(containing("LEADTEXT"), containing("INTRO"))
+            self.assertNotEqual(containing("INTRO"), containing("CAPTIONTEXT"))
+
+    @unittest.skipUnless(shutil.which("quarto") and shutil.which("pdftotext"),
+                         "native pagination tools required")
+    def test_a_long_callout_stays_whole(self):
+        # The real template's callout, not a grep: a long box is unbreakable, so
+        # its first and last lines share a page even when it has to move whole.
+        package = Path(__file__).resolve().parents[1] / "src/handbook_toolkit/render_data"
+        fonts = package / "fonts"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "handbook-render/typst").mkdir(parents=True)
+            (root / "handbook-render/typst/table-fit.typ").write_bytes(
+                (package / "typst/table-fit.typ").read_bytes()
+            )
+            tokens = design.typst_preamble()
+            template = (package / "typst/handbook-typst.typ").read_text()
+            source = root / "callout.typ"
+            source.write_text(
+                tokens
+                + "\n"
+                + template
+                + '\n#v(14cm)\n#callout(title: "Common Pitfall", body: [CALLSTART #lorem(600) CALLLAST])\n'
+            )
+            subprocess.run(
+                [
+                    "quarto", "typst", "compile", str(source), "--root", str(root),
+                    "--font-path", str(fonts / "inter"),
+                    "--font-path", str(fonts / "jetbrains-mono"),
+                ],
+                check=True,
+                capture_output=True,
+            )
+            pages = subprocess.check_output(
+                ["pdftotext", str(root / "callout.pdf"), "-"], text=True
+            ).split("\f")
+            containing = lambda token: [
+                i for i, page in enumerate(pages) if token in page
+            ]
+            self.assertEqual(containing("CALLSTART"), containing("CALLLAST"))
 
     @unittest.skipUnless(
         shutil.which("quarto") and shutil.which("pdfimages"),
