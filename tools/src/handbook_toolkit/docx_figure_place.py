@@ -271,9 +271,11 @@ def print_scale(body: ET.Element, members: dict[str, bytes], targets: dict[str, 
         natural, extents = _natural_ratio(unit.image, members, targets)
         if not natural or not extents:
             continue
-        factor = max(PRINT_SCALE, min(1.0, MIN_NATURAL / natural))
+        # Round first: a factor that rounds to 1.0 would leave the extent unchanged
+        # but still count as a scaled figure and use up a pass's spacing.
+        factor = round(max(PRINT_SCALE, min(1.0, MIN_NATURAL / natural)), 4)
         if factor < 1:
-            apply_shrink(extents, round(factor, 4))
+            apply_shrink(extents, factor)
             count += 1
     return count
 

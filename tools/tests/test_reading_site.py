@@ -388,7 +388,11 @@ class NativeMotionBrowserTests(unittest.TestCase):
             '<main id="quarto-content"><section class="level2"><h2>Heading</h2>'
             '<figure class="quarto-figure handbook-raster">'
             '<img class="handbook-raster" alt="fixture" src="data:image/png;base64,' + image + '">'
-            '</figure></section></main>'
+            '</figure>'
+            '<div class="callout callout-warning">'
+            '<figure class="quarto-figure handbook-raster">'
+            '<img class="handbook-raster" alt="callout fixture" src="data:image/png;base64,' + image + '">'
+            '</figure></div></section></main>'
         )
         stylesheet = (
             '<style>:root{' + design.css_variables('light') + '}body.quarto-dark{'
@@ -424,7 +428,7 @@ class NativeMotionBrowserTests(unittest.TestCase):
                 self.assertEqual(
                     page.locator('section.level2').evaluate('e=>getComputedStyle(e).transform'), 'none'
                 )
-                box = page.locator('img.handbook-raster').bounding_box()
+                box = page.locator('img.handbook-raster').first.bounding_box()
                 got = pixel(page, box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
                 expected = colour(tokens['color']['canvas'][scheme])
                 tolerance = 2 if scheme == 'dark' else 0
@@ -432,6 +436,17 @@ class NativeMotionBrowserTests(unittest.TestCase):
                     max(abs(a - b) for a, b in zip(got, expected)), tolerance,
                     (scheme, got, expected),
                 )
+                if scheme == 'light':
+                    # The canvas rule excludes a figure inside a callout: the
+                    # callout tint must show through, not the page canvas.
+                    box = page.locator('.callout img.handbook-raster').bounding_box()
+                    got = pixel(page, box['x'] + box['width'] / 2,
+                                box['y'] + box['height'] / 2)
+                    expected = colour(tokens['callout']['warning']['tint']['light'])
+                    self.assertLessEqual(
+                        max(abs(a - b) for a, b in zip(got, expected)), 1,
+                        (scheme, 'callout', got, expected),
+                    )
                 loaded[scheme] = chrome(page)
                 page.close()
             # Mid-reveal the figure is translucent and isolates its raster: the white
@@ -451,8 +466,8 @@ class NativeMotionBrowserTests(unittest.TestCase):
                 motion['reveal_ms'],
             )
             self.assertGreater(paused, 0)
-            self.assertLess(float(page.locator('figure').evaluate('e=>getComputedStyle(e).opacity')), 1)
-            box = page.locator('img.handbook-raster').bounding_box()
+            self.assertLess(float(page.locator('figure').first.evaluate('e=>getComputedStyle(e).opacity')), 1)
+            box = page.locator('img.handbook-raster').first.bounding_box()
             got = pixel(page, box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
             expected = colour(tokens['color']['canvas']['light'])
             self.assertLessEqual(max(abs(a - b) for a, b in zip(got, expected)), 1, (got, expected))
