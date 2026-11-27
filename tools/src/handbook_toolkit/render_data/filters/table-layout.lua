@@ -11,11 +11,70 @@
 -- claimed to satisfy hard min/max bounds.
 
 local utf8 = require("utf8")
+
+-- BEGIN GENERATED INTER BOLD WIDTHS
+local INTER_BOLD_WIDTHS = {
+  237, 338, 552, 649, 655, 1016, 672, 339, 377, 377, 559, 679,
+  334, 468, 334, 388, 674, 431, 630, 646, 676, 622, 649, 582,
+  651, 649, 334, 343, 679, 679, 679, 560, 1016, 747, 662, 740,
+  722, 607, 587, 750, 747, 281, 584, 719, 565, 932, 762, 771,
+  648, 777, 657, 655, 667, 732, 747, 1038, 738, 731, 664, 377,
+  388, 377, 487, 476, 365, 581, 630, 588, 630, 596, 398, 632,
+  623, 271, 271, 580, 271, 913, 623, 613, 630, 630, 407, 560,
+  366, 623, 600, 850, 580, 602, 573, 469, 372, 469, 679,
+}
+-- END GENERATED INTER BOLD WIDTHS
+
+-- Word table text and geometry. reference.docx Normal is w:sz=21 (10.5 pt); a cell adds 3 pt on
+-- each side; 2 pt absorbs rounding. 440 pt is conservative for the A4 text width (470.6 pt) minus
+-- the padding and rule of a table inside a callout box.
+local WORD_TEXT_PT = 10.5
+local CELL_MARGINS_PT = 6
+local SAFETY_PT = 2
+local USABLE_WIDTH_PT = 440
+local FLOOR_MIN_PERCENT = 10
+local FLOOR_CAP_WIDE = 20
+local FLOOR_CAP_THREE = 28
+local FLOOR_CAP_TWO = 35
+local FLOOR_MIN_SCALED = 8
+local NON_ASCII_EM = 0.62
+local CJK_EM = 1.0
+local BREAK_CHARS = {[45] = true, [47] = true, [0x2013] = true} -- -, /, en dash
+
 local doc_hash = "document"
 local table_index = 0
 
 local function text_length(text)
   return utf8.len(text) or #text
+end
+
+local function char_em(code)
+  if code >= 32 and code <= 126 then
+    return INTER_BOLD_WIDTHS[code - 31] / 1000
+  elseif code >= 0x2E80 then
+    return CJK_EM
+  end
+  return NON_ASCII_EM
+end
+
+-- The widest piece Word cannot break: whitespace always breaks, and Word also breaks after
+-- '-', '/' and an en dash, keeping the break character on the left piece.
+local function longest_piece(text)
+  local longest, width = 0, 0
+  for _, code in utf8.codes(text) do
+    if code == 32 or code == 9 or code == 10 or code == 13 then
+      if width > longest then longest = width end
+      width = 0
+    else
+      width = width + char_em(code)
+      if BREAK_CHARS[code] then
+        if width > longest then longest = width end
+        width = 0
+      end
+    end
+  end
+  if width > longest then longest = width end
+  return longest
 end
 
 local function hash_text(text)
@@ -26,18 +85,16 @@ local function hash_text(text)
   return string.format("%08x", value)
 end
 
-local function add_row(row, totals, counts, longest, ncols)
+local function add_row(row, totals, counts, longest_em, ncols)
   for i = 1, ncols do
     local cell = row.cells[i]
     if cell ~= nil then
       local text = pandoc.utils.stringify(cell)
       totals[i] = totals[i] + text_length(text)
       counts[i] = counts[i] + 1
-      for word in text:gmatch("%S+") do
-        local size = utf8.len(word) or #word
-        if size > longest[i] then
-          longest[i] = size
-        end
+      local piece = longest_piece(text)
+      if piece > longest_em[i] then
+        longest_em[i] = piece
       end
     end
   end
@@ -49,28 +106,28 @@ local function table_widths(tbl)
     return nil
   end
 
-  local totals, counts, longest = {}, {}, {}
+  local totals, counts, longest_em = {}, {}, {}
   for i = 1, ncols do
     totals[i] = 0
     counts[i] = 0
-    longest[i] = 0
+    longest_em[i] = 0
   end
 
   if tbl.head and tbl.head.rows then
     for _, row in ipairs(tbl.head.rows) do
-      add_row(row, totals, counts, longest, ncols)
+      add_row(row, totals, counts, longest_em, ncols)
     end
   end
   if tbl.bodies then
     for _, body in ipairs(tbl.bodies) do
       if body.head then
         for _, row in ipairs(body.head) do
-          add_row(row, totals, counts, longest, ncols)
+          add_row(row, totals, counts, longest_em, ncols)
         end
       end
       if body.body then
         for _, row in ipairs(body.body) do
-          add_row(row, totals, counts, longest, ncols)
+          add_row(row, totals, counts, longest_em, ncols)
         end
       end
     end
@@ -99,36 +156,57 @@ local function table_widths(tbl)
   end
   percentages[widest] = percentages[widest] + (100 - assigned)
 
-  -- A column cannot be narrower than its longest unbreakable token plus cell
-  -- padding. Keep a per-column floor, then take the difference from a column
-  -- that can afford it. The cap keeps a long word from consuming the page.
-  local floors, floor_sum = {}, 0
+  -- A column cannot be narrower than its longest unbreakable piece, measured in
+  -- Inter Bold em, plus the cell margins. Each column has a real floor; the
+  -- deficit is taken from all columns that have room above their own floor,
+  -- largest room first and repeatedly, so a single narrow donor cannot block the
+  -- move. The cap applies only when the real floors together exceed the page; the
+  -- scaling below then does the work the cap was meant to do.
+  local floors, uncapped_sum = {}, 0
+  local caps = {}
   for i = 1, ncols do
-    local target = math.ceil(longest[i] * 1.5)
-    target = math.max(10, math.min(ncols <= 2 and 35 or ncols == 3 and 28 or 20, target))
-    floors[i] = target
-    floor_sum = floor_sum + target
+    local target = math.ceil(
+      (longest_em[i] * WORD_TEXT_PT + CELL_MARGINS_PT + SAFETY_PT) / USABLE_WIDTH_PT * 100
+    )
+    floors[i] = math.max(FLOOR_MIN_PERCENT, target)
+    uncapped_sum = uncapped_sum + floors[i]
+    caps[i] = ncols <= 2 and FLOOR_CAP_TWO
+      or ncols == 3 and FLOOR_CAP_THREE
+      or FLOOR_CAP_WIDE
   end
-  if floor_sum > 100 then
+  if uncapped_sum > 100 then
+    local capped_sum = 0
     for i = 1, ncols do
-      floors[i] = math.max(8, math.floor(floors[i] * 100 / floor_sum))
+      floors[i] = math.max(FLOOR_MIN_PERCENT, math.min(caps[i], floors[i]))
+      capped_sum = capped_sum + floors[i]
+    end
+    if capped_sum > 100 then
+      for i = 1, ncols do
+        floors[i] = math.max(FLOOR_MIN_SCALED, math.floor(floors[i] * 100 / capped_sum))
+      end
     end
   end
   for i = 1, ncols do
-    if percentages[i] < floors[i] then
-      local deficit = floors[i] - percentages[i]
-      local donor = nil
+    local deficit = floors[i] - percentages[i]
+    while deficit > 0 do
+      local donor, room = nil, 0
       for j = 1, ncols do
-        if j ~= i and percentages[j] - deficit >= floors[j] then
-          if donor == nil or percentages[j] > percentages[donor] then
+        if j ~= i then
+          local available = percentages[j] - floors[j]
+          if available > 0 and (donor == nil or available > room
+              or (available == room and percentages[j] > percentages[donor])) then
             donor = j
+            room = available
           end
         end
       end
-      if donor ~= nil then
-        percentages[i] = percentages[i] + deficit
-        percentages[donor] = percentages[donor] - deficit
+      if donor == nil then
+        break
       end
+      local take = math.min(deficit, room)
+      percentages[i] = percentages[i] + take
+      percentages[donor] = percentages[donor] - take
+      deficit = deficit - take
     end
   end
   return percentages

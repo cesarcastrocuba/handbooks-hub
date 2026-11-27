@@ -48,6 +48,72 @@ class RenderResourceTests(unittest.TestCase):
             ], cwd=root, env=dict(os.environ, PYTHONPATH=str(archive)), text=True, timeout=30)
             self.assertEqual(output.strip(), str(len(RESOURCE_NAMES)))
 
+    def test_embedded_inter_widths_match_the_font(self):
+        result = subprocess.run(
+            [sys.executable, str(support.TOOLS_ROOT / "scripts/table_font_widths.py"), "--check"],
+            cwd=support.REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    @unittest.skipUnless(shutil.which("quarto"), "real Quarto boundary requires Quarto")
+    def test_table_floors_fit_inter_bold_words(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            staged = stage_render_resources(root / "resources")
+            table_filter = staged["filters/table-layout.lua"]
+            wrapper = root / "wrapper.lua"
+            wrapper.write_text(
+                "quarto={doc={input_file=os.getenv('RENDER_INPUT')},"
+                "project={directory=os.getenv('RENDER_PROJECT')}}\n"
+                f"dofile({json.dumps(str(table_filter))})\n"
+            )
+            source = root / "tables.md"
+            source.write_text(
+                "| Version | Date | Summary |\n"
+                "|---|---|---|\n"
+                "| 0.6.0 | November 2026 | A very long summary that makes the third column dominate the "
+                "content weight, so the date column is squeezed below its floor unless the filter takes "
+                "room from several columns. |\n"
+                "| 0.6.1 | November 2026 | Another very long summary that keeps the third column dominant "
+                "across rows, because the width shares are computed from average text length. |\n\n"
+                ": Version history\n\n"
+                "| Component | Configuration | Owner | Evidence | Notes |\n"
+                "|---|---|---|---|---|\n"
+                "| configuration | PAYMENT_PENDING configuration here | Penetration evidence text | "
+                "Technique evidence | scanning notes |\n\n"
+                ": Appendix F shaped\n\n"
+                "| Component | Owner | Evidence | Notes |\n"
+                "|---|---|---|---|\n"
+                "| PAYMENT_PENDING | Platform team evidence | A long evidence sentence for this row | "
+                "A long note sentence for this row |\n\n"
+                ": Four columns\n"
+            )
+            result = subprocess.check_output(
+                [
+                    "quarto", "pandoc", str(source), "--from", "markdown", "--to", "json",
+                    "--lua-filter", str(wrapper),
+                ],
+                env=dict(os.environ, RENDER_INPUT=str(source), RENDER_PROJECT=str(root)),
+                text=True,
+                timeout=30,
+            )
+            tables = [
+                dict(block["c"][0][2]).get("tbl-colwidths")
+                for block in json.loads(result)["blocks"]
+                if block["t"] == "Table"
+            ]
+            widths = [[int(value) for value in table.strip("[]").split(",")] for table in tables]
+            # Inter Bold 'November' is 5.1167 em: ceil((5.1167 * 10.5 + 8) / 440 * 100) = 15.
+            self.assertGreaterEqual(widths[0][1], 15)
+            # Inter Bold 'configuration' is 6.6084 em: ceil((6.6084 * 10.5 + 8) / 440 * 100) = 18.
+            self.assertGreaterEqual(widths[1][0], 18)
+            # Inter Bold 'PAYMENT_PENDING' is 10.1035 em: ceil(...)=26, above the 20 % cap.
+            # The uncapped floors fit the page, so the cap must not apply.
+            self.assertGreaterEqual(widths[2][0], 26)
+
     @unittest.skipUnless(shutil.which("quarto"), "real Quarto boundary requires Quarto")
     def test_table_filter_preserves_labels_and_handles_identical_chapters(self):
         with tempfile.TemporaryDirectory() as folder:
