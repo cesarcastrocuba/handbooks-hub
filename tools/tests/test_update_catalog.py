@@ -20,7 +20,13 @@ import support  # noqa: E402
 sys.path.insert(0, str(support.TOOLS_ROOT / "scripts"))
 
 import update_catalog  # noqa: E402
-from update_catalog import CatalogUpdateError, plan_update, published_date, release_roles  # noqa: E402
+from update_catalog import (  # noqa: E402
+    CatalogUpdateError,
+    plan_update,
+    published_date,
+    release_extras,
+    release_roles,
+)
 
 SLUG = "example-book"
 REPO = "example/example-book"
@@ -70,6 +76,26 @@ class PlanUpdateTests(unittest.TestCase):
         self.assertTrue(plan.changed)
         self.assertEqual(plan.document["schema_version"], "1.2")
         self.assertEqual(plan.document["books"][0]["authors"], ["Example Author", "Second Author"])
+
+    def test_new_release_lists_the_optional_extras_pair(self) -> None:
+        plan = plan_update(
+            self.document, SLUG, REPO, "v1.1.0", "2026-12-15", (), True
+        )
+        base = "https://github.com/example/example-book/releases/download/v1.1.0/"
+        release = plan.document["books"][0]["latest_release"]
+        self.assertEqual(
+            release["extras"],
+            {
+                "archive": base + "book-extras.zip",
+                "checksums_url": base + "EXTRAS-SHA256SUMS.txt",
+            },
+        )
+        self.assertNotIn("assets", release)
+        self.assertEqual(plan.document["schema_version"], "1.0")
+
+    def test_new_release_without_extras_omits_the_field(self) -> None:
+        plan = plan_update(self.document, SLUG, REPO, "v1.1.0", "2026-12-15", ("pdf",))
+        self.assertNotIn("extras", plan.document["books"][0]["latest_release"])
 
     def test_new_release_lists_direct_downloads_for_the_given_roles(self) -> None:
         plan = plan_update(self.document, SLUG, REPO, "v1.1.0", "2026-12-15", ("markdown", "pdf"))
@@ -169,6 +195,40 @@ class ReleaseRolesTests(unittest.TestCase):
                 self.assertEqual(release_roles(release, REPO, "v1.1.0"), ())
 
 
+class ReleaseExtrasTests(unittest.TestCase):
+    PREFIX = "https://github.com/example/example-book/releases/download/v1.1.0/"
+
+    def asset(self, name: str, **changes) -> dict:
+        return {"name": name, "state": "uploaded", "browser_download_url": self.PREFIX + name, **changes}
+
+    def test_the_pair_is_detected(self) -> None:
+        release = {"assets": [self.asset("book.pdf"), self.asset("book-extras.zip"),
+                              self.asset("EXTRAS-SHA256SUMS.txt")]}
+        self.assertTrue(release_extras(release, REPO, "v1.1.0"))
+
+    def test_no_extras_is_absent(self) -> None:
+        release = {"assets": [self.asset("book.pdf")]}
+        self.assertFalse(release_extras(release, REPO, "v1.1.0"))
+        self.assertFalse(release_extras({}, REPO, "v1.1.0"))
+
+    def test_one_extras_file_without_the_other_is_an_error(self) -> None:
+        for missing in ("book-extras.zip", "EXTRAS-SHA256SUMS.txt"):
+            with self.subTest(missing=missing):
+                release = {"assets": [self.asset(name) for name in
+                                      ("book.pdf", "book-extras.zip", "EXTRAS-SHA256SUMS.txt")
+                                      if name != missing]}
+                with self.assertRaisesRegex(CatalogUpdateError, "must carry both"):
+                    release_extras(release, REPO, "v1.1.0")
+
+    def test_starter_or_foreign_extras_do_not_count(self) -> None:
+        release = {"assets": [
+            self.asset("book-extras.zip", state="starter"),
+            self.asset("EXTRAS-SHA256SUMS.txt"),
+        ]}
+        with self.assertRaisesRegex(CatalogUpdateError, "must carry both"):
+            release_extras(release, REPO, "v1.1.0")
+
+
 class PublishedDateTests(unittest.TestCase):
     def release(self, **changes) -> dict:
         return {"tag_name": "v1.1.0", "draft": False, "prerelease": False, "published_at": "2026-12-15T22:42:34Z", **changes}
@@ -234,6 +294,23 @@ class CommandLineTests(unittest.TestCase):
         document = json.loads(self.catalog.read_text(encoding="utf-8"))
         self.assertEqual(document["schema_version"], "1.1")
         self.assertEqual(document["books"][0]["latest_release"]["assets"], {"pdf": prefix + "book.pdf", "markdown": prefix + "book.md"})
+
+    def test_apply_lists_the_optional_extras(self) -> None:
+        prefix = "https://github.com/example/example-book/releases/download/v1.1.0/"
+        assets = [
+            {"name": name, "state": "uploaded", "browser_download_url": prefix + name}
+            for name in ("book.pdf", "book-extras.zip", "EXTRAS-SHA256SUMS.txt")
+        ]
+        code, _, err = self.apply("v1.1.0", assets=assets)
+        self.assertEqual((code, err), (0, ""))
+        release = json.loads(self.catalog.read_text(encoding="utf-8"))["books"][0]["latest_release"]
+        self.assertEqual(
+            release["extras"],
+            {
+                "archive": prefix + "book-extras.zip",
+                "checksums_url": prefix + "EXTRAS-SHA256SUMS.txt",
+            },
+        )
 
     def test_apply_no_op_leaves_the_file_untouched(self) -> None:
         before = self.catalog.read_bytes()

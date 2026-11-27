@@ -24,7 +24,12 @@ import tempfile
 from typing import Any
 from urllib.parse import urlsplit
 
-from handbook_toolkit.catalog import ASSET_FILES, validate_catalog
+from handbook_toolkit.catalog import (
+    ASSET_FILES,
+    EXTRAS_ARCHIVE,
+    EXTRAS_CHECKSUMS,
+    validate_catalog,
+)
 from handbook_toolkit.publication import CHECKSUMS, MANIFEST
 from handbook_toolkit.validation import load_packaged_schema
 
@@ -102,11 +107,19 @@ def source_repo_of(book: dict[str, Any]) -> str:
     return "/".join(parts[:2])
 
 
-def release_entry(source_repo: str, tag: str, published_at: str, roles: tuple[str, ...] = ()) -> dict[str, Any]:
+def release_entry(
+    source_repo: str,
+    tag: str,
+    published_at: str,
+    roles: tuple[str, ...] = (),
+    extras: bool = False,
+) -> dict[str, Any]:
     """Build the ``latest_release`` object that the catalog contract requires.
 
     ``roles`` lists the artifact roles whose canonical file is attached to the release; each one
-    becomes a direct download link under ``assets`` (catalog schema 1.1).
+    becomes a direct download link under ``assets`` (catalog schema 1.1). ``extras`` adds the
+    optional ``extras`` object for the verified ``book-extras.zip`` and
+    ``EXTRAS-SHA256SUMS.txt`` pair; it never adds them to ``assets``.
     """
 
     site = f"https://github.com/{source_repo}/releases"
@@ -120,6 +133,11 @@ def release_entry(source_repo: str, tag: str, published_at: str, roles: tuple[st
     }
     if roles:
         entry["assets"] = {role: f"{site}/download/{tag}/{ASSET_FILES[role]}" for role in ASSET_FILES if role in roles}
+    if extras:
+        entry["extras"] = {
+            "archive": f"{site}/download/{tag}/{EXTRAS_ARCHIVE}",
+            "checksums_url": f"{site}/download/{tag}/{EXTRAS_CHECKSUMS}",
+        }
     return entry
 
 
@@ -142,6 +160,32 @@ def release_roles(release: Any, source_repo: str, tag: str) -> tuple[str, ...]:
         and asset.get("browser_download_url") == prefix + str(asset.get("name"))
     }
     return tuple(role for role, name in ASSET_FILES.items() if name in uploaded)
+
+
+def release_extras(release: Any, source_repo: str, tag: str) -> bool:
+    """Return whether the release publishes the optional book-extras pair.
+
+    The pair is optional, but a release that carries only one of the two files is an error, the
+    same rule the online verifier applies.
+    """
+
+    assets = release.get("assets") if isinstance(release, dict) else None
+    if not isinstance(assets, list):
+        return False
+    prefix = f"https://github.com/{source_repo}/releases/download/{tag}/"
+    uploaded = {
+        asset.get("name")
+        for asset in assets
+        if isinstance(asset, dict)
+        and asset.get("state") == "uploaded"
+        and asset.get("browser_download_url") == prefix + str(asset.get("name"))
+    }
+    present = {EXTRAS_ARCHIVE, EXTRAS_CHECKSUMS} & uploaded
+    if present and present != {EXTRAS_ARCHIVE, EXTRAS_CHECKSUMS}:
+        raise CatalogUpdateError(
+            "release extras must carry both book-extras.zip and EXTRAS-SHA256SUMS.txt"
+        )
+    return present == {EXTRAS_ARCHIVE, EXTRAS_CHECKSUMS}
 
 
 def published_date(release: Any, tag: str) -> str:
@@ -167,7 +211,13 @@ def _without_assets(release: dict[str, Any]) -> dict[str, Any]:
 
 
 def plan_update(
-    document: dict[str, Any], slug: str, source_repo: str, tag: str, published_at: str, roles: tuple[str, ...] = ()
+    document: dict[str, Any],
+    slug: str,
+    source_repo: str,
+    tag: str,
+    published_at: str,
+    roles: tuple[str, ...] = (),
+    extras: bool = False,
 ) -> UpdatePlan:
     """Return the catalog with ``slug`` listing ``tag``; the input document is not modified.
 
@@ -189,7 +239,7 @@ def plan_update(
         raise CatalogUpdateError(f"book {slug!r} is released from {catalog_repo}, not {source_repo}: moving it is a human change")
 
     current = book["latest_release"]
-    entry = release_entry(source_repo, tag, published_at, roles)
+    entry = release_entry(source_repo, tag, published_at, roles, extras)
     current_version = parse_tag(current["tag"])
     if version < current_version:
         raise CatalogUpdateError(f"version downgrade rejected: {slug} lists {current['tag']}, requested {tag}")
@@ -230,7 +280,10 @@ def _apply_command(args: argparse.Namespace) -> None:
     release = _read_json(args.release_json)
     published_at = published_date(release, args.tag)
     roles = release_roles(release, args.source_repo, args.tag)
-    plan = plan_update(_read_json(args.catalog), args.slug, args.source_repo, args.tag, published_at, roles)
+    extras = release_extras(release, args.source_repo, args.tag)
+    plan = plan_update(
+        _read_json(args.catalog), args.slug, args.source_repo, args.tag, published_at, roles, extras
+    )
     if plan.changed:
         args.catalog.write_text(serialize(plan.document), encoding="utf-8", newline="\n")
     print(plan.message)

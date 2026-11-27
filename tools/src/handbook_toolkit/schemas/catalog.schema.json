@@ -116,6 +116,25 @@
                 "type": "string",
                 "pattern": "^https://[^\\s]+$"
               },
+              "extras": {
+                "description": "Optional verified book-owned extra assets: the archive and its checksums, as published on the same release.",
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "archive",
+                  "checksums_url"
+                ],
+                "properties": {
+                  "archive": {
+                    "type": "string",
+                    "pattern": "^https://[^\\s]+$"
+                  },
+                  "checksums_url": {
+                    "type": "string",
+                    "pattern": "^https://[^\\s]+$"
+                  }
+                }
+              },
               "assets": {
                 "description": "Optional direct download URLs by artifact role (schema_version 1.1).",
                 "type": "object",
