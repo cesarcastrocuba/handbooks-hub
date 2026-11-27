@@ -195,6 +195,8 @@ def preview(catalog: Path,output: Path) -> dict:
         for key in ('url','manifest_url','checksums_url'):
             second['latest_release'][key]=second['latest_release'][key].replace(old_repository,'https://github.com/portal-fixtures/security')
         second['latest_release']['assets']={key:value.replace(old_repository,'https://github.com/portal-fixtures/security') for key,value in second['latest_release'].get('assets',{}).items()}
+        if 'extras' in second['latest_release']:
+            second['latest_release']['extras']={key:value.replace(old_repository,'https://github.com/portal-fixtures/security') for key,value in second['latest_release']['extras'].items()}
         path=output/'fixture.json';path.write_text(json.dumps({'schema_version':'1.1','books':[first,second]}))
         for engine in ('legacy','quarto'):build_portal(path,output/('fixture-'+engine),engine=engine)
     before=weights(output/'legacy');after=weights(output/'quarto')

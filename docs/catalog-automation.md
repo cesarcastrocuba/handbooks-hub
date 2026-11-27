@@ -34,8 +34,10 @@ Add `-f dry_run=false` to push a branch. The inputs are:
    repository from its current catalog entry, and fetches the release object for the tag.
 2. `tools/scripts/update_catalog.py` applies the rules below and rewrites only `latest_release`.
    For each canonical edition file attached to the release it also records a direct download link
-   under `latest_release.assets`, and it upgrades a `1.0` catalog to `1.1` when it adds them. A `1.2`
-   catalog keeps its authors and stays `1.2`.
+   under `latest_release.assets`, and it upgrades a `1.0` catalog to `1.1` when it adds them. When
+   the release carries both `book-extras.zip` and `EXTRAS-SHA256SUMS.txt`, it records the optional
+   `latest_release.extras` pair; a release without extras leaves the field out. A `1.2` catalog
+   keeps its authors and stays `1.2`.
 3. `python -m handbook_toolkit.catalog_verification catalog/catalog.json` checks the published bytes
    of every listed release, and `make full` runs the repository checks. Both run on a dry run and
    on a no-op too. The verifier also accepts the optional `book-extras.zip`/`EXTRAS-SHA256SUMS.txt`

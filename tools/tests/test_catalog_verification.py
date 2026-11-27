@@ -18,6 +18,7 @@ from handbook_toolkit.catalog_verification import (
     _download,
     _public_addresses,
     _request_headers,
+    _verify_book,
     verify_catalog_releases,
 )
 from handbook_toolkit.publication import write_manifest
@@ -221,8 +222,40 @@ class CatalogVerificationTests(unittest.TestCase):
             ]
         )
 
+    def add_catalog_extras(self):
+        self.document["books"][0]["latest_release"]["extras"] = {
+            "archive": self.prefix + "book-extras.zip",
+            "checksums_url": self.prefix + "EXTRAS-SHA256SUMS.txt",
+        }
+
     def test_optional_extras_pair_passes(self):
         self.add_extras()
+        self.assertTrue(self.run_gate().ok)
+
+    def test_catalog_extras_links_match_the_release_assets(self):
+        self.add_extras()
+        self.add_catalog_extras()
+        self.assertTrue(self.run_gate().ok)
+
+    def test_catalog_extras_urls_must_be_the_release_own_files(self):
+        self.add_extras()
+        self.add_catalog_extras()
+        book = self.document["books"][0]
+        book["latest_release"]["extras"]["archive"] = (
+            self.prefix.replace("v1.0.0", "v0.9.0") + "book-extras.zip"
+        )
+        with self.assertRaisesRegex(ValueError, "catalog extras URLs"):
+            _verify_book(book)
+
+    def test_catalog_extras_without_a_release_pair_fails(self):
+        self.add_catalog_extras()
+        result = self.run_gate()
+        self.assertIn("catalog lists extras", str(result.issues[0]))
+
+    def test_a_release_pair_without_catalog_extras_passes(self):
+        # Older entries do not have to add the optional field when the release has the pair.
+        self.add_extras()
+        self.assertNotIn("extras", self.document["books"][0]["latest_release"])
         self.assertTrue(self.run_gate().ok)
 
     def test_release_must_carry_both_extras(self):

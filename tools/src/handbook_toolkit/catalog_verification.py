@@ -246,6 +246,12 @@ def _verify_book(book: dict) -> None:
     prefix = f"https://github.com/{owner}/{repository}/releases/download/{tag}/"
     if release["manifest_url"] != prefix + MANIFEST or release["checksums_url"] != prefix + CHECKSUMS:
         raise ValueError("identity URLs must belong to the same exact release and canonical filenames")
+    extras = release.get("extras")
+    if extras is not None and (
+        extras["archive"] != prefix + EXTRAS_ZIP
+        or extras["checksums_url"] != prefix + EXTRAS_SUMS
+    ):
+        raise ValueError("catalog extras URLs must belong to the same exact release and canonical filenames")
     api = f"https://api.github.com/repos/{owner}/{repository}"
     published = _json(f"{api}/releases/tags/{quote(tag, safe='')}")
     if published.get("draft") is not False or published.get("prerelease") is not False or published.get("tag_name") != tag:
@@ -286,6 +292,11 @@ def _verify_book(book: dict) -> None:
             raise ValueError(
                 f"release must contain exactly the {len(expected)} declared assets, "
                 "optionally with book-extras.zip and EXTRAS-SHA256SUMS.txt"
+            )
+        if extras is not None and not EXTRAS <= present:
+            raise ValueError(
+                "catalog lists extras but the release has no "
+                "book-extras.zip and EXTRAS-SHA256SUMS.txt pair"
             )
         for asset in assets:
             if asset.get("state") != "uploaded" or asset.get("browser_download_url") != prefix + asset["name"]:

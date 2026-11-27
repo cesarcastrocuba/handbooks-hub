@@ -69,6 +69,26 @@ Roles are `pdf`, `html`, `docx`, `markdown` and `source`. A release lists only t
 has: a release built before the Markdown edition existed has no `markdown` link. The portal shows
 one button per listed role and `llms.txt` links the Markdown edition when it is listed.
 
+### Optional extras (backward-compatible)
+
+A release may publish the optional book-owned extras pair, `book-extras.zip` and
+`EXTRAS-SHA256SUMS.txt`. When it does, `latest_release` may carry an optional `extras` object with
+the two release download URLs. The field is optional and backward-compatible: an entry without it
+stays valid, and catalog documents at any supported `schema_version` may use it. Extras never
+appear in `assets`; the asset roles are the fixed publication payloads.
+
+```json
+"extras": {
+  "archive": "https://github.com/OWNER/REPO/releases/download/v1.0.0/book-extras.zip",
+  "checksums_url": "https://github.com/OWNER/REPO/releases/download/v1.0.0/EXTRAS-SHA256SUMS.txt"
+}
+```
+
+`catalog.py` checks that both URLs are the release's own canonical files. Online verification checks
+the same URLs, runs the existing extras checksum and archive checks, and fails when an entry lists
+`extras` but the release has no pair. A release with the pair and an entry without `extras` passes,
+so older catalog entries stay valid until they are updated.
+
 ## Required invariants
 
 The toolkit enforces these deterministically:
@@ -86,6 +106,8 @@ The toolkit enforces these deterministically:
 | `reading_url` is explicit HTTPS | Reading sites may use custom domains and cannot be inferred from release URLs |
 | Each `assets` URL is the canonical file of its role under the same release as `manifest_url` | No link to another release, host or file |
 | Online verification: each `assets` URL is an artifact of the release manifest with the same role | The link downloads verified bytes |
+| Each `extras` URL is the release's own `book-extras.zip` or `EXTRAS-SHA256SUMS.txt` | Extras belong to the same immutable release |
+| Online verification: an entry with `extras` requires the release's extras pair and its checksum and archive checks pass | The extras link downloads verified bytes |
 | The JSON document is valid against the catalog schema | One validated interface |
 
 A catalog entry is rejected if it points to a branch, a pull request, a draft release or a build
@@ -116,7 +138,8 @@ categories; empty categories are explicitly marked as planned facets.
 ## Portal behavior
 
 - One card per book: a generated cover, title, summary, categories, latest version, links to the
-  reading site and release downloads, and one button per edition listed under `assets`.
+  reading site and release downloads, one button per edition listed under `assets`, and an
+  `Extras` button plus `Extras checksums` link when `extras` is present.
 - Show the authors under each cover and in the card (`By …`), and the publisher and version on the
   generated cover (`Handbooks Hub · v…`).
 - Filter by category and author, sort by title or release date, and search the text of the cards
