@@ -69,9 +69,18 @@ No actual word is split.
 
 ## Solutions Architecture measurement
 
-The PR's `edition-preview (solutions-architecture)` artifact is audited after CI. Before: 48 split
-words (Owner's check of `v6.0.0`). After: recorded in the pull request and here once the artifact
-exists.
+Audited the `edition-preview-solutions-architecture` artifact of run `46003235071` (commit
+`22b2b9b`). Before: 48 split words in the released `v6.0.0` DOCX. After: 49 audit hits, in two
+classes:
+
+- 44 are hyphen or en-dash compounds such as `Cross-platform`, `Self-managed`,
+  `Expand-migrate-contract` and `Low–medium`. The audit splits on whitespace only, but Word breaks
+  after `-` and `–`; the filter measures the pieces and these do not split.
+- 5 are `PAYMENT_PENDING` in a column at the 20 % cap. The token is 103.4 pt, the capped column
+  leaves 88.1 pt after the cell margins, and the cap is kept by design.
+
+So the class the Owner reported is gone: no ordinary word is split. The five `PAYMENT_PENDING`
+hits remain because the column is at its cap. PDF pages: 569 (released `v6.0.0`) → 566 (preview).
 
 ## Known gaps
 
