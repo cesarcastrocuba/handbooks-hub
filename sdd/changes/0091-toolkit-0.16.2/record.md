@@ -12,9 +12,13 @@ Toolkit and Template rows and the follow-ups) and this record.
 
 ## Print editions change
 
-Table column widths change in every edition. Measured by the reviewer on the PR 152 previews
-(run 46006866263) with `word_wrap_audit.py` (Inter metrics, 10.5 pt, 3 + 3 pt cell margins, breaks
+Table column widths change in the reading site, PDF and Word editions; the Markdown and source
+payloads carry no widths. Measured by the reviewer with `word_wrap_audit.py` (Inter metrics, 10.5 pt, 3 + 3 pt cell margins, breaks
 allowed after `-`, `–` and `/`):
+
+Sources: the 0.16.1 sample preview (sample PR 33, run 45975745994) and the SA 6.0.0 preview of
+PR 147 (its DOCX is content-identical to 0.16.1's) for the left column; the PR 152 previews (run
+46006866263) for the 0.16.2 column.
 
 | Book | Words split inside a table cell, 0.16.1 | 0.16.2 | PDF pages |
 | --- | --- | --- | --- |
