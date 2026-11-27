@@ -1,15 +1,46 @@
 ---
-title: Create your handbook in five steps
+title: Create your handbook
+subtitle: "From an empty repository to a published book"
 ---
 
-You need a GitHub account and a topic you know well. The template brings the structure, checks and
-release workflow.
+```{=html}
+<p class="guide-lead">You need a GitHub account and a topic you know well. The template gives you the structure, the checks, the five editions and the release workflow. You write; the platform does the rest.</p>
+<p class="actions"><a class="btn btn-primary" href="https://github.com/cesarcastrocuba/handbooks-template">Open the handbook template</a><a class="btn btn-outline-primary" href="https://github.com/cesarcastrocuba/handbooks-hub/blob/main/docs/author-guide.md">Read the author guide</a></p>
 
-1. **Use the template.** Open the template repository and choose *Use this template* to create your book.
-2. **Initialize.** Run *Initialize book* with your title, identifier, author and license. Review and merge its branch.
-3. **Write.** Add chapters under `manuscript/`. Every push runs the checks and tells you what to fix.
-4. **Release.** Run the release workflow on an approved commit. It builds, verifies and publishes every edition and the reading site.
-5. **Request listing.** Open a listing request. After review and owner approval your book appears in the library.
+<p class="section-kicker">Five steps</p>
+<h2>Everything runs in GitHub. Nothing to install to start.</h2>
+<ol class="pipeline">
+<li><span class="step-title">Use the template</span><span class="step-text">Open the template repository and choose <em>Use this template</em> to create your own book repository.</span><span class="step-meta">In the browser</span></li>
+<li><span class="step-title">Initialize</span><span class="step-text">Run the <em>Initialize book</em> workflow with your title, identifier, author, catalog summary and category. Review and merge the branch it prepares.</span><span class="step-meta">One workflow</span></li>
+<li><span class="step-title">Write</span><span class="step-text">Add chapters under <code>manuscript/</code>. Every push runs the checks and tells you exactly what to fix.</span><span class="step-meta">Markdown</span></li>
+<li><span class="step-title">Release</span><span class="step-text">Run the release workflow on an approved commit. It builds, verifies and publishes every edition and your reading site.</span><span class="step-meta">One workflow</span></li>
+<li><span class="step-title">Request listing</span><span class="step-text">Open a <a href="https://github.com/cesarcastrocuba/handbooks-hub/issues/new?template=request-listing.yml">listing request</a>. After review and owner approval your book appears in the library.</span><span class="step-meta">One form</span></li>
+</ol>
 
-[Open the handbook template](https://github.com/cesarcastrocuba/handbooks-template){.btn .btn-primary}
-[Read the author guide](https://github.com/cesarcastrocuba/handbooks-hub/blob/main/docs/author-guide.md){.btn .btn-outline-primary}
+<p class="section-kicker">What you get on day one</p>
+<h2>A working book, not a blank page.</h2>
+<ul class="feature-grid">
+<li class="feature"><span class="feature-mark" aria-hidden="true">{{icon:editions}}</span><span class="feature-title">Five editions</span><span class="feature-text">Reading site, PDF, Word, a single Markdown file and the sources, built from the same commit.</span></li>
+<li class="feature"><span class="feature-mark" aria-hidden="true">{{icon:check}}</span><span class="feature-title">Checks that explain</span><span class="feature-text">Every push and pull request runs the checks and tells you what to fix.</span></li>
+<li class="feature"><span class="feature-mark" aria-hidden="true">{{icon:home}}</span><span class="feature-title">Your reading site</span><span class="feature-text">Published on GitHub Pages with search, light and dark themes and a <em>Report an issue</em> link on every page.</span></li>
+<li class="feature"><span class="feature-mark" aria-hidden="true">{{icon:pencil}}</span><span class="feature-title">Reader feedback</span><span class="feature-text">A correction form asks for the page, the problem and the evidence; a proposal form for the reader's problem, the change and its sources.</span></li>
+</ul>
+
+<p class="section-kicker">Inside your repository</p>
+<h2>Four places to know.</h2>
+<dl class="file-tree" aria-label="Book repository layout">
+<dt>book.yaml</dt><dd>Title, identifier, licences (CC BY-SA 4.0 and MIT by default; change them here), catalog summary and the exact toolkit version.</dd>
+<dt>manuscript/</dt><dd>Your chapters in Quarto Markdown and <code>book.yml</code>, the reading order.</dd>
+<dt>publishing/</dt><dd>Reading-site and edition settings, and the edition version and status.</dd>
+<dt>.github/workflows/</dt><dd><code>ci.yml</code> checks, <code>release.yml</code> publishes, <code>initialize-book.yml</code> runs once.</dd>
+</dl>
+
+<p class="section-kicker">Prefer your own computer?</p>
+<h2>The same checks and builds, locally.</h2>
+<pre><code>make check   # fast checks, for every commit
+make build   # every edition into ../dist, from a clean commit</code></pre>
+<p>The build needs Quarto, Poppler and qpdf; the <a href="https://github.com/cesarcastrocuba/handbooks-template#check-and-build">template README</a> lists the exact versions.</p>
+
+<div class="guide-note"><strong>Your book stays yours.</strong> The manuscript, reviews and releases live in your repository. The hub only lists an approved release and links to its files.</div>
+<p class="actions"><a class="btn btn-primary" href="https://github.com/cesarcastrocuba/handbooks-template">Use the template</a><a class="btn btn-outline-primary" href="how-it-works.html">How the platform works</a></p>
+```

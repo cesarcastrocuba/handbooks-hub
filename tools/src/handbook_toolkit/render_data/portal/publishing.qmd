@@ -1,26 +1,30 @@
 ---
 title: Publishing and withdrawal
+subtitle: "A person approves every step that matters"
 ---
 
-Nothing reaches this library without a person approving it. Anything listed can be withdrawn
-through the same reviewed path.
+```{=html}
+<p class="guide-lead">Nothing reaches this library without a person approving it. Anything listed can be withdrawn through the same reviewed path, and every decision is recorded.</p>
+<p class="actions"><a class="btn btn-primary" href="https://github.com/cesarcastrocuba/handbooks-hub/issues/new?template=request-listing.yml">Request a listing</a><a class="btn btn-outline-primary" href="https://github.com/cesarcastrocuba/handbooks-hub/issues/new?template=request-withdrawal.yml">Request a withdrawal</a></p>
 
-## Publishing
+<p class="section-kicker">Publishing</p>
+<h2>From a release to the library.</h2>
+<ol class="pipeline">
+<li><span class="step-title">Release</span><span class="step-text">The author releases a version from an approved commit of the book.</span><span class="step-meta">Author</span></li>
+<li><span class="step-title">Request</span><span class="step-text">The author opens a listing request with the repository, the release tag and the author names.</span><span class="step-meta">Author</span></li>
+<li><span class="step-title">Verify</span><span class="step-text">A catalog change is prepared, and every published file is checked against the manifest and checksums.</span><span class="step-meta">Automatic</span></li>
+<li><span class="step-title">Review</span><span class="step-text">A reviewer who did not prepare the change checks it.</span><span class="step-meta">Reviewer</span></li>
+<li><span class="step-title">Merge</span><span class="step-text">The hub owner merges. The library is rebuilt, deployed and checked automatically.</span><span class="step-meta">Owner</span></li>
+</ol>
 
-1. The author releases a version from an approved book commit.
-2. The author opens a [listing request](https://github.com/cesarcastrocuba/handbooks-hub/issues/new?template=request-listing.yml) with the repository, release tag and author names.
-3. A catalog change is prepared. Published files are verified against the manifest and checksums.
-4. A reviewer who did not prepare the change checks it.
-5. The hub owner merges. The library is rebuilt and deployed automatically.
+<p class="section-kicker">Withdrawal</p>
+<h2>Readers stop being sent to a bad release first.</h2>
+<ol class="pipeline">
+<li><span class="step-title">Request</span><span class="step-text">Anyone can open a withdrawal request with the book and the reason.</span><span class="step-meta">Anyone</span></li>
+<li><span class="step-title">Remove the entry</span><span class="step-text">If a release is defective or infringing, its catalog entry is removed before anything else.</span><span class="step-meta">First</span></li>
+<li><span class="step-title">Move forward</span><span class="step-text">If a corrected release exists, the catalog moves to it before the old one is removed.</span><span class="step-meta">When possible</span></li>
+<li><span class="step-title">Approve</span><span class="step-text">The owner approves the change. Release files are deleted; the version tag stays as a record.</span><span class="step-meta">Owner</span></li>
+</ol>
 
-## Withdrawal
-
-1. Anyone can open a [withdrawal request](https://github.com/cesarcastrocuba/handbooks-hub/issues/new?template=request-withdrawal.yml) with the book and reason.
-2. If a release is defective or infringing, the entry is removed first so readers stop being sent to it.
-3. If a corrected release exists, the catalog moves to it before the old one is removed.
-4. The owner approves the change. Release files are deleted; the version tag stays as a record.
-
-::: {.callout-note title="Why the owner gate?"}
-Checksums prove that files are the ones that were built. They do not prove content was reviewed.
-That decision stays with a person and is recorded.
-:::
+<div class="guide-note"><strong>Why a person and not only checksums?</strong> Checksums prove that the files are the ones that were built. They do not prove that the content was reviewed. That decision stays with a person, and it is recorded.</div>
+```

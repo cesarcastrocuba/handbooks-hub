@@ -16,7 +16,7 @@ from .print_layout import (
     license_label,
     validate_document_control_version,
 )
-from . import design
+from . import design, stars
 from .render_resources import RENDER_DIRECTORY
 
 PARTS = (("front", "Front matter"), ("chapters", "Chapters"),
@@ -183,4 +183,20 @@ def prepare_reading_site(workspace: Path, config: dict[str, Any], book: dict[str
     if release:
         footer += f' · <a href="{escape(release, quote=True)}">Release</a>'
     bc["page-footer"] = {"center": footer}
+    _add_star_link(bc)
     return config
+
+
+def _add_star_link(bc: dict[str, Any]) -> None:
+    """Add a star link for the book repository to the navbar, count baked in (issue 141)."""
+
+    url = bc.get("repo-url")
+    repository = stars.github_repository(url)
+    if not repository:
+        return
+    count = stars.star_count(repository)
+    navbar = bc.setdefault("navbar", {})
+    right = navbar.setdefault("right", [])
+    if not isinstance(right, list):
+        return
+    right.append({"text": stars.navbar_text(count), "href": f"https://github.com/{repository}"})

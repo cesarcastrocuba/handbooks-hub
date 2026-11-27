@@ -95,11 +95,12 @@ a burn-rate value. The changes landed in book PRs 31 (structure), 33 (content), 
 
 The Owner's review of the 6.0.0 preview (2026-11-23) changed the print layout: a pitfall and its
 decision may land on different pages, no callout box is split, and figures stay in place in Word
-and PDF, shrinking only (change `0081`, toolkit 0.15.0). The Owner then chose one typeface, Inter, in every format, embedded in Word, with the PDF
-body at 9.5 pt (change `0083`, `HUB-DEC-045`, toolkit 0.16.0). After the Owner's desktop Word check
-of the PR 140 DOCX and approval of `toolkit-v0.16.0` and `v6.0.0`, the book pins 0.16.0 (book PR 40)
-and `v6.0.0` is published, listed (PR 144) and served (2026-11-27). For that night only the Owner
-let the implementer merge each pull request after a different agent's approval and green CI.
+and PDF, shrinking only (change `0081`, toolkit 0.15.0). The Owner then chose one typeface, Inter,
+in every format, embedded in Word, with the PDF body at 9.5 pt (change `0083`, `HUB-DEC-045`,
+toolkit 0.16.0). After the Owner's desktop Word check of the PR 140 DOCX and approval of
+`toolkit-v0.16.0` and `v6.0.0`, the book pins 0.16.0 (book PR 40) and `v6.0.0` is published, listed
+(PR 144) and served (2026-11-27). For that night only the Owner let the implementer merge each pull
+request after a different agent's approval and green CI.
 
 Open follow-ups, none blocking:
 

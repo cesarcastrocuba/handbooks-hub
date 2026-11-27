@@ -398,6 +398,7 @@ def typst_preamble() -> str:
         f'#let hb-display-font = ("{tokens["type"]["brand"]["display_family"]}",)',
         f'#let hb-code-font = ("{tokens["type"]["code"]["print_family"]}",)',
     ]
+    lines.append(f'#let hb-body-size = {tokens["type"]["body"]["print_size_pt"]:g}pt')
     lines.append(f'#let hb-card-radius = {tokens["radius"]["card_px"] * 0.75:g}pt')
     for role, value in colour.items():
         name = role.replace("_", "-")
@@ -543,7 +544,10 @@ PORTAL_METRICS = {'rule': '1px', 'column': '1180px', 'gutter': '24px', 'gap': '2
                   'cover': '130px', 'cover-small': '104px', 'cover-padding': '14px 12px',
                   'card-padding': '20px', 'card-min': '30rem', 'control': '28px',
                   'phone': '600px', 'cover-title': '14px',
-                  'tracking': '.12em', 'eyebrow-tracking': '.14em', 'title-top': '10px', 'chip-gap': '6px', 'rhythm': '12px', 'link-gap': '14px', 'toolbar-space': '16px', 'inset': '8px', 'control-inset': '3px', 'target': '24px', 'tag-inset': '2px', 'guide-min': '18rem', 'guide-space': '28px'}
+                  'tracking': '.12em', 'eyebrow-tracking': '.14em', 'title-top': '10px', 'chip-gap': '6px', 'rhythm': '12px', 'link-gap': '14px', 'toolbar-space': '16px', 'inset': '8px', 'control-inset': '3px', 'target': '24px', 'tag-inset': '2px', 'guide-min': '18rem', 'guide-space': '28px',
+                  'action-gap': '10px', 'action-height': '44px', 'rule-strong': '3px', 'star-gap': '6px',
+                  'tag-inset-x': '6px', 'feature-min': '10.5rem', 'owner-min': '10rem', 'edition-min': '8rem',
+                  'step-min': '8rem', 'mark': '32px', 'lead': '17px', 'star-icon': '14px', 'navbar-collapse': '991.98px'}
 
 
 def portal_layout_css() -> str:
