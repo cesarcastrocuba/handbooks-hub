@@ -9,8 +9,10 @@ other contribution; nothing upgrades automatically.
    (`toolkit-v0.16.2`) in `requirements.txt`. The profile stays `1.1.0`, and the workflows of
    template 1.10.0 need no change.
 2. Table column widths change in the reading site, PDF and Word editions: each column is at least
-   as wide as its longest word in Inter, so Word no longer splits a word inside a table cell. Page
-   numbers can move; the Contents and the indexes are rebuilt by the build.
+   as wide as its longest word in Inter, so Word no longer splits a word inside a table cell. When
+   the longest words of all columns together need more than the page width, the columns are capped
+   and scaled, and a very long unbreakable token can still split (change `0090`). Page numbers can
+   move; the Contents and the indexes are rebuilt by the build.
 3. A catalog entry may now carry `latest_release.extras` when the release publishes
    `book-extras.zip` and `EXTRAS-SHA256SUMS.txt`; the catalog-update workflow writes it.
 4. Rebuild once and open the DOCX in desktop Word before the next tag.
