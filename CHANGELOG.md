@@ -5,6 +5,16 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+## [0.16.2] - 2026-11-27
+
+Toolkit patch release prepared by change `0091`. It carries change `0090` (PR 152): Word no longer
+splits a word inside a table cell, which the Owner found in the sample 0.6.0 preview ("Novembe" /
+"r 2026"). Measured on the PR 152 previews, table words split by Word go from 10 to 0 in the sample
+and from 42 to 0 in the Solutions Architecture Handbook (PDF 569 to 566 pages). It also carries
+change `0089` (PR 151): the optional catalog link to a release's extras (issue 142). Table column
+widths change in every edition, so the Owner's desktop Word check of the new DOCX comes before the
+tag.
+
 ### Added
 
 - The catalog and the portal can link a release's optional book-owned extras pair
