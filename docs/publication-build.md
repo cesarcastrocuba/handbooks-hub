@@ -168,6 +168,9 @@ Owner decisions of 2026-11-22 and 2026-11-23 apply to the PDF and to Word:
 
 - **Print scale and gap fit, shared by both editions.**
   - Every raster figure prints at 85% of its stated size (`PRINT_SCALE`, `handbook-print-scale`).
+    In Word the scale applies to PNG figures, whose pixel density gives the natural-size floor; the
+    PDF applies it to every raster. A vector image keeps its size in Word and the PDF scales it;
+    that non-PNG difference is a known gap recorded in change `0086`.
   - A figure group is the figure, its caption and the heading or short lead-in kept with it. A
     group that would still start the next page below a gap of at least 15% of the text block is
     scaled further, just enough to fit the gap.
@@ -201,10 +204,13 @@ Owner decisions of 2026-11-22 and 2026-11-23 apply to the PDF and to Word:
   - A box that does not fit the rest of a page starts the next one.
   - A pitfall and its decision are separate boxes, so a pitfall that fits stays on the page
     before its decision.
-  - In Word no paragraph inside a box keeps with next. `release_callout_keeps` sets
-    `w:keepNext w:val="0"` because the title styles carry `keepNext`. Desktop Word keeps a row
-    with what follows when one of its paragraphs keeps with next, which chained each pitfall to
-    its decision. LibreOffice ignores those keeps inside a table.
+  - In Word no paragraph of the box itself keeps with next. `release_callout_keeps` sets
+    `w:keepNext w:val="0"` because the title styles carry `keepNext`; a data table nested in the
+    box keeps its own row keeps. Desktop Word keeps a row with what follows when one of its
+    paragraphs keeps with next, which chained each pitfall to its decision. LibreOffice ignores
+    those keeps inside a table.
+  - Nothing before a box keeps with next either: `keep_leadins` treats a callout box as text, not
+    a float, so a spacer or a short paragraph in front of it stays at the foot of the page before.
   - A breakable box was tried and rejected by the Owner: split pitfalls, decisions and review
     checklists read badly.
 - **Remaining gaps.** Tall diagrams that leave a gap are redrawn in the book (a later edition).

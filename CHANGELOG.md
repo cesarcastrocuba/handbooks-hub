@@ -5,6 +5,20 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+### Fixed
+
+- Word figure placement no longer counts a print-scale factor that rounds to 1.0 as a scaled
+  figure; the PDF applies the same rounded factor (change `0086`, issue 138).
+- A data table nested in a Word callout keeps its own row keeps: `release_callout_keeps` leaves
+  it alone, and `keep_leadins` no longer counts or chains keeps inside a callout box (change
+  `0086`, issue 138).
+
+### Changed
+
+- The Word and PDF gap rules share tested helpers for the 15% threshold and the 10 pt safety
+  margin, and the PDF tall-group guard measures the group's final height (change `0086`, issue
+  138). The non-PNG figure difference between Word and the PDF is recorded as a known gap.
+
 ## [0.16.0] - 2026-11-26
 
 Toolkit minor release prepared by change `0084`. It carries change `0083` (PR 140): one typeface,
