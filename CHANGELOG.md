@@ -5,11 +5,11 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
-## [0.16.0] - Unreleased
+## [0.16.0] - 2026-11-26
 
 Toolkit minor release prepared by change `0084`. It carries change `0083` (PR 140): one typeface,
 Inter, in every edition and the portal, with the fonts embedded in the Word edition. The Owner
-checked the CI-built 6.0.0 DOCX of PR 140 in desktop Word. The tag needs the Owner's approval.
+checked the CI-built 6.0.0 DOCX of PR 140 in desktop Word and approved the tag.
 
 ### Changed
 
