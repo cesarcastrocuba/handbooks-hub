@@ -5,6 +5,14 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+### Fixed
+
+- Word no longer splits a word inside a table cell. `table-layout.lua` floors each column from its
+  longest unbreakable piece measured in Inter Bold at 10.5 pt, plus the cell margins, and takes a
+  deficit from every column with room above its own floor instead of one donor. The embedded ASCII
+  widths come from `Inter-Bold.ttf` through `tools/scripts/table_font_widths.py`, whose `--check`
+  mode keeps them in step (change `0090`, issue 142).
+
 ## [1.10.0] - 2026-11-27
 
 Template release prepared by change `0088`. Template `1.10.0` pins toolkit `0.16.1`: hub commit

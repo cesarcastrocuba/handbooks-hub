@@ -14,6 +14,15 @@ PACKAGED = TOOLS / "src/handbook_toolkit/render_data/docx/reference.docx"
 
 
 class ReferenceDocxTests(unittest.TestCase):
+    def test_normal_table_text_is_10_5_points(self) -> None:
+        word = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
+        with ZipFile(PACKAGED) as archive:
+            styles = ET.fromstring(archive.read('word/styles.xml'))
+        normal = styles.find(f"{word}style[@{word}styleId='Normal']")
+        self.assertIsNotNone(normal)
+        size = normal.find(f"{word}rPr/{word}sz")
+        self.assertEqual(size.get(f"{word}val"), "21")
+
     def test_reference_has_no_conditional_banding_or_update_request(self) -> None:
         word = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
         with ZipFile(PACKAGED) as archive:

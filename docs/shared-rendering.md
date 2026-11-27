@@ -10,7 +10,7 @@ existing destinations and removes its own directory on copy failure. Reverting t
 
 | Resource | Behavior |
 | --- | --- |
-| `filters/table-layout.lua` | Adds IDs to captioned tables without labels; derives soft width weights from visible Unicode character counts. Preserves explicit labels and `tbl-colwidths`. |
+| `filters/table-layout.lua` | Adds IDs to captioned tables without labels; derives soft width weights from visible Unicode character counts and floors each column from its longest unbreakable piece in Inter Bold at the Word table size. Preserves explicit labels and `tbl-colwidths`. |
 | `filters/task-checkbox.lua` | Replaces the standalone unchecked square glyph `☐` with `□` for readable output; list structure remains intact. |
 | `typst/callout-breakable.typ` | Replaces Quarto's callout function with a breakable block. |
 
@@ -25,13 +25,22 @@ cross-reference interface: auto IDs can change when content changes and use a no
 32-bit hash. Duplicate explicit labels require manuscript validation.
 
 Width shares are content weights, not hard minimum/maximum bounds or a substitute for visual
-review. Tables over 100 columns retain renderer defaults. Merged cells and long unbreakable
-strings require manual inspection. Breakable callouts may split embedded tables across pages.
-Chapter numbering, caption placement and table row layout remain renderer responsibilities.
+review. Each column also has a floor from its longest unbreakable piece: whitespace breaks, and
+Word also breaks after `-`, `/` and an en dash. The piece is measured in Inter Bold advance widths
+at 10.5 pt, plus 6 pt of cell margins and 2 pt of safety, against a conservative 440 pt usable
+width. The generator `tools/scripts/table_font_widths.py` keeps the embedded ASCII 32-126 table
+equal to `Inter-Bold.ttf`; `--check` fails on drift. When floors sum above 100 they are scaled
+down, and a deficit is taken from every column with room above its own floor, largest room first,
+so one narrow donor cannot block the move. Explicit `tbl-colwidths` stay untouched.
+
+Tables over 100 columns retain renderer defaults. Merged cells and long unbreakable strings
+require manual inspection. Breakable callouts may split embedded tables across pages. Chapter
+numbering, caption placement and table row layout remain renderer responsibilities.
 
 Validation: `PYTHONPATH=tools/src python3 -m unittest discover -s tools/tests -p test_render_resources.py -v`.
 The suite covers zip-package staging and cleanup; its real Pandoc boundary (through Quarto)
-checks Unicode widths, explicit attributes, identical chapters and project relocation.
+checks the Inter Bold word floors, explicit attributes, identical chapters and project relocation,
+and its conformance test runs the width generator in check mode.
 The runtime test skips if Quarto is absent; publication CI must install the pinned Quarto.
 The three-format pilot prototype is supporting evidence, not a published book or a complete
 layout acceptance. Quarto API references: [document/project paths](https://quarto.org/docs/extensions/lua-api.html).
