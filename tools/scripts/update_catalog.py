@@ -206,8 +206,14 @@ def published_date(release: Any, tag: str) -> str:
     return match.group(1)
 
 
-def _without_assets(release: dict[str, Any]) -> dict[str, Any]:
-    return {key: value for key, value in release.items() if key != "assets"}
+def _without_links(release: dict[str, Any]) -> dict[str, Any]:
+    """The release data that never changes when only the optional links change."""
+
+    return {
+        key: value
+        for key, value in release.items()
+        if key not in {"assets", "extras"}
+    }
 
 
 def plan_update(
@@ -222,7 +228,7 @@ def plan_update(
     """Return the catalog with ``slug`` listing ``tag``; the input document is not modified.
 
     A listed release never changes: asking again for the listed tag is a no-op and does not add
-    download links to an entry that was listed without them.
+    download links or the optional extras links to an entry that was listed without them.
     """
 
     version = parse_tag(tag)
@@ -244,7 +250,13 @@ def plan_update(
     if version < current_version:
         raise CatalogUpdateError(f"version downgrade rejected: {slug} lists {current['tag']}, requested {tag}")
     if version == current_version:
-        if _without_assets(current) != _without_assets(entry) or ("assets" in current and current != entry):
+        if _without_links(current) != _without_links(entry):
+            raise CatalogUpdateError(f"{slug} already lists {tag} with different release data: a published release must not change")
+        # A listed release never changes, but an entry listed before a link existed keeps its
+        # no-op: links are added only when the entry already has them.
+        if "assets" in current and current["assets"] != entry.get("assets"):
+            raise CatalogUpdateError(f"{slug} already lists {tag} with different release data: a published release must not change")
+        if "extras" in current and current["extras"] != entry.get("extras"):
             raise CatalogUpdateError(f"{slug} already lists {tag} with different release data: a published release must not change")
         return UpdatePlan(updated, False, f"no-op: {slug} already lists {tag}")
 

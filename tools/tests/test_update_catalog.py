@@ -115,6 +115,23 @@ class PlanUpdateTests(unittest.TestCase):
         self.assertFalse(plan_update(listed, SLUG, REPO, "v1.1.0", "2026-12-15", ("pdf", "docx")).changed)
         self.rejected("must not change", SLUG, REPO, "v1.1.0", "2026-12-15", ("pdf",), document=listed)
 
+    def test_relisting_with_extras_does_not_add_them_to_an_entry_without_them(self) -> None:
+        listed = plan_update(
+            self.document, SLUG, REPO, "v1.1.0", "2026-12-15", ()
+        ).document
+        self.assertNotIn("extras", listed["books"][0]["latest_release"])
+        plan = plan_update(listed, SLUG, REPO, "v1.1.0", "2026-12-15", (), True)
+        self.assertFalse(plan.changed)
+        self.assertEqual(plan.message, "no-op: example-book already lists v1.1.0")
+        self.assertNotIn("extras", plan.document["books"][0]["latest_release"])
+
+    def test_a_listed_entry_with_extras_is_not_silently_dropped(self) -> None:
+        listed = plan_update(
+            self.document, SLUG, REPO, "v1.1.0", "2026-12-15", (), True
+        ).document
+        with self.assertRaisesRegex(CatalogUpdateError, "must not change"):
+            plan_update(listed, SLUG, REPO, "v1.1.0", "2026-12-15", (), False)
+
     def test_versions_compare_numerically(self) -> None:
         self.document["books"][0] = plan_update(self.document, SLUG, REPO, "v1.9.0", "2026-12-15").document["books"][0]
         self.assertTrue(plan_update(self.document, SLUG, REPO, "v1.10.0", "2026-12-16").changed)

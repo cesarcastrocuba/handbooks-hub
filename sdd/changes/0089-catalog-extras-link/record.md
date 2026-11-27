@@ -60,12 +60,22 @@ for its fixture book, like the assets.
 - `test_catalog.py`: valid extras, entry without extras, wrong tag/name/host for each URL, and a
   missing required URL.
 - `test_update_catalog.py`: pair detection, no extras, one-without-the-other, starter/foreign
-  assets, plan output with and without the field, and the CLI apply path.
+  assets, plan output with and without the field, the CLI apply path, and the same-tag no-op with
+  an entry listed before the `extras` field existed.
 - `test_catalog_verification.py`: catalog extras match the release, a wrong URL is rejected by
   `_verify_book`, an entry with extras but no release pair fails, and a release pair without a
   catalog entry passes.
 - `test_portal.py`: the legacy card shows the `Extras` button and `Extras checksums` link; a card
   without extras has neither; the Quarto card renders both links and their labels.
+
+## Review follow-up (review of `a7c8fbf`)
+
+The same-version comparison stripped only `assets`, so re-running the catalog update for an
+already-listed tag whose release carries the extras pair raised "different release data" instead of
+the documented no-op. `_without_links` now strips both optional link objects; the comparison raises
+only when the current entry already has `assets` or `extras` and that object differs. Two tests
+cover it: a re-run with `extras=True` on an entry listed without extras is a no-op, and a listed
+entry with extras is not silently dropped by a call with `extras=False`.
 
 ## Known gaps
 
@@ -85,11 +95,11 @@ Commands run with the scratchpad venv
 | Command | Result |
 | --- | --- |
 | `python -m unittest discover -s tools/tests -p 'test_catalog.py'` | 18 tests, OK |
-| `python -m unittest discover -s tools/tests -p 'test_update_catalog.py'` | 38 tests, OK |
+| `python -m unittest discover -s tools/tests -p 'test_update_catalog.py'` (after the review fix) | 40 tests, OK |
 | `python -m unittest discover -s tools/tests -p 'test_catalog_verification.py'` | 35 tests, OK |
 | `python -m unittest discover -s tools/tests -p 'test_portal.py'` | 30 tests, OK (Quarto included) |
-| `make check` | 670 tests, OK (1908.306 s); `verify`: 5 checks, 0 problems |
+| `make check` (on `a7c8fbf`, before the review fix) | 670 tests, OK (1908.306 s); `verify`: 5 checks, 0 problems |
 | `python -m unittest test_reading_site.NativeMotionBrowserTests` (known flake, rerun alone) | 3 tests, OK (26.883 s) |
-| `make verify-full` | 7 checks, 0 problems |
+| `make verify-full` (after the review fix) | 7 checks, 0 problems |
 
 No check is claimed before it is run.
