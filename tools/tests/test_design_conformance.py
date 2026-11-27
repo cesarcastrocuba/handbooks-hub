@@ -75,6 +75,18 @@ class GeneratedSurfaceTests(unittest.TestCase):
             with self.subTest(value=retired):
                 self.assertNotIn(retired, theme)
 
+    def test_the_pdf_body_size_comes_from_the_token(self) -> None:
+        # Issue 142: a token-only edit must change the PDF. The theme reads the generated constant;
+        # the Quarto show partial cannot, so its literals must equal the token.
+        size = f'{self.tokens["type"]["body"]["print_size_pt"]:g}pt'
+        self.assertIn(f"#let hb-body-size = {size}", design.typst_preamble())
+        theme = (RENDER / "typst" / "handbook-typst.typ").read_text(encoding="utf-8")
+        self.assertIn("size: hb-body-size", theme)
+        self.assertNotRegex(theme, r"(?m)^#set text\(font: hb-font, size: [0-9.]+pt")
+        show = (RENDER / "typst" / "typst-show.typ").read_text(encoding="utf-8")
+        sizes = re.findall(r"(?:size|fontsize): ([0-9.]+pt)", show)
+        self.assertEqual(sizes, [size, size])
+
     def test_print_layout_uses_generated_constants(self) -> None:
         layout = (support.SRC / "handbook_toolkit" / "print_layout.py").read_text(encoding="utf-8")
         self.assertNotIn("#E1DFDD", layout)

@@ -1,6 +1,6 @@
 <article class="book" data-title="$title" data-date="$date" data-categories="$category_keys" data-authors="$authors_attr">
-<div class="cover" data-tone="$category" aria-hidden="true"><span class="cover-kicker">$category</span><span class="cover-title">$title</span>$cover_author<span class="cover-foot">Handbooks Hub · v$version</span></div>
+<a class="cover-link" href="$reading_url" tabindex="-1" aria-hidden="true"><div class="cover" data-tone="$category"><span class="cover-kicker">$category</span><span class="cover-title">$title</span>$cover_author<span class="cover-foot">Handbooks Hub · v$version</span></div></a>
 <div class="details"><div class="tags">$tags</div>$archived<h2>$title</h2>$authors_line<p class="summary">$summary</p>
 <div class="version">v$version · <time datetime="$date">$date</time> · Licence declared in the <a href="$reading_url">handbook</a></div>
-<div class="links"><a class="read" href="$reading_url">Read handbook →</a>$source<a href="$release_url">Release downloads</a></div>$formats
+<div class="links"><a class="read" href="$reading_url">Read handbook →</a>$source<a href="$release_url">Release downloads</a>$star</div>$formats
 <div class="assets"><a href="$manifest_url">Manifest</a><a href="$checksums_url">Checksums</a></div></div></article>

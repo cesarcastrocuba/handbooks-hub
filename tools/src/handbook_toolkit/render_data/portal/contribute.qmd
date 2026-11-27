@@ -1,13 +1,20 @@
 ---
-title: Contribute to an existing book
+title: Contribute to a handbook
+subtitle: "Corrections and proposals, in the book's own repository"
 ---
 
-Each handbook accepts corrections and proposals in its own repository.
+```{=html}
+<p class="guide-lead">Every handbook accepts corrections and proposals where its manuscript lives. You do not need to know the review process: the forms ask for what a maintainer needs.</p>
+<p class="actions"><a class="btn btn-primary" href="index.html#library">Pick a handbook</a><a class="btn btn-outline-primary" href="https://github.com/cesarcastrocuba/handbooks-hub">Improve the platform</a></p>
 
-1. Open the book's reading site and follow its source-repository link.
-2. Open an issue for an error or proposal, or send a pull request.
-3. The book's checks run and a maintainer reviews the change.
-4. Accepted changes appear in the next release and then in this library.
+<p class="section-kicker">Four steps</p>
+<h2>From a typo to the next edition.</h2>
+<ol class="pipeline">
+<li><span class="step-title">Find the page</span><span class="step-text">Open the handbook's reading site and follow its link to the source repository or to <em>Report an issue</em>.</span><span class="step-meta">Reader</span></li>
+<li><span class="step-title">Tell or propose</span><span class="step-text">Open an issue with the correction or proposal form, or send a pull request with the change.</span><span class="step-meta">You</span></li>
+<li><span class="step-title">Checks and review</span><span class="step-text">The book's checks run on your pull request, and a maintainer reviews it.</span><span class="step-meta">Automatic and maintainer</span></li>
+<li><span class="step-title">Next release</span><span class="step-text">Accepted changes appear in the next release of the book, and then in this library.</span><span class="step-meta">Maintainer</span></li>
+</ol>
 
-To improve the toolkit, template or portal, contribute to the
-[hub repository](https://github.com/cesarcastrocuba/handbooks-hub).
+<div class="guide-note"><strong>Improve the platform itself.</strong> The toolkit, the template and this library live in the <a href="https://github.com/cesarcastrocuba/handbooks-hub">hub repository</a>. Issues and pull requests are welcome there.</div>
+```

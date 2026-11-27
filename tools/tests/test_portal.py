@@ -393,6 +393,80 @@ class QuartoPortalTests(unittest.TestCase):
     def _legacy_llms(self):
         return (build_portal(self.catalog,self.root/'legacy').parent/'llms.txt').read_bytes()
 
+    def test_cover_opens_the_reading_site_and_star_links_the_repository(self):
+        book=self.document['books'][0]
+        page=Document((self.site/'index.html').read_text()).root
+        article=page.find('article')[0]
+        cover=article.find('a',**{'class':'cover-link'})[0]
+        self.assertEqual(cover.attrs['href'],book['reading_url'])
+        # A pointer shortcut only: the visible "Read handbook" link stays the single tab stop.
+        self.assertEqual(cover.attrs['tabindex'],'-1')
+        self.assertEqual(cover.attrs['aria-hidden'],'true')
+        self.assertTrue(cover.find('div',**{'class':'cover'}))
+        star=article.find('a',**{'class':'star'})[0]
+        repository=book['latest_release']['url'].split('/releases/')[0]
+        self.assertEqual(star.attrs['href'],repository)
+        # Built without HANDBOOK_STARS=fetch: no number, never a failure.
+        self.assertTrue(star.attrs['aria-label'].startswith('Star '))
+        self.assertFalse(star.find('span',**{'class':'star-count'}))
+        navbar=[node for node in page.find('a',**{'class':'nav-link'}) if 'Star' in node.text()]
+        self.assertEqual([node.attrs['href'] for node in navbar],['https://github.com/cesarcastrocuba/handbooks-hub'])
+        for path in self.site.rglob('*.html'):
+            self.assertNotIn('api.github.com',path.read_text(),path.name)
+
+    def test_guide_pages_show_actions_steps_and_features(self):
+        expected={'how-it-works':('edition-strip','feature-grid','owner-grid','pipeline'),
+                  'create':('pipeline','feature-grid','file-tree'),
+                  'publishing':('pipeline',),'contribute':('pipeline',)}
+        for name,classes in expected.items():
+            with self.subTest(page=name):
+                markup=(self.site/f'{name}.html').read_text()
+                page=Document(markup).root
+                actions=page.find('p',**{'class':'actions'})
+                self.assertTrue(actions)
+                for group in actions:
+                    self.assertGreaterEqual(len(group.find('a')),1)
+                for css in classes:
+                    self.assertIn(f'class="{css}"',markup)
+                self.assertNotIn('{{icon:',markup)
+        create=(self.site/'create.html').read_text()
+        self.assertIn('https://github.com/cesarcastrocuba/handbooks-template',create)
+
+    def test_buttons_never_touch_and_the_cover_navigates_in_the_browser(self):
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            self.skipTest('Playwright is installed by the edition-preview job')
+        gaps_script=("()=>{const r=[];document.querySelectorAll('#quarto-document-content p:has(> .btn), .actions')"
+                     ".forEach(g=>{const b=[...g.querySelectorAll(':scope > .btn')].map(e=>e.getBoundingClientRect());"
+                     "for(let i=1;i<b.length;i++){r.push(Math.max(b[i].left-b[i-1].right,b[i].top-b[i-1].bottom))}});return r}")
+        reading=self.document['books'][0]['reading_url']
+        with sync_playwright() as playwright:
+            browser=playwright.chromium.launch()
+            try:
+                for width in (1280,390,320):
+                    context=browser.new_context(viewport={'width':width,'height':900},reduced_motion='reduce')
+                    page=context.new_page()
+                    for name in ('index','how-it-works','create','publishing','contribute'):
+                        with self.subTest(width=width,page=name):
+                            page.goto((self.site/f'{name}.html').as_uri())
+                            gaps=page.evaluate(gaps_script)
+                            self.assertTrue(gaps)
+                            self.assertGreaterEqual(min(gaps),8)
+                            for button in page.locator('#quarto-document-content .btn, .links a.star').all():
+                                self.assertGreaterEqual(button.bounding_box()['height'],44)
+                            self.assertLessEqual(page.evaluate('document.documentElement.scrollWidth'),width)
+                    context.close()
+                context=browser.new_context(viewport={'width':390,'height':900},reduced_motion='reduce')
+                page=context.new_page()
+                page.route(reading+'**',lambda route: route.fulfill(body='<title>reading</title>',content_type='text/html'))
+                page.goto((self.site/'index.html').as_uri())
+                page.locator('.cover').first.click()
+                page.wait_for_url(reading+'**')
+                context.close()
+            finally:
+                browser.close()
+
     def test_repeat_render_is_byte_identical(self):
         second=build_portal(self.catalog,self.root/'second',engine='quarto').parent
         first={p.relative_to(self.site):p.read_bytes() for p in self.site.rglob('*') if p.is_file()}

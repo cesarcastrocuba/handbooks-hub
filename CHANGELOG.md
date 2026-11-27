@@ -5,19 +5,35 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+### Added
+
+- GitHub stars: a "★ Star" link with the star count in the portal header, on each catalog card and
+  in each book's reading-site navbar. The count is read at build time (`HANDBOOK_STARS=fetch` in
+  `portal-pages`, `HANDBOOK_STAR_COUNTS` from a book's release workflow) and written into the page;
+  any failure shows the link without a number. `portal-pages` also rebuilds daily (issue 141,
+  change `0085`, `HUB-DEC-046`).
+- A book cover in the library opens the book's reading site (change `0085`).
+
+### Changed
+
+- Button rows on every portal page keep a gap at every width and take a full row each on a phone;
+  before, "Browse the library" and "Create your handbook" touched on a phone (change `0085`).
+- The guide pages (How the platform works, Create your handbook, Publishing and withdrawal,
+  Contribute) show the editions, features, ownership and steps as cards with icons, and the home
+  page lists what the platform does (change `0085`).
+- The PDF body size comes from the `type.body.print_size_pt` token through the generated
+  `hb-body-size` constant, and a conformance test checks the Quarto show partial (issue 142).
+- The Word and PDF gap rules share tested helpers for the 15% threshold and the 10 pt safety
+  margin, and the PDF tall-group guard measures the group's final height (change `0086`, issue
+  138). The non-PNG figure difference between Word and the PDF is recorded as a known gap.
+
 ### Fixed
 
 - Word figure placement no longer counts a print-scale factor that rounds to 1.0 as a scaled
   figure; the PDF applies the same rounded factor (change `0086`, issue 138).
-- A data table nested in a Word callout keeps its own row keeps: `release_callout_keeps` leaves
-  it alone, and `keep_leadins` no longer counts or chains keeps inside a callout box (change
+- `keep_leadins` no longer counts or chains keeps inside a Word callout box, so the
+  `docx_float_leadins` report reflects only keeps that survive `release_callout_keeps` (change
   `0086`, issue 138).
-
-### Changed
-
-- The Word and PDF gap rules share tested helpers for the 15% threshold and the 10 pt safety
-  margin, and the PDF tall-group guard measures the group's final height (change `0086`, issue
-  138). The non-PNG figure difference between Word and the PDF is recorded as a known gap.
 
 ## [0.16.0] - 2026-11-26
 

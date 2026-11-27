@@ -16,14 +16,14 @@ import support  # noqa: E402
 WORKFLOW = support.REPO_ROOT / ".github/workflows/portal-pages.yml"
 DEPLOY_CONDITION = (
     "github.ref == 'refs/heads/main' && "
-    "(github.event_name == 'push' || inputs.deploy)"
+    "(github.event_name == 'push' || github.event_name == 'schedule' || inputs.deploy)"
 )
 
 
 def deploy_allowed(ref: str, event: str, deploy: bool) -> bool:
     """Mirror the workflow expression asserted below, for the truth-table test."""
 
-    return ref == "refs/heads/main" and (event == "push" or deploy)
+    return ref == "refs/heads/main" and (event in ("push", "schedule") or deploy)
 
 
 class PortalPagesWorkflowTests(unittest.TestCase):
@@ -40,6 +40,13 @@ class PortalPagesWorkflowTests(unittest.TestCase):
         push = self.triggers["push"]
         self.assertEqual(push["branches"], ["main"])
         self.assertEqual(push["paths"], ["catalog/**"])
+
+    def test_a_daily_rebuild_refreshes_the_star_counts(self) -> None:
+        self.assertEqual(self.triggers["schedule"], [{"cron": "23 4 * * *"}])
+        build = next(step for step in self.steps() if step.get("name") == "Build the approved-release catalog")
+        self.assertEqual(build["env"]["HANDBOOK_STARS"], "fetch")
+        self.assertEqual(build["env"]["GITHUB_TOKEN"], "${{ github.token }}")
+        self.assertEqual(self.workflow["jobs"]["build"]["permissions"], {"contents": "read", "pages": "read"})
 
     def test_manual_dispatch_keeps_its_deploy_input(self) -> None:
         deploy = self.triggers["workflow_dispatch"]["inputs"]["deploy"]
@@ -63,6 +70,7 @@ class PortalPagesWorkflowTests(unittest.TestCase):
             ("refs/heads/main", "push", False, True),
             ("refs/heads/main", "workflow_dispatch", True, True),
             ("refs/heads/main", "workflow_dispatch", False, False),
+            ("refs/heads/main", "schedule", False, True),
             ("refs/heads/feature", "workflow_dispatch", True, False),
             ("refs/heads/feature", "workflow_dispatch", False, False),
         )
