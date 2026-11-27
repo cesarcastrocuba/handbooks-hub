@@ -5,6 +5,13 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+## [1.10.1] - 2026-11-27
+
+Template release prepared by change `0092`. Template `1.10.1` pins toolkit `0.16.2`: hub commit
+`25fb8010970f95e1d00afbff87f5657d1ce102ba`, the merge of PR 153. The standard profile stays `1.1.0` and the
+template files are otherwise unchanged. The upgrade guide gains the example "toolkit 0.16.1 to
+0.16.2". The tag `template-v1.10.1` waits for the Owner's approval.
+
 ## [0.16.2] - 2026-11-27
 
 Toolkit patch release prepared by change `0091`. It carries change `0090` (PR 152): Word no longer
