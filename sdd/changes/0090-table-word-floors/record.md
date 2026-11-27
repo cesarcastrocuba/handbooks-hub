@@ -56,39 +56,23 @@ unbreakable piece, their floors are below 50 and the initial equal shares alread
 
 ## Sample measurement
 
-Built from `/home/ubuntu/github/handbook-sample-01.worktrees/0090-verify` at
-`origin/main` `7c847f8` (sample `0.6.0`) with this branch installed in a separate venv:
-
-| | Before (sample PR 33 preview, toolkit 0.16.1) | After (this branch) |
+| | Before (sample PR 33 preview, toolkit 0.16.1) | After (CI run `46006866263`, commit `b6b5ec9`) |
 | --- | ---: | ---: |
-| Split words (audit) | 10 (9 × 'November', 'Handbook') | 1 |
+| Split words (audit) | 10 (9 × 'November', 'Handbook') | 0 |
 | PDF pages | 62 | 62 |
-| DOCX bytes | 1,296,054 | 1,296,032 |
-
-The remaining audit hit is `'Apache-2.0'` at 55.2 pt in a 58.8 pt column. It is a false positive:
-Word breaks after `-`, and the filter measures `'Apache-'` (42.7 pt in Inter Regular), which fits.
-No actual word is split.
+| DOCX bytes | 1,296,054 | 1,296,045 |
 
 ## Solutions Architecture measurement
 
-Audited the `edition-preview-solutions-architecture` artifact of run `46003235071` (commit
-`22b2b9b`). Before: 48 split words in the released `v6.0.0` DOCX. After: 49 audit hits, in two
-classes:
-
-- 44 are hyphen or en-dash compounds such as `Cross-platform`, `Self-managed`,
-  `Expand-migrate-contract` and `Low–medium`. The audit splits on whitespace only, but Word breaks
-  after `-` and `–`; the filter measures the pieces and these do not split.
-- 5 are `PAYMENT_PENDING` in a column at the 20 % cap. The token is 103.4 pt, the capped column
-  leaves 88.1 pt after the cell margins, and the cap is kept by design.
-
-So the class the Owner reported is gone: no ordinary word is split. The five `PAYMENT_PENDING`
-hits remain because the column is at its cap. PDF pages: 569 (released `v6.0.0`) → 566 (preview).
+Audited the `edition-preview-solutions-architecture` artifact of run `46006866263` (commit
+`b6b5ec9`) with the audit script that breaks after `-`, `–` and `/`. Before: 42 split words in the
+released `v6.0.0` DOCX (48 when hyphenated compounds are counted as single words). After: 0 split
+words. PDF pages: 569 (released `v6.0.0`) → 566 (preview).
 
 ## Known gaps
 
-- The audit script splits on whitespace only, so a hyphenated token such as `'Apache-2.0'` is
-  reported even though Word can break it; the remaining hit above is that case.
-- The floor is a conservative content rule, not a hard Word constraint; a column at its 20 % cap
-  can still be too narrow for an exceptionally long unbreakable word, which the audit would show.
+- The floor is a conservative content rule, not a hard Word constraint. When the real floors
+  together exceed 100 they are capped and scaled; in that case a very long unbreakable token could
+  still be narrower than its column, which the audit would show. Neither book has such a case.
 - The 440 pt usable width is deliberately smaller than the A4 text width to cover callout tables;
   the floors are slightly conservative for full-width tables.
