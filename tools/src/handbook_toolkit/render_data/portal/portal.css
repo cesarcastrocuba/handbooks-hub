@@ -67,6 +67,8 @@ input, button, select { max-width: 100%; min-width: 0; min-height: {{control}}; 
 .cover-link:hover .cover { box-shadow: 0 0 0 {{rule-strong}} var(--accent); }
 .cover-link .cover { cursor: pointer; }
 .star { display: inline-flex; align-items: center; gap: {{star-gap}}; }
+#quarto-document-content .links a.star { min-height: {{action-height}}; }
+@media (max-width: {{navbar-collapse}}) { .navbar-nav .nav-link { min-height: {{action-height}}; display: flex; align-items: center; } }
 .star-count { display: inline-block; text-decoration: none; font-family: var(--font-mono); font-size: var(--web-tag-px); padding: 0 {{tag-inset-x}}; border: {{rule}} solid var(--border); border-radius: var(--tag-px); color: var(--text); background: var(--canvas); }
 
 /* Guide pages: lead, feature grid, pipeline, ownership cards, editions strip, file tree. */

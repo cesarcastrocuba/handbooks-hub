@@ -96,6 +96,53 @@ class StarTests(unittest.TestCase):
             _add_star_link(bare)
         self.assertEqual(bare['navbar']['right'], [{'text': '★ Star', 'href': 'https://github.com/owner/book'}])
 
+    def test_a_redirect_is_refused_so_the_token_never_leaves_the_api_host(self):
+        import threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+        seen = []
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                seen.append((self.server.server_port, self.headers.get('Authorization')))
+                if self.path.startswith('/repos/'):
+                    self.send_response(302)
+                    self.send_header('Location', f'http://127.0.0.1:{other.server_port}/elsewhere')
+                    self.end_headers()
+                else:
+                    body = b'{"stargazers_count": 9}'
+                    self.send_response(200)
+                    self.send_header('Content-Length', str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+
+            def log_message(self, *args):
+                pass
+
+        api, other = HTTPServer(('127.0.0.1', 0), Handler), HTTPServer(('127.0.0.1', 0), Handler)
+        for server in (api, other):
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+        try:
+            from unittest.mock import patch
+            with patch.object(stars, 'API', f'http://127.0.0.1:{api.server_port}/repos/'):
+                count = stars.star_count('o/redirect', environ={'HANDBOOK_STARS': 'fetch', 'GITHUB_TOKEN': 'sekret'})
+        finally:
+            api.shutdown(); other.shutdown()
+            stars._CACHE.pop('o/redirect', None)
+        self.assertIsNone(count)
+        self.assertEqual(seen, [(api.server_port, 'Bearer sekret')])
+
+    def test_each_repository_is_read_once_per_build(self):
+        from unittest.mock import patch
+        calls = []
+        stars._CACHE.pop('o/cached', None)
+        try:
+            with patch.object(stars, '_open', opener_for({'stargazers_count': 4}, calls)):
+                counts = [stars.star_count('o/cached', environ={'HANDBOOK_STARS': 'fetch'}) for _ in range(3)]
+        finally:
+            stars._CACHE.pop('o/cached', None)
+        self.assertEqual(counts, [4, 4, 4])
+        self.assertEqual(len(calls), 1)
+
     def test_compact_counts_and_labels(self):
         self.assertEqual([stars.compact(n) for n in (0, 999, 1000, 1234, 9999, 12000, 123456)],
                          ['0', '999', '1k', '1.2k', '10k', '12k', '123k'])

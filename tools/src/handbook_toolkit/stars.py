@@ -15,12 +15,27 @@ from html import escape
 import json
 import os
 from urllib.parse import urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 FETCH_VARIABLE = "HANDBOOK_STARS"
 COUNTS_VARIABLE = "HANDBOOK_STAR_COUNTS"
 API = "https://api.github.com/repos/"
 TIMEOUT = 10
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    """Refuse redirects, so the token is only ever sent to api.github.com."""
+
+    def redirect_request(self, *args, **kwargs):  # noqa: D401 - urllib hook
+        return None
+
+
+def _open(request: Request, timeout: float):
+    return build_opener(_NoRedirect).open(request, timeout=timeout)
+
+
+# One lookup per repository and build process: the daily portal build reads each count once.
+_CACHE: dict[str, int | None] = {}
 
 
 def github_repository(url: str | None) -> str | None:
@@ -43,7 +58,7 @@ def fetch_enabled(environ: Mapping[str, str] | None = None) -> bool:
 
 
 def star_count(repository: str | None, *, environ: Mapping[str, str] | None = None,
-               opener: Callable = urlopen) -> int | None:
+               opener: Callable | None = None) -> int | None:
     """Read ``stargazers_count`` of ``owner/name``; None when disabled or on any failure."""
 
     environ = os.environ if environ is None else environ
@@ -52,16 +67,21 @@ def star_count(repository: str | None, *, environ: Mapping[str, str] | None = No
     given = _given_count(repository, environ.get(COUNTS_VARIABLE))
     if given is not None or not fetch_enabled(environ):
         return given
+    key = repository.casefold()
+    if opener is None and key in _CACHE:
+        return _CACHE[key]
     headers = {"Accept": "application/vnd.github+json", "User-Agent": "handbook-toolkit"}
     token = environ.get("GITHUB_TOKEN") or environ.get("GH_TOKEN")
     if token:
         headers["Authorization"] = f"Bearer {token}"
     try:
-        with opener(Request(API + repository, headers=headers), timeout=TIMEOUT) as response:
-            count = json.load(response).get("stargazers_count")
+        with (opener or _open)(Request(API + repository, headers=headers), timeout=TIMEOUT) as response:
+            count = _valid(json.load(response).get("stargazers_count"))
     except Exception:  # noqa: BLE001 - an unreachable API must never fail a build
-        return None
-    return _valid(count)
+        count = None
+    if opener is None:
+        _CACHE[key] = count
+    return count
 
 
 def _valid(count: object) -> int | None:

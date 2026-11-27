@@ -68,3 +68,21 @@ Hub venv (`requirements-dev.txt`, Playwright and Chromium), Python 3.12, Quarto 
   (`'static' != 'relative'`). This change does not touch `render_data/html/`; the class passed in
   three repeated runs right after, and the same test failed once intermittently in change `0083`.
   Recorded as flaky, not fixed here.
+
+## Review follow-up (oc8, PR 146)
+
+- Major 1: the Initialize step names the real inputs (title, identifier, author, catalog summary,
+  category); the licences are set in `book.yaml` (CC BY-SA 4.0 and MIT by default).
+- Major 2: "three of them by people"; the author starts a release and the hub owner approves
+  listings, on how-it-works (lead, steps, "People decide").
+- Minor 3: every push checks structure, references, labels and images; the release build adds the
+  editorial profile (how-it-works and home).
+- Minor 4: the correction and proposal forms are described separately.
+- Minor 5: the card star link is 44 px tall, and collapsed navbar links on a phone are 44 px; the
+  browser test now measures the star link.
+- Minor 6: the template README sentence ships with the template release of this round, which pins
+  toolkit 0.16.1; no export happens before that release.
+- Optional 7: the legacy card has the star link too.
+- Optional 8: redirects are refused, so the token is only sent to `api.github.com`; tested with a
+  local 302 to a second server (no request reaches it).
+- Optional 9: one lookup per repository per build process; tested.

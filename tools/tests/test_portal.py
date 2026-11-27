@@ -453,7 +453,7 @@ class QuartoPortalTests(unittest.TestCase):
                             gaps=page.evaluate(gaps_script)
                             self.assertTrue(gaps)
                             self.assertGreaterEqual(min(gaps),8)
-                            for button in page.locator('#quarto-document-content .btn').all():
+                            for button in page.locator('#quarto-document-content .btn, .links a.star').all():
                                 self.assertGreaterEqual(button.bounding_box()['height'],44)
                             self.assertLessEqual(page.evaluate('document.documentElement.scrollWidth'),width)
                     context.close()
