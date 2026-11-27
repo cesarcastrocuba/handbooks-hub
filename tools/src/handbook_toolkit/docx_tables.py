@@ -27,8 +27,9 @@ def release_callout_keeps(root: ET.Element) -> int:
     and both moved to the next page when the decision did not fit (Owner Word
     check of 2026-11-25: 1.1.5, 1.2.13, 1.3.2). LibreOffice ignores keeps inside
     a table, so its render never showed it. An explicit ``w:val="0"`` overrides
-    the style. Paragraphs of a data table nested in the box are left alone: the
-    table's own keeps order its rows inside the already-unsplittable box.
+    the style. Every paragraph of the box is cleared, including the paragraphs of
+    a data table nested in it: a nested table's paragraph is still a paragraph of
+    the outer box row, and Word would chain the box through it.
     """
     count = 0
     for table in root.iter(W + "tbl"):
@@ -36,17 +37,7 @@ def release_callout_keeps(root: ET.Element) -> int:
         if style is None or style.get(W + "val") != CALLOUT_STYLE:
             continue
         count += 1
-        # A data table nested in the box keeps its own row keeps: it is content
-        # inside the one unsplittable row, not part of the row's chain outward.
-        nested = {
-            id(p)
-            for inner in table.iter(W + "tbl")
-            if inner is not table
-            for p in inner.iter(W + "p")
-        }
         for p in table.iter(W + "p"):
-            if id(p) in nested:
-                continue
             pp = p.find(W + "pPr")
             if pp is None:
                 pp = ET.Element(W + "pPr")

@@ -149,7 +149,7 @@ class CalloutBoxTests(unittest.TestCase):
         shutil.which("soffice") and shutil.which("pdfinfo"),
         "LibreOffice and Poppler are required for the table measurement",
     )
-    def test_the_measured_path_releases_the_box_and_keeps_a_nested_table(self):
+    def test_the_measured_path_releases_the_box_including_a_nested_table(self):
         styles = (
             '<?xml version="1.0" encoding="UTF-8"?>'
             '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
@@ -195,10 +195,12 @@ class CalloutBoxTests(unittest.TestCase):
             keep = paragraph_with(text).find(W + "pPr/" + W + "keepNext")
             self.assertIsNotNone(keep)
             self.assertEqual(keep.get(W + "val"), "0")
+        # A nested header row is still a paragraph of the outer box row; Word
+        # would chain the box through it, so it is released too.
         inner = next(table for table in box.iter(W + "tbl") if table is not box)
         keep = inner.find(W + "tr/" + W + "tc/" + W + "p/" + W + "pPr/" + W + "keepNext")
         self.assertIsNotNone(keep)
-        self.assertNotEqual(keep.get(W + "val"), "0")
+        self.assertEqual(keep.get(W + "val"), "0")
 
     def test_the_build_step_releases_the_keeps(self):
         # The pipeline, not only the function: both paths of keep_fitting_tables.
