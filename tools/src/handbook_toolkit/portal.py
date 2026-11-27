@@ -186,6 +186,16 @@ def _card(book: dict) -> str:
         f'<a class="fmt" href="{escape(assets[role], quote=True)}" aria-label="Download {escape(book["title"], quote=True)} as {label}">{label}</a>'
         for role, label in FORMATS.items() if role in assets
     )
+    extras = release.get("extras")
+    extras_checksums = ""
+    if extras:
+        formats += (
+            f'<a class="fmt" href="{escape(extras["archive"], quote=True)}" '
+            f'aria-label="Download {escape(book["title"], quote=True)} extras">Extras</a>'
+        )
+        extras_checksums = (
+            f'<a href="{escape(extras["checksums_url"], quote=True)}">Extras checksums</a>'
+        )
     if formats:
         formats = f'<div class="formats">{formats}</div>'
     repository = _repository_url(release["url"])
@@ -202,7 +212,7 @@ def _card(book: dict) -> str:
 <div class="details"><div class="tags">{tags}</div>{archived}<h3>{title}</h3>{authors_line}<p class="summary">{escape(book['summary'])}</p>
 <div class="version">v{release['version']} · <time datetime="{release['published_at']}">{release['published_at']}</time></div>
 <div class="links"><a class="read" href="{escape(book['reading_url'], quote=True)}">Read handbook →</a>{source}<a href="{escape(release['url'], quote=True)}">Release downloads</a>{star}</div>{formats}
-<div class="assets"><a href="{escape(release['manifest_url'], quote=True)}">Manifest</a><a href="{escape(release['checksums_url'], quote=True)}">Checksums</a></div></div></article>'''
+<div class="assets"><a href="{escape(release['manifest_url'], quote=True)}">Manifest</a><a href="{escape(release['checksums_url'], quote=True)}">Checksums</a>{extras_checksums}</div></div></article>'''
 
 
 def _one_line(text: str) -> str:

@@ -67,6 +67,45 @@ class CatalogTests(unittest.TestCase):
                 result = self.check(document)
                 self.assertTrue(any("release's own book.pdf" in issue.message for issue in result.issues))
 
+    def with_extras(self) -> dict:
+        document = self.with_assets()
+        release = document["books"][0]["latest_release"]
+        base = release["manifest_url"].rsplit("/", 1)[0] + "/"
+        release["extras"] = {
+            "archive": base + "book-extras.zip",
+            "checksums_url": base + "EXTRAS-SHA256SUMS.txt",
+        }
+        return document
+
+    def test_optional_extras_links_are_valid(self) -> None:
+        result = self.check(self.with_extras())
+        self.assertTrue(result.ok, [str(issue) for issue in result.issues])
+
+    def test_an_entry_without_extras_stays_valid(self) -> None:
+        self.assertTrue(self.check(self.with_assets()).ok)
+
+    def test_extras_must_be_the_release_own_canonical_files(self) -> None:
+        for field, name in (("archive", "book-extras.zip"), ("checksums_url", "EXTRAS-SHA256SUMS.txt")):
+            for change in ("other-tag", "other-name", "other-host"):
+                with self.subTest(field=field, change=change):
+                    document = self.with_extras()
+                    extras = document["books"][0]["latest_release"]["extras"]
+                    if change == "other-tag":
+                        extras[field] = extras[field].replace("v1.0.0", "v0.9.0")
+                    elif change == "other-name":
+                        extras[field] = extras[field].replace(name, "other.zip")
+                    else:
+                        extras[field] = "https://example.org/" + name
+                    result = self.check(document)
+                    self.assertTrue(
+                        any("release's own" in issue.message for issue in result.issues)
+                    )
+
+    def test_extras_require_both_urls(self) -> None:
+        document = self.with_extras()
+        del document["books"][0]["latest_release"]["extras"]["checksums_url"]
+        self.assertFalse(self.check(document).ok)
+
     def test_unknown_download_role_and_empty_assets_are_rejected(self) -> None:
         document = self.with_assets()
         document["books"][0]["latest_release"]["assets"]["epub"] = "https://example.org/book.epub"

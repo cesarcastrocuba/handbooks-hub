@@ -75,6 +75,13 @@ def card(book: dict[str, Any]) -> str:
     assets = release.get('assets', {})
     editions = ''.join(link(assets[role], label, css='fmt', accessible=f'Download {book["title"]} as {label}')
                        for role, label in FORMATS.items() if role in assets)
+    extras = release.get('extras')
+    if extras:
+        editions += link(extras['archive'], 'Extras', css='fmt',
+                         accessible=f'Download {book["title"]} extras')
+        values['extras_checksums'] = link(extras['checksums_url'], 'Extras checksums')
+    else:
+        values['extras_checksums'] = ''
     values['formats'] = template('formats.html',editions=editions) if editions else ''
     return template('card.html', **values)
 

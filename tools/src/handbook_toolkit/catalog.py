@@ -16,6 +16,11 @@ ASSET_FILES = {
     "source": "book-source.zip",
 }
 
+# Optional book-owned extras pair. It stays outside ``assets``: those roles are the fixed
+# publication payloads, and a book may publish extras only as this pair.
+EXTRAS_ARCHIVE = "book-extras.zip"
+EXTRAS_CHECKSUMS = "EXTRAS-SHA256SUMS.txt"
+
 from .validation import (
     CheckResult,
     DocumentError,
@@ -115,6 +120,21 @@ def validate_catalog(path: Path, schema: dict[str, Any]) -> CheckResult:
                         Issue(
                             f"{location}.latest_release.assets.{role}",
                             f"asset URL must be the release's own {ASSET_FILES[role]}",
+                        )
+                    )
+
+        extras = release.get("extras")
+        if extras is not None:
+            base = release["manifest_url"].rsplit("/", 1)[0] + "/"
+            for field, name in (
+                ("archive", EXTRAS_ARCHIVE),
+                ("checksums_url", EXTRAS_CHECKSUMS),
+            ):
+                if extras[field] != base + name:
+                    issues.append(
+                        Issue(
+                            f"{location}.latest_release.extras.{field}",
+                            f"extras URL must be the release's own {name}",
                         )
                     )
 

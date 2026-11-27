@@ -5,6 +5,14 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+### Added
+
+- The catalog and the portal can link a release's optional book-owned extras pair
+  (`book-extras.zip` and `EXTRAS-SHA256SUMS.txt`). `latest_release.extras` is optional and
+  backward-compatible; `update_catalog` writes it when both assets are uploaded, online
+  verification checks the pair, and each portal card shows an `Extras` button and an
+  `Extras checksums` link when the field is present (change `0089`, issue 142).
+
 ### Fixed
 
 - Word no longer splits a word inside a table cell. `table-layout.lua` floors each column from its

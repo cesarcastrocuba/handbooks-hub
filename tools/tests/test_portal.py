@@ -26,6 +26,17 @@ def document_with_assets():
     return document
 
 
+def document_with_extras():
+    document=document_with_assets()
+    release=document['books'][0]['latest_release']
+    base=release['manifest_url'].rsplit('/',1)[0]+'/'
+    release['extras']={
+        'archive':base+'book-extras.zip',
+        'checksums_url':base+'EXTRAS-SHA256SUMS.txt',
+    }
+    return document
+
+
 class PortalTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory()
@@ -105,12 +116,22 @@ class PortalTests(unittest.TestCase):
         self.assertFalse(self.output.exists())
         self.assertFalse(list(self.root.glob('.portal-*')))
 
+    def test_optional_extras_link_and_checksums(self):
+        document = document_with_extras()
+        page = self.build(document)
+        extras = document['books'][0]['latest_release']['extras']
+        formats = {n.text(): n.attrs.get('href') for n in page.find('a') if n.attrs.get('class') == 'fmt'}
+        self.assertEqual(formats['Extras'], extras['archive'])
+        assets = {n.text(): n.attrs.get('href') for n in page.find('div', **{'class': 'assets'})[0].find('a')}
+        self.assertEqual(assets['Extras checksums'], extras['checksums_url'])
+
     def test_only_declared_editions_have_buttons(self):
         document=document_with_assets();del document['books'][0]['latest_release']['assets']['markdown']
         page=self.build(document)
         formats=[n for n in page.find('a') if n.attrs.get('class')=='fmt']
         self.assertEqual({n.text() for n in formats},set(FORMATS.values())-{'Markdown'})
         self.assertEqual({n.attrs['href'] for n in formats},set(document['books'][0]['latest_release']['assets'].values()))
+        self.assertNotIn('Extras', {n.text() for n in page.find('a')})
 
     def with_authors(self, authors, second_authors=None):
         document = document_with_assets()
@@ -233,7 +254,7 @@ class QuartoPortalTests(unittest.TestCase):
     def setUpClass(cls):
         cls.temp=tempfile.TemporaryDirectory();cls.addClassCleanup(cls.temp.cleanup)
         cls.root=Path(cls.temp.name);cls.catalog=cls.root/'catalog.json'
-        cls.document=document_with_assets()
+        cls.document=document_with_extras()
         cls.document['books'][0]['title']='<script>bad()</script> Café\n```\nTitle'
         support.write_json(cls.catalog,cls.document)
         cls.site=build_portal(cls.catalog,cls.root/'site',engine='quarto').parent
@@ -245,6 +266,10 @@ class QuartoPortalTests(unittest.TestCase):
         self.assertFalse(article.find('script'))
         links={node.attrs.get('href') for node in article.find('a')}
         self.assertTrue(set(self.document['books'][0]['latest_release']['assets'].values()) <= links)
+        extras=self.document['books'][0]['latest_release']['extras']
+        self.assertTrue({extras['archive'], extras['checksums_url']} <= links)
+        self.assertIn('Extras', article.text())
+        self.assertIn('Extras checksums', article.text())
         self.assertEqual(len(page.find('input',id='search')),1)
         self.assertTrue(page.find('a',id='quarto-skip-link'))
         self.assertTrue(page.find('link',rel='canonical'))
