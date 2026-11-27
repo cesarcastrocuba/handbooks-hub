@@ -10,7 +10,8 @@ An open library of practical technical handbooks. Read online, download an editi
 next one.
 
 [Browse the library](#library){.btn .btn-primary}
-[Create your handbook](#create){.btn .btn-outline-primary}
+[Create your handbook](create.html){.btn .btn-outline-primary}
+
 
 ::: {#library}
 ## Explore the library
@@ -19,6 +20,16 @@ next one.
 
 {{planned}}
 :::
+
+```{=html}
+<h2 class="home-features-title">What the platform does</h2>
+<ul class="feature-grid home-features" aria-label="What the platform does">
+<li class="feature"><span class="feature-mark" aria-hidden="true">{{icon:editions}}</span><span class="feature-title">One manuscript, five editions</span><span class="feature-text">Reading site, PDF, Word, Markdown and sources from the same commit.</span></li>
+<li class="feature"><span class="feature-mark" aria-hidden="true">{{icon:check}}</span><span class="feature-title">Checked on every push</span><span class="feature-text">Structure, references and the editorial profile, before anything is built.</span></li>
+<li class="feature"><span class="feature-mark" aria-hidden="true">{{icon:shield}}</span><span class="feature-title">Verified releases</span><span class="feature-text">Manifest and SHA-256 checksums for every file, reviewed by a person.</span></li>
+<li class="feature"><span class="feature-mark" aria-hidden="true">{{icon:open}}</span><span class="feature-title">Free and open</span><span class="feature-text">Your repository, your releases. CC BY-SA 4.0 content, MIT code.</span></li>
+</ul>
+```
 
 ```{=html}
 <nav class="guide-grid" aria-label="Platform guides">

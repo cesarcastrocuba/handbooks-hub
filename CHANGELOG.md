@@ -5,6 +5,25 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+### Added
+
+- GitHub stars: a "★ Star" link with the star count in the portal header, on each catalog card and
+  in each book's reading-site navbar. The count is read at build time (`HANDBOOK_STARS=fetch` in
+  `portal-pages`, `HANDBOOK_STAR_COUNTS` from a book's release workflow) and written into the page;
+  any failure shows the link without a number. `portal-pages` also rebuilds daily (issue 141,
+  change `0085`, `HUB-DEC-046`).
+- A book cover in the library opens the book's reading site (change `0085`).
+
+### Changed
+
+- Button rows on every portal page keep a gap at every width and take a full row each on a phone;
+  before, "Browse the library" and "Create your handbook" touched on a phone (change `0085`).
+- The guide pages (How the platform works, Create your handbook, Publishing and withdrawal,
+  Contribute) show the editions, features, ownership and steps as cards with icons, and the home
+  page lists what the platform does (change `0085`).
+- The PDF body size comes from the `type.body.print_size_pt` token through the generated
+  `hb-body-size` constant, and a conformance test checks the Quarto show partial (issue 142).
+
 ## [0.16.0] - 2026-11-26
 
 Toolkit minor release prepared by change `0084`. It carries change `0083` (PR 140): one typeface,

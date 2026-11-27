@@ -60,6 +60,21 @@ Operations distinguish between two verification gates:
      six assets for `1.0` (published before toolkit `0.6.0`) and seven for `1.1`, which adds
      `book.md`.
 
+### GitHub star counts
+
+The portal header, each catalog card and each book's reading-site navbar link to the GitHub
+repository with its star count (issue 141, change `0085`). The count is read at build time and
+written into the page, so a reader's browser makes no request to `api.github.com`:
+
+- `portal-pages` sets `HANDBOOK_STARS=fetch` with its read-only `GITHUB_TOKEN` and reads the count
+  of the hub and of each listed book. It also runs daily (`schedule`) so the counts stay current
+  between catalog changes.
+- A book's release workflow reads its own count with `gh api` before the build and passes it as
+  `HANDBOOK_STAR_COUNTS`; the build step never holds a token. The count refreshes with each
+  release.
+- Any failure (offline, rate limit, odd value) shows the link without a number; it never fails a
+  build. Local builds and tests set neither variable and stay offline and byte-stable.
+
 ### Check after a deployment
 
 A deployment that succeeds can still serve pages without their stylesheets: on 2026-11-14 the portal

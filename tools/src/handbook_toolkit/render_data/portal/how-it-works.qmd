@@ -1,19 +1,52 @@
 ---
 title: How the platform works
+subtitle: "One manuscript · every edition · verified"
 ---
 
-Every handbook lives in its own repository and is built by the same pinned toolkit. The hub lists
-a book only after its release has been verified and approved.
+```{=html}
+<p class="guide-lead">You write chapters in Markdown in your own repository. One pinned toolkit checks them on every push, builds every edition from the same source and verifies each published file. A person approves every release and every listing.</p>
+<p class="actions"><a class="btn btn-primary" href="create.html">Create your handbook</a><a class="btn btn-outline-primary" href="index.html#library">See a published handbook</a></p>
 
-| Part | Responsibility |
-| --- | --- |
-| Book repository | Owns the manuscript, its reviews and its releases. Nothing is copied into the hub. |
-| Toolkit | One versioned tool validates the manuscript and builds every edition the same way for every book. |
-| Release | Built once from an approved commit: HTML, PDF, DOCX, Markdown and sources, with a manifest and checksums. |
-| Catalog and portal | The catalog records approved releases. This site links to the exact published files. |
+<p class="section-kicker">One manuscript, every edition</p>
+<h2>Write once. Readers choose the format.</h2>
+<ul class="edition-strip" aria-label="Editions built from one manuscript">
+<li class="edition"><span class="edition-mark" aria-hidden="true">WEB</span><span class="edition-title">Reading site</span><span class="edition-text">Search, light and dark themes, linked cross-references, on any device.</span></li>
+<li class="edition"><span class="edition-mark" aria-hidden="true">PDF</span><span class="edition-title">Print PDF</span><span class="edition-text">Numbered figures and tables, bookmarks, lists of figures and tables.</span></li>
+<li class="edition"><span class="edition-mark" aria-hidden="true">DOC</span><span class="edition-title">Word</span><span class="edition-text">Contents and lists with page numbers, fonts embedded.</span></li>
+<li class="edition"><span class="edition-mark" aria-hidden="true">MD</span><span class="edition-title">Markdown</span><span class="edition-text">The whole book in one file, ready for AI tools and <a href="llms.txt">llms.txt</a>.</span></li>
+<li class="edition"><span class="edition-mark" aria-hidden="true">SRC</span><span class="edition-title">Sources</span><span class="edition-text">The exact manuscript of the release, with a manifest and checksums.</span></li>
+</ul>
 
-1. **Write.** Authors write chapters in Quarto Markdown in the book repository.
-2. **Check.** Automatic checks validate structure, references and the editorial profile.
-3. **Release.** The book publishes a verified release and its reading site.
-4. **Review.** A reviewer who did not write the change verifies the published bytes.
-5. **List.** The hub owner approves the catalog change and this library updates itself.
+<p class="section-kicker">What the platform does for you</p>
+<h2>The tedious parts are automatic.</h2>
+<ul class="feature-grid">
+<li class="feature"><span class="feature-mark" aria-hidden="true">{{icon:check}}</span><span class="feature-title">Checks on every push</span><span class="feature-text">Structure, reading order, labels, cross-references, images and the editorial profile are validated before anything is built.</span></li>
+<li class="feature"><span class="feature-mark" aria-hidden="true">{{icon:hash}}</span><span class="feature-title">Numbering and references</span><span class="feature-text">Figures, tables and cross-references are numbered the same way in the web, PDF and Word editions, and links work in each.</span></li>
+<li class="feature"><span class="feature-mark" aria-hidden="true">{{icon:layout}}</span><span class="feature-title">Print-ready layout</span><span class="feature-text">Headings stay with their text, figures stay near the paragraph that cites them, and tables stay with their caption.</span></li>
+<li class="feature"><span class="feature-mark" aria-hidden="true">{{icon:shield}}</span><span class="feature-title">Verified releases</span><span class="feature-text">Each release carries a manifest and SHA-256 checksums. The deployed reading site is checked from the outside after every deployment.</span></li>
+<li class="feature"><span class="feature-mark" aria-hidden="true">{{icon:pin}}</span><span class="feature-title">One pinned toolkit</span><span class="feature-text">Every book names an exact toolkit version, so the same commit is built the same way today and next year.</span></li>
+<li class="feature"><span class="feature-mark" aria-hidden="true">{{icon:design}}</span><span class="feature-title">One design</span><span class="feature-text">Shared typography, colours and components across every book and this library, in light and dark.</span></li>
+<li class="feature"><span class="feature-mark" aria-hidden="true">{{icon:people}}</span><span class="feature-title">People decide</span><span class="feature-text">A reviewer who did not write a change checks it, and the owner approves every release and listing.</span></li>
+<li class="feature"><span class="feature-mark" aria-hidden="true">{{icon:open}}</span><span class="feature-title">Free and open</span><span class="feature-text">Public repositories, release pages and static sites. Content under CC BY-SA 4.0, code under MIT.</span></li>
+</ul>
+
+<p class="section-kicker">Who owns what</p>
+<h2>Independent books, shared standards.</h2>
+<ul class="owner-grid">
+<li class="owner"><span class="owner-title">Your book repository</span><span class="owner-text">Owns the manuscript, its reviews and its releases. Nothing is copied into the hub.</span></li>
+<li class="owner"><span class="owner-title">The toolkit</span><span class="owner-text">One versioned tool that validates a manuscript and builds every edition the same way for every book.</span></li>
+<li class="owner"><span class="owner-title">The release</span><span class="owner-text">Built once from an approved commit: reading site, PDF, Word, Markdown and sources, with a manifest and checksums.</span></li>
+<li class="owner"><span class="owner-title">The catalog and this library</span><span class="owner-text">The catalog records approved releases only. This site is generated from it and links to the exact published files.</span></li>
+</ul>
+
+<p class="section-kicker">From manuscript to library</p>
+<h2>Five steps, two of them by people.</h2>
+<ol class="pipeline">
+<li><span class="step-title">Write</span><span class="step-text">Chapters in Quarto Markdown in the book repository.</span><span class="step-meta">Author</span></li>
+<li><span class="step-title">Check</span><span class="step-text">Automatic checks run on every push and pull request.</span><span class="step-meta">Automatic</span></li>
+<li><span class="step-title">Release</span><span class="step-text">One workflow builds, verifies and publishes every edition and the reading site.</span><span class="step-meta">Automatic, on approval</span></li>
+<li><span class="step-title">Review</span><span class="step-text">Someone who did not write the change verifies the published files.</span><span class="step-meta">Reviewer</span></li>
+<li><span class="step-title">List</span><span class="step-text">The owner approves the catalog change and this library rebuilds itself.</span><span class="step-meta">Owner</span></li>
+</ol>
+<p class="actions"><a class="btn btn-primary" href="create.html">Start your handbook</a><a class="btn btn-outline-primary" href="publishing.html">How publishing works</a></p>
+```

@@ -9,7 +9,7 @@ import tempfile
 from typing import Any
 import yaml
 
-from . import design
+from . import design, stars
 from .artifacts import omit_sitemap_times
 from .portal_catalog import read_catalog
 from .portal_design import design_page
@@ -49,6 +49,14 @@ def stage_theme(workspace: Path) -> dict[str, Any]:
             'include-after-body':[{'text':resource('filter.html').replace('{{script}}',resource('filter.js'))}]}
 
 
+def hub_star_item() -> dict[str, str]:
+    """Navbar link to star the hub repository, with the count baked in at build time."""
+    from .portal import HUB_URL
+    repository = stars.github_repository(HUB_URL)
+    count = stars.star_count(repository)
+    return {'text': stars.navbar_text(count), 'href': HUB_URL}
+
+
 def stage_site(workspace: Path, books: list[dict[str, Any]], *, design_only: bool=False) -> None:
     from .portal import HUB_URL, llms_text
     workspace.mkdir(parents=True,exist_ok=True)
@@ -64,7 +72,7 @@ def stage_site(workspace: Path, books: list[dict[str, Any]], *, design_only: boo
         (workspace/'design.qmd').write_text(design_page(),encoding='utf-8')
         navigation=[{'text':'Library','href':'index.qmd'},
                     {'text':'Guides','menu':[{'href':name+'.qmd'} for name in PAGES]},
-                    {'text':'Design','href':'design.qmd'}, {'text':'GitHub','href':HUB_URL}]
+                    {'text':'Design','href':'design.qmd'}, hub_star_item()]
     (workspace/'llms.txt').write_text(llms_text(books),encoding='utf-8')
     website={'title':'Handbook Hub','description':'Independent technical handbooks published as verified releases.',
              'site-url':SITE_URL,'favicon':f'{RENDER_DIRECTORY}/html/favicon.svg','open-graph':True,

@@ -103,6 +103,17 @@ jobs:
           export PATH="$RUNNER_TEMP/toolkit-venv/bin:$PATH"
           make check
 
+      # The reading site's navbar shows the repository's GitHub stars (hub issue 141). The count is
+      # read here, so the build step never holds a token; any failure leaves the link without one.
+      - name: Read the repository star count
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count="$(gh api "repos/$GITHUB_REPOSITORY" --jq .stargazers_count 2>/dev/null || true)"
+          case "$count" in ''|*[!0-9]*) echo "No star count; the link is shown without one." ;;
+            *) printf 'HANDBOOK_STAR_COUNTS={"%s": %s}\n' "$GITHUB_REPOSITORY" "$count" >> "$GITHUB_ENV" ;;
+          esac
+
       - name: Build the release once
         env:
           RELEASE_DIR: ${{ runner.temp }}/release

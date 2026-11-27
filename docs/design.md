@@ -114,14 +114,14 @@ Spacing uses a 4 px unit with 56 px section rhythm. Controls use a 6 px radius a
 
 The brand typeface is **Inter** (4.1, SIL OFL 1.1) for text and headings in every medium, and
 **JetBrains Mono** for code (`HUB-DEC-045`). The PDF sets body text at 9.5 pt, since Inter runs
-larger than Source Sans at the same size; the Word body size is unchanged. The portal and the book self-host subsetted WOFF2 files:
-Inter keeps its family name, the JetBrains Mono subset is named `Handbook Mono`. The PDF embeds
-subsets of the upstream static TTFs. The DOCX names Inter and JetBrains Mono and embeds the
-upstream TTFs unmodified as obfuscated font parts, so Word shows the typeface without an install.
-Neither family declares a Reserved Font Name and both allow installable embedding. The files ship
-in the toolkit and are listed in `NOTICE.md`; no font is fetched from a third-party host. The web
-subsets keep the OFL text and URL in their name table and are published together with their
-`OFL.txt` files.
+larger than Source Sans at the same size; the Word body size is unchanged. The portal and the book
+self-host subsetted WOFF2 files: Inter keeps its family name, the JetBrains Mono subset is named
+`Handbook Mono`. The PDF embeds subsets of the upstream static TTFs. The DOCX names Inter and
+JetBrains Mono and embeds the upstream TTFs unmodified as obfuscated font parts, so Word shows the
+typeface without an install. Neither family declares a Reserved Font Name and both allow
+installable embedding. The files ship in the toolkit and are listed in `NOTICE.md`; no font is
+fetched from a third-party host. The web subsets keep the OFL text and URL in their name table and
+are published together with their `OFL.txt` files.
 
 The web designs target a 60 to 75 character measure. Quarto renders the book content column and the
 tools page applies `--measure`; the portal keeps its responsive card grid.

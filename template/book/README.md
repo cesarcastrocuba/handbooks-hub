@@ -35,6 +35,9 @@ and never imports a parent hub checkout.
 - `repo-url` and `repo-actions: [issue]` add **Report an issue** to every page. The navbar links to
   the manuscript source and to the repository's releases page, so no edit link points at a generated
   file. The Initialize book workflow replaces the `OWNER/REPOSITORY` placeholder.
+- The navbar also links to the repository with its GitHub star count. `release.yml` reads the count
+  before the build, so it is part of the released pages and readers' browsers make no request to
+  GitHub; without a count the link is shown alone.
 - Two issue forms ask for the page or section, the problem and the evidence, so a report is
   actionable without knowing the internal review process.
 

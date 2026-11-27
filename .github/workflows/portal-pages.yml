@@ -12,6 +12,9 @@ on:
       - main
     paths:
       - "catalog/**"
+  # Daily rebuild so the GitHub star counts baked into the pages stay current (issue 141).
+  schedule:
+    - cron: "23 4 * * *"
 
 permissions:
   contents: read
@@ -51,18 +54,20 @@ jobs:
           # Authenticates the read-only GitHub API calls of the release verification, which
           # otherwise share the anonymous rate limit of the runner's address.
           GITHUB_TOKEN: ${{ github.token }}
+          # Read the star counts of the hub and of each listed book once, at build time.
+          HANDBOOK_STARS: fetch
         run: |
           python -m handbook_toolkit.catalog_verification catalog/catalog.json
           python -m handbook_toolkit.portal catalog/catalog.json --output _site --engine quarto
       - name: Configure Pages
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.deploy)
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule' || inputs.deploy)
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - name: Upload the exact generated site
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: _site
   deploy:
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.deploy)
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule' || inputs.deploy)
     needs: build
     runs-on: ubuntu-24.04
     permissions:
@@ -80,7 +85,7 @@ jobs:
   # A deployment can succeed and still serve pages whose stylesheets answer 404 (change 0042).
   # The site is therefore checked from the outside, as a reader's browser loads it.
   verify:
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.deploy)
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule' || inputs.deploy)
     needs: deploy
     runs-on: ubuntu-24.04
     permissions:

@@ -56,3 +56,51 @@ input, button, select { max-width: 100%; min-width: 0; min-height: {{control}}; 
   font-weight: 700;
   max-width: var(--web-hero-measure-ch);
 }
+
+/* Action rows: a paragraph of buttons (Markdown `[text](url){.btn}`) or an `.actions` group keeps a
+   gap between buttons at every width, and on a phone each button takes a full row. */
+#quarto-document-content p:has(> .btn), .actions { display: flex; flex-wrap: wrap; align-items: center; gap: {{action-gap}}; margin-block: {{toolbar-space}}; }
+#quarto-document-content p:has(> .btn) > .btn, .actions > .btn { margin: 0; display: inline-flex; align-items: center; justify-content: center; min-height: {{action-height}}; }
+
+/* The cover opens the reading site; the visible "Read handbook" link stays the keyboard target. */
+.cover-link { display: block; align-self: start; color: inherit; text-decoration: none; border-radius: var(--cover-spine-px) var(--cover-edge-px) var(--cover-edge-px) var(--cover-spine-px); }
+.cover-link:hover .cover { box-shadow: 0 0 0 {{rule-strong}} var(--accent); }
+.cover-link .cover { cursor: pointer; }
+.star { display: inline-flex; align-items: center; gap: {{star-gap}}; }
+.star-count { display: inline-block; text-decoration: none; font-family: var(--font-mono); font-size: var(--web-tag-px); padding: 0 {{tag-inset-x}}; border: {{rule}} solid var(--border); border-radius: var(--tag-px); color: var(--text); background: var(--canvas); }
+
+/* Guide pages: lead, feature grid, pipeline, ownership cards, editions strip, file tree. */
+.guide-lead { font-size: {{lead}}; color: var(--muted); max-width: var(--web-hero-measure-ch); margin-block: 0 {{rhythm}}; }
+.section-kicker { font-size: var(--web-format-px); text-transform: uppercase; letter-spacing: {{eyebrow-tracking}}; font-weight: 700; color: var(--accent); margin: {{guide-space}} 0 {{inset}}; }
+.feature-grid, .owner-grid, .edition-strip { display: grid; gap: {{link-gap}}; margin-block: {{toolbar-space}} {{guide-space}}; padding: 0; list-style: none; }
+.feature-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, {{feature-min}}), 1fr)); }
+.owner-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, {{owner-min}}), 1fr)); }
+.edition-strip { grid-template-columns: repeat(auto-fit, minmax(min(100%, {{edition-min}}), 1fr)); }
+.feature, .owner, .edition { margin: 0; padding: {{card-padding}}; background: var(--surface); border: {{rule}} solid var(--border); border-radius: var(--card-radius); }
+.owner { border-inline-start: {{rule-strong}} solid var(--accent); }
+.feature-mark, .edition-mark { display: inline-grid; place-items: center; width: {{mark}}; height: {{mark}}; border-radius: var(--control-radius); background: var(--accent-solid); color: var(--on-solid); font-weight: 700; font-size: var(--web-small-px); margin-block-end: {{inset}}; }
+.feature-title, .owner-title, .edition-title { display: block; font-family: var(--font-display); font-weight: 700; color: var(--heading); font-size: var(--web-card-title-px); line-height: 1.3; margin-block-end: {{chip-gap}}; }
+.feature-text, .owner-text, .edition-text { display: block; color: var(--muted); font-size: var(--web-button-px); }
+.pipeline { list-style: none; margin: {{toolbar-space}} 0 {{guide-space}}; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, {{step-min}}), 1fr)); gap: {{link-gap}}; counter-reset: step; }
+.pipeline > li { counter-increment: step; position: relative; margin: 0; padding: {{card-padding}}; background: var(--surface); border: {{rule}} solid var(--border); border-radius: var(--card-radius); }
+.pipeline > li::before { content: counter(step); display: inline-grid; place-items: center; width: {{mark}}; height: {{mark}}; border-radius: 50%; background: var(--accent-solid); color: var(--on-solid); font-weight: 700; font-size: var(--web-small-px); margin-block-end: {{inset}}; }
+.step-title { display: block; font-family: var(--font-display); font-weight: 700; color: var(--heading); font-size: var(--web-card-title-px); margin-block-end: {{chip-gap}}; }
+.step-text { display: block; color: var(--muted); font-size: var(--web-button-px); }
+.step-meta { display: block; margin-block-start: {{inset}}; font-size: var(--web-format-px); color: var(--accent); font-weight: 700; }
+.file-tree { font-family: var(--font-mono); font-size: var(--web-format-px); background: var(--surface); border: {{rule}} solid var(--border); border-radius: var(--card-radius); padding: {{card-padding}}; margin-block: {{toolbar-space}} {{guide-space}}; overflow-x: auto; display: grid; grid-template-columns: max-content 1fr; gap: {{chip-gap}} {{toolbar-space}}; }
+.file-tree dt { color: var(--heading); font-weight: 700; }
+.file-tree dd { margin: 0; color: var(--muted); font-family: var(--font-sans); }
+.guide-note { padding: {{card-padding}}; border-radius: var(--card-radius); background: var(--surface); border: {{rule}} solid var(--border); border-inline-start: {{rule-strong}} solid var(--accent); margin-block: {{guide-space}}; }
+@media (max-width: {{phone}}) {
+  #quarto-document-content p:has(> .btn) > .btn, .actions > .btn { flex: 1 1 100%; }
+  .pipeline, .edition-strip, .feature-grid, .owner-grid { grid-template-columns: minmax(0,1fr); }
+  .feature, .edition, .pipeline > li { display: grid; grid-template-columns: auto minmax(0,1fr); column-gap: {{rhythm}}; align-items: start; }
+  .feature-mark, .edition-mark { grid-row: span 3; margin: 0; }
+  .pipeline > li::before { grid-row: span 3; margin: 0; }
+  .feature > :not(.feature-mark), .edition > :not(.edition-mark), .pipeline > li > * { grid-column: 2; }
+  .file-tree { grid-template-columns: 1fr; }
+  .file-tree dd { margin-block-end: {{inset}}; }
+}
+.feature-mark .icon, .star .icon { display: block; }
+.star .icon { width: {{star-icon}}; height: {{star-icon}}; }
+.home-features-title { margin-block-start: {{guide-space}}; }

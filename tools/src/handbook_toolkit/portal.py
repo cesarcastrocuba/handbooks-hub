@@ -63,7 +63,7 @@ button{cursor:pointer}button[aria-pressed=true]{background:var(--accent-solid);c
 .results{color:var(--muted);font-size:.9rem;margin:.8rem 0 1.2rem}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,33rem),1fr));gap:1.15rem}
 .book{display:grid;grid-template-columns:8rem 1fr;gap:1.1rem;background:var(--surface);border:1px solid var(--line);border-bottom:4px solid var(--shelf);border-radius:10px;padding:1.05rem}
-.cover{--tone:var(--accent-solid);aspect-ratio:3/4;align-self:start;display:flex;flex-direction:column;justify-content:space-between;padding:.7rem .65rem .65rem .95rem;border-radius:3px 7px 7px 3px;color:var(--on-solid);
+.cover-link{display:block;align-self:start;color:inherit;text-decoration:none}.cover{--tone:var(--accent-solid);aspect-ratio:3/4;align-self:start;display:flex;flex-direction:column;justify-content:space-between;padding:.7rem .65rem .65rem .95rem;border-radius:3px 7px 7px 3px;color:var(--on-solid);
 background:linear-gradient(90deg,#0004 0 .45rem,#fff2 .45rem .55rem,#0000 .55rem),linear-gradient(155deg,#fff2,#0000 55%),var(--tone);box-shadow:3px 4px 10px #0003}
 .cover-kicker{font-size:.56rem;text-transform:uppercase;letter-spacing:.14em;opacity:.85}
 .cover-title{font-family:var(--font-display);font-weight:700;font-size:.82rem;line-height:1.25;overflow-wrap:anywhere}
@@ -195,7 +195,7 @@ def _card(book: dict) -> str:
         else ''
     )
     return f'''<article class="book" data-title="{escape(book['title'], quote=True)}" data-date="{release['published_at']}" data-categories="{' '.join(book['categories'])}" data-authors="{authors_data}">
-<div class="cover" data-tone="{book['categories'][0]}" aria-hidden="true"><span class="cover-kicker">{escape(book['categories'][0])}</span><span class="cover-title">{title}</span>{cover_author}<span class="cover-foot">Handbooks Hub · v{release['version']}</span></div>
+<a class="cover-link" href="{escape(book['reading_url'], quote=True)}" tabindex="-1" aria-hidden="true"><div class="cover" data-tone="{book['categories'][0]}"><span class="cover-kicker">{escape(book['categories'][0])}</span><span class="cover-title">{title}</span>{cover_author}<span class="cover-foot">Handbooks Hub · v{release['version']}</span></div></a>
 <div class="details"><div class="tags">{tags}</div>{archived}<h3>{title}</h3>{authors_line}<p class="summary">{escape(book['summary'])}</p>
 <div class="version">v{release['version']} · <time datetime="{release['published_at']}">{release['published_at']}</time></div>
 <div class="links"><a class="read" href="{escape(book['reading_url'], quote=True)}">Read handbook →</a>{source}<a href="{escape(release['url'], quote=True)}">Release downloads</a></div>{formats}
