@@ -11,8 +11,9 @@ other contribution; nothing upgrades automatically.
    the count to the build in `HANDBOOK_STAR_COUNTS`, so the reading-site navbar shows "★ Star · N".
    Without the step the link is shown alone.
 3. Every edition uses Inter and JetBrains Mono (toolkit 0.16.0); the Word edition embeds them, and
-   the PDF body is 9.5 pt. Figures stay where they are cited and callouts may split across pages in
-   PDF and Word (toolkit 0.15.0). Page numbers move; the Contents and the indexes are rebuilt.
+   the PDF body is 9.5 pt. In PDF and Word, figures stay where they are cited, and a callout box is
+   never split across pages (toolkit 0.15.0). Page numbers move; the Contents and the indexes are
+   rebuilt.
 4. Rebuild once and open the DOCX in desktop Word before the next tag.
 
 ## Example: toolkit 0.14.1 to 0.14.2
