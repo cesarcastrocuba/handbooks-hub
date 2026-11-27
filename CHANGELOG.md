@@ -10,7 +10,7 @@ semantic versioning once the toolkit is published.
 Toolkit patch release prepared by change `0087`. It carries change `0085` (PR 146): GitHub star
 links with a build-time count, the portal guide pages, button rows that never touch on a phone and
 covers that open the reading site; and change `0086` (PR 147): the 0081 follow-ups (issue 138).
-The PDF and Word editions of the Solutions Architecture Handbook are unchanged (the preview
+The PDF and Word editions of the Solutions Architecture Handbook are content-identical (the preview
 `word/document.xml` is byte-identical to `0.16.0`'s; the PDF has the same text, images and 569
 pages), so no desktop Word check is needed for this toolkit release. The Owner approved the tag on
 2026-11-27.
