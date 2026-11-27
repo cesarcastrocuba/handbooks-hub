@@ -84,7 +84,12 @@ class RenderResourceTests(unittest.TestCase):
                 "|---|---|---|---|---|\n"
                 "| configuration | PAYMENT_PENDING configuration here | Penetration evidence text | "
                 "Technique evidence | scanning notes |\n\n"
-                ": Appendix F shaped\n"
+                ": Appendix F shaped\n\n"
+                "| Component | Owner | Evidence | Notes |\n"
+                "|---|---|---|---|\n"
+                "| PAYMENT_PENDING | Platform team evidence | A long evidence sentence for this row | "
+                "A long note sentence for this row |\n\n"
+                ": Four columns\n"
             )
             result = subprocess.check_output(
                 [
@@ -105,6 +110,9 @@ class RenderResourceTests(unittest.TestCase):
             self.assertGreaterEqual(widths[0][1], 15)
             # Inter Bold 'configuration' is 6.6084 em: ceil((6.6084 * 10.5 + 8) / 440 * 100) = 18.
             self.assertGreaterEqual(widths[1][0], 18)
+            # Inter Bold 'PAYMENT_PENDING' is 10.1035 em: ceil(...)=26, above the 20 % cap.
+            # The uncapped floors fit the page, so the cap must not apply.
+            self.assertGreaterEqual(widths[2][0], 26)
 
     @unittest.skipUnless(shutil.which("quarto"), "real Quarto boundary requires Quarto")
     def test_table_filter_preserves_labels_and_handles_identical_chapters(self):

@@ -223,9 +223,10 @@ Owner decisions of 2026-11-22 and 2026-11-23 apply to the PDF and to Word:
 longest unbreakable piece measured in Inter Bold at the Word table size (10.5 pt), plus 6 pt of cell
 margins and 2 pt of safety against a conservative 440 pt usable width. Word breaks after `-`, `/`
 and an en dash, so those characters stay with the left piece. A deficit is taken from every column
-with room above its own floor, largest room first; explicit `tbl-colwidths` stay untouched.
-`tools/scripts/table_font_widths.py --check` keeps the embedded widths equal to Inter Bold, and the
-reference `Normal` style stays at `w:sz=21`.
+with room above its own floor, largest room first. The 35/28/20 % caps apply only when the real
+floors together exceed 100, so a long token is not split when the table has room. Explicit
+`tbl-colwidths` stay untouched. `tools/scripts/table_font_widths.py --check` keeps the embedded
+widths equal to Inter Bold, and the reference `Normal` style stays at `w:sz=21`.
 
 ## Native HTML staging
 

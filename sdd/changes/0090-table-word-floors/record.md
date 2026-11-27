@@ -31,10 +31,11 @@ column 1 at about 8 % for 'configuration'.
   `ceil((em * 10.5 + 6 + 2) / 440 * 100)`: 10.5 pt is the Word table size (reference.docx Normal
   `w:sz=21`), 6 pt is the cell margins, 2 pt is safety, and 440 pt is a conservative usable width
   that also covers a table inside a callout box. The named constants sit at the top of the file.
-- The existing caps (35/28/20 %) and the scaling when floors sum above 100 stay. A deficit is
-  taken from every column with room above its own floor, largest room first and repeatedly, so one
-  narrow donor cannot block the move. The total stays 100 and explicit `tbl-colwidths` stay
-  untouched.
+- The 35/28/20 % caps apply only when the real floors together exceed 100; otherwise every
+  column gets its real floor, because the table has room. When the capped or real floors still sum
+  above 100 they are scaled down. A deficit is taken from every column with room above its own
+  floor, largest room first and repeatedly, so one narrow donor cannot block the move. The total
+  stays 100 and explicit `tbl-colwidths` stay untouched.
 
 The existing `[50,50]` expectation is unchanged: both columns contain a single 20-character
 unbreakable piece, their floors are below 50 and the initial equal shares already satisfy them.
@@ -45,7 +46,8 @@ unbreakable piece, their floors are below 50 and the initial equal shares alread
   - `test_table_floors_fit_inter_bold_words` through Quarto Pandoc: a three-column
     `Version | Date | Summary` table with `November 2026` rows keeps column 2 at or above the 15 %
     floor; a five-column Appendix F shape keeps column 1 at or above the 18 % floor for
-    'configuration'. The five-column case also exercises the multi-donor path.
+    'configuration'; a four-column table with 'PAYMENT_PENDING' in column 1 reaches its uncapped
+    26 % floor, above the 20 % cap. The five-column case exercises the multi-donor path.
   - `test_embedded_inter_widths_match_the_font` runs the generator with `--check`.
 - `tools/tests/test_reference_docx.py`: `test_normal_table_text_is_10_5_points` pins Normal to
   `w:sz=21`.

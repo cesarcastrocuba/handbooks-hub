@@ -157,23 +157,33 @@ local function table_widths(tbl)
   percentages[widest] = percentages[widest] + (100 - assigned)
 
   -- A column cannot be narrower than its longest unbreakable piece, measured in
-  -- Inter Bold em, plus the cell margins. Each column has a floor; the deficit is
-  -- taken from all columns that have room above their own floor, largest room
-  -- first and repeatedly, so a single narrow donor cannot block the move.
-  -- The cap keeps a long word from consuming the page.
-  local floors, floor_sum = {}, 0
+  -- Inter Bold em, plus the cell margins. Each column has a real floor; the
+  -- deficit is taken from all columns that have room above their own floor,
+  -- largest room first and repeatedly, so a single narrow donor cannot block the
+  -- move. The cap applies only when the real floors together exceed the page; the
+  -- scaling below then does the work the cap was meant to do.
+  local floors, uncapped_sum = {}, 0
+  local caps = {}
   for i = 1, ncols do
     local target = math.ceil(
       (longest_em[i] * WORD_TEXT_PT + CELL_MARGINS_PT + SAFETY_PT) / USABLE_WIDTH_PT * 100
     )
-    local cap = ncols <= 2 and FLOOR_CAP_TWO or ncols == 3 and FLOOR_CAP_THREE or FLOOR_CAP_WIDE
-    target = math.max(FLOOR_MIN_PERCENT, math.min(cap, target))
-    floors[i] = target
-    floor_sum = floor_sum + target
+    floors[i] = math.max(FLOOR_MIN_PERCENT, target)
+    uncapped_sum = uncapped_sum + floors[i]
+    caps[i] = ncols <= 2 and FLOOR_CAP_TWO
+      or ncols == 3 and FLOOR_CAP_THREE
+      or FLOOR_CAP_WIDE
   end
-  if floor_sum > 100 then
+  if uncapped_sum > 100 then
+    local capped_sum = 0
     for i = 1, ncols do
-      floors[i] = math.max(FLOOR_MIN_SCALED, math.floor(floors[i] * 100 / floor_sum))
+      floors[i] = math.max(FLOOR_MIN_PERCENT, math.min(caps[i], floors[i]))
+      capped_sum = capped_sum + floors[i]
+    end
+    if capped_sum > 100 then
+      for i = 1, ncols do
+        floors[i] = math.max(FLOOR_MIN_SCALED, math.floor(floors[i] * 100 / capped_sum))
+      end
     end
   end
   for i = 1, ncols do

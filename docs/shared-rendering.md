@@ -29,9 +29,11 @@ review. Each column also has a floor from its longest unbreakable piece: whitesp
 Word also breaks after `-`, `/` and an en dash. The piece is measured in Inter Bold advance widths
 at 10.5 pt, plus 6 pt of cell margins and 2 pt of safety, against a conservative 440 pt usable
 width. The generator `tools/scripts/table_font_widths.py` keeps the embedded ASCII 32-126 table
-equal to `Inter-Bold.ttf`; `--check` fails on drift. When floors sum above 100 they are scaled
-down, and a deficit is taken from every column with room above its own floor, largest room first,
-so one narrow donor cannot block the move. Explicit `tbl-colwidths` stay untouched.
+equal to `Inter-Bold.ttf`; `--check` fails on drift. The 35/28/20 % caps apply only when the real
+floors together exceed 100; otherwise every column gets its real floor. When caps or real floors
+still sum above 100 they are scaled down, and a deficit is taken from every column with room above
+its own floor, largest room first, so one narrow donor cannot block the move. Explicit
+`tbl-colwidths` stay untouched.
 
 Tables over 100 columns retain renderer defaults. Merged cells and long unbreakable strings
 require manual inspection. Breakable callouts may split embedded tables across pages. Chapter
