@@ -5,6 +5,15 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-11-27
+
+Template release prepared by change `0088`. Template `1.10.0` pins toolkit `0.16.1`: hub commit
+`0c89c38c9375d39cc9f2747469f545ee5dd7b561`, the merge of PR 149. The standard profile stays
+`1.1.0`. The release workflow reads the repository star count before the build (change `0085`),
+the README describes the star link, and `NOTICE.md` names Inter and JetBrains Mono (change `0083`).
+The upgrade guide gains the example "toolkit 0.14.2 to 0.16.1". The Owner approved the tag
+`template-v1.10.0` on 2026-11-27.
+
 ## [0.16.1] - 2026-11-27
 
 Toolkit patch release prepared by change `0087`. It carries change `0085` (PR 146): GitHub star

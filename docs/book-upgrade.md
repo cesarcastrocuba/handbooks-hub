@@ -3,6 +3,18 @@
 Books pin exact toolkit and profile versions. Upgrades are deliberate changes reviewed like any
 other contribution; nothing upgrades automatically.
 
+## Example: toolkit 0.14.2 to 0.16.1
+
+1. Set `toolkit: "0.16.1"` in `book.yaml` and pin `0c89c38c9375d39cc9f2747469f545ee5dd7b561`
+   (`toolkit-v0.16.1`) in `requirements.txt`. The profile stays `1.1.0`.
+2. Copy the release workflow of template 1.10.0: its "Read the repository star count" step passes
+   the count to the build in `HANDBOOK_STAR_COUNTS`, so the reading-site navbar shows "★ Star · N".
+   Without the step the link is shown alone.
+3. Every edition uses Inter and JetBrains Mono (toolkit 0.16.0); the Word edition embeds them, and
+   the PDF body is 9.5 pt. Figures stay where they are cited and callouts may split across pages in
+   PDF and Word (toolkit 0.15.0). Page numbers move; the Contents and the indexes are rebuilt.
+4. Rebuild once and open the DOCX in desktop Word before the next tag.
+
 ## Example: toolkit 0.14.1 to 0.14.2
 
 1. Set `toolkit: "0.14.2"` in `book.yaml` and pin `47c37e23819abb801b1c8635401d6b64e7e14fad`

@@ -1,4 +1,4 @@
 # Pinned shared toolkit. Direct VCS install from the public hub repository.
 # No parent checkout, no editable install, no copied toolkit code or schemas.
-# Hub main at toolkit-v0.14.2. Replace the full SHA with the reviewed hub commit when this template is copied.
-handbook-toolkit @ git+https://github.com/cesarcastrocuba/handbooks-hub.git@47c37e23819abb801b1c8635401d6b64e7e14fad#subdirectory=tools
+# Hub main at toolkit-v0.16.1. Replace the full SHA with the reviewed hub commit when this template is copied.
+handbook-toolkit @ git+https://github.com/cesarcastrocuba/handbooks-hub.git@0c89c38c9375d39cc9f2747469f545ee5dd7b561#subdirectory=tools
