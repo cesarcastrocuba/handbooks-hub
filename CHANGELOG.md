@@ -5,6 +5,17 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+## [0.16.2] - 2026-11-27
+
+Toolkit patch release prepared by change `0091`. It carries change `0090` (PR 152): Word no longer
+splits a word inside a table cell, which the Owner found in the sample 0.6.0 preview ("Novembe" /
+"r 2026"). Table words split by Word go from 10 to 0 in the sample and from 42 to 0 in the Solutions
+Architecture Handbook (PDF 569 to 566 pages): before, on the 0.16.1 sample preview (run 45975745994)
+and the SA 6.0.0 preview of PR 147; after, on the PR 152 previews (run 46006866263). It also carries
+change `0089` (PR 151): the optional catalog link to a release's extras (issue 142). Table column
+widths change in the reading site, PDF and Word editions, so the Owner's desktop Word check of the
+new DOCX comes before the tag.
+
 ### Added
 
 - The catalog and the portal can link a release's optional book-owned extras pair
@@ -19,7 +30,7 @@ semantic versioning once the toolkit is published.
   longest unbreakable piece measured in Inter Bold at 10.5 pt, plus the cell margins, and takes a
   deficit from every column with room above its own floor instead of one donor. The embedded ASCII
   widths come from `Inter-Bold.ttf` through `tools/scripts/table_font_widths.py`, whose `--check`
-  mode keeps them in step (change `0090`, issue 142).
+  mode keeps them in step (change `0090`, the Owner's Word check of the sample 0.6.0 preview).
 
 ## [1.10.0] - 2026-11-27
 
