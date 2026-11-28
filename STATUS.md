@@ -108,6 +108,10 @@ inside a Word table cell, change `0090`, found by the Owner in the sample previe
 link, issue 142) are tagged; templates 1.10.0 and 1.10.1 are published; the sample's `v0.6.0` and the
 Solutions Architecture Handbook's corrective `v6.0.1` (42 to 0 split table words) are released,
 listed and served after the Owner's desktop Word check and approval.
+On 2026-11-28 the Owner accepted the round ("visto bueno a todo"): the rewritten portal guide pages
+(how it works, create, publishing, contribute) and toolkit 0.16.2 in place of the 0.16.0 first
+planned for the template and the sample (0.16.1 approved on 2026-11-27, 0.16.2 the same day after the
+table word-split fix).
 
 Open follow-ups, none blocking:
 
