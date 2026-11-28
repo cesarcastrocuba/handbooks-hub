@@ -134,13 +134,43 @@ Run in the hub venv (`source …/hubvenv/bin/activate`, `pip install -e tools`),
 
 ## CI evidence
 
-Filled from the pull-request run after the first push:
+Pull request 159, CI run `46166634655`, all jobs pass. Every line below is `OK` with no
+`skipped=` suffix, so the Quarto-gated skip count is 0.
 
-- `publication-build`: the five new files report `Ran N tests … OK (skipped=K)`; every Quarto-gated
-  skip is 0. (Pending.)
-- `checks` and `quickstart`: their Quarto tests still skip by design; the goal is met in
-  `publication-build`, which runs every Quarto-gated file.
-- `edition-preview`: `test_reading_site` including `NavbarStarBrowserTests`.
+`publication-build`, step "Run the remaining Quarto-dependent test files" (job
+`141045510023`):
+
+```
+test_numbering_parity                Ran 16 tests in 25.965s   OK
+test_appendices_document_control     Ran 9 tests in 37.261s    OK
+test_artifact_optimize               Ran 18 tests in 74.968s   OK
+test_glossary_build                  Ran 1 test in 12.089s     OK
+test_portal                          Ran 32 tests in 37.009s   OK
+```
+
+`publication-build` also keeps its existing files green: `test_build` (35 tests, OK),
+`test_render_resources` (6, OK), `test_table_fit` and `test_tables_figures_build` (20, OK) and
+`test_template` (30, OK). `test_portal` runs with Playwright, so
+`test_legacy_engine_does_not_overflow_at_phone_widths` and
+`test_navbar_star_is_a_44_pixel_target_without_overflow_or_shift` executed instead of skipping.
+
+`edition-preview (template)`, step "Verify native CSS motion behavior in Chromium" (job
+`141045509956`):
+
+```
+test_navbar_star_is_a_44_pixel_target_without_overflow ... ok
+Ran 15 tests in 18.030s
+OK
+```
+
+`checks` (1m3s) and `quickstart` (57s) still skip the Quarto-gated tests by design; the goal is
+met in `publication-build`, a required check. No job failed and no test was re-skipped; the known
+`NativeMotionBrowserTests` flake did not reproduce in this run.
+
+Measured browser evidence from the same tests: the portal star is 59.6 × 44 px at 320, 390 and
+1280 px and the portal navbar stays 56 px at 1280; the reading-site star is 109.8 × 44 px with a
+count and the reading-site navbar stays 58 px (58.125 px before). `scrollWidth` never exceeds the
+viewport width.
 
 ## Known gaps
 
