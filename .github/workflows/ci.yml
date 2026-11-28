@@ -118,7 +118,9 @@ jobs:
       - name: Install the toolkit and test dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements-dev.txt
+          python -m pip install -r requirements-dev.txt -r tools/scripts/requirements-edition-preview.txt
+      - name: Install the screenshot browser
+        run: python -m playwright install --with-deps chromium
       - name: Build a real pilot and verify the seven-file identity
         run: python3 -m unittest discover -s tools/tests -p test_build.py -v
       - name: Run render-resource runtime tests
@@ -129,6 +131,12 @@ jobs:
           python3 -m unittest discover -s tools/tests -p test_tables_figures_build.py -v
       - name: Copy and build the template in a temporary repository
         run: python3 -m unittest discover -s tools/tests -p test_template.py -v
+      - name: Run the remaining Quarto-dependent test files
+        run: |
+          for file in test_numbering_parity test_appendices_document_control \
+                      test_artifact_optimize test_glossary_build test_portal; do
+            python3 -m unittest discover -s tools/tests -p "$file.py" -v
+          done
 
   wheel-install:
     runs-on: ubuntu-24.04

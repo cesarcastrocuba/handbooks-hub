@@ -5,6 +5,26 @@ semantic versioning once the toolkit is published.
 
 ## [Unreleased]
 
+### Changed
+
+- The star link in the reading-site and portal navbars is a 44 × 44 px touch target from 992 px
+  up, up from 36 px, without moving the navbar or overflowing at 320, 390 or 1280 px (change
+  `0093`, issue 148). Its navbar label carries a `star-link` span that the shared CSS sizes.
+- The portal reads its star counts with a bounded pool of eight lookups, one request per distinct
+  repository, in a deterministic order, and a 5 s per-request timeout instead of 10 s. A failed or
+  slow lookup still shows the link without a number (change `0093`, issue 148).
+
+### Fixed
+
+- The rollback-only legacy portal no longer overflows at 320 and 390 px: the card link row wraps
+  instead of staying on one line (change `0093`, issue 148).
+
+### CI
+
+- The `publication-build` job runs every Quarto-dependent test file, so no test guarded by
+  `BUILD_AVAILABLE` or a Quarto check is skipped anywhere in CI (change `0093`, issue 137). It also
+  installs Playwright Chromium for the portal browser tests.
+
 ## [1.10.1] - 2026-11-27
 
 Template release prepared by change `0092`. Template `1.10.1` pins toolkit `0.16.2`: hub commit
