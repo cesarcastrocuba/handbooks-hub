@@ -8,8 +8,10 @@ semantic versioning once the toolkit is published.
 ### Changed
 
 - The star link in the reading-site and portal navbars is a 44 × 44 px touch target from 992 px
-  up, up from 36 px, without moving the navbar or overflowing at 320, 390 or 1280 px (change
-  `0093`, issue 148). Its navbar label carries a `star-link` span that the shared CSS sizes.
+  up, up from 36 px, and the expanded navbar keeps its previous height (portal 56 px, reading site
+  58.125 px). Below 992 px the collapsed menu keeps its full-width row at least 44 px high. The
+  page never overflows at 320, 390, 992, 1000 or 1280 px (change `0093`, issue 148). Its navbar
+  label carries a `star-link` span that the shared CSS sizes.
 - The portal reads its star counts with a bounded pool of eight lookups, one request per distinct
   repository, in a deterministic order, and a 5 s per-request timeout instead of 10 s. A failed or
   slow lookup still shows the link without a number (change `0093`, issue 148).
@@ -21,9 +23,10 @@ semantic versioning once the toolkit is published.
 
 ### CI
 
-- The `publication-build` job runs every Quarto-dependent test file, so no test guarded by
-  `BUILD_AVAILABLE` or a Quarto check is skipped anywhere in CI (change `0093`, issue 137). It also
-  installs Playwright Chromium for the portal browser tests.
+- The `publication-build` job now runs every Quarto-gated test file, so each file guarded by
+  `BUILD_AVAILABLE` or a Quarto check executes there; `checks` and `quickstart` still skip those
+  tests by design. It also installs Playwright Chromium for the portal browser tests (change
+  `0093`, issue 137).
 
 ## [1.10.1] - 2026-11-27
 

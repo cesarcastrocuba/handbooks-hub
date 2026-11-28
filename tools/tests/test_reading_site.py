@@ -242,7 +242,7 @@ class NavbarStarBrowserTests(unittest.TestCase):
             with sync_playwright() as playwright:
                 browser = playwright.chromium.launch()
                 try:
-                    for width in (320, 390, 1280):
+                    for width in (320, 390, 992, 1000, 1280):
                         context = browser.new_context(viewport={'width': width, 'height': 900},
                                                       reduced_motion='reduce')
                         try:
@@ -254,9 +254,14 @@ class NavbarStarBrowserTests(unittest.TestCase):
                             star = page.locator('#quarto-header .navbar a.nav-link:has(.star-link)')
                             self.assertEqual(star.count(), 1)
                             box = star.bounding_box()
+                            navbar = page.locator('#quarto-header .navbar').bounding_box()['height']
                             with self.subTest(width=width):
                                 self.assertGreaterEqual(box['width'], 44)
                                 self.assertGreaterEqual(box['height'], 44)
+                                # The base 65d9921 reading-site navbar is 58.125 px; the star
+                                # must not move it.
+                                if width >= 992:
+                                    self.assertAlmostEqual(navbar, 58.12, delta=0.5)
                                 self.assertLessEqual(
                                     page.evaluate('document.documentElement.scrollWidth'), width)
                         finally:

@@ -7,6 +7,22 @@ This change closes hub issues 148 (follow-ups of the PR 146 review of change `00
 (Quarto-dependent tests skipped in CI). It changes only the web chrome and CI; no manuscript,
 PDF or Word edition changes.
 
+## Review follow-up (oc8, PR 159)
+
+- **Major:** the first revision grew the portal navbar from 56 to 57 px at 992/1000/1280 px
+  because the star's negative margin (-2.5 px) still left a larger margin box than the base link.
+  The margin is now -4 px and the rule is scoped to the expanded navbar; the portal is 56 px
+  again and the tests assert the absolute base heights so a drift is caught.
+- **Minor:** the CHANGELOG no longer claims that no Quarto-gated test is skipped anywhere in CI;
+  it says they now run in `publication-build` while `checks` and `quickstart` skip them by design.
+- **Optional 1:** the star rule is split at 992 px. Below it the collapsed menu keeps its base
+  full-width row (the portal row was already 44 px; the reading-site row is 44 px high and keeps
+  its base width). From 992 px the 44 × 44 target applies with the margin that preserves the base
+  navbar height.
+- **Optional 2:** the CI evidence below names the run of the reviewed head.
+- **Optional 3:** the record says that `NavbarStarBrowserTests` runs only in the non-required
+  `edition-preview (template)` job, and why.
+
 ## Issue 148
 
 ### 1. Navbar star is a 44 px target (Minor)
@@ -14,21 +30,29 @@ PDF or Word edition changes.
 The reading-site and portal navbars rendered the star link as a Bootstrap `.nav-link` 36 to 39 px
 tall at 992 px and wider. A navbar item cannot carry a class, but Quarto parses its `text` as
 Markdown, so `stars.navbar_markup()` emits `[★ Star · 1.2k]{.star-link}` and the label becomes
-`<span class="menu-text"><span class="star-link">…</span></span>`. The shared `handbook.css` now
-targets `#quarto-header .navbar .nav-link:has(.star-link)` with `min-width` and `min-height`
-44 px and centers the label. The negative block margin returns the extra height to the flex line,
-so the navbar keeps its height instead of growing: measured at 1280 px the portal navbar is 56 px
-(unchanged) and the reading-site navbar 58 px (58.125 px before, sub-pixel). The box measures
-65.3 × 44 px without a count and 109.8 × 44 px with one, and the page never overflows.
+`<span class="menu-text"><span class="star-link">…</span></span>`. From 992 px the shared
+`handbook.css` targets `#quarto-header .navbar .nav-link:has(.star-link)` with `min-width` and
+`min-height` 44 px, centers the label, and applies a negative block margin that returns the extra
+height to the flex line, so the navbar keeps its base height. Below 992 px the rule keeps the
+collapsed menu row at its base full width and at least 44 px high.
 
-`book-metric-37` (44 px) and `book-metric-38` (-2.5 px) carry the numbers in the design metrics.
+Measured in Chromium on the final head, with counts present:
+
+| Page | 320 px | 390 px | 992 px | 1000 px | 1280 px | Navbar at ≥ 992 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Portal star | 246.0 × 44 | 316.0 × 44 | 95.6 × 44 | 95.6 × 44 | 95.6 × 44 | 56.0 px (base 56.0) |
+| Reading-site star | 243.5 × 44 | 313.5 × 44 | 109.8 × 44 | 109.8 × 44 | 109.8 × 44 | 58.125 px (base 58.125) |
+
+`book-metric-37` (44 px) and `book-metric-38` (-4 px) carry the numbers in the design metrics.
 
 Proof: `test_reading_site.NavbarStarBrowserTests` renders the reading-site navbar with a real
 Quarto render and `test_portal.QuartoPortalTests.test_navbar_star_is_a_44_pixel_target_without_overflow_or_shift`
-renders the portal. Both measure `getBoundingClientRect()` at 320, 390 and 1280 px, opening the
-collapsed menu below 992 px, and assert `width ≥ 44`, `height ≥ 44`, and
-`document.documentElement.scrollWidth ≤ width`. The portal test also builds the same site with a
-count and asserts the navbar height is unchanged, so writing the count cannot shift the layout.
+renders the portal. Both measure `getBoundingClientRect()` at 320, 390, 992, 1000 and 1280 px,
+opening the collapsed menu below 992 px, and assert `width ≥ 44`, `height ≥ 44`, and
+`document.documentElement.scrollWidth ≤ width`. From 992 px they assert the absolute base navbar
+height (56 px for the portal, 58.12 ± 0.5 px for the reading site), so a drift against base
+`65d9921` fails. The portal test also builds the same site with a count and asserts the navbar
+height is unchanged, so writing the count cannot shift the layout.
 
 ### 2. Redirect test sockets (Optional)
 
@@ -100,7 +124,9 @@ Every file guarded by `BUILD_AVAILABLE` or a Quarto check and the job that now r
 `test_reading_site.py` is not added to `publication-build`: its `NativeMotionBrowserTests` is a
 known intermittent browser test and `edition-preview` already runs that file with Quarto and
 Playwright on every pull request, so the new reading-site target test has a CI home without making
-a required job depend on the flaky one.
+a required job depend on the flaky one. Consequence: `NavbarStarBrowserTests` runs only in the
+non-required `edition-preview (template)` job. That is an accepted risk, recorded at closure; the
+portal half of the same rule runs in the required `publication-build` job through `test_portal`.
 
 ## Files
 
@@ -129,7 +155,7 @@ Run in the hub venv (`source …/hubvenv/bin/activate`, `pip install -e tools`),
 | `python -m unittest test_reading_site -v` | 15 tests, OK (exit 0) |
 | `python -m unittest test_portal -v` | 32 tests, OK |
 | `python -m unittest test_design test_workflow_pins test_docs_commands test_workflow_system_dependencies test_portal_pages_workflow -v` | 41 tests, OK |
-| `make check` | `Ran 681 tests in 1268.205s` — `OK` (no skips); `VERIFY: 5 check(s), 0 problem(s)`; `site-check: 1 page(s), 3 asset(s), all 200` |
+| `make check` | `Ran 681 tests in 1182.462s` — `OK` (no skips); `VERIFY: 5 check(s), 0 problem(s)`; `site-check: 1 page(s), 3 asset(s), all 200` |
 | `make verify-full` | `VERIFY (full): 7 check(s), 0 problem(s)` |
 
 ## CI evidence

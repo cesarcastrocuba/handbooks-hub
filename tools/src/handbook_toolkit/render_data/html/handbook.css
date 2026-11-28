@@ -132,15 +132,25 @@ figcaption, .figure-caption {
   color: var(--text);
   font-size: {{book-metric-17}};
 }
-/* The navbar star is a 44 px touch target without moving the page: the box grows into the
-   navbar padding, and the negative margin returns the extra height to the flex line. */
-#quarto-header .navbar .nav-link:has(.star-link) {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: {{book-metric-37}};
-  min-height: {{book-metric-37}};
-  margin-block: {{book-metric-38}};
+/* The navbar star is a 44 px touch target. In the collapsed menu it keeps the full-width row;
+   from 992 px the box grows into the navbar padding and the negative margin returns the extra
+   height to the flex line, so the navbar keeps its height. */
+@media (max-width: {{book-metric-39}}) {
+  #quarto-header .navbar .nav-link:has(.star-link) {
+    display: flex;
+    align-items: center;
+    min-height: {{book-metric-37}};
+  }
+}
+@media (min-width: {{book-metric-40}}) {
+  #quarto-header .navbar .nav-link:has(.star-link) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: {{book-metric-37}};
+    min-height: {{book-metric-37}};
+    margin-block: {{book-metric-38}};
+  }
 }
 #quarto-header .navbar .nav-link:hover,
 #quarto-header .navbar .nav-link.active {

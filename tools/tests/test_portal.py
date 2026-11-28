@@ -475,7 +475,7 @@ class QuartoPortalTests(unittest.TestCase):
             try:
                 heights = {}
                 for site in (self.site, counted):
-                    for width in (320, 390, 1280):
+                    for width in (320, 390, 992, 1000, 1280):
                         context = browser.new_context(viewport={'width': width, 'height': 1000},
                                                       reduced_motion='reduce')
                         try:
@@ -487,17 +487,21 @@ class QuartoPortalTests(unittest.TestCase):
                             star = page.locator('#quarto-header .navbar a.nav-link:has(.star-link)')
                             self.assertEqual(star.count(), 1)
                             box = star.bounding_box()
+                            navbar = page.locator('#quarto-header .navbar').bounding_box()['height']
                             with self.subTest(site=site.name, width=width):
                                 self.assertGreaterEqual(box['width'], 44)
                                 self.assertGreaterEqual(box['height'], 44)
+                                # The base 65d9921 portal navbar is 56 px on the expanded bar;
+                                # a drift here is a layout regression, not a style choice.
+                                if width >= 992:
+                                    self.assertAlmostEqual(navbar, 56, delta=0.5)
                                 self.assertLessEqual(
                                     page.evaluate('document.documentElement.scrollWidth'), width)
                             # The count only widens the label: the navbar keeps its height.
-                            heights[(site.name, width)] = page.locator(
-                                '#quarto-header .navbar').bounding_box()['height']
+                            heights[(site.name, width)] = navbar
                         finally:
                             context.close()
-                for width in (320, 390, 1280):
+                for width in (320, 390, 992, 1000, 1280):
                     self.assertAlmostEqual(heights[(self.site.name, width)],
                                            heights[('counted-site', width)], delta=0.5)
             finally:
