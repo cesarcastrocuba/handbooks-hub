@@ -199,4 +199,4 @@ def _add_star_link(bc: dict[str, Any]) -> None:
     right = navbar.setdefault("right", [])
     if not isinstance(right, list):
         return
-    right.append({"text": stars.navbar_text(count), "href": f"https://github.com/{repository}"})
+    right.append({"text": stars.navbar_markup(count), "href": f"https://github.com/{repository}"})

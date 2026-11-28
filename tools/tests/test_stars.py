@@ -86,7 +86,8 @@ class StarTests(unittest.TestCase):
         with patch.dict('os.environ', {'HANDBOOK_STAR_COUNTS': '{"owner/book": 1234}'}, clear=True):
             _add_star_link(config)
         self.assertEqual(config['navbar']['right'][-1],
-                         {'text': '★ Star · 1.2k', 'href': 'https://github.com/owner/book'})
+                         {'text': '[★ Star · 1.2k]{.star-link}',
+                          'href': 'https://github.com/owner/book'})
         placeholder = {'repo-url': 'https://github.com/OWNER/REPOSITORY'}
         with patch.dict('os.environ', {}, clear=True):
             _add_star_link(placeholder)
@@ -94,7 +95,8 @@ class StarTests(unittest.TestCase):
         bare = {'repo-url': 'https://github.com/owner/book'}
         with patch.dict('os.environ', {}, clear=True):
             _add_star_link(bare)
-        self.assertEqual(bare['navbar']['right'], [{'text': '★ Star', 'href': 'https://github.com/owner/book'}])
+        self.assertEqual(bare['navbar']['right'],
+                         [{'text': '[★ Star]{.star-link}', 'href': 'https://github.com/owner/book'}])
 
     def test_a_redirect_is_refused_so_the_token_never_leaves_the_api_host(self):
         import threading
@@ -127,6 +129,9 @@ class StarTests(unittest.TestCase):
                 count = stars.star_count('o/redirect', environ={'HANDBOOK_STARS': 'fetch', 'GITHUB_TOKEN': 'sekret'})
         finally:
             api.shutdown(); other.shutdown()
+            # shutdown() stops serve_forever but leaves the listening socket open, which would
+            # raise a ResourceWarning at interpreter exit.
+            api.server_close(); other.server_close()
             stars._CACHE.pop('o/redirect', None)
         self.assertIsNone(count)
         self.assertEqual(seen, [(api.server_port, 'Bearer sekret')])
@@ -143,6 +148,42 @@ class StarTests(unittest.TestCase):
         self.assertEqual(counts, [4, 4, 4])
         self.assertEqual(len(calls), 1)
 
+    def test_prefetch_reads_each_distinct_repository_once_and_keeps_order(self):
+        calls = []
+        counts_by_repository = {'o/a': 3, 'o/c': 5}
+
+        def opener(request, timeout):
+            repository = request.full_url.removeprefix('https://api.github.com/repos/')
+            calls.append(repository)
+            if repository == 'o/bad':
+                raise OSError('offline')
+            return FakeResponse(json.dumps({'stargazers_count': counts_by_repository[repository]}).encode())
+
+        counts = stars.prefetch_counts(['o/a', 'O/A', 'o/bad', 'o/c', 'o/a'],
+                                       environ={'HANDBOOK_STARS': 'fetch'}, opener=opener)
+        self.assertEqual(sorted(calls), ['o/a', 'o/bad', 'o/c'])
+        self.assertEqual(list(counts), ['o/a', 'o/bad', 'o/c'])
+        self.assertEqual(counts, {'o/a': 3, 'o/bad': None, 'o/c': 5})
+
+    def test_prefetch_looks_up_repositories_concurrently(self):
+        import threading
+        barrier = threading.Barrier(3)
+
+        def opener(request, timeout):
+            # A sequential implementation would wait for itself here and break the barrier.
+            barrier.wait(timeout=5)
+            return FakeResponse(b'{"stargazers_count": 7}')
+
+        counts = stars.prefetch_counts(['o/a', 'o/b', 'o/c'],
+                                       environ={'HANDBOOK_STARS': 'fetch'}, opener=opener)
+        self.assertEqual(counts, {'o/a': 7, 'o/b': 7, 'o/c': 7})
+
+    def test_prefetch_is_a_no_op_unless_the_build_asks_for_counts(self):
+        calls = []
+        self.assertEqual(stars.prefetch_counts(['o/a', 'o/b'], environ={},
+                                               opener=opener_for({}, calls)), {})
+        self.assertEqual(calls, [])
+
     def test_compact_counts_and_labels(self):
         self.assertEqual([stars.compact(n) for n in (0, 999, 1000, 1234, 9999, 12000, 123456)],
                          ['0', '999', '1k', '1.2k', '10k', '12k', '123k'])
@@ -151,6 +192,8 @@ class StarTests(unittest.TestCase):
         self.assertEqual(stars.label('o/r', 1234), 'Star o/r on GitHub, 1234 stars')
         self.assertEqual(stars.navbar_text(None), '★ Star')
         self.assertEqual(stars.navbar_text(1234), '★ Star · 1.2k')
+        self.assertEqual(stars.navbar_markup(None), '[★ Star]{.star-link}')
+        self.assertEqual(stars.navbar_markup(1234), '[★ Star · 1.2k]{.star-link}')
 
     def test_star_link_is_a_real_accessible_link(self):
         link = stars.star_link('https://github.com/o/r', 'o/r', 7)

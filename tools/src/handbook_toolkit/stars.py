@@ -10,7 +10,8 @@ page shows the star link without a number; it never fails the build.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
+from concurrent.futures import ThreadPoolExecutor
 from html import escape
 import json
 import os
@@ -20,7 +21,10 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 FETCH_VARIABLE = "HANDBOOK_STARS"
 COUNTS_VARIABLE = "HANDBOOK_STAR_COUNTS"
 API = "https://api.github.com/repos/"
-TIMEOUT = 10
+TIMEOUT = 5
+# A large catalog must not wait for one repository at a time; eight lookups in flight keeps a
+# daily portal build short without opening an unbounded number of connections.
+WORKERS = 8
 
 
 class _NoRedirect(HTTPRedirectHandler):
@@ -84,6 +88,35 @@ def star_count(repository: str | None, *, environ: Mapping[str, str] | None = No
     return count
 
 
+def prefetch_counts(repositories: Iterable[str | None], *,
+                    environ: Mapping[str, str] | None = None,
+                    workers: int = WORKERS,
+                    opener: Callable | None = None) -> dict[str, int | None]:
+    """Read distinct repositories concurrently, one lookup each, in the given order.
+
+    The portal calls this before it renders cards, so a large catalog reads its counts in
+    parallel instead of one request per book. Duplicates compare case-insensitively, and the
+    returned mapping follows the first-seen order so a rebuild stays deterministic. A failed or
+    slow lookup is still just ``None`` in that position (``star_count`` catches every error), so
+    the page keeps its link without a number and the other lookups finish.
+    """
+
+    environ = os.environ if environ is None else environ
+    if not fetch_enabled(environ):
+        return {}
+    unique: dict[str, str] = {}
+    for repository in repositories:
+        if repository:
+            unique.setdefault(repository.casefold(), repository)
+    if not unique:
+        return {}
+    ordered = list(unique.values())
+    with ThreadPoolExecutor(max_workers=max(1, min(workers, len(ordered)))) as pool:
+        futures = {pool.submit(star_count, repository, environ=environ, opener=opener): repository
+                   for repository in ordered}
+        return {futures[future]: future.result() for future in futures}
+
+
 def _valid(count: object) -> int | None:
     return count if isinstance(count, int) and not isinstance(count, bool) and count >= 0 else None
 
@@ -122,6 +155,16 @@ def label(repository: str, count: int | None) -> str:
 
 def navbar_text(count: int | None) -> str:
     return "★ Star" if count is None else f"★ Star · {compact(count)}"
+
+
+def navbar_markup(count: int | None) -> str:
+    """Navbar label with a class Quarto keeps, so CSS can size the star as a touch target.
+
+    Quarto parses a navbar item's text as Markdown, so ``[text]{.star-link}`` becomes a span
+    inside the link; the item itself cannot carry a class.
+    """
+
+    return f"[{navbar_text(count)}]{{.star-link}}"
 
 
 def star_link(url: str, repository: str, count: int | None, *, css: str = "star") -> str:

@@ -1,4 +1,5 @@
 """Portal contracts checked through parsed structure and real, deterministic Quarto output."""
+import json
 from pathlib import Path
 import posixpath
 import shutil
@@ -217,6 +218,28 @@ class PortalTests(unittest.TestCase):
         self.assertEqual(set(FORMATS),set(ASSET_FILES))
         schema=load_packaged_schema('catalog.schema.json')
         self.assertEqual(CATEGORIES,set(schema['properties']['books']['items']['properties']['categories']['items']['enum']))
+
+    def test_legacy_engine_does_not_overflow_at_phone_widths(self):
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            self.skipTest('Playwright is installed by the edition-preview job')
+        self.build(document_with_assets())
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch()
+            try:
+                for width in (320, 390, 1280):
+                    context = browser.new_context(viewport={'width': width, 'height': 900})
+                    try:
+                        page = context.new_page()
+                        page.goto((self.output / 'index.html').as_uri())
+                        with self.subTest(width=width):
+                            self.assertLessEqual(
+                                page.evaluate('document.documentElement.scrollWidth'), width)
+                    finally:
+                        context.close()
+            finally:
+                browser.close()
 
     def test_default_generator_remains_legacy_until_weight_parity(self):
         with patch('handbook_toolkit.portal_quarto.build_quarto_portal',side_effect=AssertionError('candidate deployed')):
@@ -438,6 +461,51 @@ class QuartoPortalTests(unittest.TestCase):
         self.assertEqual([node.attrs['href'] for node in navbar],['https://github.com/cesarcastrocuba/handbooks-hub'])
         for path in self.site.rglob('*.html'):
             self.assertNotIn('api.github.com',path.read_text(),path.name)
+
+    def test_navbar_star_is_a_44_pixel_target_without_overflow_or_shift(self):
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            self.skipTest('Playwright is installed by the edition-preview job')
+        repository = 'cesarcastrocuba/handbooks-hub'
+        with patch.dict('os.environ', {'HANDBOOK_STAR_COUNTS': json.dumps({repository: 1234})}):
+            counted = build_portal(self.catalog, self.root / 'counted-site', engine='quarto').parent
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch()
+            try:
+                heights = {}
+                for site in (self.site, counted):
+                    for width in (320, 390, 992, 1000, 1280):
+                        context = browser.new_context(viewport={'width': width, 'height': 1000},
+                                                      reduced_motion='reduce')
+                        try:
+                            page = context.new_page()
+                            page.goto((site / 'index.html').as_uri())
+                            page.evaluate('document.fonts.ready')
+                            if width < 992:
+                                page.locator('.navbar-toggler').click()
+                            star = page.locator('#quarto-header .navbar a.nav-link:has(.star-link)')
+                            self.assertEqual(star.count(), 1)
+                            box = star.bounding_box()
+                            navbar = page.locator('#quarto-header .navbar').bounding_box()['height']
+                            with self.subTest(site=site.name, width=width):
+                                self.assertGreaterEqual(box['width'], 44)
+                                self.assertGreaterEqual(box['height'], 44)
+                                # The base 65d9921 portal navbar is 56 px on the expanded bar;
+                                # a drift here is a layout regression, not a style choice.
+                                if width >= 992:
+                                    self.assertAlmostEqual(navbar, 56, delta=0.5)
+                                self.assertLessEqual(
+                                    page.evaluate('document.documentElement.scrollWidth'), width)
+                            # The count only widens the label: the navbar keeps its height.
+                            heights[(site.name, width)] = navbar
+                        finally:
+                            context.close()
+                for width in (320, 390, 992, 1000, 1280):
+                    self.assertAlmostEqual(heights[(self.site.name, width)],
+                                           heights[('counted-site', width)], delta=0.5)
+            finally:
+                browser.close()
 
     def test_guide_pages_show_actions_steps_and_features(self):
         expected={'how-it-works':('edition-strip','feature-grid','owner-grid','pipeline'),
