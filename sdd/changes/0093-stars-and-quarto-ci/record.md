@@ -160,18 +160,19 @@ Run in the hub venv (`source …/hubvenv/bin/activate`, `pip install -e tools`),
 
 ## CI evidence
 
-Pull request 159, CI run `46166634655`, all jobs pass. Every line below is `OK` with no
-`skipped=` suffix, so the Quarto-gated skip count is 0.
+Pull request 159, reviewed code head `9d3afc5ae549693bac1659c83ddc3bb1a20e549b`, CI run
+`46176254816`, all eight jobs pass. Every line below is `OK` with no `skipped=` suffix, so the
+Quarto-gated skip count is 0. A later commit only updates this evidence paragraph.
 
 `publication-build`, step "Run the remaining Quarto-dependent test files" (job
-`141045510023`):
+`141075535779`):
 
 ```
-test_numbering_parity                Ran 16 tests in 25.965s   OK
-test_appendices_document_control     Ran 9 tests in 37.261s    OK
-test_artifact_optimize               Ran 18 tests in 74.968s   OK
-test_glossary_build                  Ran 1 test in 12.089s     OK
-test_portal                          Ran 32 tests in 37.009s   OK
+test_numbering_parity                Ran 16 tests in 25.930s   OK
+test_appendices_document_control     Ran 9 tests in 37.126s    OK
+test_artifact_optimize               Ran 18 tests in 74.653s   OK
+test_glossary_build                  Ran 1 test in 11.958s     OK
+test_portal                          Ran 32 tests in 36.760s   OK
 ```
 
 `publication-build` also keeps its existing files green: `test_build` (35 tests, OK),
@@ -181,22 +182,23 @@ test_portal                          Ran 32 tests in 37.009s   OK
 `test_navbar_star_is_a_44_pixel_target_without_overflow_or_shift` executed instead of skipping.
 
 `edition-preview (template)`, step "Verify native CSS motion behavior in Chromium" (job
-`141045509956`):
+`141075535856`):
 
 ```
 test_navbar_star_is_a_44_pixel_target_without_overflow ... ok
-Ran 15 tests in 18.030s
+Ran 15 tests in 18.402s
 OK
 ```
 
-`checks` (1m3s) and `quickstart` (57s) still skip the Quarto-gated tests by design; the goal is
+`checks` (1m6s) and `quickstart` (56s) still skip the Quarto-gated tests by design; the goal is
 met in `publication-build`, a required check. No job failed and no test was re-skipped; the known
 `NativeMotionBrowserTests` flake did not reproduce in this run.
 
-Measured browser evidence from the same tests: the portal star is 59.6 × 44 px at 320, 390 and
-1280 px and the portal navbar stays 56 px at 1280; the reading-site star is 109.8 × 44 px with a
-count and the reading-site navbar stays 58 px (58.125 px before). `scrollWidth` never exceeds the
-viewport width.
+Measured browser evidence from the same tests, with counts present: the portal star is
+246.0/316.0 × 44 px in the collapsed menu at 320/390 and 95.6 × 44 px at 992/1000/1280, with the
+portal navbar at 56 px from 992 px; the reading-site star is 243.5/313.5 × 44 px collapsed and
+109.8 × 44 px at 992/1000/1280, with the reading-site navbar at 58.125 px. `scrollWidth` never
+exceeds the viewport width.
 
 ## Known gaps
 
@@ -205,5 +207,5 @@ viewport width.
   required check) instead of duplicating the full build in the fast job.
 - `NativeMotionBrowserTests` remains a known local flake. If it flakes in `edition-preview`, the
   log will be reported rather than hidden.
-- The black-box mobile layout is proven at 320, 390 and 1280 px in Chromium only, as the existing
-  browser tests are.
+- The black-box layout is proven at 320, 390, 992, 1000 and 1280 px in Chromium only, as the
+  existing browser tests are.
