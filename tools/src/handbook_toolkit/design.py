@@ -333,7 +333,9 @@ BOOK_METRICS = {'book-metric-0': '1rem',
  'book-metric-33': '22rem',
  'book-metric-34': '.35rem',
  'book-metric-35': '1.5rem',
- 'book-metric-36': '600px'}
+ 'book-metric-36': '600px',
+ 'book-metric-37': '44px',
+ 'book-metric-38': '-2.5px'}
 
 
 def book_layout_css() -> str:

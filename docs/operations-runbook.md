@@ -67,8 +67,9 @@ repository with its star count (issue 141, change `0085`). The count is read at 
 written into the page, so a reader's browser makes no request to `api.github.com`:
 
 - `portal-pages` sets `HANDBOOK_STARS=fetch` with its read-only `GITHUB_TOKEN` and reads the count
-  of the hub and of each listed book. It also runs daily (`schedule`) so the counts stay current
-  between catalog changes.
+  of the hub and of each listed book. The reads run in a bounded pool of eight, one request per
+  distinct repository, with a 5 s timeout, so a large catalog does not wait for one repository at a
+  time. It also runs daily (`schedule`) so the counts stay current between catalog changes.
 - A book's release workflow reads its own count with `gh api` before the build and passes it as
   `HANDBOOK_STAR_COUNTS`; the build step never holds a token. The count refreshes with each
   release.

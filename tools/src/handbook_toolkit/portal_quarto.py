@@ -54,11 +54,22 @@ def hub_star_item() -> dict[str, str]:
     from .portal import HUB_URL
     repository = stars.github_repository(HUB_URL)
     count = stars.star_count(repository)
-    return {'text': stars.navbar_text(count), 'href': HUB_URL}
+    return {'text': stars.navbar_markup(count), 'href': HUB_URL}
+
+
+def _prefetch_star_counts(books: list[dict[str, Any]]) -> None:
+    """Read each distinct repository once, concurrently, before the cards are rendered."""
+    from .portal import HUB_URL, _repository_url
+    repositories = [stars.github_repository(_repository_url(book['latest_release']['url']))
+                    for book in books]
+    repositories.append(stars.github_repository(HUB_URL))
+    stars.prefetch_counts(repositories)
 
 
 def stage_site(workspace: Path, books: list[dict[str, Any]], *, design_only: bool=False) -> None:
     from .portal import HUB_URL, llms_text
+    if not design_only:
+        _prefetch_star_counts(books)
     workspace.mkdir(parents=True,exist_ok=True)
     html=stage_theme(workspace)
     if design_only:

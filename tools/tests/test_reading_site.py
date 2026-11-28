@@ -1,10 +1,14 @@
 """Native reading-site configuration, metadata and accessible CSS behavior."""
 import base64
+import os
 from pathlib import Path
 import re
+import shutil
 import struct
+import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 import xml.etree.ElementTree as ET
 import zlib
 
@@ -13,7 +17,7 @@ import yaml
 import support
 from handbook_toolkit import design
 from handbook_toolkit.build import BuildError
-from handbook_toolkit.reading_site import prepare_reading_site, release_links, site_url
+from handbook_toolkit.reading_site import _add_star_link, prepare_reading_site, release_links, site_url
 
 
 def motion_violations(css):
@@ -207,6 +211,58 @@ class ReadingSiteTests(unittest.TestCase):
             for foreground,background in [('accent','canvas'),('accent','surface'),('on_solid','accent_solid'),('muted','canvas')]:
                 with self.subTest(scheme=scheme,foreground=foreground,background=background):
                     self.assertGreaterEqual(design.contrast_ratio(colors[foreground][scheme],colors[background][scheme]),4.5)
+
+
+@unittest.skipUnless(shutil.which('quarto'), 'Quarto renders the reading-site navbar')
+class NavbarStarBrowserTests(unittest.TestCase):
+    """The reading-site navbar star is a 44 px touch target at every width (issue 148)."""
+
+    def test_navbar_star_is_a_44_pixel_target_without_overflow(self):
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            self.skipTest('Playwright is installed by the edition-preview job')
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            config = {'repo-url': 'https://github.com/owner/book', 'navbar': {}}
+            with patch.dict(os.environ, {'HANDBOOK_STAR_COUNTS': '{"owner/book": 1234}'}, clear=True):
+                _add_star_link(config)
+            style = (design.book_theme_css() + design.book_layout_css() + design.reading_css())
+            site = {
+                'project': {'type': 'website', 'output-dir': '_site'},
+                'website': {'title': 'Reading site', 'navbar': {
+                    'right': config['navbar']['right'] + [{'text': 'Source', 'href': 'index.qmd'}]}},
+                'format': {'html': {'theme': ['cosmo'],
+                                    'include-in-header': [{'text': '<style>' + style + '</style>'}]}},
+            }
+            (root / '_quarto.yml').write_text(yaml.safe_dump(site, sort_keys=True), encoding='utf-8')
+            (root / 'index.qmd').write_text('# Home\n', encoding='utf-8')
+            subprocess.run(['quarto', 'render', '.', '--to', 'html', '--no-execute'],
+                           cwd=root, check=True, capture_output=True)
+            with sync_playwright() as playwright:
+                browser = playwright.chromium.launch()
+                try:
+                    for width in (320, 390, 1280):
+                        context = browser.new_context(viewport={'width': width, 'height': 900},
+                                                      reduced_motion='reduce')
+                        try:
+                            page = context.new_page()
+                            page.goto((root / '_site/index.html').as_uri())
+                            page.evaluate('document.fonts.ready')
+                            if width < 992:
+                                page.locator('.navbar-toggler').click()
+                            star = page.locator('#quarto-header .navbar a.nav-link:has(.star-link)')
+                            self.assertEqual(star.count(), 1)
+                            box = star.bounding_box()
+                            with self.subTest(width=width):
+                                self.assertGreaterEqual(box['width'], 44)
+                                self.assertGreaterEqual(box['height'], 44)
+                                self.assertLessEqual(
+                                    page.evaluate('document.documentElement.scrollWidth'), width)
+                        finally:
+                            context.close()
+                finally:
+                    browser.close()
 
 
 class NativeMotionBrowserTests(unittest.TestCase):

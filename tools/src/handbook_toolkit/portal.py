@@ -72,7 +72,7 @@ background:linear-gradient(90deg,#0004 0 .45rem,#fff2 .45rem .55rem,#0000 .55rem
 .summary{color:var(--muted);margin:0;flex-grow:1;font-size:.9rem}.tags{display:flex;gap:.4rem;flex-wrap:wrap}
 .tag{font-size:.66rem;background:var(--paper);color:var(--ink);padding:.16rem .48rem;border:1px solid var(--line);border-radius:4px}
 .version{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-top:.65rem}.authors{color:var(--muted);font-size:.82rem;margin:.2rem 0 0}
-.links{display:flex;gap:.75rem;flex-wrap:nowrap;align-items:center;margin-top:.65rem;font-size:.76rem;white-space:nowrap}.read{font-weight:700}
+.links{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;margin-top:.65rem;font-size:.76rem;white-space:nowrap}.read{font-weight:700}
 .formats{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.7rem}
 .fmt{display:inline-flex;align-items:center;min-height:30px;padding:.18rem .55rem;border:1px solid var(--line);border-radius:5px;background:var(--paper);font-size:.74rem;font-weight:650;text-decoration:none}
 .fmt:hover{border-color:var(--accent);text-decoration:underline}
@@ -266,6 +266,8 @@ def build_portal(catalog: Path, output: Path, *, engine: str = "legacy") -> Path
     if engine != "legacy":
         raise ValueError(f"unknown portal engine: {engine}")
     books = read_catalog(catalog)
+    stars.prefetch_counts(stars.github_repository(_repository_url(book["latest_release"]["url"]))
+                          for book in books)
     categories = sorted({category for book in books for category in book["categories"]})
     unknown = set(categories) - CATEGORIES
     if unknown:
