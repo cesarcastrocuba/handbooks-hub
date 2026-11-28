@@ -4,7 +4,7 @@
 only in [`docs/decisions.md`](docs/decisions.md); the plan lives in
 [`docs/implementation-plan.md`](docs/implementation-plan.md).
 
-**Updated:** 2026-11-27
+**Updated:** 2026-11-28
 **Phase:** Phases 1 to 5 complete. Every work package of change `0027` (WP0 to WP5) is merged: the
 Word-index release is published (tags `toolkit-v0.10.3` and `template-v1.5.1`, and sample
 `v0.5.1`). The preview-alignment round is published: toolkit 0.11.0 (tag `toolkit-v0.11.0`, PR 77,
@@ -112,7 +112,8 @@ listed and served after the Owner's desktop Word check and approval.
 Open follow-ups, none blocking:
 
 1. The follow-ups of change `0085` (issue 148).
-2. Optional: a hash cache for the print-figure transparency step (change `0066`, about 186 s for
+2. CI runs of the Quarto-dependent tests (issue 137, a follow-up of change `0081`).
+3. Optional: a hash cache for the print-figure transparency step (change `0066`, about 186 s for
    121 figures).
 
 ## Blockers and open owner decisions
